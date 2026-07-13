@@ -1,0 +1,109 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Work\\NxtWeek\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|d:\\work\\nxtweek\\mealplanner.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|solutionrelative:mealplanner.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|d:\\work\\nxtweek\\mealplanner.web\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|solutionrelative:mealplanner.web\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|d:\\work\\nxtweek\\mealplanner.web\\wwwroot\\css\\app.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|solutionrelative:mealplanner.web\\wwwroot\\css\\app.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|d:\\work\\nxtweek\\mealplanner.web\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{FCD88E9D-8B9D-F724-6888-9FC2DEC2AD07}|MealPlanner.Web\\MealPlanner.Web.csproj|solutionrelative:mealplanner.web\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3167CD68-2DA2-43AB-5D2D-31301A78DEB7}|MealPlanner.Shared\\MealPlanner.Shared.csproj|d:\\work\\nxtweek\\mealplanner.shared\\services\\firebasemealservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3167CD68-2DA2-43AB-5D2D-31301A78DEB7}|MealPlanner.Shared\\MealPlanner.Shared.csproj|solutionrelative:mealplanner.shared\\services\\firebasemealservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "index.html",
+              "DocumentMoniker": "D:\\Work\\NxtWeek\\MealPlanner.Web\\wwwroot\\index.html",
+              "RelativeDocumentMoniker": "MealPlanner.Web\\wwwroot\\index.html",
+              "ToolTip": "D:\\Work\\NxtWeek\\MealPlanner.Web\\wwwroot\\index.html",
+              "RelativeToolTip": "MealPlanner.Web\\wwwroot\\index.html",
+              "ViewState": "AgIAABcAAAAAAAAAAAAYwA8AAAA0AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-07-13T19:33:22.546Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "app.css",
+              "DocumentMoniker": "D:\\Work\\NxtWeek\\MealPlanner.Web\\wwwroot\\css\\app.css",
+              "RelativeDocumentMoniker": "MealPlanner.Web\\wwwroot\\css\\app.css",
+              "ToolTip": "D:\\Work\\NxtWeek\\MealPlanner.Web\\wwwroot\\css\\app.css",
+              "RelativeToolTip": "MealPlanner.Web\\wwwroot\\css\\app.css",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACQBAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2026-07-13T19:32:57.829Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Home.razor",
+              "DocumentMoniker": "D:\\Work\\NxtWeek\\MealPlanner.Web\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "MealPlanner.Web\\Pages\\Home.razor",
+              "ToolTip": "D:\\Work\\NxtWeek\\MealPlanner.Web\\Pages\\Home.razor",
+              "RelativeToolTip": "MealPlanner.Web\\Pages\\Home.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-07-13T19:32:23.988Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\Work\\NxtWeek\\MealPlanner.Web\\Program.cs",
+              "RelativeDocumentMoniker": "MealPlanner.Web\\Program.cs",
+              "ToolTip": "D:\\Work\\NxtWeek\\MealPlanner.Web\\Program.cs",
+              "RelativeToolTip": "MealPlanner.Web\\Program.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAADwvxIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-13T18:55:41.495Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "FirebaseMealService.cs",
+              "DocumentMoniker": "D:\\Work\\NxtWeek\\MealPlanner.Shared\\Services\\FirebaseMealService.cs",
+              "RelativeDocumentMoniker": "MealPlanner.Shared\\Services\\FirebaseMealService.cs",
+              "ToolTip": "D:\\Work\\NxtWeek\\MealPlanner.Shared\\Services\\FirebaseMealService.cs",
+              "RelativeToolTip": "MealPlanner.Shared\\Services\\FirebaseMealService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-07-13T18:51:22.242Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

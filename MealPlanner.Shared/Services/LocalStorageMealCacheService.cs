@@ -1,19 +1,28 @@
-using Blazored.LocalStorage;
+using System.Text.Json;
 using MealPlanner.Shared.Models;
 using MealPlanner.Shared.Services;
+using Microsoft.JSInterop;
 
 namespace MealPlanner.Web.Services;
 
 public class LocalStorageMealCacheService : IMealCacheService
 {
     private const string Key = "meals-cache";
-    private readonly ILocalStorageService _storage;
+    private readonly IJSRuntime _js;
 
-    public LocalStorageMealCacheService(ILocalStorageService storage) => _storage = storage;
+    public LocalStorageMealCacheService(IJSRuntime js) => _js = js;
 
     public async Task<List<Meal>?> GetCachedWeekAsync()
-        => await _storage.GetItemAsync<List<Meal>>(Key);
+    {
+        var json = await _js.InvokeAsync<string?>("localStorage.getItem", Key);
+        if (string.IsNullOrEmpty(json)) return null;
+
+        return JsonSerializer.Deserialize<List<Meal>>(json);
+    }
 
     public async Task SetCachedWeekAsync(List<Meal> meals)
-        => await _storage.SetItemAsync(Key, meals);
+    {
+        var json = JsonSerializer.Serialize(meals);
+        await _js.InvokeVoidAsync("localStorage.setItem", Key, json);
+    }
 }

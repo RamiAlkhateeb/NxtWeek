@@ -1,0 +1,197 @@
+﻿@page "/"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IMealService MealService
+@inject IMealCacheService CacheService
+@inject ISuggestionService SuggestionService
+@inject HttpClient Http
+
+<div class="app" dir="rtl">
+    <div class="header">
+        <div class="header-top">
+            <h1>📅 مخطط الوجبات</h1>
+        </div>
+        <p>@WeekRangeLabel</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <p style="padding:16px; color:var(--color-text-secondary)">جارِ التحميل...</p>
+    }
+    else
+    {
+        <div class="week-header">
+            <div class="week-label">وجبات الأسبوع</div>
+            <div class="week-nav">
+                <button @onclick="GoPreviousWeek">‹</button>
+                <button @onclick="GoNextWeek">›</button>
+            </div>
+        </div>
+
+        <div class="day-strip">
+            @foreach (var meal in weekMeals)
+            {
+                <div class="day-pill @(meal.Date == selectedDate ? "active" : "")"
+                     @onclick="() => SelectDay(meal.Date)">
+                    <span class="day-name">@ShortDayName(meal.DayName)</span>
+                    <span class="day-num">@meal.Date.Day</span>
+                </div>
+            }
+        </div>
+
+        @if (SelectedMeal is not null)
+        {
+            <div class="section-label">وجبة اليوم</div>
+            <div class="meal-card">
+                <div class="meal-card-header">
+                    <span class="meal-card-day">@SelectedMeal.DayName، @SelectedMeal.Date.ToString("d MMMM")</span>
+                    <span class="meal-card-badge">غداء</span>
+                </div>
+                <div class="meal-card-name">@SelectedMeal.Name</div>
+                <div class="meal-card-actions">
+                    <button @onclick="() => EditRequested(SelectedMeal)">✏️ تعديل</button>
+                    <button class="primary" @onclick="() => SuggestNew(SelectedMeal)">🔄 اقتراح جديد</button>
+                </div>
+            </div>
+        }
+
+        <div class="section-label" style="margin-top:8px">بقية الأسبوع</div>
+        @foreach (var meal in weekMeals.Where(m => m.Date != selectedDate))
+        {
+            <div class="meal-card" style="opacity:0.85">
+                <div class="meal-card-header">
+                    <span class="meal-card-day">@meal.DayName، @meal.Date.ToString("d MMMM")</span>
+                    <span class="meal-card-badge">غداء</span>
+                </div>
+                <div class="meal-card-name">@meal.Name</div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Meal> weekMeals = new();
+    private DateOnly selectedDate;
+    private bool isLoading = true;
+
+    private Meal? SelectedMeal => weekMeals.FirstOrDefault(m => m.Date == selectedDate);
+
+    private string WeekRangeLabel =>
+        weekMeals.Count > 0
+            ? $"أسبوع {weekMeals.First().Date:d MMMM} – {weekMeals.Last().Date:d MMMM}"
+            : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        selectedDate = DateOnly.FromDateTime(DateTime.Today);
+        await EnsureSeededAsync();
+        await LoadWeekAsync(StartOfWeek(selectedDate));
+    }
+
+    private async Task EnsureSeededAsync()
+    {
+        var seeded = await MealService.IsSeededAsync();
+        if (seeded) return;
+
+        var seedJson = await Http.GetStringAsync("_content/MealPlanner.Shared/seed/meals_seed.json");
+        var seedMeals = System.Text.Json.JsonSerializer.Deserialize<List<SeedDto>>(seedJson,
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (seedMeals is null) return;
+
+        var meals = seedMeals.Select(s => new Meal
+        {
+            Id = s.Id,
+            Date = DateOnly.Parse(s.Date),
+            DayName = s.DayName,
+            Name = s.Name
+        }).ToList();
+
+        await MealService.SeedAsync(meals);
+    }
+
+    private async Task LoadWeekAsync(DateOnly weekStart)
+    {
+        isLoading = true;
+
+        // read-through cache: show cached data instantly, refresh in background
+        var cached = await CacheService.GetCachedWeekAsync();
+        if (cached is not null && cached.Count > 0)
+        {
+            weekMeals = cached;
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        var weekEnd = weekStart.AddDays(6);
+        var fresh = await MealService.GetWeekAsync(weekStart, weekEnd);
+
+        if (fresh.Count > 0)
+        {
+            weekMeals = fresh;
+            await CacheService.SetCachedWeekAsync(fresh);
+        }
+
+        if (!weekMeals.Any(m => m.Date == selectedDate))
+            selectedDate = weekMeals.Count > 0 ? weekMeals.First().Date : selectedDate;
+
+        isLoading = false;
+    }
+
+    private DateOnly StartOfWeek(DateOnly date)
+    {
+        var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Sunday) % 7;
+        return date.AddDays(-diff);
+    }
+
+    private void SelectDay(DateOnly date) => selectedDate = date;
+
+    private async Task GoPreviousWeek()
+    {
+        var newStart = StartOfWeek(weekMeals.First().Date).AddDays(-7);
+        selectedDate = newStart;
+        await LoadWeekAsync(newStart);
+    }
+
+    private async Task GoNextWeek()
+    {
+        var newStart = StartOfWeek(weekMeals.First().Date).AddDays(7);
+        selectedDate = newStart;
+        await LoadWeekAsync(newStart);
+    }
+
+    private async Task SuggestNew(Meal meal)
+    {
+        var suggestions = await SuggestionService.GetSuggestionsAsync(weekMeals, count: 1);
+        if (suggestions.Count == 0) return;
+
+        meal.Name = suggestions[0];
+        await MealService.UpsertMealAsync(meal);
+        await CacheService.SetCachedWeekAsync(weekMeals);
+    }
+
+    private void EditRequested(Meal meal)
+    {
+        // placeholder: will wire navigation to EditPage.razor next
+    }
+
+    private string ShortDayName(string fullDayName) => fullDayName switch
+    {
+        "Sunday" => "أحد",
+        "Monday" => "اثنين",
+        "Tuesday" => "ثلاثاء",
+        "Wednesday" => "أربعاء",
+        "Thursday" => "خميس",
+        "Friday" => "جمعة",
+        "Saturday" => "سبت",
+        _ => fullDayName
+    };
+
+    private class SeedDto
+    {
+        public string Id { get; set; } = "";
+        public string Date { get; set; } = "";
+        public string DayName { get; set; } = "";
+        public string Name { get; set; } = "";
+    }
+}
