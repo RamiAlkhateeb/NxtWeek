@@ -18,6 +18,10 @@
     {
         <p style="padding:16px; color:var(--color-text-secondary)">جارِ التحميل...</p>
     }
+    else if (weekMeals.Count == 0)
+    {
+        <p style="padding:16px; color:var(--color-text-secondary)">لا توجد وجبات لهذا الأسبوع</p>
+    } 
     else
     {
         <div class="week-header">
