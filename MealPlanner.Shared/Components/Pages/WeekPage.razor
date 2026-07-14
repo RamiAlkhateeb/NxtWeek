@@ -5,8 +5,10 @@
 @inject IMealCacheService CacheService
 @inject ISuggestionService SuggestionService
 @inject HttpClient Http
+@inject NavigationManager Nav
 
 <div class="app" dir="rtl">
+    <button @onclick='() => Nav.NavigateTo("/edit/new")' style="margin:8px 16px">+ إضافة وجبة</button>
     <div class="header">
         <div class="header-top">
             <h1>📅 مخطط الوجبات</h1>
@@ -179,7 +181,7 @@
 
     private void EditRequested(Meal meal)
     {
-        // placeholder: will wire navigation to EditPage.razor next
+        Nav.NavigateTo($"/edit/{meal.Id}");
     }
 
     private string ShortDayName(string fullDayName) => fullDayName switch
