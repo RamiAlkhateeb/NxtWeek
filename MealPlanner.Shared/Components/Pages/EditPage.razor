@@ -1,0 +1,131 @@
+@page "/edit/{MealId}"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IMealService MealService
+@inject IMealCacheService CacheService
+@inject ISuggestionService SuggestionService
+@inject NavigationManager Nav
+
+<div class="app" dir="rtl">
+    <div class="header">
+        <div class="header-top">
+            <h1>تعديل الوجبة</h1>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <p style="padding:16px; color:#777">جارِ التحميل...</p>
+    }
+    else if (meal is null)
+    {
+        <div style="padding:16px">
+            <p style="margin-bottom:12px">لا توجد وجبة بهذا التاريخ بعد. أدخل التفاصيل لإنشائها:</p>
+        </div>
+    }
+
+    @if (!isLoading)
+    {
+        <div class="edit-form" style="padding:16px">
+            <div class="edit-field" style="margin-bottom:16px">
+                <label style="display:block; font-size:12px; color:#777; margin-bottom:6px">التاريخ (yyyy-MM-dd)</label>
+                <input type="date" @bind="dateInput" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px" />
+            </div>
+
+            <div class="edit-field" style="margin-bottom:16px">
+                <label style="display:block; font-size:12px; color:#777; margin-bottom:6px">اسم الوجبة</label>
+                <input type="text" dir="rtl" @bind="nameInput" placeholder="أدخل اسم الوجبة..."
+                       style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; text-align:right" />
+            </div>
+
+            @if (suggestions.Count > 0)
+            {
+                <div style="font-size:12px; color:#777; margin-bottom:8px">اقتراحات سريعة</div>
+                <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:12px">
+                    @foreach (var s in suggestions)
+                    {
+                        <div @onclick="() => nameInput = s"
+                             style="white-space:nowrap; padding:7px 14px; border-radius:20px; border:1px solid #ddd; font-size:13px; cursor:pointer">
+                            @s
+                        </div>
+                    }
+                </div>
+            }
+
+            <button @onclick="LoadSuggestions"
+                    style="width:100%; padding:12px; border-radius:10px; background:#185FA5; color:#fff; border:none; margin-bottom:12px; cursor:pointer">
+                ✨ اقترح وجبة
+            </button>
+
+            <button @onclick="Save"
+                    style="width:100%; padding:12px; border-radius:10px; background:#eee; border:1px solid #ddd; cursor:pointer">
+                ✅ حفظ
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string MealId { get; set; } = string.Empty;
+
+    private Meal? meal;
+    private bool isLoading = true;
+    private string dateInput = string.Empty;
+    private string nameInput = string.Empty;
+    private List<string> suggestions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+
+        if (MealId == "new")
+        {
+            dateInput = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+        }
+        else
+        {
+            var date = DateOnly.Parse(MealId);
+            var week = await MealService.GetWeekAsync(date, date);
+            meal = week.FirstOrDefault();
+
+            dateInput = MealId;
+            nameInput = meal?.Name ?? string.Empty;
+        }
+
+        isLoading = false;
+    }
+
+    private async Task LoadSuggestions()
+    {
+        var date = DateOnly.Parse(dateInput);
+        var weekStart = date.AddDays(-(int)date.DayOfWeek);
+        var recentMeals = await MealService.GetWeekAsync(weekStart.AddDays(-7), weekStart.AddDays(6));
+        suggestions = await SuggestionService.GetSuggestionsAsync(recentMeals, count: 5);
+    }
+
+    private async Task Save()
+    {
+        var date = DateOnly.Parse(dateInput);
+
+        var updated = new Meal
+        {
+            Id = date.ToString("yyyy-MM-dd"),
+            Date = date,
+            DayName = date.DayOfWeek.ToString(),
+            Name = nameInput
+        };
+
+        await MealService.UpsertMealAsync(updated);
+
+        // Invalidate cache so WeekPage refetches fresh data
+        var currentCache = await CacheService.GetCachedWeekAsync();
+        if (currentCache is not null)
+        {
+            currentCache.RemoveAll(m => m.Id == updated.Id);
+            currentCache.Add(updated);
+            await CacheService.SetCachedWeekAsync(currentCache);
+        }
+
+        Nav.NavigateTo("/");
+    }
+}
