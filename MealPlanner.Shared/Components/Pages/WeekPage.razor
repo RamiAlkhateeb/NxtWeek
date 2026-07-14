@@ -72,6 +72,7 @@
 @code {
     private List<Meal> weekMeals = new();
     private DateOnly selectedDate;
+    private DateOnly currentWeekStart;
     private bool isLoading = true;
 
     private Meal? SelectedMeal => weekMeals.FirstOrDefault(m => m.Date == selectedDate);
@@ -84,6 +85,7 @@
     protected override async Task OnInitializedAsync()
     {
         selectedDate = DateOnly.FromDateTime(DateTime.Today);
+        currentWeekStart = StartOfWeek(selectedDate);
         await EnsureSeededAsync();
         await LoadWeekAsync(StartOfWeek(selectedDate));
     }
@@ -126,6 +128,7 @@
         var weekEnd = weekStart.AddDays(6);
         var fresh = await MealService.GetWeekAsync(weekStart, weekEnd);
 
+        weekMeals = fresh;
         if (fresh.Count > 0)
         {
             weekMeals = fresh;
