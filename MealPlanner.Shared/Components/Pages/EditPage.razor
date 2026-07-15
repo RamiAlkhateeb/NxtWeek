@@ -3,64 +3,150 @@
 @using MealPlanner.Shared.Services
 @inject IMealService MealService
 @inject IMealCacheService CacheService
+@inject IMealCatalogService CatalogService
 @inject ISuggestionService SuggestionService
+@inject IJSRuntime JS
 @inject NavigationManager Nav
 
-<div class="app" dir="rtl">
-    <div class="header">
-        <div class="header-top">
-            <h1>تعديل الوجبة</h1>
-        </div>
+<div class="app edit-page-container" dir="rtl">
+    <div class="edit-header">
+        <button class="close-btn" @onclick="Cancel">✕</button>
+        <h1>@TitleText</h1>
     </div>
 
     @if (isLoading)
     {
-        <p style="padding:16px; color:#777">جارِ التحميل...</p>
+        <p style="padding:24px; text-align:center; color:#777">جارِ التحميل...</p>
     }
-    else if (meal is null)
+    else
     {
-        <div style="padding:16px">
-            <p style="margin-bottom:12px">لا توجد وجبة بهذا التاريخ بعد. أدخل التفاصيل لإنشائها:</p>
+        <!-- Progress Steps -->
+        <div class="wizard-steps">
+            <div class="step @(currentStep >= 1 ? "active" : "") @(currentStep == 1 ? "current" : "")" @onclick="() => SetStep(1)">
+                <span class="step-num">١</span>
+                <span class="step-label">النوع</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step @(currentStep >= 2 ? "active" : "") @(currentStep == 2 ? "current" : "")" @onclick="() => SetStep(2)">
+                <span class="step-num">٢</span>
+                <span class="step-label">الاسم</span>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step @(currentStep >= 3 ? "active" : "") @(currentStep == 3 ? "current" : "")" @onclick="() => SetStep(3)">
+                <span class="step-num">٣</span>
+                <span class="step-label">التفاصيل</span>
+            </div>
         </div>
-    }
 
-    @if (!isLoading)
-    {
-        <div class="edit-form" style="padding:16px">
-            <div class="edit-field" style="margin-bottom:16px">
-                <label style="display:block; font-size:12px; color:#777; margin-bottom:6px">التاريخ (yyyy-MM-dd)</label>
-                <input type="date" @bind="dateInput" @bind:format="yyyy-MM-dd" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px" />
-            </div>
-
-            <div class="edit-field" style="margin-bottom:16px">
-                <label style="display:block; font-size:12px; color:#777; margin-bottom:6px">اسم الوجبة</label>
-                <input type="text" dir="rtl" @bind="nameInput" placeholder="أدخل اسم الوجبة..."
-                       style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; text-align:right" />
-            </div>
-
-            @if (suggestions.Count > 0)
+        <div class="wizard-content">
+            @if (currentStep == 1)
             {
-                <div style="font-size:12px; color:#777; margin-bottom:8px">اقتراحات سريعة</div>
-                <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:12px">
-                    @foreach (var s in suggestions)
-                    {
-                        <div @onclick="() => nameInput = s"
-                             style="white-space:nowrap; padding:7px 14px; border-radius:20px; border:1px solid #ddd; font-size:13px; cursor:pointer">
-                            @s
+                <div class="wizard-step-panel animate-fade">
+                    <h2>ما هو نوع الوجبة؟</h2>
+                    <p class="step-desc">اختر تصنيف الوجبة لتسهيل العثور على اقتراحات مناسبة.</p>
+                    
+                    <div class="meal-types-list">
+                        <div class="type-chip-card @(selectedType == MealType.Meat ? "active" : "")" @onclick="() => SelectMealType(MealType.Meat)">
+                            <span class="emoji">🥩</span>
+                            <span class="label">لحوم</span>
                         </div>
-                    }
+                        <div class="type-chip-card @(selectedType == MealType.Chicken ? "active" : "")" @onclick="() => SelectMealType(MealType.Chicken)">
+                            <span class="emoji">🍗</span>
+                            <span class="label">دجاج</span>
+                        </div>
+                        <div class="type-chip-card @(selectedType == MealType.Fish ? "active" : "")" @onclick="() => SelectMealType(MealType.Fish)">
+                            <span class="emoji">🐟</span>
+                            <span class="label">أسماك</span>
+                        </div>
+                        <div class="type-chip-card @(selectedType == MealType.Vegetarian ? "active" : "")" @onclick="() => SelectMealType(MealType.Vegetarian)">
+                            <span class="emoji">🥦</span>
+                            <span class="label">نباتي</span>
+                        </div>
+                        <div class="type-chip-card @(selectedType == MealType.Vegan ? "active" : "")" @onclick="() => SelectMealType(MealType.Vegan)">
+                            <span class="emoji">🌱</span>
+                            <span class="label">نباتي صرف</span>
+                        </div>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button class="primary-btn" @onclick="NextStep">المتابعة ‹</button>
+                    </div>
                 </div>
             }
+            else if (currentStep == 2)
+            {
+                <div class="wizard-step-panel animate-fade">
+                    <h2>ما اسم الوجبة؟</h2>
+                    <p class="step-desc">أدخل اسماً أو اختر من الاقتراحات السريعة لنوع الوجبة المحدد.</p>
 
-            <button @onclick="LoadSuggestions"
-                    style="width:100%; padding:12px; border-radius:10px; background:#185FA5; color:#fff; border:none; margin-bottom:12px; cursor:pointer">
-                ✨ اقترح وجبة
-            </button>
+                    <div class="form-group">
+                        <input type="text" @bind="nameInput" @bind:event="oninput" placeholder="أدخل اسم الوجبة..." class="meal-name-input" />
+                    </div>
 
-            <button @onclick="Save"
-                    style="width:100%; padding:12px; border-radius:10px; background:#eee; border:1px solid #ddd; cursor:pointer">
-                ✅ حفظ
-            </button>
+                    @if (suggestions.Count > 0)
+                    {
+                        <div class="suggestions-section">
+                            <span class="section-title">✨ اقتراحات لـ @GetMealTypeArabic(selectedType):</span>
+                            <div class="suggestions-grid">
+                                @foreach (var s in suggestions)
+                                {
+                                    <div class="suggestion-chip" @onclick="() => ChooseSuggestion(s)">
+                                        @s
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="wizard-actions">
+                        <button class="secondary-btn" @onclick="PrevStep">› السابق</button>
+                        <button class="primary-btn" @onclick="NextStep" disabled="@string.IsNullOrWhiteSpace(nameInput)">المتابعة ‹</button>
+                    </div>
+                </div>
+            }
+            else if (currentStep == 3)
+            {
+                <div class="wizard-step-panel animate-fade">
+                    <h2>أضف تفاصيل الوجبة</h2>
+                    <p class="step-desc">حدد الأطباق الجانبية، المكونات، وعلمها كمفضلة إذا رغبت.</p>
+
+                    <div class="form-group-row">
+                        <label>تاريخ الوجبة:</label>
+                        <input type="date" @bind="dateInput" class="date-input" />
+                    </div>
+
+                    <div class="favorite-toggle-card @(isFavoriteInput ? "favorite" : "")" @onclick="ToggleFavorite">
+                        <span class="star-icon">@(isFavoriteInput ? "⭐" : "☆")</span>
+                        <div class="toggle-text">
+                            <span class="title">وجبة مفضلة</span>
+                            <span class="desc">تظهر الوجبات المفضلة بشكل متكرر في الاقتراحات الأسبوعية.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🥗 الأطباق الجانبية المقترحة:</label>
+                        <div class="side-dishes-selection">
+                            @foreach (var option in SideDishOptions.Options)
+                            {
+                                var isSelected = selectedSideDishes.Contains(option);
+                                <div class="side-dish-toggle-chip @(isSelected ? "active" : "")" @onclick="() => ToggleSideDish(option)">
+                                    @option
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>🛒 المكونات (مفصولة بفواصل):</label>
+                        <textarea @bind="ingredientsInput" placeholder="مثال: بطاطا، بصل، زيت، ملح..." rows="3" class="ingredients-textarea"></textarea>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button class="secondary-btn" @onclick="PrevStep">› السابق</button>
+                        <button class="primary-btn save-btn" @onclick="Save">✅ حفظ الوجبة</button>
+                    </div>
+                </div>
+            }
         </div>
     }
 </div>
@@ -70,51 +156,152 @@
 
     private Meal? meal;
     private bool isLoading = true;
+    private int currentStep = 1;
+
+    // Form inputs
     private DateOnly dateInput;
     private string nameInput = string.Empty;
+    private MealType selectedType = MealType.Vegetarian;
+    private List<string> selectedSideDishes = new();
+    private string ingredientsInput = string.Empty;
+    private bool isFavoriteInput = false;
+
     private List<string> suggestions = new();
+    private List<MealCatalogItem> typeCatalogMeals = new();
+    private string username = "";
+
+    private string TitleText => MealId == "new" ? "إضافة وجبة جديدة" : "تعديل الوجبة";
 
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
 
         if (MealId == "new")
         {
             dateInput = DateOnly.FromDateTime(DateTime.Now.Date);
+            await LoadSuggestionsForType(selectedType);
         }
         else
         {
             var date = DateOnly.Parse(MealId);
+            // Fetch week to get meal details
             var week = await MealService.GetWeekAsync(date, date);
             meal = week.FirstOrDefault();
 
-            dateInput = date;
-            nameInput = meal?.Name ?? string.Empty;
+            if (meal != null)
+            {
+                dateInput = date;
+                nameInput = meal.Name;
+                selectedType = meal.MealType ?? MealType.Vegetarian;
+                selectedSideDishes = meal.SideDishes.ToList();
+                ingredientsInput = string.Join("، ", meal.Ingredients);
+                isFavoriteInput = meal.IsFavorite;
+            }
+            else
+            {
+                dateInput = date;
+            }
+            await LoadSuggestionsForType(selectedType);
         }
 
         isLoading = false;
     }
 
-    private async Task LoadSuggestions()
+    private async Task LoadSuggestionsForType(MealType type)
     {
-        var weekStart = dateInput.AddDays(-(int)dateInput.DayOfWeek);
-        var recentMeals = await MealService.GetWeekAsync(weekStart.AddDays(-7), weekStart.AddDays(6));
-        suggestions = await SuggestionService.GetSuggestionsAsync(recentMeals, count: 5);
+        typeCatalogMeals = await CatalogService.GetFilteredMealsAsync(null, type);
+        suggestions = typeCatalogMeals.Select(m => m.Name).Take(8).ToList();
+    }
+
+    private async Task SelectMealType(MealType type)
+    {
+        selectedType = type;
+        await LoadSuggestionsForType(type);
+        currentStep = 2; // Auto-advance
+    }
+
+    private void ChooseSuggestion(string name)
+    {
+        nameInput = name;
+        var matched = typeCatalogMeals.FirstOrDefault(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (matched != null)
+        {
+            selectedSideDishes = matched.SideDishes.ToList();
+            ingredientsInput = string.Join("، ", matched.Ingredients);
+        }
+        currentStep = 3; // Auto-advance
+    }
+
+    private void ToggleSideDish(string option)
+    {
+        if (selectedSideDishes.Contains(option))
+        {
+            selectedSideDishes.Remove(option);
+        }
+        else
+        {
+            selectedSideDishes.Add(option);
+        }
+    }
+
+    private void ToggleFavorite()
+    {
+        isFavoriteInput = !isFavoriteInput;
+    }
+
+    private void SetStep(int step)
+    {
+        if (step == 2 && string.IsNullOrWhiteSpace(nameInput) && MealId == "new") return;
+        if (step == 3 && string.IsNullOrWhiteSpace(nameInput)) return;
+        currentStep = step;
+    }
+
+    private void NextStep()
+    {
+        if (currentStep < 3) currentStep++;
+    }
+
+    private void PrevStep()
+    {
+        if (currentStep > 1) currentStep--;
+    }
+
+    private void Cancel()
+    {
+        Nav.NavigateTo("/");
     }
 
     private async Task Save()
     {
+        if (string.IsNullOrWhiteSpace(nameInput)) return;
+
+        var ingredients = ingredientsInput
+            .Split(new[] { ',', '،', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(i => i.Trim())
+            .Where(i => !string.IsNullOrEmpty(i))
+            .ToList();
+
         var updated = new Meal
         {
             Id = dateInput.ToString("yyyy-MM-dd"),
             Date = dateInput,
             DayName = dateInput.DayOfWeek.ToString(),
-            Name = nameInput
+            Name = nameInput,
+            MealType = selectedType,
+            IsFavorite = isFavoriteInput,
+            SideDishes = selectedSideDishes,
+            Ingredients = ingredients
         };
 
         await MealService.UpsertMealAsync(updated);
 
-        // Invalidate cache so WeekPage refetches fresh data
+        // Force cache update
         var currentCache = await CacheService.GetCachedWeekAsync();
         if (currentCache is not null)
         {
@@ -125,4 +312,14 @@
 
         Nav.NavigateTo("/");
     }
+
+    private string GetMealTypeArabic(MealType type) => type switch
+    {
+        MealType.Meat => "اللحوم",
+        MealType.Chicken => "الدجاج",
+        MealType.Fish => "الأسماك",
+        MealType.Vegetarian => "الوجبات النباتية",
+        MealType.Vegan => "الوجبات النباتية الصرفة",
+        _ => type.ToString()
+    };
 }

@@ -17,11 +17,10 @@ builder.Services.AddSingleton(new FirebaseOptions
     DatabaseUrl = "https://meal-planner-af799-default-rtdb.europe-west1.firebasedatabase.app/"
 });
 
-builder.Services.AddScoped<FirebaseMealService>(sp =>
-    new FirebaseMealService(new HttpClient(), sp.GetRequiredService<FirebaseOptions>()));
-
+builder.Services.AddScoped<IUserService, FirebaseUserService>();
+builder.Services.AddScoped<IMealCatalogService, FirebaseMealCatalogService>();
+builder.Services.AddScoped<FirebaseMealService>();
 builder.Services.AddScoped<IMealService>(sp => sp.GetRequiredService<FirebaseMealService>());
-builder.Services.AddScoped<IMealService, FirebaseMealService>();
 builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();
 builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
 

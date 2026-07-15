@@ -1,0 +1,90 @@
+@page "/onboarding/cuisines"
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject IJSRuntime JS
+@inject IUserService UserService
+@inject NavigationManager Nav
+
+<div class="app onboarding-container" dir="rtl">
+    <div class="onboarding-card">
+        <div class="step-indicator">خطوة 2 من 3</div>
+        <h1>المطابخ المفضلة</h1>
+        <p class="subtitle">اختر المطابخ التي تفضل وجباتها لتخصيص اقتراحات الأسبوع.</p>
+        
+        <div class="cuisines-grid">
+            <div class="cuisine-card @(selectedCuisines.Contains(Cuisine.Syrian) ? "active" : "")" @onclick="() => ToggleCuisine(Cuisine.Syrian)">
+                <span class="flag">🇸🇾</span>
+                <span class="name">المطبخ السوري</span>
+                <span class="description">يتميز بالمشويات، الكبب، والمفركات الشهية</span>
+            </div>
+            
+            <div class="cuisine-card @(selectedCuisines.Contains(Cuisine.Turkish) ? "active" : "")" @onclick="() => ToggleCuisine(Cuisine.Turkish)">
+                <span class="flag">🇹🇷</span>
+                <span class="name">المطبخ التركي</span>
+                <span class="description">يشتهر بالمعجنات، اللحوم المشوية، والبوريك المميز</span>
+            </div>
+            
+            <div class="cuisine-card @(selectedCuisines.Contains(Cuisine.Lebanese) ? "active" : "")" @onclick="() => ToggleCuisine(Cuisine.Lebanese)">
+                <span class="flag">🇱🇧</span>
+                <span class="name">المطبخ اللبناني</span>
+                <span class="description">مشهور بالمازات، السلطات الطازجة، والمشويات</span>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <span class="error-msg" style="margin-top: 10px;">@error</span>
+        }
+
+        <button class="primary-btn btn-animate" @onclick="SaveCuisines" style="margin-top: 24px;">
+            متابعة إلى الوجبات ‹
+        </button>
+    </div>
+</div>
+
+@code {
+    private List<Cuisine> selectedCuisines = new();
+    private string error = "";
+    private string username = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
+
+        var profile = await UserService.GetProfileAsync(username);
+        if (profile?.PreferredCuisines != null)
+        {
+            selectedCuisines = profile.PreferredCuisines.ToList();
+        }
+    }
+
+    private void ToggleCuisine(Cuisine cuisine)
+    {
+        error = "";
+        if (selectedCuisines.Contains(cuisine))
+        {
+            selectedCuisines.Remove(cuisine);
+        }
+        else
+        {
+            selectedCuisines.Add(cuisine);
+        }
+    }
+
+    private async Task SaveCuisines()
+    {
+        if (selectedCuisines.Count == 0)
+        {
+            error = "يرجى اختيار مطبخ واحد على الأقل للمتابعة.";
+            return;
+        }
+
+        await UserService.SavePreferredCuisinesAsync(username, selectedCuisines);
+        Nav.NavigateTo("/onboarding/meals");
+    }
+}

@@ -1,28 +1,38 @@
-﻿@page "/"
+@page "/"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IMealService MealService
 @inject IMealCacheService CacheService
+@inject IMealCatalogService CatalogService
+@inject IUserService UserService
 @inject ISuggestionService SuggestionService
 @inject HttpClient Http
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="app" dir="rtl">
-    <button @onclick='() => Nav.NavigateTo("/edit/new")' style="margin:8px 16px">+ إضافة وجبة</button>
+    <div class="dashboard-header-container">
+        <div class="user-greeting">
+            <span>مرحباً، <strong>@username</strong> 👋</span>
+            <button class="logout-btn" @onclick="ChangeUser">تغيير المستخدم</button>
+        </div>
+        <button class="add-meal-floating-btn" @onclick='() => Nav.NavigateTo("/edit/new")'>+ إضافة وجبة</button>
+    </div>
+
     <div class="header">
         <div class="header-top">
-            <h1>📅 مخطط الوجبات</h1>
+            <h1>📅 مخطط الوجبات الأسبوعي</h1>
         </div>
         <p>@WeekRangeLabel</p>
     </div>
 
     @if (isLoading)
     {
-        <p style="padding:16px; color:var(--color-text-secondary)">جارِ التحميل...</p>
+        <p style="padding:16px; color:#777; text-align:center">جارِ التحميل...</p>
     }
     else if (weekMeals.Count == 0)
     {
-        <p style="padding:16px; color:var(--color-text-secondary)">لا توجد وجبات لهذا الأسبوع</p>
+        <p style="padding:16px; color:#777; text-align:center">لا توجد وجبات لهذا الأسبوع</p>
     } 
     else
     {
@@ -47,13 +57,32 @@
 
         @if (SelectedMeal is not null)
         {
-            <div class="section-label">وجبة اليوم</div>
-            <div class="meal-card">
+            <div class="section-label">وجبة اليوم المختارة</div>
+            <div class="meal-card highlight-card">
                 <div class="meal-card-header">
                     <span class="meal-card-day">@SelectedMeal.DayName، @SelectedMeal.Date.ToString("d MMMM")</span>
-                    <span class="meal-card-badge">غداء</span>
+                    <div style="display: flex; gap: 4px;">
+                        @if (SelectedMeal.IsFavorite)
+                        {
+                            <span class="meal-card-badge favorite">⭐ مفضلة</span>
+                        }
+                        <span class="meal-card-badge">غداء</span>
+                    </div>
                 </div>
-                <div class="meal-card-name">@SelectedMeal.Name</div>
+                <div class="meal-card-name" style="cursor:pointer; font-size:18px; margin-top:8px" @onclick="() => ViewDetails(SelectedMeal)">
+                    @SelectedMeal.Name
+                </div>
+                
+                @if (SelectedMeal.SideDishes != null && SelectedMeal.SideDishes.Count > 0)
+                {
+                    <div class="side-dishes-chips" style="margin-top: 8px;">
+                        @foreach (var sd in SelectedMeal.SideDishes)
+                        {
+                            <span class="side-dish-chip">@sd</span>
+                        }
+                    </div>
+                }
+
                 <div class="meal-card-actions">
                     <button @onclick="() => EditRequested(SelectedMeal)">✏️ تعديل</button>
                     <button class="primary" @onclick="() => SuggestNew(SelectedMeal)">🔄 اقتراح جديد</button>
@@ -61,15 +90,31 @@
             </div>
         }
 
-        <div class="section-label" style="margin-top:8px">بقية الأسبوع</div>
+        <div class="section-label" style="margin-top:16px">بقية الأسبوع</div>
         @foreach (var meal in weekMeals.Where(m => m.Date != selectedDate))
         {
-            <div class="meal-card" style="opacity:0.85">
+            <div class="meal-card" style="opacity:0.85; cursor:pointer" @onclick="() => ViewDetails(meal)">
                 <div class="meal-card-header">
                     <span class="meal-card-day">@meal.DayName، @meal.Date.ToString("d MMMM")</span>
-                    <span class="meal-card-badge">غداء</span>
+                    <div style="display: flex; gap: 4px;">
+                        @if (meal.IsFavorite)
+                        {
+                            <span class="meal-card-badge favorite">⭐ مفضلة</span>
+                        }
+                        <span class="meal-card-badge">غداء</span>
+                    </div>
                 </div>
                 <div class="meal-card-name">@meal.Name</div>
+                
+                @if (meal.SideDishes != null && meal.SideDishes.Count > 0)
+                {
+                    <div class="side-dishes-chips" style="margin-top: 6px;">
+                        @foreach (var sd in meal.SideDishes)
+                        {
+                            <span class="side-dish-chip" style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #eee; margin-right: 4px;">@sd</span>
+                        }
+                    </div>
+                }
             </div>
         }
     }
@@ -80,6 +125,7 @@
     private DateOnly selectedDate;
     private DateOnly currentWeekStart;
     private bool isLoading = true;
+    private string username = "";
 
     private Meal? SelectedMeal => weekMeals.FirstOrDefault(m => m.Date == selectedDate);
 
@@ -90,10 +136,17 @@
 
     protected override async Task OnInitializedAsync()
     {
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
+
         selectedDate = DateOnly.FromDateTime(DateTime.Today);
         currentWeekStart = StartOfWeek(selectedDate);
         await EnsureSeededAsync();
-        await LoadWeekAsync(StartOfWeek(selectedDate));
+        await LoadWeekAsync(currentWeekStart);
     }
 
     private async Task EnsureSeededAsync()
@@ -101,30 +154,17 @@
         var seeded = await MealService.IsSeededAsync();
         if (seeded) return;
 
-        var seedJson = await Http.GetStringAsync("_content/MealPlanner.Shared/seed/meals_seed.json");
-        var seedMeals = System.Text.Json.JsonSerializer.Deserialize<List<SeedDto>>(seedJson,
-            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (seedMeals is null) return;
-
-        var meals = seedMeals.Select(s => new Meal
-        {
-            Id = s.Id,
-            Date = DateOnly.Parse(s.Date),
-            DayName = s.DayName,
-            Name = s.Name
-        }).ToList();
-
-        await MealService.SeedAsync(meals);
+        // Call the service's seed flow
+        await MealService.SeedAsync(new List<Meal>());
     }
 
     private async Task LoadWeekAsync(DateOnly weekStart)
     {
         isLoading = true;
 
-        // read-through cache: show cached data instantly, refresh in background
+        // read-through cache: show cached data instantly
         var cached = await CacheService.GetCachedWeekAsync();
-        if (cached is not null && cached.Count > 0)
+        if (cached is not null && cached.Count > 0 && StartOfWeek(cached.First().Date) == weekStart)
         {
             weekMeals = cached;
             isLoading = false;
@@ -134,7 +174,6 @@
         var weekEnd = weekStart.AddDays(6);
         var fresh = await MealService.GetWeekAsync(weekStart, weekEnd);
 
-        weekMeals = fresh;
         if (fresh.Count > 0)
         {
             weekMeals = fresh;
@@ -149,7 +188,7 @@
 
     private DateOnly StartOfWeek(DateOnly date)
     {
-        var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Sunday) % 7;
+        var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7;
         return date.AddDays(-diff);
     }
 
@@ -171,10 +210,31 @@
 
     private async Task SuggestNew(Meal meal)
     {
-        var suggestions = await SuggestionService.GetSuggestionsAsync(weekMeals, count: 1);
+        var suggestions = await SuggestionService.GetSuggestionsAsync(username, weekMeals, count: 1);
         if (suggestions.Count == 0) return;
 
-        meal.Name = suggestions[0];
+        var suggestedName = suggestions[0];
+        
+        // Find in catalog
+        var catalog = await CatalogService.GetAllMealsAsync();
+        var catItem = catalog.FirstOrDefault(c => c.Name.Equals(suggestedName, StringComparison.OrdinalIgnoreCase));
+        
+        meal.Name = suggestedName;
+        if (catItem != null)
+        {
+            meal.MealId = catItem.Id;
+            meal.Ingredients = catItem.Ingredients;
+            meal.SideDishes = catItem.SideDishes;
+            meal.Cuisine = catItem.Cuisine;
+            meal.MealType = catItem.MealType;
+        }
+        else
+        {
+            meal.MealId = Guid.NewGuid().ToString("N");
+            meal.Ingredients = new();
+            meal.SideDishes = new();
+        }
+
         await MealService.UpsertMealAsync(meal);
         await CacheService.SetCachedWeekAsync(weekMeals);
     }
@@ -182,6 +242,21 @@
     private void EditRequested(Meal meal)
     {
         Nav.NavigateTo($"/edit/{meal.Id}");
+    }
+
+    private void ViewDetails(Meal meal)
+    {
+        if (!string.IsNullOrEmpty(meal.MealId))
+        {
+            Nav.NavigateTo($"/meal/{meal.MealId}");
+        }
+    }
+
+    private async Task ChangeUser()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "username");
+        await CacheService.SetCachedWeekAsync(new List<Meal>());
+        Nav.NavigateTo("/onboarding/username", forceLoad: true);
     }
 
     private string ShortDayName(string fullDayName) => fullDayName switch

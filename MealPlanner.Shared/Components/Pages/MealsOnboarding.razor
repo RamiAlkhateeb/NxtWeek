@@ -1,0 +1,212 @@
+@page "/onboarding/meals"
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject IJSRuntime JS
+@inject IUserService UserService
+@inject IMealCatalogService CatalogService
+@inject IMealService MealService
+@inject IMealCacheService CacheService
+@inject NavigationManager Nav
+
+<div class="app onboarding-container" dir="rtl">
+    <div class="onboarding-card">
+        <div class="step-indicator">خطوة 3 من 3</div>
+        <h1>اختر وجباتك المفضلة</h1>
+        <p class="subtitle">اختر حتى 8 وجبات ترغب في رؤيتها ضمن اقتراحات الأسبوع الأولى. سنقوم تلقائياً بإنشاء أول جدول أسبوعي لك بناءً عليها!</p>
+        
+        <div class="counter-badge">
+            المحدد: @selectedMealIds.Count / 8
+        </div>
+
+        @if (isLoading)
+        {
+            <p style="padding:16px; text-align:center; color:#777">جارِ تحميل الوجبات...</p>
+        }
+        else
+        {
+            <div class="meals-selection-grid">
+                @foreach (var meal in availableMeals)
+                {
+                    var isSelected = selectedMealIds.Contains(meal.Id);
+                    <div class="meal-selection-card @(isSelected ? "active" : "") @(selectedMealIds.Count >= 8 && !isSelected ? "disabled" : "")" 
+                         @onclick="() => ToggleMeal(meal.Id)">
+                        <div class="meal-details">
+                            <span class="meal-name">@meal.Name</span>
+                            <div class="badges-row">
+                                <span class="badge cuisine-badge">@GetCuisineArabic(meal.Cuisine)</span>
+                                <span class="badge type-badge">@GetTypeArabic(meal.MealType)</span>
+                            </div>
+                        </div>
+                        <div class="selection-checkbox">
+                            @if (isSelected)
+                            {
+                                <span>✔</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <span class="error-msg" style="margin-top: 10px;">@error</span>
+        }
+
+        <button class="primary-btn btn-animate" @onclick="ConfirmSelection" style="margin-top: 24px;" 
+                disabled="@(selectedMealIds.Count == 0)">
+            تأكيد وإنشاء جدول الأسبوع 🎉
+        </button>
+    </div>
+</div>
+
+@code {
+    private List<MealCatalogItem> availableMeals = new();
+    private List<string> selectedMealIds = new();
+    private bool isLoading = true;
+    private string error = "";
+    private string username = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
+
+        var profile = await UserService.GetProfileAsync(username);
+        var preferredCuisines = profile?.PreferredCuisines ?? new List<Cuisine>();
+
+        // Ensure catalog is seeded first if needed
+        var seeded = await CatalogService.IsCatalogSeededAsync();
+        if (!seeded)
+        {
+            // Seed catalog by using standard seed flow or mock seed
+            await MealService.SeedAsync(new List<Meal>());
+        }
+
+        // Fetch filtered catalog meals
+        availableMeals = await CatalogService.GetFilteredMealsAsync(preferredCuisines, null);
+        
+        // If we don't have enough meals (e.g. less than 8), pull all catalog meals to show
+        if (availableMeals.Count < 10)
+        {
+            availableMeals = await CatalogService.GetAllMealsAsync();
+        }
+
+        // Select pre-existing
+        if (profile?.SelectedMealIds != null)
+        {
+            selectedMealIds = profile.SelectedMealIds.Intersect(availableMeals.Select(m => m.Id)).ToList();
+        }
+
+        isLoading = false;
+    }
+
+    private void ToggleMeal(string mealId)
+    {
+        error = "";
+        if (selectedMealIds.Contains(mealId))
+        {
+            selectedMealIds.Remove(mealId);
+        }
+        else
+        {
+            if (selectedMealIds.Count >= 8)
+            {
+                error = "يمكنك اختيار 8 وجبات كحد أقصى.";
+                return;
+            }
+            selectedMealIds.Add(mealId);
+        }
+    }
+
+    private async Task ConfirmSelection()
+    {
+        if (selectedMealIds.Count == 0)
+        {
+            error = "يرجى اختيار وجبة واحدة على الأقل.";
+            return;
+        }
+
+        isLoading = true;
+
+        // 1. Save selected meal IDs
+        await UserService.SaveSelectedMealsAsync(username, selectedMealIds);
+
+        // 2. Generate the first week plan (Monday - Sunday)
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var currentWeekStart = StartOfWeek(today);
+
+        var rng = new Random();
+        var planEntries = new List<WeeklyPlanEntry>();
+
+        for (int i = 0; i < 7; i++)
+        {
+            var date = currentWeekStart.AddDays(i);
+            // Pick a random meal from selected
+            var randomMealId = selectedMealIds[rng.Next(selectedMealIds.Count)];
+            
+            planEntries.Add(new WeeklyPlanEntry
+            {
+                Date = date,
+                MealId = randomMealId,
+                IsFavorite = false
+            });
+        }
+
+        // 3. Save weekly plan entries to Firebase
+        await UserService.SaveWeeklyPlanEntriesAsync(username, planEntries);
+
+        // 4. Force invalidate local cache by saving the generated meals to cache
+        var catalogDict = availableMeals.ToDictionary(m => m.Id, m => m);
+        var cachedMeals = planEntries.Select(entry => {
+            var catItem = catalogDict.ContainsKey(entry.MealId) ? catalogDict[entry.MealId] : null;
+            return new Meal
+            {
+                Id = entry.Date.ToString("yyyy-MM-dd"),
+                Date = entry.Date,
+                DayName = entry.Date.DayOfWeek.ToString(),
+                MealId = entry.MealId,
+                IsFavorite = entry.IsFavorite,
+                Name = catItem?.Name ?? "وجبة جديدة",
+                Ingredients = catItem?.Ingredients ?? new(),
+                SideDishes = catItem?.SideDishes ?? new(),
+                Cuisine = catItem?.Cuisine,
+                MealType = catItem?.MealType
+            };
+        }).ToList();
+        
+        await CacheService.SetCachedWeekAsync(cachedMeals);
+
+        isLoading = false;
+        Nav.NavigateTo("/");
+    }
+
+    private DateOnly StartOfWeek(DateOnly date)
+    {
+        var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+        return date.AddDays(-diff);
+    }
+
+    private string GetCuisineArabic(Cuisine cuisine) => cuisine switch
+    {
+        Cuisine.Syrian => "سوري 🇸🇾",
+        Cuisine.Turkish => "تركي 🇹🇷",
+        Cuisine.Lebanese => "لبناني 🇱🇧",
+        _ => cuisine.ToString()
+    };
+
+    private string GetTypeArabic(MealType type) => type switch
+    {
+        MealType.Meat => "لحم 🥩",
+        MealType.Chicken => "دجاج 🍗",
+        MealType.Fish => "سمك 🐟",
+        MealType.Vegetarian => "نباتي 🥦",
+        MealType.Vegan => "نباتي صرف 🌱",
+        _ => type.ToString()
+    };
+}

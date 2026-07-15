@@ -1,0 +1,146 @@
+@page "/meal/{MealId}"
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject IJSRuntime JS
+@inject IMealCatalogService CatalogService
+@inject IUserService UserService
+@inject NavigationManager Nav
+
+<div class="app meal-details-container" dir="rtl">
+    <div class="back-nav">
+        <button class="back-btn" @onclick="GoBack">❌ إغلاق</button>
+    </div>
+
+    @if (isLoading)
+    {
+        <p style="padding: 24px; text-align: center; color: #777">جارِ التحميل...</p>
+    }
+    else if (meal is null)
+    {
+        <div style="padding: 24px; text-align: center;">
+            <p style="color: #777; margin-bottom: 16px;">لم يتم العثور على تفاصيل الوجبة.</p>
+            <button class="primary-btn" @onclick="GoBack">العودة للرئيسية</button>
+        </div>
+    }
+    else
+    {
+        <div class="meal-details-hero">
+            <div class="meal-type-icon">🍳</div>
+            <h1 class="meal-title">@meal.Name</h1>
+            <div class="badges-row">
+                <span class="badge cuisine-badge">@GetCuisineArabic(meal.Cuisine)</span>
+                <span class="badge type-badge">@GetTypeArabic(meal.MealType)</span>
+                @if (isFavorite)
+                {
+                    <span class="badge favorite-badge">⭐ مفضلة</span>
+                }
+            </div>
+        </div>
+
+        <div class="details-body">
+            <div class="details-section">
+                <h2>🛒 المكونات والمقادير</h2>
+                @if (meal.Ingredients == null || meal.Ingredients.Count == 0)
+                {
+                    <p class="empty-text">لم يتم تحديد مكونات بعد لهذه الوجبة.</p>
+                }
+                else
+                {
+                    <ul class="ingredients-list">
+                        @foreach (var ing in meal.Ingredients)
+                        {
+                            <li>
+                                <span class="bullet">🔹</span>
+                                <span class="text">@ing</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <div class="details-section">
+                <h2>🥗 الأطباق الجانبية المقترحة</h2>
+                @if (meal.SideDishes == null || meal.SideDishes.Count == 0)
+                {
+                    <p class="empty-text">لم يتم اختيار أطباق جانبية بعد.</p>
+                }
+                else
+                {
+                    <div class="side-dishes-chips">
+                        @foreach (var sd in meal.SideDishes)
+                        {
+                            <span class="side-dish-chip">@sd</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="action-buttons">
+                <button class="favorite-toggle-btn @(isFavorite ? "active" : "")" @onclick="ToggleFavorite">
+                    @(isFavorite ? "⭐ إزالة من المفضلة" : "☆ إضافة للمفضلة")
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string MealId { get; set; } = string.Empty;
+
+    private MealCatalogItem? meal;
+    private bool isFavorite = false;
+    private bool isLoading = true;
+    private string username = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
+
+        meal = await CatalogService.GetMealByIdAsync(MealId);
+        
+        if (meal != null)
+        {
+            var profile = await UserService.GetProfileAsync(username);
+            isFavorite = profile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
+        }
+
+        isLoading = false;
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/");
+    }
+
+    private async Task ToggleFavorite()
+    {
+        if (meal == null) return;
+        
+        await UserService.ToggleFavoriteMealAsync(username, meal.Id);
+        isFavorite = !isFavorite;
+    }
+
+    private string GetCuisineArabic(Cuisine cuisine) => cuisine switch
+    {
+        Cuisine.Syrian => "سوري 🇸🇾",
+        Cuisine.Turkish => "تركي 🇹🇷",
+        Cuisine.Lebanese => "لبناني 🇱🇧",
+        _ => cuisine.ToString()
+    };
+
+    private string GetTypeArabic(MealType type) => type switch
+    {
+        MealType.Meat => "لحم 🥩",
+        MealType.Chicken => "دجاج 🍗",
+        MealType.Fish => "سمك 🐟",
+        MealType.Vegetarian => "نباتي 🥦",
+        MealType.Vegan => "نباتي صرف 🌱",
+        _ => type.ToString()
+    };
+}

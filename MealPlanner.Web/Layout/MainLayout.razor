@@ -1,16 +1,34 @@
-﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@inject NavigationManager Nav
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="app-shell">
+    @Body
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Nav.Uri;
+        var relative = Nav.ToBaseRelativePath(uri);
+        
+        // Skip checking if we are already on onboarding pages
+        if (relative.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        try
+        {
+            var username = await JS.InvokeAsync<string?>("localStorage.getItem", "username");
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                Nav.NavigateTo("/onboarding/username");
+            }
+        }
+        catch
+        {
+            // Safe fallback
+        }
+    }
+}
