@@ -1,13 +1,52 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject IUserService UserService
 
-<div class="app-shell">
-    @Body
+<div class="app-shell" style="flex-direction: column; align-items: center;">
+    @if (pendingRequests != null && pendingRequests.Count > 0)
+    {
+        @foreach (var reqUsername in pendingRequests.Where(x => !dismissedRequests.Contains(x)).ToList())
+        {
+            <div class="link-request-banner" style="width: 100%; max-width: 600px; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
+                    <span>🔔 طلب ربط من <strong>@reqUsername</strong> — قبول / رفض</span>
+                    <button class="btn-reject" style="padding: 4px 10px; font-size: 12px; border-width: 2px;" @onclick="() => DismissRequest(reqUsername)">إغلاق</button>
+                </div>
+                <div class="link-request-actions">
+                    <button class="btn-accept" @onclick="() => AcceptRequest(reqUsername)">قبول ✅</button>
+                    <button class="btn-reject" @onclick="() => RejectRequest(reqUsername)">رفض ❌</button>
+                </div>
+            </div>
+        }
+    }
+    
+    <div style="width: 100%; display: flex; justify-content: center; flex: 1;">
+        @Body
+    </div>
+
+    <MealPlanner.Shared.Components.BottomNav />
 </div>
 
 @code {
+    private List<string> pendingRequests = new();
+    private HashSet<string> dismissedRequests = new(StringComparer.OrdinalIgnoreCase);
+    private string currentUsername = "";
+
     protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        await CheckRequestsAsync();
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await CheckRequestsAsync();
+        StateHasChanged();
+    }
+
+    private async Task CheckRequestsAsync()
     {
         var uri = Nav.Uri;
         var relative = Nav.ToBaseRelativePath(uri);
@@ -15,20 +54,60 @@
         // Skip checking if we are already on onboarding pages
         if (relative.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase))
         {
+            pendingRequests.Clear();
             return;
         }
 
         try
         {
-            var username = await JS.InvokeAsync<string?>("localStorage.getItem", "username");
-            if (string.IsNullOrWhiteSpace(username))
+            currentUsername = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
+            if (string.IsNullOrWhiteSpace(currentUsername))
             {
                 Nav.NavigateTo("/onboarding/username");
+                return;
+            }
+
+            var profile = await UserService.GetProfileAsync(currentUsername);
+            if (profile != null)
+            {
+                pendingRequests = profile.PendingLinkRequests ?? new();
             }
         }
         catch
         {
             // Safe fallback
         }
+    }
+
+    private async Task AcceptRequest(string requesterUsername)
+    {
+        if (string.IsNullOrEmpty(currentUsername)) return;
+        await UserService.AcceptLinkRequestAsync(currentUsername, requesterUsername);
+        pendingRequests.Remove(requesterUsername);
+        dismissedRequests.Remove(requesterUsername);
+        StateHasChanged();
+        // Force reload page to reload the merged household data
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+    private async Task RejectRequest(string requesterUsername)
+    {
+        if (string.IsNullOrEmpty(currentUsername)) return;
+        await UserService.RejectLinkRequestAsync(currentUsername, requesterUsername);
+        pendingRequests.Remove(requesterUsername);
+        dismissedRequests.Remove(requesterUsername);
+        StateHasChanged();
+    }
+
+    private void DismissRequest(string requesterUsername)
+    {
+        dismissedRequests.Add(requesterUsername);
+        pendingRequests.Remove(requesterUsername);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }
