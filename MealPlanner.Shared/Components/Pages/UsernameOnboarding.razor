@@ -6,22 +6,28 @@
 @inject NavigationManager Nav
 
 <div class="app onboarding-container" dir="rtl">
-    <div class="onboarding-card">
-        <div class="logo">🍳</div>
-        <h1>مخطط الوجبات الذكي</h1>
-        <p class="subtitle">خطوتك الأولى نحو تنظيم وجباتك الأسبوعية بكل سهولة ومتعة.</p>
+    <div class="onboarding-card card-playful">
+        <div class="logo-container">
+            <span class="emoji-bounce">🍳</span>
+            <span class="emoji-float emoji-delay-1">🥑</span>
+            <span class="emoji-float emoji-delay-2">🍕</span>
+            <span class="emoji-float emoji-delay-3">🍓</span>
+        </div>
+        <h1 class="playful-title">مرحباً بك في مخطط الوجبات! 🎉</h1>
+        <p class="subtitle">طريقتك الممتعة لتنظيم وجباتك الأسبوعية مع عائلتك أو بمفردك.</p>
         
         <div class="form-group">
-            <label for="username">أدخل اسم المستخدم الخاص بك</label>
-            <input id="username" type="text" @bind="username" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="مثال: رامي، أحمد، سارة..." />
+            <label for="username" class="playful-label">اختر اسم مستخدم مميزاً:</label>
+            <input id="username" type="text" @bind="username" @bind:event="oninput" @onkeydown="HandleKeyDown" 
+                   class="playful-input" placeholder="مثال: رامي، سارة، أحمد..." />
             @if (!string.IsNullOrWhiteSpace(error))
             {
-                <span class="error-msg">@error</span>
+                <span class="error-msg text-danger mt-2 d-block">⚠️ @error</span>
             }
         </div>
 
-        <button class="primary-btn btn-animate" @onclick="SubmitUsername" disabled="@string.IsNullOrWhiteSpace(username)">
-            متابعة ‹
+        <button class="primary-btn btn-playful" @onclick="SubmitUsername" disabled="@string.IsNullOrWhiteSpace(username)">
+            يلا نبدأ! 🚀
         </button>
     </div>
 </div>
@@ -37,33 +43,40 @@
         username = username.Trim();
         if (username.Length < 2)
         {
-            error = "يجب أن يكون اسم المستخدم حرفين على الأقل.";
+            error = "اسم المستخدم قصير جداً (حرفين على الأقل).";
             return;
         }
 
-        // Check/Create profile in Firebase
-        var profile = await UserService.GetProfileAsync(username);
-        if (profile is null)
+        try 
         {
-            profile = new UserProfile
+            error = "جاري التحقق...";
+            StateHasChanged();
+            
+            // Check if username is already taken
+            var profile = await UserService.GetProfileAsync(username);
+            if (profile is not null)
+            {
+                error = "اسم المستخدم غير متاح";
+                return;
+            }
+
+            // Create new profile (this will auto-create the solo household)
+            var newProfile = new UserProfile
             {
                 Username = username
             };
-            await UserService.CreateProfileAsync(profile);
-        }
+            await UserService.CreateProfileAsync(newProfile);
 
-        // Save to local storage
-        await JS.InvokeVoidAsync("localStorage.setItem", "username", username);
+            // Save to local storage
+            await JS.InvokeVoidAsync("localStorage.setItem", "username", username);
+            UserService.ClearCachedHouseholdId(); // reset cache for new user
 
-        // Redirect based on onboarding status
-        if (profile.PreferredCuisines != null && profile.PreferredCuisines.Count > 0 && 
-            profile.SelectedMealIds != null && profile.SelectedMealIds.Count > 0)
-        {
-            Nav.NavigateTo("/");
-        }
-        else
-        {
+            error = "";
             Nav.NavigateTo("/onboarding/cuisines");
+        }
+        catch (Exception ex)
+        {
+            error = $"حدث خطأ ما: {ex.Message}";
         }
     }
 
