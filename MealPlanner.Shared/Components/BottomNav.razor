@@ -1,0 +1,64 @@
+@inject NavigationManager Nav
+@implements IDisposable
+
+@if (!IsOnboarding())
+{
+    <div class="bottom-nav-container" dir="rtl">
+        <a href="" class="bottom-nav-item @(IsActive("") ? "active" : "")">
+            <span class="bottom-nav-icon">📅</span>
+            <span>الأسبوع</span>
+        </a>
+        <a href="meals" class="bottom-nav-item @(IsActive("meals") ? "active" : "")">
+            <span class="bottom-nav-icon">🍽️</span>
+            <span>كل الوجبات</span>
+        </a>
+        <a href="list" class="bottom-nav-item @(IsActive("list") ? "active" : "")">
+            <span class="bottom-nav-icon">📋</span>
+            <span>القائمة</span>
+        </a>
+        <a href="settings" class="bottom-nav-item @(IsActive("settings") ? "active" : "")">
+            <span class="bottom-nav-icon">⚙️</span>
+            <span>الإعدادات</span>
+        </a>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    private bool IsOnboarding()
+    {
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        return relative.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsActive(string path)
+    {
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        
+        // Remove query parameters if any (e.g. ?date=2026-07-16)
+        var qIdx = relative.IndexOf('?');
+        if (qIdx >= 0)
+        {
+            relative = relative.Substring(0, qIdx);
+        }
+        
+        relative = relative.Trim('/');
+        path = path.Trim('/');
+        
+        return relative.Equals(path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+}
