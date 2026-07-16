@@ -1,0 +1,124 @@
+@page "/settings"
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject IJSRuntime JS
+@inject IUserService UserService
+@inject NavigationManager Nav
+
+<div class="app app-content-wrapper" dir="rtl">
+    <div class="header">
+        <h1>⚙️ الإعدادات</h1>
+        <p>تخصيص التطبيق وربط الحسابات</p>
+    </div>
+
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+        <!-- User Info Card -->
+        <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size: 14px; color: var(--color-text-secondary);">اسم المستخدم الحالي:</div>
+            <div style="font-size: 22px; font-weight: 900; color: var(--color-text-main);">@username 👋</div>
+            
+            <button class="primary-btn btn-playful" style="margin-top: 12px; background: #E74C3C !important;" @onclick="Logout">
+                🚪 تسجيل الخروج / تغيير المستخدم
+            </button>
+        </div>
+
+        <!-- Account Linking Card -->
+        <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">🔗 ربط حسابك</h2>
+            <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.6;">
+                قم بربط حسابك مع شريكك أو أفراد عائلتك لمشاركة جدول الوجبات الأسبوعي وقائمة المشتريات تلقائياً! 🥳
+            </p>
+
+            <div class="form-group" style="margin: 0;">
+                <label for="other-username" class="playful-label" style="font-size: 13px !important;">اسم مستخدم الشخص الآخر:</label>
+                <input id="other-username" type="text" @bind="otherUsername" @bind:event="oninput" 
+                       class="playful-input" style="width: 100%;" placeholder="مثال: أحمد، سارة..." />
+            </div>
+
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="alert-playful" style="padding: 10px; font-size: 13px; text-align: center; background: @(isError ? "#FDEDEC" : "#E8F8F5"); color: @(isError ? "#C0392B" : "#117A65"); border-color: #2D3748;">
+                    @statusMessage
+                </div>
+            }
+
+            <button class="primary-btn btn-playful" @onclick="SendRequest" disabled="@(string.IsNullOrWhiteSpace(otherUsername) || isSending)">
+                @(isSending ? "جاري الإرسال..." : "إرسال طلب ربط 📲")
+            </button>
+        </div>
+
+        <!-- Info / Illustration card -->
+        <div class="card-playful" style="padding: 20px; background: var(--color-primary-light); display: flex; align-items: center; gap: 16px;">
+            <div style="font-size: 40px;">💡</div>
+            <div style="font-size: 12px; color: #2D3748; font-weight: 700; line-height: 1.6; text-align: right;">
+                عند قبول الطلب، سيتم دمج جدول الوجبات وسيرث الحساب المقبول جدول الطرف الآخر لتصبحوا في منزل واحد! 🏡
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string otherUsername = "";
+    private string statusMessage = "";
+    private bool isError = false;
+    private bool isSending = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        username = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+        }
+    }
+
+    private async Task SendRequest()
+    {
+        if (string.IsNullOrWhiteSpace(otherUsername)) return;
+        otherUsername = otherUsername.Trim();
+
+        if (otherUsername.Equals(username, StringComparison.OrdinalIgnoreCase))
+        {
+            isError = true;
+            statusMessage = "لا يمكنك إرسال طلب ربط لنفسك! 🧐";
+            return;
+        }
+
+        isSending = true;
+        statusMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            var success = await UserService.SendLinkRequestAsync(username, otherUsername);
+            if (success)
+            {
+                isError = false;
+                statusMessage = $"تم إرسال طلب الربط بنجاح إلى {otherUsername}! 🎉 بانتظار قبوله.";
+                otherUsername = "";
+            }
+            else
+            {
+                isError = true;
+                statusMessage = "عذراً، لم نجد مستخدماً بهذا الاسم 🧐 تحقق من الاسم وحاول مجدداً.";
+            }
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"حدث خطأ: {ex.Message}";
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "username");
+        UserService.ClearCachedHouseholdId();
+        Nav.NavigateTo("/onboarding/username", forceLoad: true);
+    }
+}
