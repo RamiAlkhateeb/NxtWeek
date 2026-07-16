@@ -1,0 +1,138 @@
+@page "/list"
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject IMealService MealService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="app app-content-wrapper" dir="rtl">
+    <div class="header">
+        <h1>📋 قائمة المشتريات</h1>
+        <p>المكونات المطلوبة لتحضير وجبات هذا الأسبوع</p>
+    </div>
+
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">
+        @if (isLoading)
+        {
+            <p style="text-align: center; color: var(--color-text-secondary); padding: 20px;">جاري تحميل المكونات... ⏳</p>
+        }
+        else if (ingredientsList.Count == 0)
+        {
+            <!-- Empty state illustration -->
+            <div class="card-playful" style="padding: 30px; text-align: center;">
+                <div style="font-size: 60px; margin-bottom: 16px;">🛒</div>
+                <h3 style="font-weight: 800; color: var(--color-text-main);">السلّة فاضية... 🧐</h3>
+                <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 8px; line-height: 1.6;">
+                    الجدول فاضي لهذا الأسبوع، أو الوجبات المحددة ما فيها مكونات مسجلة. يلا نضيف وجبات ونملي السلّة! 🍳
+                </p>
+                <button class="primary-btn btn-playful" style="margin-top: 20px;" @onclick='() => Nav.NavigateTo("/")'>
+                    الذهاب للجدول الأسبوعي 📅
+                </button>
+            </div>
+        }
+        else
+        {
+            <!-- Summary card -->
+            <div class="card-playful" style="padding: 16px; background: var(--color-primary-light); display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-weight: 800; color: var(--color-text-main); font-size: 14px;">إجمالي المواد المطلوبة:</span>
+                <span class="playful-badge" style="font-size: 13px; padding: 4px 12px;">@ingredientsList.Count أغراض</span>
+            </div>
+
+            <!-- Checklist -->
+            <div class="card-playful" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                @foreach (var ingredient in ingredientsList)
+                {
+                    var isChecked = checkedIngredients.ContainsKey(ingredient);
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--color-border); cursor: pointer;"
+                         @onclick="() => ToggleChecked(ingredient)">
+                        <div class="selection-checkbox" style="width: 22px; height: 22px; border: 2.5px solid #2D3748; background: @(isChecked ? "#2ECC71" : "#fff"); color: @(isChecked ? "#fff" : "transparent"); border-radius: 6px; font-weight: bold; display: flex; align-items: center; justify-content: center;">
+                            ✓
+                        </div>
+                        <span style="font-size: 15px; font-weight: 700; color: @(isChecked ? "var(--color-text-secondary)" : "var(--color-text-main)"); text-decoration: @(isChecked ? "line-through" : "none"); transition: all 0.2s;">
+                            @ingredient
+                        </span>
+                    </div>
+                }
+            </div>
+
+            <button class="primary-btn btn-playful" style="background: #95A5A6 !important;" @onclick="ClearChecked">
+                🧹 مسح العناصر المكتملة
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private List<string> ingredientsList = new();
+    private Dictionary<string, bool> checkedIngredients = new();
+    private string username = "";
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        username = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
+
+        // Calculate current week start and end
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var startOfWeek = StartOfWeek(today);
+        var endOfWeek = startOfWeek.AddDays(6);
+
+        // Fetch week meals
+        var meals = await MealService.GetWeekAsync(startOfWeek, endOfWeek);
+
+        // Extract and clean ingredients
+        var ingredients = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var meal in meals)
+        {
+            if (!string.IsNullOrEmpty(meal.Name) && meal.Ingredients != null)
+            {
+                foreach (var ing in meal.Ingredients)
+                {
+                    var cleanIng = ing.Trim();
+                    if (!string.IsNullOrEmpty(cleanIng))
+                    {
+                        ingredients.Add(cleanIng);
+                    }
+                }
+            }
+        }
+
+        ingredientsList = ingredients.OrderBy(x => x).ToList();
+
+        // Restore checked status from sessionStorage/localStorage if desired, but local page state is fine for simple usage.
+        isLoading = false;
+    }
+
+    private DateOnly StartOfWeek(DateOnly date)
+    {
+        var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+        return date.AddDays(-diff);
+    }
+
+    private void ToggleChecked(string ingredient)
+    {
+        if (checkedIngredients.ContainsKey(ingredient))
+        {
+            checkedIngredients.Remove(ingredient);
+        }
+        else
+        {
+            checkedIngredients[ingredient] = true;
+        }
+    }
+
+    private void ClearChecked()
+    {
+        foreach (var key in checkedIngredients.Keys)
+        {
+            ingredientsList.Remove(key);
+        }
+        checkedIngredients.Clear();
+    }
+}
