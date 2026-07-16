@@ -16,4 +16,17 @@ public interface IUserService
     Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string username, DateOnly start, DateOnly end);
     Task SaveWeeklyPlanEntryAsync(string username, WeeklyPlanEntry entry);
     Task SaveWeeklyPlanEntriesAsync(string username, List<WeeklyPlanEntry> entries);
+
+        
+    // Household helpers
+    Task<string> GetHouseholdIdAsync(string username);
+    void ClearCachedHouseholdId();
+
+    // Account Linking
+    Task<bool> SendLinkRequestAsync(string fromUsername, string toUsername);
+    Task AcceptLinkRequestAsync(string acceptingUsername, string requesterUsername);
+    Task RejectLinkRequestAsync(string acceptingUsername, string requesterUsername);
+    
+    // Shared Date Assignment
+    Task AssignMealToDateAsync(string username, DateOnly date, string mealId);
 }
