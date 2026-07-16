@@ -1,0 +1,380 @@
+@page "/meals"
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject IMealCatalogService CatalogService
+@inject IUserService UserService
+@inject IMealCacheService CacheService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="app app-content-wrapper" dir="rtl">
+    <div class="header">
+        <h1>🍽️ مكتبة الوجبات</h1>
+        <p>تصفح كل الوجبات وأضفها لجدولك الأسبوعي</p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <input type="text" class="playful-input" style="width:100%;" 
+               placeholder="🔍 ابحث عن وجبة..." 
+               @bind="searchText" @bind:event="oninput" />
+
+        <!-- Cuisine Filter Chips -->
+        <div>
+            <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">المطبخ:</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="side-dish-toggle-chip @(selectedCuisine == null ? "active" : "")" @onclick="() => SetCuisine(null)">الكل</button>
+                <button class="side-dish-toggle-chip @(selectedCuisine == Cuisine.Syrian ? "active" : "")" @onclick="() => SetCuisine(Cuisine.Syrian)">🇸🇾 سوري</button>
+                <button class="side-dish-toggle-chip @(selectedCuisine == Cuisine.Turkish ? "active" : "")" @onclick="() => SetCuisine(Cuisine.Turkish)">🇹🇷 تركي</button>
+                <button class="side-dish-toggle-chip @(selectedCuisine == Cuisine.Lebanese ? "active" : "")" @onclick="() => SetCuisine(Cuisine.Lebanese)">🇱🇧 لبناني</button>
+            </div>
+        </div>
+
+        <!-- Meal Type Filter Chips -->
+        <div>
+            <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">النوع:</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="side-dish-toggle-chip @(selectedMealType == null ? "active" : "")" @onclick="() => SetMealType(null)">الكل</button>
+                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Meat ? "active" : "")" @onclick="() => SetMealType(MealType.Meat)">🥩 لحم</button>
+                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Chicken ? "active" : "")" @onclick="() => SetMealType(MealType.Chicken)">🍗 دجاج</button>
+                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Fish ? "active" : "")" @onclick="() => SetMealType(MealType.Fish)">🐟 سمك</button>
+                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Vegetarian ? "active" : "")" @onclick="() => SetMealType(MealType.Vegetarian)">🥦 نباتي</button>
+                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Vegan ? "active" : "")" @onclick="() => SetMealType(MealType.Vegan)">🌱 نباتي صرف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Playful Toast Confirmation -->
+    @if (!string.IsNullOrEmpty(confirmMessage))
+    {
+        <div style="padding: 0 16px;">
+            <div class="alert-playful" style="padding: 12px; text-align: center; margin-bottom: 12px; font-size: 14px;">
+                🎉 @confirmMessage
+            </div>
+        </div>
+    }
+
+    <!-- Meals List -->
+    <div style="padding: 0 16px 20px; display: flex; flex-direction: column; gap: 14px;">
+        @if (isLoading)
+        {
+            <p style="text-align: center; color: var(--color-text-secondary); padding: 20px;">جاري تحميل الوجبات... ⏳</p>
+        }
+        else if (FilteredMeals.Count == 0)
+        {
+            <!-- Empty state illustration -->
+            <div class="card-playful" style="padding: 30px; text-align: center;">
+                <div style="font-size: 50px; margin-bottom: 12px;">🍳</div>
+                <h3 style="font-weight: 800; color: var(--color-text-main);">ما لقينا وجبات!</h3>
+                <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 6px;">جرب تغيير كلمة البحث أو الفلاتر لتجد وجبتك المفضلة.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var meal in FilteredMeals)
+            {
+                var isSelected = userProfile?.SelectedMealIds?.Contains(meal.Id) ?? false;
+                <div class="card-playful @(isSelected ? "playful-card-selected" : "")" 
+                     style="padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative;">
+                    
+                    <!-- Badge if in SelectedMealIds -->
+                    @if (isSelected)
+                    {
+                        <span class="playful-badge" style="position: absolute; left: 16px; top: 16px;">
+                            ✓ ضمن قائمتي
+                        </span>
+                    }
+
+                    <!-- Card Body -->
+                    <div @onclick="() => NavigateToDetails(meal.Id)" style="cursor: pointer;">
+                        <h3 style="font-size: 17px; font-weight: 800; color: var(--color-text-main); margin-bottom: 4px; padding-left: 80px;">@meal.Name</h3>
+                        <div class="badges-row">
+                            <span class="badge cuisine-badge">@GetCuisineLabel(meal.Cuisine)</span>
+                            <span class="badge type-badge">@GetMealTypeLabel(meal.MealType)</span>
+                        </div>
+                    </div>
+
+                    <!-- Assign trigger -->
+                    @if (activeAssignMealId == meal.Id)
+                    {
+                        <!-- Assignment flow inline -->
+                        <div style="margin-top: 12px; border-top: 1px dashed var(--color-border); padding-top: 12px;">
+                            <span style="font-size: 12px; font-weight: bold; color: var(--color-text-main); display: block; margin-bottom: 8px;">اختر يوماً لإضافة الوجبة:</span>
+                            <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
+                                @foreach (var day in currentWeekDays)
+                                {
+                                    var planDate = day;
+                                    <button class="day-pill" style="min-width: 65px; border-color: #2D3748;" 
+                                            @onclick="() => AssignMeal(meal, planDate)">
+                                        <span class="day-name" style="font-size: 10px;">@GetDayNameArabic(planDate.DayOfWeek)</span>
+                                        <span class="day-num" style="font-size: 13px;">@planDate.ToString("dd/MM")</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Button to trigger assignment flow -->
+                        <button class="primary-btn btn-playful" style="margin-top: 8px; padding: 8px; font-size: 13px;" 
+                                @onclick="() => ToggleAssignFlow(meal.Id)">
+                            ➕ أضف لهذا الأسبوع
+                        </button>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Conflict Replacement Modal -->
+@if (showReplaceModal)
+{
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 16px;">
+        <div class="card-playful" style="max-width: 400px; width: 100%; padding: 24px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 12px;">🤨</div>
+            <h3 style="font-weight: 900; font-size: 18px; color: var(--color-text-main);">تأكيد الاستبدال</h3>
+            <p style="font-size: 14px; color: var(--color-text-secondary); margin: 12px 0 20px; line-height: 1.6;">
+                يوم <strong>@GetDayNameArabic(replaceDate.DayOfWeek) (@replaceDate.ToString("dd/MM"))</strong> فيه وجبة <strong>@replaceExistingMealName</strong>.
+                هل تريد استبدالها بـ <strong>@replaceNewMealName</strong>؟
+            </p>
+            <div style="display: flex; gap: 12px;">
+                <button class="primary-btn btn-playful" style="background: #2ECC71 !important; flex: 1;" @onclick="ConfirmReplace">
+                    استبدال ✅
+                </button>
+                <button class="primary-btn btn-playful" style="background: #E74C3C !important; flex: 1;" @onclick="() => showReplaceModal = false">
+                    إلغاء ❌
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<MealCatalogItem> allMeals = new();
+    private List<WeeklyPlanEntry> currentWeekPlan = new();
+    private UserProfile? userProfile;
+    private List<DateOnly> currentWeekDays = new();
+    
+    private string username = "";
+    private bool isLoading = true;
+    private string searchText = "";
+    
+    private Cuisine? selectedCuisine;
+    private MealType? selectedMealType;
+    
+    private string activeAssignMealId = "";
+    private string confirmMessage = "";
+    private System.Threading.Timer? confirmTimer;
+
+    // Replace Modal State
+    private bool showReplaceModal = false;
+    private DateOnly replaceDate;
+    private string replaceMealId = "";
+    private string replaceExistingMealName = "";
+    private string replaceNewMealName = "";
+    private MealCatalogItem? replaceCatalogItem;
+
+    private List<MealCatalogItem> FilteredMeals
+    {
+        get
+        {
+            var query = allMeals.AsEnumerable();
+            
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+            }
+            
+            if (selectedCuisine.HasValue)
+            {
+                query = query.Where(m => m.Cuisine == selectedCuisine.Value);
+            }
+            
+            if (selectedMealType.HasValue)
+            {
+                query = query.Where(m => m.MealType == selectedMealType.Value);
+            }
+            
+            return query.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        username = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+            return;
+        }
+
+        // Generate current week dates (Monday to Sunday)
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var startOfWeek = StartOfWeek(today);
+        currentWeekDays = Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
+
+        // Load data
+        allMeals = await CatalogService.GetAllMealsAsync();
+        userProfile = await UserService.GetProfileAsync(username);
+        currentWeekPlan = await UserService.GetWeeklyPlanAsync(username, startOfWeek, startOfWeek.AddDays(6));
+
+        isLoading = false;
+    }
+
+    private DateOnly StartOfWeek(DateOnly date)
+    {
+        var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+        return date.AddDays(-diff);
+    }
+
+    private void SetCuisine(Cuisine? cuisine)
+    {
+        selectedCuisine = cuisine;
+    }
+
+    private void SetMealType(MealType? type)
+    {
+        selectedMealType = type;
+    }
+
+    private void NavigateToDetails(string mealId)
+    {
+        Nav.NavigateTo($"/meal/{mealId}");
+    }
+
+    private void ToggleAssignFlow(string mealId)
+    {
+        if (activeAssignMealId == mealId)
+        {
+            activeAssignMealId = "";
+        }
+        else
+        {
+            activeAssignMealId = mealId;
+        }
+    }
+
+    private async Task AssignMeal(MealCatalogItem meal, DateOnly date)
+    {
+        var existingEntry = currentWeekPlan.FirstOrDefault(e => e.Date == date);
+        if (existingEntry is null)
+        {
+            // Empty -> Assign directly
+            await ExecuteAssignment(meal, date);
+        }
+        else
+        {
+            // Occupied -> Trigger replace modal
+            replaceDate = date;
+            replaceMealId = meal.Id;
+            replaceCatalogItem = meal;
+            replaceNewMealName = meal.Name;
+            
+            var existingMeal = allMeals.FirstOrDefault(m => m.Id == existingEntry.MealId);
+            replaceExistingMealName = existingMeal?.Name ?? "وجبة أخرى";
+            
+            showReplaceModal = true;
+        }
+    }
+
+    private async Task ConfirmReplace()
+    {
+        showReplaceModal = false;
+        if (replaceCatalogItem is not null)
+        {
+            await ExecuteAssignment(replaceCatalogItem, replaceDate);
+        }
+    }
+
+    private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
+    {
+        isLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            await UserService.AssignMealToDateAsync(username, date, meal.Id);
+            
+            // Update local week plan
+            currentWeekPlan.RemoveAll(e => e.Date == date);
+            currentWeekPlan.Add(new WeeklyPlanEntry { Date = date, MealId = meal.Id, IsFavorite = false });
+
+            // Force Dashboard cache update so WeekPage immediately displays the changes
+            var currentCache = await CacheService.GetCachedWeekAsync();
+            if (currentCache is not null)
+            {
+                currentCache.RemoveAll(m => m.Id == date.ToString("yyyy-MM-dd"));
+                var updated = new Meal
+                {
+                    Id = date.ToString("yyyy-MM-dd"),
+                    Date = date,
+                    DayName = date.DayOfWeek.ToString(),
+                    Name = meal.Name,
+                    MealId = meal.Id,
+                    IsFavorite = false,
+                    SideDishes = meal.SideDishes,
+                    Ingredients = meal.Ingredients,
+                    Cuisine = meal.Cuisine,
+                    MealType = meal.MealType
+                };
+                currentCache.Add(updated);
+                await CacheService.SetCachedWeekAsync(currentCache);
+            }
+
+            activeAssignMealId = "";
+            ShowPlayfulConfirm($"تمت إضافة {meal.Name} ليوم {GetDayNameArabic(date.DayOfWeek)}! 😋");
+        }
+        catch (Exception ex)
+        {
+            ShowPlayfulConfirm($"حدث خطأ أثناء الإضافة: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowPlayfulConfirm(string message)
+    {
+        confirmMessage = message;
+        confirmTimer?.Dispose();
+        confirmTimer = new System.Threading.Timer(_ => 
+        {
+            confirmMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, 3500, System.Threading.Timeout.Infinite);
+    }
+
+    private string GetCuisineLabel(Cuisine cuisine) => cuisine switch
+    {
+        Cuisine.Syrian => "🇸🇾 سوري",
+        Cuisine.Turkish => "🇹🇷 تركي",
+        Cuisine.Lebanese => "🇱🇧 لبناني",
+        _ => cuisine.ToString()
+    };
+
+    private string GetMealTypeLabel(MealType type) => type switch
+    {
+        MealType.Meat => "🥩 لحوم",
+        MealType.Chicken => "🍗 دجاج",
+        MealType.Fish => "🐟 أسماك",
+        MealType.Vegetarian => "🥦 نباتي",
+        MealType.Vegan => "🌱 نباتي صرف",
+        _ => type.ToString()
+    };
+
+    private string GetDayNameArabic(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => "الاثنين",
+        DayOfWeek.Tuesday => "الثلاثاء",
+        DayOfWeek.Wednesday => "الأربعاء",
+        DayOfWeek.Thursday => "الخميس",
+        DayOfWeek.Friday => "الجمعة",
+        DayOfWeek.Saturday => "السبت",
+        DayOfWeek.Sunday => "الأحد",
+        _ => day.ToString()
+    };
+}
