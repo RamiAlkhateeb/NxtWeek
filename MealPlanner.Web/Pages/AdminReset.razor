@@ -1,0 +1,46 @@
+@page "/admin/reset"
+@using MealPlanner.Shared.Services
+@inject HttpClient Http
+@inject FirebaseOptions Options
+
+<div style="padding: 50px; text-align: center; font-family: sans-serif;">
+    <h2>⚠️ صفحة إعادة ضبط قاعدة البيانات</h2>
+    <p>سيتم حذف كافة البيانات والجداول والمستخدمين من قاعدة البيانات.</p>
+    
+    @if (!string.IsNullOrEmpty(status))
+    {
+        <div style="margin: 20px; padding: 10px; background: #eee; border-radius: 5px;">
+            @status
+        </div>
+    }
+
+    <button @onclick="ResetDatabase" style="padding: 15px 30px; background: red; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px;">
+        ⚠️ حذف كل البيانات
+    </button>
+</div>
+
+@code {
+    private string status = "";
+
+    private async Task ResetDatabase()
+    {
+        try
+        {
+            status = "جاري حذف البيانات...";
+            var baseUrl = Options.DatabaseUrl.TrimEnd('/');
+            var response = await Http.PutAsJsonAsync<object?>($"{baseUrl}/.json", null);
+            if (response.IsSuccessStatusCode)
+            {
+                status = "تم حذف كل البيانات بنجاح! 🎉";
+            }
+            else
+            {
+                status = $"فشل الحذف: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            status = $"خطأ: {ex.Message}";
+        }
+    }
+}
