@@ -16,7 +16,7 @@
             <span>مرحباً، <strong>@username</strong> 👋</span>
             <button class="logout-btn" @onclick="ChangeUser">تغيير المستخدم</button>
         </div>
-        <button class="add-meal-floating-btn btn-playful" @onclick='() => Nav.NavigateTo("/edit/new")'>+ إضافة وجبة</button>
+        <button class="add-meal-btn-sm" title="إضافة وجبة" @onclick='() => Nav.NavigateTo("/edit/new")'>+</button>
     </div>
 
     <div class="header">
@@ -28,16 +28,16 @@
 
     @if (isLoading)
     {
-        <p style="padding:16px; color:#777; text-align:center">جارِ التحميل...</p>
+        <p class="loading-text">جارِ التحميل...</p>
     }
     else if (weekMeals.Count == 0)
     {
-        <div class="card-playful" style="margin: 16px; padding: 24px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 10px;">🍳</div>
-            <h3 style="font-weight: 800; color: var(--color-text-main);">الجدول فاضي... وقت نملّيه! 🌟</h3>
-            <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 8px;">ابدأ بإضافة وجبة جديدة أو جرّب اختيار واحدة من المكتبة.</p>
+        <div class="card-playful empty-state">
+            <div class="empty-state-icon">🍳</div>
+            <div class="empty-state-title">الجدول فاضي... وقت نملّيه!</div>
+            <p class="empty-state-text">ابدأ بإضافة وجبة جديدة أو جرّب اختيار واحدة من المكتبة.</p>
         </div>
-    } 
+    }
     else
     {
         <div class="week-header">
@@ -65,7 +65,7 @@
             <div class="meal-card highlight-card">
                 <div class="meal-card-header">
                     <span class="meal-card-day">@SelectedMeal.DayName، @SelectedMeal.Date.ToString("d MMMM")</span>
-                    <div style="display: flex; gap: 4px;">
+                    <div class="meal-card-badge-row">
                         @if (SelectedMeal.IsFavorite)
                         {
                             <span class="meal-card-badge favorite">⭐ مفضلة</span>
@@ -73,13 +73,14 @@
                         <span class="meal-card-badge">غداء</span>
                     </div>
                 </div>
-                <div class="meal-card-name" style="cursor:pointer; font-size:18px; margin-top:8px" @onclick="() => ViewDetails(SelectedMeal)">
+
+                <div class="meal-card-name" @onclick="() => ViewDetails(SelectedMeal)">
                     @SelectedMeal.Name
                 </div>
-                
+
                 @if (SelectedMeal.SideDishes != null && SelectedMeal.SideDishes.Count > 0)
                 {
-                    <div class="side-dishes-chips" style="margin-top: 8px;">
+                    <div class="side-dishes-chips">
                         @foreach (var sd in SelectedMeal.SideDishes)
                         {
                             <span class="side-dish-chip">@sd</span>
@@ -94,13 +95,13 @@
             </div>
         }
 
-        <div class="section-label" style="margin-top:16px">بقية الأسبوع</div>
+        <div class="section-label">بقية الأسبوع</div>
         @foreach (var meal in weekMeals.Where(m => m.Date != selectedDate))
         {
-            <div class="meal-card" style="opacity:0.85; cursor:pointer" @onclick="() => ViewDetails(meal)">
+            <div class="meal-card secondary" @onclick="() => ViewDetails(meal)">
                 <div class="meal-card-header">
                     <span class="meal-card-day">@meal.DayName، @meal.Date.ToString("d MMMM")</span>
-                    <div style="display: flex; gap: 4px;">
+                    <div class="meal-card-badge-row">
                         @if (meal.IsFavorite)
                         {
                             <span class="meal-card-badge favorite">⭐ مفضلة</span>
@@ -108,14 +109,15 @@
                         <span class="meal-card-badge">غداء</span>
                     </div>
                 </div>
+
                 <div class="meal-card-name">@meal.Name</div>
-                
+
                 @if (meal.SideDishes != null && meal.SideDishes.Count > 0)
                 {
-                    <div class="side-dishes-chips" style="margin-top: 6px;">
+                    <div class="side-dishes-chips">
                         @foreach (var sd in meal.SideDishes)
                         {
-                            <span class="side-dish-chip" style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #eee; margin-right: 4px;">@sd</span>
+                            <span class="side-dish-chip-sm">@sd</span>
                         }
                     </div>
                 }
@@ -123,6 +125,7 @@
         }
     }
 </div>
+
 
 @code {
     private List<Meal> weekMeals = new();
