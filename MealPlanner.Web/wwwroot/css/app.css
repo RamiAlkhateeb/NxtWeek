@@ -39,6 +39,28 @@ html, body {
     color: var(--color-text-main);
 }
 
+/* Blazor adds this element to index.html for genuine fatal errors.  It must
+   remain hidden during normal operation; the runtime makes it visible only
+   when an unhandled error occurs. */
+#blazor-error-ui {
+    display: none;
+    background: #fff3cd;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.15);
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem;
+    position: fixed;
+    width: 100%;
+    z-index: 2000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
 .app {
     width: 100%;
     max-width: 600px;
