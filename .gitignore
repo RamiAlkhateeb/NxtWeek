@@ -28,6 +28,9 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
+# Local Blazor publish output (Firebase hosting source)
+/output/
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 

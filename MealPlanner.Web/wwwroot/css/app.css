@@ -65,8 +65,26 @@ html, body {
 
 /* Spacing so content isn't hidden behind the fixed bottom nav */
 .app-content-wrapper {
-    padding-bottom: 90px;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
     flex: 1;
+}
+
+/* Blazor only reveals this banner after an unhandled runtime error. */
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 2000;
+    padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: #fff3cd;
+    color: #664d03;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.18);
+    text-align: center;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    float: right;
 }
 
 /* ==========================================================================

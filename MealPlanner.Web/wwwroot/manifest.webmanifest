@@ -1,6 +1,6 @@
 {
-  "name": "MealPlanner.Web",
-  "short_name": "MealPlanner.Web",
+  "name": "Meal Planner",
+  "short_name": "Meal Planner",
   "id": "./",
   "start_url": "./",
   "display": "standalone",
