@@ -1,0 +1,259 @@
+@page "/settings/import"
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using System.Text.RegularExpressions
+@using MealPlanner.Shared.Services
+@using MealPlanner.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject IUserService UserService
+@inject IMealCatalogService CatalogService
+@inject IMealCacheService CacheService
+@inject NavigationManager Nav
+
+<div class="app app-content-wrapper" dir="rtl">
+    <div class="header">
+        <button class="back-btn" @onclick="GoBack" style="margin-bottom: 12px;">➔ عودة للإعدادات</button>
+        <h1>📥 استيراد السجل الذكي</h1>
+        <p>قم برفع ملف JSON يحتوي على سجل وجباتك. سيقوم النظام بمحاولة مطابقة الأسماء مع القائمة الخاصة بك وتحويل التواريخ تلقائياً.</p>
+    </div>
+
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+        <div class="card-playful" style="padding: 24px; text-align: center;">
+            <div style="font-size: 40px; margin-bottom: 16px;">📂</div>
+            
+            <InputFile OnChange="HandleFileSelected" class="playful-input" accept=".json" style="margin-bottom: 16px;" />
+            
+            @if (isProcessing)
+            {
+                <p style="color: var(--color-text-secondary); font-weight: bold;">جاري معالجة ومطابقة البيانات... ⏳</p>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="background: #FDE8E8; color: var(--color-error); padding: 12px; border-radius: var(--radius-sm); margin-top: 12px; font-weight: 600; font-size: 14px;">
+                    @errorMessage
+                </div>
+            }
+
+            @if (isSuccess)
+            {
+                <div style="background: #E8F8F5; color: var(--color-success); padding: 12px; border-radius: var(--radius-sm); margin-top: 12px; font-weight: 600; font-size: 14px;">
+                    تم استيراد @importedCount وجبة بنجاح! 🎉
+                </div>
+            }
+
+            @if (skippedMeals.Count > 0)
+            {
+                <div style="background: #FEF9E7; color: var(--color-warning); padding: 12px; border-radius: var(--radius-sm); margin-top: 12px; font-size: 13px; text-align: right;">
+                    <strong>⚠️ لم نتمكن من مطابقة @skippedMeals.Count وجبات (تأكد من وجودها في مكتبة الوجبات):</strong>
+                    <ul style="margin-top: 8px; padding-right: 20px;">
+                        @foreach (var skip in skippedMeals.Take(5))
+                        {
+                            <li>@skip</li>
+                        }
+                        @if (skippedMeals.Count > 5)
+                        {
+                            <li>...و @(skippedMeals.Count - 5) وجبات أخرى.</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+
+        <button class="primary-btn" disabled="@(selectedFile == null || isProcessing)" @onclick="UploadHistory">
+            🚀 تحويل ورفع السجل
+        </button>
+    </div>
+</div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private bool isProcessing = false;
+    private bool isSuccess = false;
+    private string errorMessage = "";
+    private string username = "";
+    
+    private int importedCount = 0;
+    private List<string> skippedMeals = new();
+
+    // 1. The Raw Input Format (Your Nov.json)
+    private class RawMealDto
+    {
+        [JsonPropertyName("Date")]
+        public string DateStr { get; set; } = "";
+        
+        [JsonPropertyName("Day")]
+        public string Day { get; set; } = "";
+        
+        [JsonPropertyName("Meal")]
+        public string MealName { get; set; } = "";
+    }
+
+    // 2. The Target Database Format
+    private class TargetMealDto
+    {
+        [JsonPropertyName("mealId")]
+        public string MealId { get; set; } = "";
+        
+        [JsonPropertyName("isFavorite")]
+        public bool IsFavorite { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            Nav.NavigateTo("/onboarding/username");
+        }
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/settings");
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        errorMessage = "";
+        isSuccess = false;
+        importedCount = 0;
+        skippedMeals.Clear();
+        selectedFile = e.File;
+        
+        if (selectedFile.ContentType != "application/json" && !selectedFile.Name.EndsWith(".json"))
+        {
+            errorMessage = "الرجاء اختيار ملف JSON صالح.";
+            selectedFile = null;
+        }
+    }
+
+    // Parses string like "Date(2025,10,2)" into "2025-10-02"
+    private string ParseDate(string rawDate)
+    {
+        if (string.IsNullOrWhiteSpace(rawDate)) return "";
+
+        var match = Regex.Match(rawDate, @"Date\((\d+),\s*(\d+),\s*(\d+)\)");
+        if (match.Success)
+        {
+            int year = int.Parse(match.Groups[1].Value);
+            int month = int.Parse(match.Groups[2].Value);
+            int day = int.Parse(match.Groups[3].Value);
+            return new DateOnly(year, month, day).ToString("yyyy-MM-dd");
+        }
+
+        // Fallback just in case standard formatting is ever used
+        if (DateTime.TryParse(rawDate, out var dt))
+        {
+            return dt.ToString("yyyy-MM-dd");
+        }
+
+        return "";
+    }
+
+    private async Task UploadHistory()
+    {
+        if (selectedFile == null) return;
+
+        isProcessing = true;
+        errorMessage = "";
+        isSuccess = false;
+        importedCount = 0;
+        skippedMeals.Clear();
+        StateHasChanged();
+
+        try
+        {
+            // 1. Read the array of meals from the user's file
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024); // 1 MB limit
+            var rawData = await JsonSerializer.DeserializeAsync<List<RawMealDto>>(stream);
+
+            if (rawData == null || rawData.Count == 0)
+            {
+                errorMessage = "الملف فارغ أو لا يتطابق مع الهيكل المتوقع.";
+                return;
+            }
+
+            // 2. Fetch the Meal Catalog to match string names to Firebase IDs
+            var catalog = await CatalogService.GetAllMealsAsync();
+            if (catalog == null || !catalog.Any())
+            {
+                errorMessage = "لم نتمكن من جلب مكتبة الوجبات الخاصة بك للمطابقة.";
+                return;
+            }
+
+            // 3. Convert Data
+            var patchData = new Dictionary<string, TargetMealDto>();
+
+            foreach (var raw in rawData)
+            {
+                var formattedDate = ParseDate(raw.DateStr);
+                if (string.IsNullOrEmpty(formattedDate)) continue;
+
+                // Smart string matching (ignores exact casing, checks if it contains the word)
+                var matchedMeal = catalog.FirstOrDefault(m => 
+                    m.Name.Contains(raw.MealName.Trim(), StringComparison.OrdinalIgnoreCase) || 
+                    raw.MealName.Contains(m.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (matchedMeal != null)
+                {
+                    patchData[formattedDate] = new TargetMealDto
+                    {
+                        MealId = matchedMeal.Id,
+                        IsFavorite = false
+                    };
+                }
+                else
+                {
+                    // Track meals that couldn't be found so the user isn't confused
+                    skippedMeals.Add($"تاريخ {formattedDate}: {raw.MealName}");
+                }
+            }
+
+            if (patchData.Count == 0)
+            {
+                errorMessage = "لم يتم التعرف على أي وجبة في الملف. تأكد من أن أسماء الوجبات في الملف تتطابق مع مكتبة الوجبات.";
+                return;
+            }
+
+            // 4. Submit to Firebase
+            var profile = await UserService.GetProfileAsync(username);
+            if (string.IsNullOrEmpty(profile?.HouseholdId))
+            {
+                errorMessage = "لم يتم العثور على حسابك. يرجى تسجيل الدخول مجدداً.";
+                return;
+            }
+
+            // Change Base URL config mechanism if you rely on FirebaseOptions
+            var dbUrl = $"https://YOUR-FIREBASE-PROJECT.firebaseio.com/households/{profile.HouseholdId}/weeklyPlan.json";
+            
+            var response = await Http.PatchAsJsonAsync(dbUrl, patchData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isSuccess = true;
+                importedCount = patchData.Count;
+                selectedFile = null;
+                await CacheService.SetCachedWeekAsync(new List<Meal>()); 
+            }
+            else
+            {
+                errorMessage = $"حدث خطأ أثناء الاتصال بقاعدة البيانات: {response.StatusCode}";
+            }
+        }
+        catch (JsonException)
+        {
+            errorMessage = "فشل قراءة الملف. تأكد من أنه عبارة عن مصفوفة Array (يبدأ بـ [ وينتهي بـ ]).";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"حدث خطأ غير متوقع: {ex.Message}";
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+}

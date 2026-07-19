@@ -14,6 +14,7 @@ public interface IUserService
     Task SaveFavoriteMealsAsync(string username, List<string> mealIds);
     Task ToggleFavoriteMealAsync(string username, string mealId);
     Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string username, DateOnly start, DateOnly end);
+    Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string username, int year, int month);
     Task SaveWeeklyPlanEntryAsync(string username, WeeklyPlanEntry entry);
     Task SaveWeeklyPlanEntriesAsync(string username, List<WeeklyPlanEntry> entries);
 

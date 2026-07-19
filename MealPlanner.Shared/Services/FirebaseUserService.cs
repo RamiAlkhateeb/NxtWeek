@@ -165,6 +165,12 @@ public class FirebaseUserService : IUserService
         return entries.OrderBy(e => e.Date).ToList();
     }
 
+    public Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string username, int year, int month)
+    {
+        var start = new DateOnly(year, month, 1);
+        return GetWeeklyPlanAsync(username, start, start.AddMonths(1).AddDays(-1));
+    }
+
     public async Task SaveWeeklyPlanEntryAsync(string username, WeeklyPlanEntry entry)
     {
         var householdId = await GetHouseholdIdAsync(username);

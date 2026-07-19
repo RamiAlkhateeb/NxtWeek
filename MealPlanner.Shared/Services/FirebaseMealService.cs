@@ -112,7 +112,7 @@ public class FirebaseMealService : IMealService
             MealId = mealId,
             IsFavorite = meal.IsFavorite
         };
-        await _userService.AssignMealToDateAsync(username, meal.Date, mealId);
+        await _userService.SaveWeeklyPlanEntryAsync(username, entry);
     }
 
     public async Task<bool> IsSeededAsync()

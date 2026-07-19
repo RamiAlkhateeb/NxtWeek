@@ -1,0 +1,89 @@
+@page "/month"
+@using System.Globalization
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IUserService UserService
+@inject IMealCatalogService CatalogService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="app app-content-wrapper month-page" dir="rtl">
+    <div class="month-header">
+        <button aria-label="الشهر السابق" @onclick="PreviousMonth">‹</button>
+        <h1>@MonthLabel</h1>
+        <button aria-label="الشهر القادم" @onclick="NextMonth">›</button>
+    </div>
+
+    @if (isLoading)
+    {
+        <p class="loading-text">جارِ التحميل...</p>
+    }
+    else
+    {
+        <div class="month-weekdays">
+            @foreach (var day in WeekdayLabels) { <span>@day</span> }
+        </div>
+        <div class="month-grid">
+            @foreach (var day in calendarDays)
+            {
+                @if (day is null)
+                {
+                    <div class="month-cell month-outside"></div>
+                }
+                else
+                {
+                    var entry = entries.TryGetValue(day.Value, out var found) ? found : null;
+                    <button class="month-cell @(day.Value == today ? "today" : "")" disabled="@(entry is null)" @onclick="() => OpenMeal(entry)">
+                        <span class="month-day-number">@day.Value.Day</span>
+                        @if (entry is not null)
+                        {
+                            <span class="month-meal-name" title="@entry.Name">@entry.Name</span>
+                            @if (entry.IsFavorite) { <span class="month-favorite">⭐</span> }
+                        }
+                    </button>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private readonly Dictionary<DateOnly, MonthMeal> entries = new();
+    private List<DateOnly?> calendarDays = new();
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+    private static readonly CultureInfo ArabicCulture = new("ar-EG");
+    private static readonly string[] WeekdayLabels = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"];
+    private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private bool isLoading = true;
+    private string username = "";
+    private string MonthLabel => currentMonth.ToString("MMMM yyyy", ArabicCulture);
+
+    protected override async Task OnInitializedAsync()
+    {
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        if (string.IsNullOrWhiteSpace(username)) { Nav.NavigateTo("/onboarding/username"); return; }
+        await LoadMonthAsync();
+    }
+
+    private async Task LoadMonthAsync()
+    {
+        isLoading = true;
+        entries.Clear();
+        var plan = await UserService.GetMonthPlanAsync(username, currentMonth.Year, currentMonth.Month);
+        var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id, m => m.Name);
+        foreach (var item in plan)
+            if (catalog.TryGetValue(item.MealId, out var name)) entries[item.Date] = new(name, item.MealId, item.IsFavorite);
+
+        var firstOffset = ((int)currentMonth.DayOfWeek + 6) % 7;
+        var daysInMonth = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
+        var cellCount = firstOffset + daysInMonth;
+        cellCount += (7 - cellCount % 7) % 7;
+        calendarDays = Enumerable.Range(0, cellCount).Select(i => i < firstOffset || i >= firstOffset + daysInMonth ? (DateOnly?)null : currentMonth.AddDays(i - firstOffset)).ToList();
+        isLoading = false;
+    }
+
+    private async Task PreviousMonth() { currentMonth = currentMonth.AddMonths(-1); await LoadMonthAsync(); }
+    private async Task NextMonth() { currentMonth = currentMonth.AddMonths(1); await LoadMonthAsync(); }
+    private void OpenMeal(MonthMeal? meal) { if (meal is not null) Nav.NavigateTo($"/meal/{meal.MealId}"); }
+    private sealed record MonthMeal(string Name, string MealId, bool IsFavorite);
+}
