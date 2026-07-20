@@ -19,10 +19,20 @@
   private bool busy;
   protected override async Task OnInitializedAsync()
   {
+    Console.WriteLine("[SignInPage] OnInitializedAsync started. Attempting to complete sign-in...");
     // Same-browser flows use the session email hint; cross-device flows intentionally ask again.
     var user = await Auth.CompleteSignInAsync(email);
-    if (user is { Uid.Length: > 0 }) Nav.NavigateTo("/onboarding/username", true);
-    else if (user is not null) message = "اكتب البريد الإلكتروني الذي استلم الرابط لإكمال تسجيل الدخول.";
+    Console.WriteLine($"[SignInPage] CompleteSignInAsync returned user: {(user == null ? "null" : user.Uid)}");
+    if (user is { Uid.Length: > 0 })
+    {
+        Console.WriteLine("[SignInPage] Sign-in successful. Redirecting to /onboarding/username.");
+        Nav.NavigateTo("/onboarding/username", true);
+    }
+    else if (user is not null)
+    {
+        Console.WriteLine("[SignInPage] Sign-in returned a placeholder/non-null user (probably email hint required).");
+        message = "اكتب البريد الإلكتروني الذي استلم الرابط لإكمال تسجيل الدخول.";
+    }
   }
   private async Task Send()
   {

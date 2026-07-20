@@ -79,17 +79,23 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("[WeekPage] OnInitializedAsync started.");
         var user = await Auth.GetCurrentUserAsync();
+        Console.WriteLine($"[WeekPage] User returned: {(user == null ? "null" : user.Uid)}");
         if (user is null || string.IsNullOrEmpty(user.Uid))
         {
+            Console.WriteLine("[WeekPage] No user session. Redirecting to /auth/signin.");
             Nav.NavigateTo("/auth/signin");
             return;
         }
         uid = user.Uid;
 
+        Console.WriteLine($"[WeekPage] Loading profile for UID: {uid}...");
         var profile = await UserService.GetProfileAsync(uid);
+        Console.WriteLine($"[WeekPage] Profile returned: {(profile == null ? "null" : profile.DisplayName)}");
         if (profile is null || string.IsNullOrWhiteSpace(profile.DisplayName))
         {
+            Console.WriteLine("[WeekPage] Profile or DisplayName is missing. Redirecting to /onboarding/username.");
             Nav.NavigateTo("/onboarding/username");
             return;
         }

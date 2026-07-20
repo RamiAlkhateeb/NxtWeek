@@ -51,18 +51,22 @@
     private async Task CheckRequestsAsync()
     {
         var relative = Nav.ToBaseRelativePath(Nav.Uri);
+        Console.WriteLine($"[MainLayout] CheckRequestsAsync called for path: {relative}");
 
         // Don't check on auth/onboarding pages — user may not be signed in yet
         if (relative.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase) ||
             relative.StartsWith("auth", StringComparison.OrdinalIgnoreCase))
         {
+            Console.WriteLine("[MainLayout] On onboarding/auth page. Clearing pending requests and returning.");
             pendingRequests.Clear();
             return;
         }
 
         try
         {
+            Console.WriteLine("[MainLayout] Fetching current user...");
             var user = await Auth.GetCurrentUserAsync();
+            Console.WriteLine($"[MainLayout] Current user is: {(user == null ? "null" : user.Uid)}");
             if (user is null || string.IsNullOrEmpty(user.Uid))
             {
                 pendingRequests.Clear();
@@ -70,7 +74,9 @@
             }
             currentUid = user.Uid;
 
+            Console.WriteLine($"[MainLayout] Fetching profile for UID: {currentUid}...");
             var profile = await UserService.GetProfileAsync(currentUid);
+            Console.WriteLine($"[MainLayout] Profile loaded: {(profile == null ? "null" : profile.DisplayName)}");
             if (profile?.PendingLinkRequestUids is { Count: > 0 } uids)
             {
                 var requests = new List<PendingRequest>();
