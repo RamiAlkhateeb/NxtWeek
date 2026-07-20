@@ -1,7 +1,7 @@
 @page "/settings"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
-@inject IJSRuntime JS
+@inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
 
@@ -14,9 +14,10 @@
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
         <!-- User Info Card -->
         <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 8px;">
-            <div style="font-size: 14px; color: var(--color-text-secondary);">اسم المستخدم الحالي:</div>
-            <div style="font-size: 22px; font-weight: 900; color: var(--color-text-main);">@username 👋</div>
-            
+            <div style="font-size: 14px; color: var(--color-text-secondary);">مرحباً،</div>
+            <div style="font-size: 22px; font-weight: 900; color: var(--color-text-main);">@displayName 👋</div>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">@email</div>
+
             <div class="card-playful" style="margin-top: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
                 <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">📂 استيراد سجل الوجبات</h2>
                 <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.6;">
@@ -28,21 +29,39 @@
             </div>
 
             <button class="primary-btn btn-playful" style="margin-top: 12px; background: #E74C3C !important;" @onclick="Logout">
-                🚪 تسجيل الخروج / تغيير المستخدم
+                🚪 تسجيل الخروج
             </button>
         </div>
+
+        <!-- Pending Link Requests Card -->
+        @if (pendingRequests.Count > 0)
+        {
+            <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">📬 طلبات ربط واردة</h2>
+                @foreach (var req in pendingRequests)
+                {
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px dashed var(--color-border); padding-bottom: 10px;">
+                        <span style="font-size: 14px; font-weight: 700;">@req.DisplayName <span style="font-size: 11px; color: var(--color-text-secondary);">(@req.Uid)</span></span>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="primary-btn btn-playful" style="padding: 6px 12px; font-size: 12px; background: #2ECC71 !important;" @onclick="() => AcceptRequest(req.Uid)">قبول ✅</button>
+                            <button class="primary-btn btn-playful" style="padding: 6px 12px; font-size: 12px; background: #E74C3C !important;" @onclick="() => RejectRequest(req.Uid)">رفض ❌</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
 
         <!-- Account Linking Card -->
         <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
             <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">🔗 ربط حسابك</h2>
             <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.6;">
-                قم بربط حسابك مع شريكك أو أفراد عائلتك لمشاركة جدول الوجبات الأسبوعي وقائمة المشتريات تلقائياً! 🥳
+                أدخل معرّف المستخدم (UID) أو البريد الإلكتروني للشخص الذي تريد الربط معه لمشاركة جدول الوجبات الأسبوعي.
             </p>
 
             <div class="form-group" style="margin: 0;">
-                <label for="other-username" class="playful-label" style="font-size: 13px !important;">اسم مستخدم الشخص الآخر:</label>
-                <input id="other-username" type="text" @bind="otherUsername" @bind:event="oninput" 
-                       class="playful-input" style="width: 100%;" placeholder="مثال: أحمد، سارة..." />
+                <label for="other-uid" class="playful-label" style="font-size: 13px !important;">معرّف المستخدم الآخر (UID):</label>
+                <input id="other-uid" type="text" @bind="otherUid" @bind:event="oninput"
+                       class="playful-input" style="width: 100%;" placeholder="أدخل معرّف المستخدم..." />
             </div>
 
             @if (!string.IsNullOrEmpty(statusMessage))
@@ -52,12 +71,12 @@
                 </div>
             }
 
-            <button class="primary-btn btn-playful" @onclick="SendRequest" disabled="@(string.IsNullOrWhiteSpace(otherUsername) || isSending)">
+            <button class="primary-btn btn-playful" @onclick="SendRequest" disabled="@(string.IsNullOrWhiteSpace(otherUid) || isSending)">
                 @(isSending ? "جاري الإرسال..." : "إرسال طلب ربط 📲")
             </button>
         </div>
 
-        <!-- Info / Illustration card -->
+        <!-- Info Card -->
         <div class="card-playful" style="padding: 20px; background: var(--color-primary-light); display: flex; align-items: center; gap: 16px;">
             <div style="font-size: 40px;">💡</div>
             <div style="font-size: 12px; color: #2D3748; font-weight: 700; line-height: 1.6; text-align: right;">
@@ -68,27 +87,47 @@
 </div>
 
 @code {
-    private string username = "";
-    private string otherUsername = "";
+    private string uid = "";
+    private string displayName = "";
+    private string email = "";
+    private string otherUid = "";
     private string statusMessage = "";
     private bool isError = false;
     private bool isSending = false;
+    private List<PendingRequest> pendingRequests = new();
+
+    private sealed record PendingRequest(string Uid, string DisplayName);
 
     protected override async Task OnInitializedAsync()
     {
-        username = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/auth/signin");
+            return;
+        }
+        uid = user.Uid;
+        email = user.Email;
+
+        var profile = await UserService.GetProfileAsync(uid);
+        displayName = profile?.DisplayName ?? email;
+
+        if (profile?.PendingLinkRequestUids != null)
+        {
+            foreach (var requesterUid in profile.PendingLinkRequestUids)
+            {
+                var requesterProfile = await UserService.GetProfileAsync(requesterUid);
+                pendingRequests.Add(new PendingRequest(requesterUid, requesterProfile?.DisplayName ?? requesterUid));
+            }
         }
     }
 
     private async Task SendRequest()
     {
-        if (string.IsNullOrWhiteSpace(otherUsername)) return;
-        otherUsername = otherUsername.Trim();
+        if (string.IsNullOrWhiteSpace(otherUid)) return;
+        otherUid = otherUid.Trim();
 
-        if (otherUsername.Equals(username, StringComparison.OrdinalIgnoreCase))
+        if (otherUid.Equals(uid, StringComparison.OrdinalIgnoreCase))
         {
             isError = true;
             statusMessage = "لا يمكنك إرسال طلب ربط لنفسك! 🧐";
@@ -101,17 +140,17 @@
 
         try
         {
-            var success = await UserService.SendLinkRequestAsync(username, otherUsername);
+            var success = await UserService.SendLinkRequestAsync(uid, otherUid);
             if (success)
             {
                 isError = false;
-                statusMessage = $"تم إرسال طلب الربط بنجاح إلى {otherUsername}! 🎉 بانتظار قبوله.";
-                otherUsername = "";
+                statusMessage = "تم إرسال طلب الربط بنجاح! 🎉 بانتظار قبوله.";
+                otherUid = "";
             }
             else
             {
                 isError = true;
-                statusMessage = "عذراً، لم نجد مستخدماً بهذا الاسم 🧐 تحقق من الاسم وحاول مجدداً.";
+                statusMessage = "عذراً، لم نجد مستخدماً بهذا المعرّف 🧐 تحقق من المعرّف وحاول مجدداً.";
             }
         }
         catch (Exception ex)
@@ -125,10 +164,40 @@
         }
     }
 
+    private async Task AcceptRequest(string requesterUid)
+    {
+        try
+        {
+            await UserService.AcceptLinkRequestAsync(uid, requesterUid);
+            pendingRequests.RemoveAll(r => r.Uid == requesterUid);
+            isError = false;
+            statusMessage = "تم قبول الطلب ودمج الحسابات في منزل واحد! 🏡";
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"حدث خطأ: {ex.Message}";
+        }
+    }
+
+    private async Task RejectRequest(string requesterUid)
+    {
+        try
+        {
+            await UserService.RejectLinkRequestAsync(uid, requesterUid);
+            pendingRequests.RemoveAll(r => r.Uid == requesterUid);
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            statusMessage = $"حدث خطأ: {ex.Message}";
+        }
+    }
+
     private async Task Logout()
     {
-        await JS.InvokeVoidAsync("localStorage.removeItem", "username");
+        await Auth.SignOutAsync();
         UserService.ClearCachedHouseholdId();
-        Nav.NavigateTo("/onboarding/username", forceLoad: true);
+        Nav.NavigateTo("/auth/signin", forceLoad: true);
     }
 }

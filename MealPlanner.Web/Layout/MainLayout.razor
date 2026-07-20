@@ -1,27 +1,27 @@
 @inherits LayoutComponentBase
 @implements IDisposable
-@inject IJSRuntime JS
-@inject NavigationManager Nav
+@inject IAuthService Auth
 @inject IUserService UserService
+@inject NavigationManager Nav
 
 <div class="app-shell" style="flex-direction: column; align-items: center;">
-    @if (pendingRequests != null && pendingRequests.Count > 0)
+    @if (pendingRequests.Count > 0)
     {
-        @foreach (var reqUsername in pendingRequests.Where(x => !dismissedRequests.Contains(x)).ToList())
+        @foreach (var req in pendingRequests.Where(x => !dismissedRequests.Contains(x.Uid)).ToList())
         {
             <div class="link-request-banner" style="width: 100%; max-width: 600px; box-sizing: border-box;">
                 <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
-                    <span>🔔 طلب ربط من <strong>@reqUsername</strong> — قبول / رفض</span>
-                    <button class="btn-reject" style="padding: 4px 10px; font-size: 12px; border-width: 2px;" @onclick="() => DismissRequest(reqUsername)">إغلاق</button>
+                    <span>🔔 طلب ربط من <strong>@req.DisplayName</strong> — قبول / رفض</span>
+                    <button class="btn-reject" style="padding: 4px 10px; font-size: 12px; border-width: 2px;" @onclick="() => DismissRequest(req.Uid)">إغلاق</button>
                 </div>
                 <div class="link-request-actions">
-                    <button class="btn-accept" @onclick="() => AcceptRequest(reqUsername)">قبول ✅</button>
-                    <button class="btn-reject" @onclick="() => RejectRequest(reqUsername)">رفض ❌</button>
+                    <button class="btn-accept" @onclick="() => AcceptRequest(req.Uid)">قبول ✅</button>
+                    <button class="btn-reject" @onclick="() => RejectRequest(req.Uid)">رفض ❌</button>
                 </div>
             </div>
         }
     }
-    
+
     <div style="width: 100%; display: flex; justify-content: center; flex: 1;">
         @Body
     </div>
@@ -30,9 +30,11 @@
 </div>
 
 @code {
-    private List<string> pendingRequests = new();
+    private sealed record PendingRequest(string Uid, string DisplayName);
+
+    private List<PendingRequest> pendingRequests = new();
     private HashSet<string> dismissedRequests = new(StringComparer.OrdinalIgnoreCase);
-    private string currentUsername = "";
+    private string currentUid = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,11 +50,11 @@
 
     private async Task CheckRequestsAsync()
     {
-        var uri = Nav.Uri;
-        var relative = Nav.ToBaseRelativePath(uri);
-        
-        // Skip checking if we are already on onboarding pages
-        if (relative.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase))
+        var relative = Nav.ToBaseRelativePath(Nav.Uri);
+
+        // Don't check on auth/onboarding pages — user may not be signed in yet
+        if (relative.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase) ||
+            relative.StartsWith("auth", StringComparison.OrdinalIgnoreCase))
         {
             pendingRequests.Clear();
             return;
@@ -60,49 +62,59 @@
 
         try
         {
-            currentUsername = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
-            if (string.IsNullOrWhiteSpace(currentUsername))
+            var user = await Auth.GetCurrentUserAsync();
+            if (user is null || string.IsNullOrEmpty(user.Uid))
             {
-                Nav.NavigateTo("/onboarding/username");
+                pendingRequests.Clear();
                 return;
             }
+            currentUid = user.Uid;
 
-            var profile = await UserService.GetProfileAsync(currentUsername);
-            if (profile != null)
+            var profile = await UserService.GetProfileAsync(currentUid);
+            if (profile?.PendingLinkRequestUids is { Count: > 0 } uids)
             {
-                pendingRequests = profile.PendingLinkRequests ?? new();
+                var requests = new List<PendingRequest>();
+                foreach (var uid in uids)
+                {
+                    var p = await UserService.GetProfileAsync(uid);
+                    requests.Add(new PendingRequest(uid, p?.DisplayName ?? uid));
+                }
+                pendingRequests = requests;
+            }
+            else
+            {
+                pendingRequests.Clear();
             }
         }
         catch
         {
-            // Safe fallback
+            // Safe fallback — don't crash the layout
         }
     }
 
-    private async Task AcceptRequest(string requesterUsername)
+    private async Task AcceptRequest(string requesterUid)
     {
-        if (string.IsNullOrEmpty(currentUsername)) return;
-        await UserService.AcceptLinkRequestAsync(currentUsername, requesterUsername);
-        pendingRequests.Remove(requesterUsername);
-        dismissedRequests.Remove(requesterUsername);
+        if (string.IsNullOrEmpty(currentUid)) return;
+        await UserService.AcceptLinkRequestAsync(currentUid, requesterUid);
+        pendingRequests.RemoveAll(r => r.Uid == requesterUid);
+        dismissedRequests.Remove(requesterUid);
         StateHasChanged();
-        // Force reload page to reload the merged household data
         Nav.NavigateTo(Nav.Uri, forceLoad: true);
     }
 
-    private async Task RejectRequest(string requesterUsername)
+    private async Task RejectRequest(string requesterUid)
     {
-        if (string.IsNullOrEmpty(currentUsername)) return;
-        await UserService.RejectLinkRequestAsync(currentUsername, requesterUsername);
-        pendingRequests.Remove(requesterUsername);
-        dismissedRequests.Remove(requesterUsername);
+        if (string.IsNullOrEmpty(currentUid)) return;
+        await UserService.RejectLinkRequestAsync(currentUid, requesterUid);
+        pendingRequests.RemoveAll(r => r.Uid == requesterUid);
+        dismissedRequests.Remove(requesterUid);
         StateHasChanged();
     }
 
-    private void DismissRequest(string requesterUsername)
+    private void DismissRequest(string requesterUid)
     {
-        dismissedRequests.Add(requesterUsername);
-        pendingRequests.Remove(requesterUsername);
+        dismissedRequests.Add(requesterUid);
+        pendingRequests.RemoveAll(r => r.Uid == requesterUid);
         StateHasChanged();
     }
 

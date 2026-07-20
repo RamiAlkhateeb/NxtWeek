@@ -1,7 +1,7 @@
 @page "/onboarding/cuisines"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
-@inject IJSRuntime JS
+@inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
 
@@ -10,20 +10,20 @@
         <div class="step-indicator">خطوة 2 من 3</div>
         <h1>المطابخ المفضلة</h1>
         <p class="subtitle">اختر المطابخ التي تفضل وجباتها لتخصيص اقتراحات الأسبوع.</p>
-        
+
         <div class="cuisines-grid">
             <div class="cuisine-card @(selectedCuisines.Contains(Cuisine.Syrian) ? "active" : "")" @onclick="() => ToggleCuisine(Cuisine.Syrian)">
                 <span class="flag">🇸🇾</span>
                 <span class="name">المطبخ السوري</span>
                 <span class="description">يتميز بالمشويات، الكبب، والمفركات الشهية</span>
             </div>
-            
+
             <div class="cuisine-card @(selectedCuisines.Contains(Cuisine.Turkish) ? "active" : "")" @onclick="() => ToggleCuisine(Cuisine.Turkish)">
                 <span class="flag">🇹🇷</span>
                 <span class="name">المطبخ التركي</span>
                 <span class="description">يشتهر بالمعجنات، اللحوم المشوية، والبوريك المميز</span>
             </div>
-            
+
             <div class="cuisine-card @(selectedCuisines.Contains(Cuisine.Lebanese) ? "active" : "")" @onclick="() => ToggleCuisine(Cuisine.Lebanese)">
                 <span class="flag">🇱🇧</span>
                 <span class="name">المطبخ اللبناني</span>
@@ -45,35 +45,30 @@
 @code {
     private List<Cuisine> selectedCuisines = new();
     private string error = "";
-    private string username = "";
+    private string uid = "";
 
     protected override async Task OnInitializedAsync()
     {
-        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/auth/signin");
             return;
         }
+        uid = user.Uid;
 
-        var profile = await UserService.GetProfileAsync(username);
+        var profile = await UserService.GetProfileAsync(uid);
         if (profile?.PreferredCuisines != null)
-        {
             selectedCuisines = profile.PreferredCuisines.ToList();
-        }
     }
 
     private void ToggleCuisine(Cuisine cuisine)
     {
         error = "";
         if (selectedCuisines.Contains(cuisine))
-        {
             selectedCuisines.Remove(cuisine);
-        }
         else
-        {
             selectedCuisines.Add(cuisine);
-        }
     }
 
     private async Task SaveCuisines()
@@ -83,8 +78,7 @@
             error = "يرجى اختيار مطبخ واحد على الأقل للمتابعة.";
             return;
         }
-
-        await UserService.SavePreferredCuisinesAsync(username, selectedCuisines);
+        await UserService.SavePreferredCuisinesAsync(uid, selectedCuisines);
         Nav.NavigateTo("/onboarding/meals");
     }
 }

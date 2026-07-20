@@ -3,9 +3,9 @@
 @using MealPlanner.Shared.Models
 @inject IMealCatalogService CatalogService
 @inject IUserService UserService
+@inject IAuthService Auth
 @inject IMealCacheService CacheService
 @inject NavigationManager Nav
-@inject IJSRuntime JS
 
 <div class="app app-content-wrapper" dir="rtl">
     <div class="header">
@@ -15,8 +15,8 @@
 
     <!-- Search and Filters -->
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
-        <input type="text" class="playful-input" style="width:100%;" 
-               placeholder="🔍 ابحث عن وجبة..." 
+        <input type="text" class="playful-input" style="width:100%;"
+               placeholder="🔍 ابحث عن وجبة..."
                @bind="searchText" @bind:event="oninput" />
 
         <!-- Cuisine Filter Chips -->
@@ -62,7 +62,6 @@
         }
         else if (FilteredMeals.Count == 0)
         {
-            <!-- Empty state illustration -->
             <div class="card-playful" style="padding: 30px; text-align: center;">
                 <div style="font-size: 50px; margin-bottom: 12px;">🍳</div>
                 <h3 style="font-weight: 800; color: var(--color-text-main);">ما لقينا وجبات!</h3>
@@ -74,10 +73,9 @@
             @foreach (var meal in FilteredMeals)
             {
                 var isSelected = userProfile?.SelectedMealIds?.Contains(meal.Id) ?? false;
-                <div class="card-playful @(isSelected ? "playful-card-selected" : "")" 
+                <div class="card-playful @(isSelected ? "playful-card-selected" : "")"
                      style="padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative;">
-                    
-                    <!-- Badge if in SelectedMealIds -->
+
                     @if (isSelected)
                     {
                         <span class="playful-badge" style="position: absolute; left: 16px; top: 16px;">
@@ -85,7 +83,6 @@
                         </span>
                     }
 
-                    <!-- Card Body -->
                     <div @onclick="() => NavigateToDetails(meal.Id)" style="cursor: pointer;">
                         <h3 style="font-size: 17px; font-weight: 800; color: var(--color-text-main); margin-bottom: 4px; padding-left: 80px;">@meal.Name</h3>
                         <div class="badges-row">
@@ -94,17 +91,15 @@
                         </div>
                     </div>
 
-                    <!-- Assign trigger -->
                     @if (activeAssignMealId == meal.Id)
                     {
-                        <!-- Assignment flow inline -->
                         <div style="margin-top: 12px; border-top: 1px dashed var(--color-border); padding-top: 12px;">
                             <span style="font-size: 12px; font-weight: bold; color: var(--color-text-main); display: block; margin-bottom: 8px;">اختر يوماً لإضافة الوجبة:</span>
                             <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
                                 @foreach (var day in currentWeekDays)
                                 {
                                     var planDate = day;
-                                    <button class="day-pill" style="min-width: 65px; border-color: #2D3748;" 
+                                    <button class="day-pill" style="min-width: 65px; border-color: #2D3748;"
                                             @onclick="() => AssignMeal(meal, planDate)">
                                         <span class="day-name" style="font-size: 10px;">@GetDayNameArabic(planDate.DayOfWeek)</span>
                                         <span class="day-num" style="font-size: 13px;">@planDate.ToString("dd/MM")</span>
@@ -115,8 +110,7 @@
                     }
                     else
                     {
-                        <!-- Button to trigger assignment flow -->
-                        <button class="primary-btn btn-playful" style="margin-top: 8px; padding: 8px; font-size: 13px;" 
+                        <button class="primary-btn btn-playful" style="margin-top: 8px; padding: 8px; font-size: 13px;"
                                 @onclick="() => ToggleAssignFlow(meal.Id)">
                             ➕ أضف لهذا الأسبوع
                         </button>
@@ -155,19 +149,18 @@
     private List<WeeklyPlanEntry> currentWeekPlan = new();
     private UserProfile? userProfile;
     private List<DateOnly> currentWeekDays = new();
-    
-    private string username = "";
+
+    private string uid = "";
     private bool isLoading = true;
     private string searchText = "";
-    
+
     private Cuisine? selectedCuisine;
     private MealType? selectedMealType;
-    
+
     private string activeAssignMealId = "";
     private string confirmMessage = "";
     private System.Threading.Timer? confirmTimer;
 
-    // Replace Modal State
     private bool showReplaceModal = false;
     private DateOnly replaceDate;
     private string replaceMealId = "";
@@ -180,22 +173,12 @@
         get
         {
             var query = allMeals.AsEnumerable();
-            
             if (!string.IsNullOrWhiteSpace(searchText))
-            {
                 query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
-            }
-            
             if (selectedCuisine.HasValue)
-            {
                 query = query.Where(m => m.Cuisine == selectedCuisine.Value);
-            }
-            
             if (selectedMealType.HasValue)
-            {
                 query = query.Where(m => m.MealType == selectedMealType.Value);
-            }
-            
             return query.ToList();
         }
     }
@@ -203,22 +186,21 @@
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        username = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/auth/signin");
             return;
         }
+        uid = user.Uid;
 
-        // Generate current week dates (Monday to Sunday)
         var today = DateOnly.FromDateTime(DateTime.Today);
         var startOfWeek = StartOfWeek(today);
         currentWeekDays = Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
 
-        // Load data
         allMeals = await CatalogService.GetAllMealsAsync();
-        userProfile = await UserService.GetProfileAsync(username);
-        currentWeekPlan = await UserService.GetWeeklyPlanAsync(username, startOfWeek, startOfWeek.AddDays(6));
+        userProfile = await UserService.GetProfileAsync(uid);
+        currentWeekPlan = await UserService.GetWeeklyPlanAsync(uid, startOfWeek, startOfWeek.AddDays(6));
 
         isLoading = false;
     }
@@ -229,31 +211,13 @@
         return date.AddDays(-diff);
     }
 
-    private void SetCuisine(Cuisine? cuisine)
-    {
-        selectedCuisine = cuisine;
-    }
-
-    private void SetMealType(MealType? type)
-    {
-        selectedMealType = type;
-    }
-
-    private void NavigateToDetails(string mealId)
-    {
-        Nav.NavigateTo($"/meal/{mealId}");
-    }
+    private void SetCuisine(Cuisine? cuisine) => selectedCuisine = cuisine;
+    private void SetMealType(MealType? type) => selectedMealType = type;
+    private void NavigateToDetails(string mealId) => Nav.NavigateTo($"/meal/{mealId}");
 
     private void ToggleAssignFlow(string mealId)
     {
-        if (activeAssignMealId == mealId)
-        {
-            activeAssignMealId = "";
-        }
-        else
-        {
-            activeAssignMealId = mealId;
-        }
+        activeAssignMealId = activeAssignMealId == mealId ? "" : mealId;
     }
 
     private async Task AssignMeal(MealCatalogItem meal, DateOnly date)
@@ -261,20 +225,16 @@
         var existingEntry = currentWeekPlan.FirstOrDefault(e => e.Date == date);
         if (existingEntry is null)
         {
-            // Empty -> Assign directly
             await ExecuteAssignment(meal, date);
         }
         else
         {
-            // Occupied -> Trigger replace modal
             replaceDate = date;
             replaceMealId = meal.Id;
             replaceCatalogItem = meal;
             replaceNewMealName = meal.Name;
-            
             var existingMeal = allMeals.FirstOrDefault(m => m.Id == existingEntry.MealId);
             replaceExistingMealName = existingMeal?.Name ?? "وجبة أخرى";
-            
             showReplaceModal = true;
         }
     }
@@ -283,25 +243,21 @@
     {
         showReplaceModal = false;
         if (replaceCatalogItem is not null)
-        {
             await ExecuteAssignment(replaceCatalogItem, replaceDate);
-        }
     }
 
     private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
     {
         isLoading = true;
         StateHasChanged();
-        
+
         try
         {
-            await UserService.AssignMealToDateAsync(username, date, meal.Id);
-            
-            // Update local week plan
+            await UserService.AssignMealToDateAsync(uid, date, meal.Id);
+
             currentWeekPlan.RemoveAll(e => e.Date == date);
             currentWeekPlan.Add(new WeeklyPlanEntry { Date = date, MealId = meal.Id, IsFavorite = false });
 
-            // Force Dashboard cache update so WeekPage immediately displays the changes
             var currentCache = await CacheService.GetCachedWeekAsync();
             if (currentCache is not null)
             {
@@ -341,7 +297,7 @@
     {
         confirmMessage = message;
         confirmTimer?.Dispose();
-        confirmTimer = new System.Threading.Timer(_ => 
+        confirmTimer = new System.Threading.Timer(_ =>
         {
             confirmMessage = "";
             InvokeAsync(StateHasChanged);

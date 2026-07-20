@@ -4,8 +4,8 @@
 @using MealPlanner.Shared.Services
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
+@inject IAuthService Auth
 @inject NavigationManager Nav
-@inject IJSRuntime JS
 
 <div class="app app-content-wrapper month-page" dir="rtl">
     <div class="month-header">
@@ -55,13 +55,18 @@
     private static readonly string[] WeekdayLabels = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"];
     private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool isLoading = true;
-    private string username = "";
+    private string uid = "";
     private string MonthLabel => currentMonth.ToString("MMMM yyyy", ArabicCulture);
 
     protected override async Task OnInitializedAsync()
     {
-        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
-        if (string.IsNullOrWhiteSpace(username)) { Nav.NavigateTo("/onboarding/username"); return; }
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
+        {
+            Nav.NavigateTo("/auth/signin");
+            return;
+        }
+        uid = user.Uid;
         await LoadMonthAsync();
     }
 
@@ -69,7 +74,7 @@
     {
         isLoading = true;
         entries.Clear();
-        var plan = await UserService.GetMonthPlanAsync(username, currentMonth.Year, currentMonth.Month);
+        var plan = await UserService.GetMonthPlanAsync(uid, currentMonth.Year, currentMonth.Month);
         var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id, m => m.Name);
         foreach (var item in plan)
             if (catalog.TryGetValue(item.MealId, out var name)) entries[item.Date] = new(name, item.MealId, item.IsFavorite);

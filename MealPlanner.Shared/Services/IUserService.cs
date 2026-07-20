@@ -7,27 +7,28 @@ namespace MealPlanner.Shared.Services;
 
 public interface IUserService
 {
-    Task<UserProfile?> GetProfileAsync(string username);
+    Task<UserProfile?> GetProfileAsync(string uid);
     Task CreateProfileAsync(UserProfile profile);
-    Task SavePreferredCuisinesAsync(string username, List<Cuisine> cuisines);
-    Task SaveSelectedMealsAsync(string username, List<string> mealIds);
-    Task SaveFavoriteMealsAsync(string username, List<string> mealIds);
-    Task ToggleFavoriteMealAsync(string username, string mealId);
-    Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string username, DateOnly start, DateOnly end);
-    Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string username, int year, int month);
-    Task SaveWeeklyPlanEntryAsync(string username, WeeklyPlanEntry entry);
-    Task SaveWeeklyPlanEntriesAsync(string username, List<WeeklyPlanEntry> entries);
+    Task SavePreferredCuisinesAsync(string uid, List<Cuisine> cuisines);
+    Task SaveSelectedMealsAsync(string uid, List<string> mealIds);
+    Task SaveFavoriteMealsAsync(string uid, List<string> mealIds);
+    Task ToggleFavoriteMealAsync(string uid, string mealId);
+    Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string uid, DateOnly start, DateOnly end);
+    Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month);
+    Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry);
+    Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries);
 
         
     // Household helpers
-    Task<string> GetHouseholdIdAsync(string username);
+    Task<string> GetHouseholdIdAsync(string uid);
     void ClearCachedHouseholdId();
 
     // Account Linking
-    Task<bool> SendLinkRequestAsync(string fromUsername, string toUsername);
-    Task AcceptLinkRequestAsync(string acceptingUsername, string requesterUsername);
-    Task RejectLinkRequestAsync(string acceptingUsername, string requesterUsername);
+    Task<bool> SendLinkRequestAsync(string fromUid, string toUid);
+    Task AcceptLinkRequestAsync(string acceptingUid, string requesterUid);
+    Task RejectLinkRequestAsync(string acceptingUid, string requesterUid);
     
     // Shared Date Assignment
-    Task AssignMealToDateAsync(string username, DateOnly date, string mealId);
+    Task AssignMealToDateAsync(string uid, DateOnly date, string mealId);
+
 }

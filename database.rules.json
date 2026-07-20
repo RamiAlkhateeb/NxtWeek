@@ -1,0 +1,18 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('householdMembers').child(auth.uid).hasChildren())",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "households": {
+      "$householdId": {
+        ".read": "auth != null && data.child('memberIds').hasChild(auth.uid)",
+        ".write": "auth != null && (data.child('memberIds').hasChild(auth.uid) || newData.child('memberIds').hasChild(auth.uid))"
+      }
+    },
+    "mealCatalog": { ".read": "auth != null", ".write": "auth != null && auth.token.admin === true" }
+  }
+}

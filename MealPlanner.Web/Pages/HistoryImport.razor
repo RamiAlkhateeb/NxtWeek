@@ -5,10 +5,11 @@
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
 @inject HttpClient Http
-@inject IJSRuntime JS
+@inject IAuthService Auth
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
 @inject IMealCacheService CacheService
+@inject FirebaseOptions FirebaseOptions
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
@@ -21,9 +22,9 @@
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
         <div class="card-playful" style="padding: 24px; text-align: center;">
             <div style="font-size: 40px; margin-bottom: 16px;">📂</div>
-            
+
             <InputFile OnChange="HandleFileSelected" class="playful-input" accept=".json" style="margin-bottom: 16px;" />
-            
+
             @if (isProcessing)
             {
                 <p style="color: var(--color-text-secondary); font-weight: bold;">جاري معالجة ومطابقة البيانات... ⏳</p>
@@ -72,47 +73,41 @@
     private bool isProcessing = false;
     private bool isSuccess = false;
     private string errorMessage = "";
-    private string username = "";
-    
+
     private int importedCount = 0;
     private List<string> skippedMeals = new();
 
-    // 1. The Raw Input Format (Your Nov.json)
     private class RawMealDto
     {
         [JsonPropertyName("Date")]
         public string DateStr { get; set; } = "";
-        
+
         [JsonPropertyName("Day")]
         public string Day { get; set; } = "";
-        
+
         [JsonPropertyName("Meal")]
         public string MealName { get; set; } = "";
     }
 
-    // 2. The Target Database Format
     private class TargetMealDto
     {
         [JsonPropertyName("mealId")]
         public string MealId { get; set; } = "";
-        
+
         [JsonPropertyName("isFavorite")]
         public bool IsFavorite { get; set; }
     }
 
     protected override async Task OnInitializedAsync()
     {
-        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/auth/signin");
         }
     }
 
-    private void GoBack()
-    {
-        Nav.NavigateTo("/settings");
-    }
+    private void GoBack() => Nav.NavigateTo("/settings");
 
     private void HandleFileSelected(InputFileChangeEventArgs e)
     {
@@ -121,7 +116,7 @@
         importedCount = 0;
         skippedMeals.Clear();
         selectedFile = e.File;
-        
+
         if (selectedFile.ContentType != "application/json" && !selectedFile.Name.EndsWith(".json"))
         {
             errorMessage = "الرجاء اختيار ملف JSON صالح.";
@@ -129,11 +124,9 @@
         }
     }
 
-    // Parses string like "Date(2025,10,2)" into "2025-10-02"
     private string ParseDate(string rawDate)
     {
         if (string.IsNullOrWhiteSpace(rawDate)) return "";
-
         var match = Regex.Match(rawDate, @"Date\((\d+),\s*(\d+),\s*(\d+)\)");
         if (match.Success)
         {
@@ -142,13 +135,8 @@
             int day = int.Parse(match.Groups[3].Value);
             return new DateOnly(year, month, day).ToString("yyyy-MM-dd");
         }
-
-        // Fallback just in case standard formatting is ever used
         if (DateTime.TryParse(rawDate, out var dt))
-        {
             return dt.ToString("yyyy-MM-dd");
-        }
-
         return "";
     }
 
@@ -165,8 +153,14 @@
 
         try
         {
-            // 1. Read the array of meals from the user's file
-            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024); // 1 MB limit
+            var user = await Auth.GetCurrentUserAsync();
+            if (user is null || string.IsNullOrEmpty(user.IdToken))
+            {
+                errorMessage = "انتهت جلستك. يرجى تسجيل الدخول مجدداً.";
+                return;
+            }
+
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
             var rawData = await JsonSerializer.DeserializeAsync<List<RawMealDto>>(stream);
 
             if (rawData == null || rawData.Count == 0)
@@ -175,7 +169,6 @@
                 return;
             }
 
-            // 2. Fetch the Meal Catalog to match string names to Firebase IDs
             var catalog = await CatalogService.GetAllMealsAsync();
             if (catalog == null || !catalog.Any())
             {
@@ -183,32 +176,20 @@
                 return;
             }
 
-            // 3. Convert Data
             var patchData = new Dictionary<string, TargetMealDto>();
-
             foreach (var raw in rawData)
             {
                 var formattedDate = ParseDate(raw.DateStr);
                 if (string.IsNullOrEmpty(formattedDate)) continue;
 
-                // Smart string matching (ignores exact casing, checks if it contains the word)
-                var matchedMeal = catalog.FirstOrDefault(m => 
-                    m.Name.Contains(raw.MealName.Trim(), StringComparison.OrdinalIgnoreCase) || 
+                var matchedMeal = catalog.FirstOrDefault(m =>
+                    m.Name.Contains(raw.MealName.Trim(), StringComparison.OrdinalIgnoreCase) ||
                     raw.MealName.Contains(m.Name.Trim(), StringComparison.OrdinalIgnoreCase));
 
                 if (matchedMeal != null)
-                {
-                    patchData[formattedDate] = new TargetMealDto
-                    {
-                        MealId = matchedMeal.Id,
-                        IsFavorite = false
-                    };
-                }
+                    patchData[formattedDate] = new TargetMealDto { MealId = matchedMeal.Id, IsFavorite = false };
                 else
-                {
-                    // Track meals that couldn't be found so the user isn't confused
                     skippedMeals.Add($"تاريخ {formattedDate}: {raw.MealName}");
-                }
             }
 
             if (patchData.Count == 0)
@@ -217,25 +198,23 @@
                 return;
             }
 
-            // 4. Submit to Firebase
-            var profile = await UserService.GetProfileAsync(username);
+            var profile = await UserService.GetProfileAsync(user.Uid);
             if (string.IsNullOrEmpty(profile?.HouseholdId))
             {
                 errorMessage = "لم يتم العثور على حسابك. يرجى تسجيل الدخول مجدداً.";
                 return;
             }
 
-            // Change Base URL config mechanism if you rely on FirebaseOptions
-            var dbUrl = $"https://YOUR-FIREBASE-PROJECT.firebaseio.com/households/{profile.HouseholdId}/weeklyPlan.json";
-            
-            var response = await Http.PatchAsJsonAsync(dbUrl, patchData);
+            var baseUrl = FirebaseOptions.DatabaseUrl.TrimEnd('/');
+            var dbUrl = $"{baseUrl}/households/{profile.HouseholdId}/weeklyPlan.json?auth={Uri.EscapeDataString(user.IdToken)}";
 
+            var response = await Http.PatchAsJsonAsync(dbUrl, patchData);
             if (response.IsSuccessStatusCode)
             {
                 isSuccess = true;
                 importedCount = patchData.Count;
                 selectedFile = null;
-                await CacheService.SetCachedWeekAsync(new List<Meal>()); 
+                await CacheService.SetCachedWeekAsync(new List<Meal>());
             }
             else
             {

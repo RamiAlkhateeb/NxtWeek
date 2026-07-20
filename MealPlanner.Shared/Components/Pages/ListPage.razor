@@ -2,7 +2,7 @@
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
 @inject IMealService MealService
-@inject IJSRuntime JS
+@inject IAuthService Auth
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
@@ -18,7 +18,6 @@
         }
         else if (ingredientsList.Count == 0)
         {
-            <!-- Empty state illustration -->
             <div class="card-playful" style="padding: 30px; text-align: center;">
                 <div style="font-size: 60px; margin-bottom: 16px;">🛒</div>
                 <h3 style="font-weight: 800; color: var(--color-text-main);">السلّة فاضية... 🧐</h3>
@@ -32,13 +31,11 @@
         }
         else
         {
-            <!-- Summary card -->
             <div class="card-playful" style="padding: 16px; background: var(--color-primary-light); display: flex; align-items: center; justify-content: space-between;">
                 <span style="font-weight: 800; color: var(--color-text-main); font-size: 14px;">إجمالي المواد المطلوبة:</span>
                 <span class="playful-badge" style="font-size: 13px; padding: 4px 12px;">@ingredientsList.Count أغراض</span>
             </div>
 
-            <!-- Checklist -->
             <div class="card-playful" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
                 @foreach (var ingredient in ingredientsList)
                 {
@@ -65,28 +62,24 @@
 @code {
     private List<string> ingredientsList = new();
     private Dictionary<string, bool> checkedIngredients = new();
-    private string username = "";
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        username = await JS.InvokeAsync<string?>("localStorage.getItem", "username") ?? "";
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/auth/signin");
             return;
         }
 
-        // Calculate current week start and end
         var today = DateOnly.FromDateTime(DateTime.Today);
         var startOfWeek = StartOfWeek(today);
         var endOfWeek = startOfWeek.AddDays(6);
 
-        // Fetch week meals
         var meals = await MealService.GetWeekAsync(startOfWeek, endOfWeek);
 
-        // Extract and clean ingredients
         var ingredients = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var meal in meals)
         {
@@ -96,16 +89,12 @@
                 {
                     var cleanIng = ing.Trim();
                     if (!string.IsNullOrEmpty(cleanIng))
-                    {
                         ingredients.Add(cleanIng);
-                    }
                 }
             }
         }
 
         ingredientsList = ingredients.OrderBy(x => x).ToList();
-
-        // Restore checked status from sessionStorage/localStorage if desired, but local page state is fine for simple usage.
         isLoading = false;
     }
 
@@ -118,21 +107,15 @@
     private void ToggleChecked(string ingredient)
     {
         if (checkedIngredients.ContainsKey(ingredient))
-        {
             checkedIngredients.Remove(ingredient);
-        }
         else
-        {
             checkedIngredients[ingredient] = true;
-        }
     }
 
     private void ClearChecked()
     {
         foreach (var key in checkedIngredients.Keys)
-        {
             ingredientsList.Remove(key);
-        }
         checkedIngredients.Clear();
     }
 }

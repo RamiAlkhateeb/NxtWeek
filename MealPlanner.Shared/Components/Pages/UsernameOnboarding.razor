@@ -1,7 +1,7 @@
 @page "/onboarding/username"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
-@inject IJSRuntime JS
+@inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
 
@@ -15,61 +15,81 @@
         </div>
         <h1 class="playful-title">مرحباً بك في مخطط الوجبات! 🎉</h1>
         <p class="subtitle">طريقتك الممتعة لتنظيم وجباتك الأسبوعية مع عائلتك أو بمفردك.</p>
-        
-        <div class="form-group">
-            <label for="username" class="playful-label">اختر اسم مستخدم مميزاً:</label>
-            <input id="username" type="text" @bind="username" @bind:event="oninput" @onkeydown="HandleKeyDown" 
-                   class="playful-input" placeholder="مثال: رامي، سارة، أحمد..." />
-            @if (!string.IsNullOrWhiteSpace(error))
-            {
-                <span class="error-msg text-danger mt-2 d-block">⚠️ @error</span>
-            }
-        </div>
 
-        <button class="primary-btn btn-playful" @onclick="SubmitUsername" disabled="@string.IsNullOrWhiteSpace(username)">
-            يلا نبدأ! 🚀
-        </button>
+        @if (isChecking)
+        {
+            <p style="text-align:center; color:var(--color-text-secondary);">جارٍ التحقق...</p>
+        }
+        else
+        {
+            <div class="form-group">
+                <label for="displayName" class="playful-label">اختر اسماً يظهر لأفراد منزلك:</label>
+                <input id="displayName" type="text" @bind="displayName" @bind:event="oninput" @onkeydown="HandleKeyDown"
+                       class="playful-input" placeholder="مثال: رامي، سارة، أحمد..." />
+                @if (!string.IsNullOrWhiteSpace(error))
+                {
+                    <span class="error-msg text-danger mt-2 d-block">⚠️ @error</span>
+                }
+            </div>
+
+            <button class="primary-btn btn-playful" @onclick="Submit" disabled="@string.IsNullOrWhiteSpace(displayName)">
+                يلا نبدأ! 🚀
+            </button>
+        }
     </div>
 </div>
 
 @code {
-    private string username = "";
+    private string displayName = "";
     private string error = "";
+    private bool isChecking = true;
+    private AuthUser? authUser;
 
-    private async Task SubmitUsername()
+    protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrWhiteSpace(username)) return;
-
-        username = username.Trim();
-        if (username.Length < 2)
+        authUser = await Auth.GetCurrentUserAsync();
+        if (authUser is null || string.IsNullOrEmpty(authUser.Uid))
         {
-            error = "اسم المستخدم قصير جداً (حرفين على الأقل).";
+            Nav.NavigateTo("/auth/signin");
             return;
         }
 
-        try 
+        // If profile already exists (returning user), skip to main app
+        var existing = await UserService.GetProfileAsync(authUser.Uid);
+        if (existing is not null && !string.IsNullOrWhiteSpace(existing.DisplayName))
         {
-            error = "جاري التحقق...";
-            StateHasChanged();
-            
-            // Check if username is already taken
-            var profile = await UserService.GetProfileAsync(username);
-            if (profile is not null)
-            {
-                error = "اسم المستخدم غير متاح";
-                return;
-            }
+            Nav.NavigateTo("/");
+            return;
+        }
 
-            // Create new profile (this will auto-create the solo household)
+        // Pre-fill display name from email if available
+        if (!string.IsNullOrEmpty(authUser.Email))
+            displayName = authUser.Email.Split('@')[0];
+
+        isChecking = false;
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(displayName)) return;
+        displayName = displayName.Trim();
+        if (displayName.Length < 2)
+        {
+            error = "الاسم قصير جداً (حرفان على الأقل).";
+            return;
+        }
+
+        try
+        {
+            error = "جارٍ الحفظ...";
+            StateHasChanged();
+
             var newProfile = new UserProfile
             {
-                Username = username
+                Uid = authUser!.Uid,
+                DisplayName = displayName
             };
             await UserService.CreateProfileAsync(newProfile);
-
-            // Save to local storage
-            await JS.InvokeVoidAsync("localStorage.setItem", "username", username);
-            UserService.ClearCachedHouseholdId(); // reset cache for new user
 
             error = "";
             Nav.NavigateTo("/onboarding/cuisines");
@@ -82,9 +102,6 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
-        {
-            await SubmitUsername();
-        }
+        if (e.Key == "Enter") await Submit();
     }
 }

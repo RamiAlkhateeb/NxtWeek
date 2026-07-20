@@ -1,0 +1,35 @@
+@page "/auth/signin"
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject NavigationManager Nav
+
+<div class="app onboarding-container" dir="rtl">
+  <div class="onboarding-card card-playful">
+    <h1 class="playful-title">تسجيل الدخول</h1>
+    <p class="subtitle">سنرسل رابطاً آمناً إلى بريدك الإلكتروني.</p>
+    <input class="playful-input" type="email" @bind="email" placeholder="name@example.com" />
+    @if (!string.IsNullOrEmpty(message)) { <p class="error-msg">@message</p> }
+    <button class="primary-btn btn-playful" @onclick="Send" disabled="@busy">إرسال رابط الدخول</button>
+  </div>
+</div>
+
+@code {
+  private string email = "";
+  private string message = "";
+  private bool busy;
+  protected override async Task OnInitializedAsync()
+  {
+    // Same-browser flows use the session email hint; cross-device flows intentionally ask again.
+    var user = await Auth.CompleteSignInAsync(email);
+    if (user is { Uid.Length: > 0 }) Nav.NavigateTo("/onboarding/username", true);
+    else if (user is not null) message = "اكتب البريد الإلكتروني الذي استلم الرابط لإكمال تسجيل الدخول.";
+  }
+  private async Task Send()
+  {
+    if (string.IsNullOrWhiteSpace(email)) return;
+    busy = true;
+    try { await Auth.SendSignInLinkAsync(email.Trim(), Nav.BaseUri + "auth/signin"); message = "تم إرسال الرابط. افتحه لإكمال تسجيل الدخول."; }
+    catch (Exception ex) { message = ex.Message; }
+    finally { busy = false; }
+  }
+}

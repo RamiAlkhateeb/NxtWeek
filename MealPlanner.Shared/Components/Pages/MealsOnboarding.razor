@@ -1,7 +1,7 @@
 @page "/onboarding/meals"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
-@inject IJSRuntime JS
+@inject IAuthService Auth
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
 @inject IMealService MealService
@@ -13,7 +13,7 @@
         <div class="step-indicator">خطوة 3 من 3</div>
         <h1>اختر وجباتك المفضلة</h1>
         <p class="subtitle">اختر حتى 8 وجبات ترغب في رؤيتها ضمن اقتراحات الأسبوع الأولى. سنقوم تلقائياً بإنشاء أول جدول أسبوعي لك بناءً عليها!</p>
-        
+
         <div class="counter-badge">
             المحدد: @selectedMealIds.Count / 8
         </div>
@@ -28,7 +28,7 @@
                 @foreach (var meal in availableMeals)
                 {
                     var isSelected = selectedMealIds.Contains(meal.Id);
-                    <div class="meal-selection-card @(isSelected ? "active" : "") @(selectedMealIds.Count >= 8 && !isSelected ? "disabled" : "")" 
+                    <div class="meal-selection-card @(isSelected ? "active" : "") @(selectedMealIds.Count >= 8 && !isSelected ? "disabled" : "")"
                          @onclick="() => ToggleMeal(meal.Id)">
                         <div class="meal-details">
                             <span class="meal-name">@meal.Name</span>
@@ -53,7 +53,7 @@
             <span class="error-msg" style="margin-top: 10px;">@error</span>
         }
 
-        <button class="primary-btn btn-animate" @onclick="ConfirmSelection" style="margin-top: 24px;" 
+        <button class="primary-btn btn-animate" @onclick="ConfirmSelection" style="margin-top: 24px;"
                 disabled="@(selectedMealIds.Count == 0)">
             تأكيد وإنشاء جدول الأسبوع 🎉
         </button>
@@ -65,43 +65,32 @@
     private List<string> selectedMealIds = new();
     private bool isLoading = true;
     private string error = "";
-    private string username = "";
+    private string uid = "";
 
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/auth/signin");
             return;
         }
+        uid = user.Uid;
 
-        var profile = await UserService.GetProfileAsync(username);
+        var profile = await UserService.GetProfileAsync(uid);
         var preferredCuisines = profile?.PreferredCuisines ?? new List<Cuisine>();
 
-        // Ensure catalog is seeded first if needed
         var seeded = await CatalogService.IsCatalogSeededAsync();
         if (!seeded)
-        {
-            // Seed catalog by using standard seed flow or mock seed
             await MealService.SeedAsync(new List<Meal>());
-        }
 
-        // Fetch filtered catalog meals
         availableMeals = await CatalogService.GetFilteredMealsAsync(preferredCuisines, null);
-        
-        // If we don't have enough meals (e.g. less than 8), pull all catalog meals to show
         if (availableMeals.Count < 10)
-        {
             availableMeals = await CatalogService.GetAllMealsAsync();
-        }
 
-        // Select pre-existing
         if (profile?.SelectedMealIds != null)
-        {
             selectedMealIds = profile.SelectedMealIds.Intersect(availableMeals.Select(m => m.Id)).ToList();
-        }
 
         isLoading = false;
     }
@@ -134,10 +123,8 @@
 
         isLoading = true;
 
-        // 1. Save selected meal IDs
-        await UserService.SaveSelectedMealsAsync(username, selectedMealIds);
+        await UserService.SaveSelectedMealsAsync(uid, selectedMealIds);
 
-        // 2. Generate the first week plan (Monday - Sunday)
         var today = DateOnly.FromDateTime(DateTime.Today);
         var currentWeekStart = StartOfWeek(today);
 
@@ -147,23 +134,15 @@
         for (int i = 0; i < 7; i++)
         {
             var date = currentWeekStart.AddDays(i);
-            // Pick a random meal from selected
             var randomMealId = selectedMealIds[rng.Next(selectedMealIds.Count)];
-            
-            planEntries.Add(new WeeklyPlanEntry
-            {
-                Date = date,
-                MealId = randomMealId,
-                IsFavorite = false
-            });
+            planEntries.Add(new WeeklyPlanEntry { Date = date, MealId = randomMealId, IsFavorite = false });
         }
 
-        // 3. Save weekly plan entries to Firebase
-        await UserService.SaveWeeklyPlanEntriesAsync(username, planEntries);
+        await UserService.SaveWeeklyPlanEntriesAsync(uid, planEntries);
 
-        // 4. Force invalidate local cache by saving the generated meals to cache
         var catalogDict = availableMeals.ToDictionary(m => m.Id, m => m);
-        var cachedMeals = planEntries.Select(entry => {
+        var cachedMeals = planEntries.Select(entry =>
+        {
             var catItem = catalogDict.ContainsKey(entry.MealId) ? catalogDict[entry.MealId] : null;
             return new Meal
             {
@@ -179,7 +158,7 @@
                 MealType = catItem?.MealType
             };
         }).ToList();
-        
+
         await CacheService.SetCachedWeekAsync(cachedMeals);
 
         isLoading = false;
