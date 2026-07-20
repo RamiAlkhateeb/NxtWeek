@@ -1,18 +1,9 @@
 {
   "rules": {
-    ".read": "auth != null",
-    "users": {
-      "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || root.child('householdMembers').child(auth.uid).hasChildren())",
-        ".write": "auth != null && auth.uid === $uid"
-      }
-    },
-    "households": {
-      "$householdId": {
-        ".read": "auth != null && data.child('memberIds').hasChild(auth.uid)",
-        ".write": "auth != null && (data.child('memberIds').hasChild(auth.uid) || newData.child('memberIds').hasChild(auth.uid))"
-      }
-    },
-    "mealCatalog": { ".read": "auth != null", ".write": "auth != null && auth.token.admin === true" }
+    // WARNING: There is currently NO server-side identity verification.
+    // Any visitor can read/write any household's or user's data by guessing/entering their email.
+    // This is a known, accepted limitation for the current testing phase.
+    ".read": "true",
+    ".write": "true"
   }
 }

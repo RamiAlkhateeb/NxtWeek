@@ -73,7 +73,7 @@
         var user = await Auth.GetCurrentUserAsync();
         if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/auth/signin");
+            Nav.NavigateTo("/signin");
             return;
         }
         uid = user.Uid;

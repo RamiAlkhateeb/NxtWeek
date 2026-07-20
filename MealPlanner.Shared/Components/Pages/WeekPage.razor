@@ -84,8 +84,8 @@
         Console.WriteLine($"[WeekPage] User returned: {(user == null ? "null" : user.Uid)}");
         if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Console.WriteLine("[WeekPage] No user session. Redirecting to /auth/signin.");
-            Nav.NavigateTo("/auth/signin");
+            Console.WriteLine("[WeekPage] No user session. Redirecting to /signin.");
+            Nav.NavigateTo("/signin");
             return;
         }
         uid = user.Uid;
@@ -153,7 +153,7 @@
         await Auth.SignOutAsync();
         UserService.ClearCachedHouseholdId();
         await CacheService.SetCachedWeekAsync(new List<Meal>());
-        Nav.NavigateTo("/auth/signin", forceLoad: true);
+        Nav.NavigateTo("/signin", forceLoad: true);
     }
 
     private static string DayDateLabel(DateOnly date) => date.ToString("dddd d MMMM", ArabicCulture);

@@ -50,7 +50,7 @@
         authUser = await Auth.GetCurrentUserAsync();
         if (authUser is null || string.IsNullOrEmpty(authUser.Uid))
         {
-            Nav.NavigateTo("/auth/signin");
+            Nav.NavigateTo("/signin");
             return;
         }
 
@@ -87,7 +87,9 @@
             var newProfile = new UserProfile
             {
                 Uid = authUser!.Uid,
-                DisplayName = displayName
+                Email = authUser.Uid,
+                DisplayName = displayName,
+                AuthVerified = false
             };
             await UserService.CreateProfileAsync(newProfile);
 

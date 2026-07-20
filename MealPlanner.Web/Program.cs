@@ -14,12 +14,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Services.AddSingleton(new FirebaseOptions
 {
-    DatabaseUrl = "https://meal-planner-af799-default-rtdb.europe-west1.firebasedatabase.app/",
-    // ApiKey is the Firebase Web API key — a public client identifier, not a secret.
-    // Find it in Firebase Console > Project settings > General > Your apps > Web app > apiKey.
-    ApiKey = "AIzaSyC2eq_N2mGv0lGI2cjGvq2v5aeALL7rq2Y",
-    AuthDomain = "meal-planner-af799.firebaseapp.com",
-    ProjectId = "meal-planner-af799"
+    DatabaseUrl = "https://meal-planner-af799-default-rtdb.europe-west1.firebasedatabase.app/"
 });
 
 builder.Services.AddScoped<IUserService, FirebaseUserService>();
@@ -28,7 +23,7 @@ builder.Services.AddScoped<FirebaseMealService>();
 builder.Services.AddScoped<IMealService>(sp => sp.GetRequiredService<FirebaseMealService>());
 builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();
 builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
-builder.Services.AddScoped<IAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<IAuthService, LocalAuthService>();
 
 
 await builder.Build().RunAsync();

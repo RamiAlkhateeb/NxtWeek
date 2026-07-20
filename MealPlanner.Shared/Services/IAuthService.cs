@@ -1,10 +1,11 @@
+using System.Threading.Tasks;
+
 namespace MealPlanner.Shared.Services;
 
 public interface IAuthService
 {
     ValueTask<AuthUser?> GetCurrentUserAsync();
-    ValueTask SendSignInLinkAsync(string email, string continueUrl);
-    ValueTask<AuthUser?> CompleteSignInAsync(string email);
+    ValueTask<AuthUser> SignInAsync(string email);
     ValueTask SignOutAsync();
 }
 

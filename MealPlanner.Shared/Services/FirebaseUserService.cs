@@ -10,7 +10,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     private async Task<string> Url(string path)
     {
         var user = await auth.GetCurrentUserAsync() ?? throw new UnauthorizedAccessException("Sign in is required.");
-        return $"{baseUrl}/{path}.json?auth={Uri.EscapeDataString(user.IdToken)}";
+        return $"{baseUrl}/{path}.json";
     }
     private static string Key(string value) => Uri.EscapeDataString(value);
     public async Task<UserProfile?> GetProfileAsync(string uid)

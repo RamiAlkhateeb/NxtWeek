@@ -1,19 +1,50 @@
-﻿@* <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-</Router> *@
+@inject IAuthService Auth
+@inject IUserService UserService
+@inject NavigationManager Nav
 
-<Router AppAssembly="@typeof(Program).Assembly"
-        AdditionalAssemblies="new[] { typeof(MealPlanner.Shared._Imports).Assembly }">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+@if (isInitializing)
+{
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: #f8fafc;">
+        <span style="font-size: 64px; animation: bounce 1.5s infinite;">🍳</span>
+        <p style="font-family: sans-serif; color: #64748b; font-size: 18px; margin-top: 16px; direction: rtl;">جاري التحميل...</p>
+    </div>
+}
+else
+{
+    <Router AppAssembly="@typeof(Program).Assembly"
+            AdditionalAssemblies="new[] { typeof(MealPlanner.Shared._Imports).Assembly }">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+}
+
+@code {
+    private bool isInitializing = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = await Auth.GetCurrentUserAsync();
+            if (user is not null && !string.IsNullOrEmpty(user.Uid))
+            {
+                await UserService.GetProfileAsync(user.Uid);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[App] Error pre-fetching profile: {ex.Message}");
+        }
+        finally
+        {
+            isInitializing = false;
+        }
+    }
+}

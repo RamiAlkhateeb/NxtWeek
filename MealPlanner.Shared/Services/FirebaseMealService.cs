@@ -5,6 +5,11 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using MealPlanner.Shared.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
 namespace MealPlanner.Shared.Services;
@@ -16,25 +21,29 @@ public class FirebaseMealService : IMealService
     private readonly IJSRuntime _js;
     private readonly IUserService _userService;
     private readonly IMealCatalogService _catalogService;
+    private readonly IAuthService _auth;
 
     public FirebaseMealService(
         HttpClient http, 
         FirebaseOptions options, 
         IJSRuntime js, 
         IUserService userService, 
-        IMealCatalogService catalogService)
+        IMealCatalogService catalogService,
+        IAuthService auth)
     {
         _http = http;
         _baseUrl = options.DatabaseUrl.TrimEnd('/');
         _js = js;
         _userService = userService;
         _catalogService = catalogService;
+        _auth = auth;
     }
 
     public async Task<List<Meal>> GetWeekAsync(DateOnly start, DateOnly end)
     {
-        var username = await _js.InvokeAsync<string?>("localStorage.getItem", "username");
-        if (string.IsNullOrWhiteSpace(username)) return new List<Meal>();
+        var user = await _auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return new List<Meal>();
+        var username = user.Uid;
 
         var planEntries = await _userService.GetWeeklyPlanAsync(username, start, end);
         var planDict = planEntries.ToDictionary(e => e.Date, e => e);
@@ -75,8 +84,9 @@ public class FirebaseMealService : IMealService
 
     public async Task UpsertMealAsync(Meal meal)
     {
-        var username = await _js.InvokeAsync<string?>("localStorage.getItem", "username");
-        if (string.IsNullOrWhiteSpace(username)) return;
+        var user = await _auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
+        var username = user.Uid;
 
         var catalog = await _catalogService.GetAllMealsAsync();
         var existing = catalog.FirstOrDefault(c => c.Name.Equals(meal.Name, StringComparison.OrdinalIgnoreCase));
@@ -115,11 +125,6 @@ public class FirebaseMealService : IMealService
         await _userService.SaveWeeklyPlanEntryAsync(username, entry);
     }
 
-    public async Task<bool> IsSeededAsync()
-    {
-        return await _catalogService.IsCatalogSeededAsync();
-    }
-
     public async Task SeedAsync(List<Meal> meals)
     {
         var catalogMeals = new List<MealCatalogItem>
@@ -140,4 +145,10 @@ public class FirebaseMealService : IMealService
 
         await _catalogService.SeedCatalogAsync(catalogMeals);
     }
+
+    public async Task<bool> IsSeededAsync()
+    {
+        return await _catalogService.IsCatalogSeededAsync();
+    }
+
 }
