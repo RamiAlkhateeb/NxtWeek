@@ -881,3 +881,21 @@ button.month-cell:not(:disabled) { cursor: pointer; }
 .month-day-number { display: block; font-size: 13px; font-weight: 800; }
 .month-meal-name { display: block; margin-top: 5px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-primary-hover); font-weight: 700; }
 .month-favorite { position: absolute; left: 3px; bottom: 3px; font-size: 10px; }
+
+
+.custom-splash {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: var(--color-bg-light);
+}
+.splash-logo {
+    width: 100px;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
