@@ -175,7 +175,7 @@
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        username = await JS.InvokeAsync<string>("localStorage.getItem", "username");
+        username = await JS.InvokeAsync<string>("localStorage.getItem", "nxtweek.currentUserRawEmail");
         if (string.IsNullOrWhiteSpace(username))
         {
             Nav.NavigateTo("/onboarding/username");
