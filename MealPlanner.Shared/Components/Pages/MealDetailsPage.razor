@@ -4,6 +4,7 @@
 @inject IJSRuntime JS
 @inject IMealCatalogService CatalogService
 @inject IUserService UserService
+@inject IAuthService Auth
 @inject NavigationManager Nav
 
 <div class="app meal-details-container" dir="rtl">
@@ -90,23 +91,24 @@
     private MealCatalogItem? meal;
     private bool isFavorite = false;
     private bool isLoading = true;
-    private string username = "";
+    private string uid = "";
 
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        username = await JS.InvokeAsync<string>("localStorage.getItem", "nxtweek.currentUserRawEmail");
-        if (string.IsNullOrWhiteSpace(username))
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrEmpty(user.Uid))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/signin");
             return;
         }
 
+        uid = user.Uid;
         meal = await CatalogService.GetMealByIdAsync(MealId);
         
         if (meal != null)
         {
-            var profile = await UserService.GetProfileAsync(username);
+            var profile = await UserService.GetProfileAsync(uid);
             isFavorite = profile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
         }
 
@@ -120,9 +122,9 @@
 
     private async Task ToggleFavorite()
     {
-        if (meal == null) return;
+        if (meal == null || string.IsNullOrEmpty(uid)) return;
         
-        await UserService.ToggleFavoriteMealAsync(username, meal.Id);
+        await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
         isFavorite = !isFavorite;
     }
 
