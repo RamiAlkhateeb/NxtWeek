@@ -38,16 +38,18 @@
         <div class="week-cards">
             @foreach (var meal in weekMeals)
             {
+                var isPast = meal.Date < DateOnly.FromDateTime(DateTime.Today);
+                
                 @if (string.IsNullOrWhiteSpace(meal.MealId))
                 {
-                    <button class="week-meal-card week-empty-card" @onclick="() => EditRequested(meal)">
+                    <button class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "")" @onclick="() => EditRequested(meal)">
                         <span class="week-card-date">@DayDateLabel(meal.Date)</span>
                         <span class="week-empty-copy">لسه فاضي... يلا نضيف وجبة؟ 🍽️</span>
                     </button>
                 }
                 else
                 {
-                    <article class="week-meal-card week-meal-card-clickable" @onclick="() => ViewDetails(meal)">
+                    <article class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "")" @onclick="() => ViewDetails(meal)">
                         <div class="week-card-topline">
                             <span class="week-card-date">@DayDateLabel(meal.Date)</span>
                             @if (meal.IsFavorite)
