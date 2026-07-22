@@ -866,6 +866,20 @@ html, body {
 .week-empty-copy { display: block; color: var(--color-text-secondary); font-size: 14px; margin-top: 10px; }
 .week-meal-card .meal-card-actions { margin: 14px 0 0; }
 
+.week-card-past {
+    opacity: 0.55;
+    filter: grayscale(40%);
+}
+
+.week-card-past .week-card-name,
+.week-card-past .week-card-date {
+    color: var(--color-text-secondary);
+}
+
+.week-card-past .meal-card-badge.favorite {
+    opacity: 0.7;
+}
+
 .month-page { padding-bottom: 90px; }
 .month-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px; border-bottom: 1px solid var(--color-border); }
 .month-header h1 { font-size: 21px; }
