@@ -21,7 +21,14 @@ public sealed class LocalAuthService(IJSRuntime js) : IAuthService
             var sanitizedEmail = await js.InvokeAsync<string?>("localStorage.getItem", "nxtweek.currentUserEmail");
             if (string.IsNullOrWhiteSpace(sanitizedEmail))
             {
-                return null;
+                sanitizedEmail = await js.InvokeAsync<string?>("localStorage.getItem", "nxtweek.guestId");
+                if (string.IsNullOrWhiteSpace(sanitizedEmail))
+                {
+                    sanitizedEmail = "guest_" + Guid.NewGuid().ToString("N");
+                    await js.InvokeVoidAsync("localStorage.setItem", "nxtweek.guestId", sanitizedEmail);
+                }
+                _cachedUser = new AuthUser { Uid = sanitizedEmail, Email = "", IdToken = "", IsGuest = true };
+                return _cachedUser;
             }
 
             var rawEmail = await js.InvokeAsync<string?>("localStorage.getItem", "nxtweek.currentUserRawEmail");
@@ -34,7 +41,8 @@ public sealed class LocalAuthService(IJSRuntime js) : IAuthService
             {
                 Uid = sanitizedEmail,
                 Email = rawEmail,
-                IdToken = ""
+                IdToken = "",
+                IsGuest = false
             };
 
             return _cachedUser;
@@ -63,7 +71,8 @@ public sealed class LocalAuthService(IJSRuntime js) : IAuthService
         {
             Uid = sanitized,
             Email = email.Trim(),
-            IdToken = ""
+            IdToken = "",
+            IsGuest = false
         };
 
         return _cachedUser;

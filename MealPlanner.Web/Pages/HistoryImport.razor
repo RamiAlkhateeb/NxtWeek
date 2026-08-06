@@ -154,7 +154,7 @@
         try
         {
             var user = await Auth.GetCurrentUserAsync();
-            if (user is null || string.IsNullOrEmpty(user.IdToken))
+            if (user is null || string.IsNullOrEmpty(user.Uid))
             {
                 errorMessage = "انتهت جلستك. يرجى تسجيل الدخول مجدداً.";
                 return;
@@ -198,28 +198,17 @@
                 return;
             }
 
-            var profile = await UserService.GetProfileAsync(user.Uid);
-            if (string.IsNullOrEmpty(profile?.HouseholdId))
+            var entries = patchData.Select(x => new WeeklyPlanEntry
             {
-                errorMessage = "لم يتم العثور على حسابك. يرجى تسجيل الدخول مجدداً.";
-                return;
-            }
-
-            var baseUrl = FirebaseOptions.DatabaseUrl.TrimEnd('/');
-            var dbUrl = $"{baseUrl}/households/{profile.HouseholdId}/weeklyPlan.json?auth={Uri.EscapeDataString(user.IdToken)}";
-
-            var response = await Http.PatchAsJsonAsync(dbUrl, patchData);
-            if (response.IsSuccessStatusCode)
-            {
-                isSuccess = true;
-                importedCount = patchData.Count;
-                selectedFile = null;
-                await CacheService.SetCachedWeekAsync(new List<Meal>());
-            }
-            else
-            {
-                errorMessage = $"حدث خطأ أثناء الاتصال بقاعدة البيانات: {response.StatusCode}";
-            }
+                Date = DateOnly.Parse(x.Key),
+                MealId = x.Value.MealId,
+                IsFavorite = x.Value.IsFavorite
+            }).ToList();
+            await UserService.SaveWeeklyPlanEntriesAsync(user.Uid, entries);
+            isSuccess = true;
+            importedCount = entries.Count;
+            selectedFile = null;
+            await CacheService.SetCachedWeekAsync(new List<Meal>());
         }
         catch (JsonException)
         {

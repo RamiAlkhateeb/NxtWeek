@@ -1,199 +1,86 @@
 @page "/settings"
 @using MealPlanner.Shared.Services
-@using MealPlanner.Shared.Models
-@inject IAuthService Auth
-@inject IUserService UserService
+@inject IHouseholdService HouseholdService
+@inject IDataExportService ExportService
+@inject IDataImportService ImportService
+@inject IThemeService ThemeService
+@inject ILanguageService LanguageService
+@inject IJSRuntime JS
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
-    <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="تخصيص التطبيق وربط الحسابات" />
+    <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
 
-    <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
-        <!-- User Info Card -->
-        <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 8px;">
-            <div style="font-size: 14px; color: var(--color-text-secondary);">مرحباً،</div>
-            <div style="font-size: 22px; font-weight: 900; color: var(--color-text-main);">@displayName 👋</div>
-            <div style="font-size: 12px; color: var(--color-text-secondary);">@email</div>
+    <div class="settings-sections">
+        <UiCard CssClass="settings-card">
+            <h2>👤 المستخدم الحالي</h2>
+            <strong>@current.DisplayName</strong>
+            <span class="caption">منزل شخصي</span>
+            <div class="setting-id"><span>معرّف المنزل</span><code>@current.HouseholdId</code></div>
+            <UiButton Variant="secondary" OnClick="CopyHouseholdId">نسخ المعرّف</UiButton>
+        </UiCard>
 
-            <div class="card-playful" style="margin-top: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
-                <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">📂 استيراد سجل الوجبات</h2>
-                <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.6;">
-                    هل لديك سجل سابق في ملف JSON؟ يمكنك رفعه هنا لدمجه مع حسابك الحالي.
-                </p>
-                <button class="secondary-btn" style="margin-top: 4px;" @onclick='() => Nav.NavigateTo("/settings/import")'>
-                    استيراد السجل
-                </button>
-            </div>
+        <UiCard CssClass="settings-card">
+            <h2>🏠 المنزل</h2>
+            <p>شارك معرّف المنزل مع عائلتك لتتصلوا بنفس الخطة.</p>
+            <label for="household-id">الانضمام إلى منزل</label>
+            <UiTextInput Id="household-id" Placeholder="الصق معرّف المنزل" @bind-Value="householdIdInput" />
+            <UiButton Variant="primary" OnClick="JoinHousehold" Disabled="@string.IsNullOrWhiteSpace(householdIdInput)">اتصال</UiButton>
+            @if (!string.IsNullOrWhiteSpace(householdMessage)) { <div class="alert-playful settings-feedback">@householdMessage</div> }
+        </UiCard>
 
-            <button class="danger-btn" style="margin-top: 12px; width: 100%;" @onclick="Logout">
-                🚪 تسجيل الخروج
-            </button>
-        </div>
+        <UiCard CssClass="settings-card">
+            <h2>📦 البيانات</h2>
+            <UiButton Variant="secondary" OnClick="OpenImport">استيراد خطة أسبوعية</UiButton>
+            <UiButton Variant="secondary" OnClick="ExportWeek">تصدير خطة أسبوعية</UiButton>
+            @if (!confirmClear)
+            { <UiButton Variant="danger" OnClick="() => confirmClear = true">مسح البيانات المحلية</UiButton> }
+            else
+            { <UiButton Variant="danger" OnClick="ClearLocalData">تأكيد مسح البيانات</UiButton> }
+        </UiCard>
 
-        <!-- Pending Link Requests Card -->
-        @if (pendingRequests.Count > 0)
-        {
-            <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
-                <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">📬 طلبات ربط واردة</h2>
-                @foreach (var req in pendingRequests)
-                {
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px dashed var(--color-border); padding-bottom: 10px;">
-                        <span style="font-size: 14px; font-weight: 700;">@req.DisplayName <span style="font-size: 11px; color: var(--color-text-secondary);">(@req.Uid)</span></span>
-                        <div style="display: flex; gap: 6px;">
-                            <button class="primary-btn btn-playful" style="padding: 6px 12px; font-size: 12px; background: var(--color-accent);" @onclick="() => AcceptRequest(req.Uid)">قبول ✅</button>
-                            <button class="danger-btn" style="padding: 6px 12px; font-size: 12px;" @onclick="() => RejectRequest(req.Uid)">رفض ❌</button>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
+        <UiCard CssClass="settings-card">
+            <h2>🎨 المظهر</h2>
+            <span class="caption">قريباً</span>
+            <div class="settings-choice"><UiFilterChip Disabled="true" Active="@(theme == "light")">فاتح</UiFilterChip><UiFilterChip Disabled="true" Active="@(theme == "dark")">داكن</UiFilterChip><UiFilterChip Disabled="true" Active="@(theme == "system")">النظام</UiFilterChip></div>
+        </UiCard>
 
-        <!-- Account Linking Card -->
-        <div class="card-playful" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
-            <h2 class="playful-title" style="font-size: 18px !important; margin: 0;">🔗 ربط حسابك</h2>
-            <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.6;">
-                أدخل معرّف المستخدم (UID) أو البريد الإلكتروني للشخص الذي تريد الربط معه لمشاركة جدول الوجبات الأسبوعي.
-            </p>
+        <UiCard CssClass="settings-card">
+            <h2>🌍 اللغة</h2>
+            <span class="caption">قريباً</span>
+            <div class="settings-choice"><UiFilterChip Disabled="true" Active="@(language == "ar")">العربية</UiFilterChip><UiFilterChip Disabled="true" Active="@(language == "en")">English</UiFilterChip></div>
+        </UiCard>
 
-            <div class="form-group" style="margin: 0;">
-                <label for="other-uid" class="playful-label" style="font-size: 13px !important;">معرّف المستخدم الآخر (UID):</label>
-                <UiTextInput Id="other-uid" @bind-Value="otherUid" CssClass="settings-input" Placeholder="أدخل معرّف المستخدم..." />
-            </div>
-
-            @if (!string.IsNullOrEmpty(statusMessage))
-            {
-                <div class="alert-playful" style="padding: 10px; font-size: 13px; text-align: center; background: @(isError ? "#FDEDEC" : "#E8F8F5"); color: @(isError ? "#C0392B" : "#117A65"); border-color: #2D3748;">
-                    @statusMessage
-                </div>
-            }
-
-            <button class="primary-btn btn-playful" @onclick="SendRequest" disabled="@(string.IsNullOrWhiteSpace(otherUid) || isSending)">
-                @(isSending ? "جاري الإرسال..." : "إرسال طلب ربط 📲")
-            </button>
-        </div>
-
-        <!-- Info Card -->
-        <div class="card-playful" style="padding: 20px; background: var(--color-primary-light); display: flex; align-items: center; gap: 16px;">
-            <div style="font-size: 40px;">💡</div>
-            <div style="font-size: 12px; color: #2D3748; font-weight: 700; line-height: 1.6; text-align: right;">
-                عند قبول الطلب، سيتم دمج جدول الوجبات وسيرث الحساب المقبول جدول الطرف الآخر لتصبحوا في منزل واحد! 🏡
-            </div>
-        </div>
+        <UiCard CssClass="settings-card">
+            <h2>ℹ️ حول التطبيق</h2>
+            <p>نكسـت ويك — مخطط وجبات عائلي</p>
+            <span class="caption">الإصدار 1.0</span>
+            <div class="settings-links"><button class="ghost-btn" disabled>ملاحظاتك</button><button class="ghost-btn" disabled>الخصوصية</button><button class="ghost-btn" disabled>المصدر المفتوح</button></div>
+        </UiCard>
     </div>
 </div>
 
 @code {
-    private string uid = "";
-    private string displayName = "";
-    private string email = "";
-    private string otherUid = "";
-    private string statusMessage = "";
-    private bool isError = false;
-    private bool isSending = false;
-    private List<PendingRequest> pendingRequests = new();
-
-    private sealed record PendingRequest(string Uid, string DisplayName);
+    private HouseholdSettings current = new("ضيف", "");
+    private string householdIdInput = "";
+    private string householdMessage = "";
+    private string theme = "system";
+    private string language = "ar";
+    private bool confirmClear;
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await Auth.GetCurrentUserAsync();
-        if (user is null || string.IsNullOrEmpty(user.Uid))
-        {
-            Nav.NavigateTo("/auth/signin");
-            return;
-        }
-        uid = user.Uid;
-        email = user.Email;
-
-        var profile = await UserService.GetProfileAsync(uid);
-        displayName = profile?.DisplayName ?? email;
-
-        if (profile?.PendingLinkRequestUids != null)
-        {
-            foreach (var requesterUid in profile.PendingLinkRequestUids)
-            {
-                var requesterProfile = await UserService.GetProfileAsync(requesterUid);
-                pendingRequests.Add(new PendingRequest(requesterUid, requesterProfile?.DisplayName ?? requesterUid));
-            }
-        }
+        current = await HouseholdService.GetCurrentAsync();
+        theme = await ThemeService.GetAsync();
+        language = await LanguageService.GetAsync();
     }
-
-    private async Task SendRequest()
+    private async Task CopyHouseholdId() { await JS.InvokeVoidAsync("navigator.clipboard.writeText", current.HouseholdId); householdMessage = "✅ تم نسخ معرّف المنزل"; }
+    private async Task JoinHousehold()
     {
-        if (string.IsNullOrWhiteSpace(otherUid)) return;
-        otherUid = otherUid.Trim();
-
-        if (otherUid.Equals(uid, StringComparison.OrdinalIgnoreCase))
-        {
-            isError = true;
-            statusMessage = "لا يمكنك إرسال طلب ربط لنفسك! 🧐";
-            return;
-        }
-
-        isSending = true;
-        statusMessage = "";
-        StateHasChanged();
-
-        try
-        {
-            var success = await UserService.SendLinkRequestAsync(uid, otherUid);
-            if (success)
-            {
-                isError = false;
-                statusMessage = "تم إرسال طلب الربط بنجاح! 🎉 بانتظار قبوله.";
-                otherUid = "";
-            }
-            else
-            {
-                isError = true;
-                statusMessage = "عذراً، لم نجد مستخدماً بهذا المعرّف 🧐 تحقق من المعرّف وحاول مجدداً.";
-            }
-        }
-        catch (Exception ex)
-        {
-            isError = true;
-            statusMessage = $"حدث خطأ: {ex.Message}";
-        }
-        finally
-        {
-            isSending = false;
-        }
+        if (await HouseholdService.JoinAsync(householdIdInput)) { current = await HouseholdService.GetCurrentAsync(); householdIdInput = ""; householdMessage = "✅ تم الاتصال بالمنزل"; }
+        else householdMessage = "تعذر الاتصال. تأكد من المعرّف وحاول مجدداً.";
     }
-
-    private async Task AcceptRequest(string requesterUid)
-    {
-        try
-        {
-            await UserService.AcceptLinkRequestAsync(uid, requesterUid);
-            pendingRequests.RemoveAll(r => r.Uid == requesterUid);
-            isError = false;
-            statusMessage = "تم قبول الطلب ودمج الحسابات في منزل واحد! 🏡";
-        }
-        catch (Exception ex)
-        {
-            isError = true;
-            statusMessage = $"حدث خطأ: {ex.Message}";
-        }
-    }
-
-    private async Task RejectRequest(string requesterUid)
-    {
-        try
-        {
-            await UserService.RejectLinkRequestAsync(uid, requesterUid);
-            pendingRequests.RemoveAll(r => r.Uid == requesterUid);
-        }
-        catch (Exception ex)
-        {
-            isError = true;
-            statusMessage = $"حدث خطأ: {ex.Message}";
-        }
-    }
-
-    private async Task Logout()
-    {
-        await Auth.SignOutAsync();
-        UserService.ClearCachedHouseholdId();
-        Nav.NavigateTo("/auth/signin", forceLoad: true);
-    }
+    private void OpenImport() => Nav.NavigateTo("/settings/import");
+    private async Task ExportWeek() => await JS.InvokeVoidAsync("nxtweek.downloadJson", await ExportService.ExportCurrentWeekAsync(), "nxtweek-week.json");
+    private async Task ClearLocalData() { await ImportService.ClearLocalDataAsync(); Nav.NavigateTo("/", forceLoad: true); }
 }

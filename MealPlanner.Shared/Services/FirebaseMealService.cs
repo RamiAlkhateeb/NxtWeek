@@ -128,20 +128,40 @@ public class FirebaseMealService : IMealService
     public async Task SeedAsync(List<Meal> meals)
     {
         var catalogMeals = new List<MealCatalogItem>
-        {
-            new() { Id = "m1", Name = "رز وفاصولية حب مع لحمة", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "فاصولياء خضراء", "لحم غنم", "أرز", "ثوم", "كزبرة", "سمنة" }, SideDishes = new() { "مخلل", "بصل أخضر" } },
-            new() { Id = "m2", Name = "مفركة بطاطا", Cuisine = Cuisine.Syrian, MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "بصل", "بيض", "زيت زيتون", "ملح", "فلفل أسود" }, SideDishes = new() { "خبز", "مخلل", "سلطة" } },
-            new() { Id = "m3", Name = "فتة حمص وفول", Cuisine = Cuisine.Syrian, MealType = MealType.Vegetarian, Ingredients = new() { "حمص مسلوق", "فول مسلوق", "خبز محمص", "لبن", "طحينة", "ثوم", "ليمون", "كمون" }, SideDishes = new() { "مخلل", "نعناع" } },
-            new() { Id = "m4", Name = "شوربة عدس مع خبز", Cuisine = Cuisine.Syrian, MealType = MealType.Vegan, Ingredients = new() { "عدس أحمر", "بصل", "كمون", "زيت", "خبز مقلي", "ليمون" }, SideDishes = new() { "فجل", "بصل أخضر" } },
-            new() { Id = "m5", Name = "دجاج مشوي مع رز", Cuisine = Cuisine.Syrian, MealType = MealType.Chicken, Ingredients = new() { "دجاج كامل", "أرز", "بهارات مشكلة", "ثوم", "ليمون", "سمنة" }, SideDishes = new() { "لبن", "سلطة" } },
-            new() { Id = "m6", Name = "ملوخية مع أرز", Cuisine = Cuisine.Syrian, MealType = MealType.Chicken, Ingredients = new() { "ملوخية ورق", "صدور دجاج", "كزبرة", "ثوم", "أرز شعيرية", "ليمون" }, SideDishes = new() { "خبز محمص", "فلفل حار" } },
-            new() { Id = "m7", Name = "معكرونة بالصلصة الحمراء", Cuisine = Cuisine.Lebanese, MealType = MealType.Vegetarian, Ingredients = new() { "معكرونة", "صلصة طماطم", "ثوم", "ريحان", "زيت زيتون" }, SideDishes = new() { "سلطة", "خبز بالثوم" } },
-            new() { Id = "m8", Name = "كباب تركي", Cuisine = Cuisine.Turkish, MealType = MealType.Meat, Ingredients = new() { "لحم مفروم", "بقدونس", "بصل", "بهارات الكباب", "طماطم" }, SideDishes = new() { "خبز", "مخلل", "بطاطا مقلية" } },
-            new() { Id = "m9", Name = "شيش طاووق", Cuisine = Cuisine.Lebanese, MealType = MealType.Chicken, Ingredients = new() { "صدور دجاج", "زبادي", "ثوم", "ليمون", "بهارات" }, SideDishes = new() { "خبز", "بطاطا مقلية", "سلطة" } },
-            new() { Id = "m10", Name = "مجدرة بالبرغل", Cuisine = Cuisine.Syrian, MealType = MealType.Vegan, Ingredients = new() { "عدس بني", "برغل خشن", "بصل", "زيت زيتون" }, SideDishes = new() { "سلطة", "لبن", "مخلل" } },
-            new() { Id = "m11", Name = "صيادية سمك", Cuisine = Cuisine.Lebanese, MealType = MealType.Fish, Ingredients = new() { "سمك فيليه", "أرز", "بصل محروق", "بهارات الصيادية", "ليمون", "مكسرات" }, SideDishes = new() { "سلطة" } },
-            new() { Id = "m12", Name = "يبرق (ورق عنب باللحمة)", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "ورق عنب", "لحم مفروم", "أرز", "لية غنم", "ثوم", "ليمون", "بهارات" }, SideDishes = new() { "خبز", "لبن", "سلطة" } }
-        };
+{
+    new() { Id = "m1", Name = "رز وفاصوليا خضراء باللحمة", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "فاصوليا خضراء", "لحم غنم", "أرز", "ثوم", "كزبرة", "سمنة" }, SideDishes = new() { "مخلل", "بصل أخضر" } },
+
+    new() { Id = "m2", Name = "ملوخية مع أرز", Cuisine = Cuisine.Syrian, MealType = MealType.Chicken, Ingredients = new() { "ملوخية", "دجاج", "ثوم", "كزبرة", "أرز", "ليمون" }, SideDishes = new() { "خبز", "فلفل حار" } },
+
+    new() { Id = "m3", Name = "يخنة بطاطا باللحمة", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "بطاطا", "لحم", "طماطم", "بصل", "ثوم" }, SideDishes = new() { "أرز", "سلطة" } },
+
+    new() { Id = "m5", Name = "مجدرة", Cuisine = Cuisine.Syrian, MealType = MealType.Vegan, Ingredients = new() { "عدس", "برغل", "بصل", "زيت زيتون" }, SideDishes = new() { "لبن", "مخلل", "سلطة" } },
+
+    new() { Id = "m6", Name = "مفركة بطاطا", Cuisine = Cuisine.Syrian, MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "بيض", "بصل", "زيت زيتون" }, SideDishes = new() { "سلطة", "خبز" } },
+
+    new() { Id = "m7", Name = "شوربة عدس", Cuisine = Cuisine.Syrian, MealType = MealType.Vegan, Ingredients = new() { "عدس أحمر", "بصل", "كمون", "ليمون" }, SideDishes = new() { "خبز محمص" } },
+
+    new() { Id = "m8", Name = "فتة حمص", Cuisine = Cuisine.Syrian, MealType = MealType.Vegetarian, Ingredients = new() { "حمص", "لبن", "طحينة", "خبز", "ثوم" }, SideDishes = new() { "مخلل" } },
+
+    new() { Id = "m9", Name = "دجاج مشوي مع أرز", Cuisine = Cuisine.Syrian, MealType = MealType.Chicken, Ingredients = new() { "دجاج", "أرز", "ثوم", "ليمون" }, SideDishes = new() { "سلطة", "لبن" } },
+
+    new() { Id = "m10", Name = "شيش طاووق", Cuisine = Cuisine.Syrian, MealType = MealType.Chicken, Ingredients = new() { "صدور دجاج", "لبن", "ثوم", "ليمون" }, SideDishes = new() { "بطاطا", "خبز", "ثومية" } },
+
+    new() { Id = "m11", Name = "كبة مقلية", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "برغل", "لحم مفروم", "بصل", "جوز" }, SideDishes = new() { "لبن", "سلطة" } },
+
+    new() { Id = "m12", Name = "يبرق", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "ورق عنب", "لحم مفروم", "أرز", "ثوم", "ليمون" }, SideDishes = new() { "لبن" } },
+
+    new() { Id = "m13", Name = "محشي كوسا", Cuisine = Cuisine.Syrian, MealType = MealType.Meat, Ingredients = new() { "كوسا", "لحم مفروم", "أرز", "طماطم" }, SideDishes = new() { "لبن" } },
+
+    new() { Id = "m15", Name = "رز وبازلاء مع الجزر", Cuisine = Cuisine.Syrian, MealType = MealType.Vegetarian, Ingredients = new() { "أرز", "بازلاء", "جزر", "بصل" }, SideDishes = new() { "لبن", "سلطة" } },
+
+    new() { Id = "m16", Name = "معكرونة بالصلصة الحمراء", Cuisine = Cuisine.Syrian, MealType = MealType.Vegetarian, Ingredients = new() { "معكرونة", "صلصة طماطم", "ثوم", "ريحان" }, SideDishes = new() { "سلطة" } },
+
+    new() { Id = "m18", Name = "شاورما دجاج", Cuisine = Cuisine.Syrian, MealType = MealType.Chicken, Ingredients = new() { "دجاج", "ثوم", "بهارات شاورما", "ليمون" }, SideDishes = new() { "بطاطا", "ثومية", "مخلل" } },
+
+    new() { Id = "m19", Name = "ورق عنب", Cuisine = Cuisine.Syrian, MealType = MealType.Vegan, Ingredients = new() { "ورق عنب", "أرز", "بقدونس", "طماطم", "زيت زيتون" }, SideDishes = new() { "سلطة" } },
+
+};
 
         await _catalogService.SeedCatalogAsync(catalogMeals);
     }

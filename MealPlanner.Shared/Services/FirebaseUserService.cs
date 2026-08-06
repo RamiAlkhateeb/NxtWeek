@@ -71,4 +71,20 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     public async Task RejectLinkRequestAsync(string acceptingUid, string requesterUid)
     { var p = await GetProfileAsync(acceptingUid); if (p is null) return; p.PendingLinkRequestUids.Remove(requesterUid); await http.PutAsJsonAsync(await Url($"users/{Key(acceptingUid)}"), p); }
     public Task AssignMealToDateAsync(string uid, DateOnly date, string mealId) => SaveWeeklyPlanEntryAsync(uid, new() { Date = date, MealId = mealId });
+
+    public async Task<bool> JoinHouseholdAsync(string uid, string targetHouseholdId)
+    {
+        targetHouseholdId = targetHouseholdId.Trim();
+        var household = await http.GetFromJsonAsync<Household>(await Url($"households/{Key(targetHouseholdId)}"));
+        if (household is null) return false;
+
+        var profile = await GetProfileAsync(uid);
+        if (profile is null) return false;
+        if (!household.MemberIds.Contains(uid)) household.MemberIds.Add(uid);
+        profile.HouseholdId = household.Id;
+        await http.PutAsJsonAsync(await Url($"households/{Key(household.Id)}"), household);
+        await http.PutAsJsonAsync(await Url($"users/{Key(uid)}"), profile);
+        householdId = household.Id;
+        return true;
+    }
 }

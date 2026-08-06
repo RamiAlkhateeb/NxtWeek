@@ -14,4 +14,5 @@ public sealed class AuthUser
     public string Uid { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
     public string IdToken { get; init; } = string.Empty;
+    public bool IsGuest { get; init; }
 }
