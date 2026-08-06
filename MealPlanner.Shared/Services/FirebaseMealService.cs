@@ -89,7 +89,8 @@ public class FirebaseMealService : IMealService
         var username = user.Uid;
 
         var catalog = await _catalogService.GetAllMealsAsync();
-        var existing = catalog.FirstOrDefault(c => c.Name.Equals(meal.Name, StringComparison.OrdinalIgnoreCase));
+        var normalizedName = NormalizeName(meal.Name);
+        var existing = catalog.FirstOrDefault(c => NormalizeName(c.Name) == normalizedName);
         
         string mealId;
         if (existing is not null)
@@ -99,21 +100,20 @@ public class FirebaseMealService : IMealService
             existing.MealType = meal.MealType ?? existing.MealType;
             existing.Ingredients = meal.Ingredients.Count > 0 ? meal.Ingredients : existing.Ingredients;
             existing.SideDishes = meal.SideDishes.Count > 0 ? meal.SideDishes : existing.SideDishes;
-            await _catalogService.UpsertMealAsync(existing);
+            await _catalogService.UpdateMealAsync(existing);
         }
         else
         {
-            mealId = Guid.NewGuid().ToString("N");
             var newItem = new MealCatalogItem
             {
-                Id = mealId,
                 Name = meal.Name,
                 Cuisine = meal.Cuisine ?? Cuisine.Syrian,
                 MealType = meal.MealType ?? MealType.Vegetarian,
                 Ingredients = meal.Ingredients,
                 SideDishes = meal.SideDishes
             };
-            await _catalogService.UpsertMealAsync(newItem);
+            newItem = await _catalogService.CreateMealAsync(newItem);
+            mealId = newItem.Id;
         }
 
         var entry = new WeeklyPlanEntry
@@ -170,5 +170,7 @@ public class FirebaseMealService : IMealService
     {
         return await _catalogService.IsCatalogSeededAsync();
     }
+
+    private static string NormalizeName(string value) => string.Join(' ', value.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
 
 }

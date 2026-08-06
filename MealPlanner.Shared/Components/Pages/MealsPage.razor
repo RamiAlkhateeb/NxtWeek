@@ -5,6 +5,7 @@
 @inject IUserService UserService
 @inject IAuthService Auth
 @inject IMealCacheService CacheService
+@inject IMealService MealService
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
@@ -20,6 +21,7 @@
     <!-- Search and Filters -->
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
         <UiTextInput CssClass="meal-search" Placeholder="🔍 ابحث عن وجبة..." @bind-Value="searchText" />
+        <UiButton Variant="secondary" OnClick="OpenNewMeal">＋ وجبة جديدة</UiButton>
 
         <!-- Cuisine Filter Chips -->
         <div>
@@ -88,6 +90,14 @@
     </div>
 </UiBottomSheet>
 
+<UiBottomSheet IsOpen="showNewMeal" Title="وجبة جديدة" Eyebrow="أضفها مرة واحدة لتصبح متاحة للجميع" OnDismiss="CloseNewMeal">
+    <div class="sheet-actions">
+        <UiTextInput Placeholder="اسم الوجبة" @bind-Value="newMealName" />
+        @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="alert-playful settings-feedback">@newMealError</div> }
+        <UiButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">حفظ واختيار الوجبة</UiButton>
+    </div>
+</UiBottomSheet>
+
 @code {
     private List<MealCatalogItem> allMeals = new();
     private List<WeeklyPlanEntry> currentWeekPlan = new();
@@ -106,6 +116,9 @@
     private bool showDayPicker;
     private MealCatalogItem? browseMeal;
     private string confirmMessage = "";
+    private bool showNewMeal;
+    private string newMealName = "";
+    private string newMealError = "";
 
 
     private List<MealCatalogItem> FilteredMeals
@@ -147,6 +160,7 @@
         }
         currentWeekDays = Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
 
+        await MealService.SeedAsync(new List<Meal>());
         allMeals = await CatalogService.GetAllMealsAsync();
         userProfile = await UserService.GetProfileAsync(uid);
         currentWeekPlan = await UserService.GetWeeklyPlanAsync(uid, startOfWeek, startOfWeek.AddDays(6));
@@ -176,6 +190,21 @@
     }
     private async Task ChooseBrowseDay(DateOnly day) { if (browseMeal is not null) await ExecuteAssignment(browseMeal, day); }
     private void CloseDayPicker() { showDayPicker = false; browseMeal = null; }
+    private void OpenNewMeal() { showNewMeal = true; newMealName = ""; newMealError = ""; }
+    private void CloseNewMeal() { showNewMeal = false; newMealError = ""; }
+    private async Task CreateNewMeal()
+    {
+        var name = newMealName.Trim();
+        if (string.IsNullOrWhiteSpace(name)) { newMealError = "أدخل اسم الوجبة."; return; }
+        try
+        {
+            var created = await CatalogService.CreateMealAsync(new MealCatalogItem { Name = name, CreatedBy = uid });
+            allMeals = await CatalogService.GetAllMealsAsync();
+            CloseNewMeal();
+            await SelectMeal(created);
+        }
+        catch (Exception ex) { newMealError = ex.Message; }
+    }
 
     private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
     {

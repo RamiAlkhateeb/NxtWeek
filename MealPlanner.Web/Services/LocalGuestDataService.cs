@@ -50,7 +50,20 @@ public sealed class LocalGuestDataService(IJSRuntime js) : IUserService, IMealCa
     public async Task<List<MealCatalogItem>> GetAllMealsAsync() => (await ReadAsync()).Catalog;
     public async Task<MealCatalogItem?> GetMealByIdAsync(string id) => (await ReadAsync()).Catalog.FirstOrDefault(x => x.Id == id);
     public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(List<Cuisine>? cuisines, MealType? type) => (await GetAllMealsAsync()).Where(x => (cuisines is null || cuisines.Count == 0 || cuisines.Contains(x.Cuisine)) && (!type.HasValue || x.MealType == type)).ToList();
+    public async Task<List<MealCatalogItem>> SearchMealsAsync(string query) => (await GetAllMealsAsync()).Where(x => x.Name.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+    public async Task<MealCatalogItem> CreateMealAsync(MealCatalogItem meal)
+    {
+        meal.Name = string.Join(' ', meal.Name.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        var existing = (await GetAllMealsAsync()).FirstOrDefault(x => string.Equals(x.Name, meal.Name, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null) return existing;
+        meal.Id = string.IsNullOrWhiteSpace(meal.Id) ? Guid.NewGuid().ToString("N") : meal.Id;
+        meal.CreatedAt = DateTimeOffset.UtcNow;
+        await UpsertMealAsync(meal);
+        return meal;
+    }
     public async Task UpsertMealAsync(MealCatalogItem meal) { var s = await ReadAsync(); s.Catalog.RemoveAll(x => x.Id == meal.Id); s.Catalog.Add(meal); await WriteAsync(s); }
+    public Task UpdateMealAsync(MealCatalogItem meal) => UpsertMealAsync(meal);
+    public async Task DeleteMealAsync(string id) { var s = await ReadAsync(); s.Catalog.RemoveAll(x => x.Id == id); await WriteAsync(s); }
     public async Task<bool> IsCatalogSeededAsync() => (await ReadAsync()).Catalog.Count > 0;
     public async Task SeedCatalogAsync(List<MealCatalogItem> meals) { var s = await ReadAsync(); if (s.Catalog.Count == 0) { s.Catalog = meals; await WriteAsync(s); } }
 

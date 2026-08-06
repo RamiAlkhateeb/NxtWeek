@@ -20,7 +20,8 @@ builder.Services.AddSingleton(new FirebaseOptions
 builder.Services.AddScoped<LocalGuestDataService>();
 builder.Services.AddScoped<FirebaseUserService>();
 builder.Services.AddScoped<IUserService>(sp => sp.GetRequiredService<LocalGuestDataService>());
-builder.Services.AddScoped<IMealCatalogService>(sp => sp.GetRequiredService<LocalGuestDataService>());
+builder.Services.AddScoped<FirebaseMealCatalogService>();
+builder.Services.AddScoped<IMealCatalogService>(sp => sp.GetRequiredService<FirebaseMealCatalogService>());
 builder.Services.AddScoped<FirebaseMealService>();
 builder.Services.AddScoped<IMealService>(sp => sp.GetRequiredService<FirebaseMealService>());
 builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();

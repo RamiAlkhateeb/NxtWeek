@@ -29,4 +29,11 @@ public class MealCatalogItem
     public MealType MealType { get; set; }
     public List<string> Ingredients { get; set; } = new();
     public List<string> SideDishes { get; set; } = new();
+    public DateTimeOffset CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public bool IsSeed { get; set; }
+    public List<string> Tags { get; set; } = new();
+    public string? ImageUrl { get; set; }
+    public int? PreparationMinutes { get; set; }
+    public bool IsArchived { get; set; }
 }

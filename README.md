@@ -14,7 +14,7 @@ NxtWeek is an Arabic-first, RTL weekly meal planner for family home cooking. It 
 
 ## Guest mode and storage
 
-The normal entry point is Guest Mode. No email or password is required. The browser creates a persistent guest ID in `localStorage` and stores the guest profile, meal catalog, plans, and favorites in the local guest document:
+The normal entry point is Guest Mode. No email or password is required. The browser creates a persistent guest ID in `localStorage` and stores the guest profile, plans, and favorites in the local guest document:
 
 ```text
 localStorage:nxtweek.guestId
@@ -87,7 +87,7 @@ MealPlanner.slnx
 └── MealPlanner.Web/      Blazor WebAssembly PWA host and browser implementations
 ```
 
-The app uses Firebase Realtime Database REST services for household identity and currently retains an existing Firebase service layer for future synchronization. The active user/catalog storage registrations are local guest implementations.
+The app uses Firebase Realtime Database REST services for household identity and the global `MealCatalog`. The active user and plan storage registrations are local guest implementations. The C# meal list is idempotent seed data: missing meals are added to Firebase without overwriting, duplicating, or deleting existing catalog entries.
 
 `database.rules.json` currently allows unrestricted reads and writes for testing. It is not suitable for production until Firebase Authentication and authenticated database rules are added.
 

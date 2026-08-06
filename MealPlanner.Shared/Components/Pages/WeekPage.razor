@@ -190,8 +190,7 @@
 
     private async Task EnsureSeededAsync()
     {
-        if (!await MealService.IsSeededAsync())
-            await MealService.SeedAsync(new List<Meal>());
+        await MealService.SeedAsync(new List<Meal>());
     }
 
     private async Task LoadWeekAsync(DateOnly weekStart)
