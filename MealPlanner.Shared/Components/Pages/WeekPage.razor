@@ -73,13 +73,12 @@
     }
 </div>
 
-@if (selectedMeal is not null)
-{
-    <div class="sheet-backdrop" @onclick="CloseActions">
-        <section class="bottom-sheet" @onclick:stopPropagation="true" aria-label="خيارات الوجبة">
-            <div class="sheet-handle"></div>
-            <p class="sheet-date">@DayDateLabel(selectedMeal.Date)</p>
-            <h2>@(string.IsNullOrWhiteSpace(selectedMeal.MealId) ? "اختاري وجبة" : selectedMeal.Name)</h2>
+<UiBottomSheet IsOpen="@(selectedMeal is not null)"
+               Eyebrow="@(selectedMeal is null ? null : DayDateLabel(selectedMeal.Date))"
+               Title="@(selectedMeal is null || string.IsNullOrWhiteSpace(selectedMeal.MealId) ? "اختاري وجبة" : selectedMeal.Name)"
+               OnDismiss="CloseActions">
+    @if (selectedMeal is not null)
+    {
             @if (showQuickPicker)
             {
                 <div class="quick-picker">
@@ -106,9 +105,8 @@
                     { <button class="danger" @onclick="DeleteSelected">🗑️ حذف من اليوم</button> }
                 </div>
             }
-        </section>
-    </div>
-}
+    }
+</UiBottomSheet>
 
 @if (showMonth)
 {

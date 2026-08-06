@@ -1,0 +1,19 @@
+@if (IsOpen)
+{
+    <div class="sheet-backdrop" @onclick="OnDismiss">
+        <section class="bottom-sheet" @onclick:stopPropagation="true" dir="rtl" aria-label="@Title">
+            <div class="sheet-handle"></div>
+            @if (!string.IsNullOrWhiteSpace(Eyebrow)) { <p class="sheet-date">@Eyebrow</p> }
+            <h2>@Title</h2>
+            @ChildContent
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Eyebrow { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

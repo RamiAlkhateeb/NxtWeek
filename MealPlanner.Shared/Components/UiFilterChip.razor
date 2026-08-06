@@ -1,0 +1,9 @@
+<button class="ui-filter-chip @(Active ? "active" : "") @CssClass" @onclick="OnClick" @attributes="AdditionalAttributes">@ChildContent</button>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+}

@@ -6,7 +6,7 @@
 @inject NavigationManager Nav
 
 <div class="app onboarding-container" dir="rtl">
-    <div class="onboarding-card card-playful">
+    <UiCard CssClass="onboarding-card">
         <div class="logo-container">
             <span class="emoji-bounce">🍳</span>
             <span class="emoji-float emoji-delay-1">🥑</span>
@@ -17,14 +17,14 @@
         <p class="subtitle">أدخل بريدك الإلكتروني للبدء فوراً دون الحاجة لكلمة مرور.</p>
 
         <div class="form-group">
-            <input class="playful-input" type="email" @bind="email" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="name@example.com" disabled="@isProcessing" />
+            <UiTextInput CssClass="sign-in-input" Type="email" @bind-Value="email" @onkeydown="HandleKeyDown" Placeholder="name@example.com" Disabled="@isProcessing" />
             @if (!string.IsNullOrEmpty(error))
             {
                 <span class="error-msg text-danger mt-2 d-block">⚠️ @error</span>
             }
         </div>
 
-        <button class="primary-btn btn-playful" @onclick="Submit" disabled="@(string.IsNullOrWhiteSpace(email) || isProcessing)">
+        <UiButton Variant="primary" CssClass="sign-in-submit" OnClick="Submit" Disabled="@(string.IsNullOrWhiteSpace(email) || isProcessing)">
             @if (isProcessing)
             {
                 <span>جاري التحميل... ⏳</span>
@@ -33,8 +33,8 @@
             {
                 <span>متابعة 🚀</span>
             }
-        </button>
-    </div>
+        </UiButton>
+    </UiCard>
 </div>
 
 @code {

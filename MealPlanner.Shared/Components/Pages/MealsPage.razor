@@ -14,26 +14,21 @@
     }
     else
     {
-        <div class="header">
-            <h1>🍽️ مكتبة الوجبات</h1>
-            <p>تصفح الوجبات، احفظ المفضلة، واختر يوماً عند الاستخدام.</p>
-        </div>
+        <UiPageHeader Icon="🍽️" Title="مكتبة الوجبات" Subtitle="تصفح الوجبات، احفظ المفضلة، واختر يوماً عند الاستخدام." />
     }
 
     <!-- Search and Filters -->
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
-        <input type="text" class="playful-input" style="width:100%;"
-               placeholder="🔍 ابحث عن وجبة..."
-               @bind="searchText" @bind:event="oninput" />
+        <UiTextInput CssClass="meal-search" Placeholder="🔍 ابحث عن وجبة..." @bind-Value="searchText" />
 
         <!-- Cuisine Filter Chips -->
         <div>
             <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">المطبخ:</span>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button class="side-dish-toggle-chip @(selectedCuisine == null ? "active" : "")" @onclick="() => SetCuisine(null)">الكل</button>
-                <button class="side-dish-toggle-chip @(selectedCuisine == Cuisine.Syrian ? "active" : "")" @onclick="() => SetCuisine(Cuisine.Syrian)">🇸🇾 سوري</button>
-                <button class="side-dish-toggle-chip @(selectedCuisine == Cuisine.Turkish ? "active" : "")" @onclick="() => SetCuisine(Cuisine.Turkish)">🇹🇷 تركي</button>
-                <button class="side-dish-toggle-chip @(selectedCuisine == Cuisine.Lebanese ? "active" : "")" @onclick="() => SetCuisine(Cuisine.Lebanese)">🇱🇧 لبناني</button>
+                <UiFilterChip Active="@(selectedCuisine == null)" OnClick="() => SetCuisine(null)">الكل</UiFilterChip>
+                <UiFilterChip Active="@(selectedCuisine == Cuisine.Syrian)" OnClick="() => SetCuisine(Cuisine.Syrian)">🇸🇾 سوري</UiFilterChip>
+                <UiFilterChip Active="@(selectedCuisine == Cuisine.Turkish)" OnClick="() => SetCuisine(Cuisine.Turkish)">🇹🇷 تركي</UiFilterChip>
+                <UiFilterChip Active="@(selectedCuisine == Cuisine.Lebanese)" OnClick="() => SetCuisine(Cuisine.Lebanese)">🇱🇧 لبناني</UiFilterChip>
             </div>
         </div>
 
@@ -41,12 +36,12 @@
         <div>
             <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">النوع:</span>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button class="side-dish-toggle-chip @(selectedMealType == null ? "active" : "")" @onclick="() => SetMealType(null)">الكل</button>
-                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Meat ? "active" : "")" @onclick="() => SetMealType(MealType.Meat)">🥩 لحم</button>
-                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Chicken ? "active" : "")" @onclick="() => SetMealType(MealType.Chicken)">🍗 دجاج</button>
-                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Fish ? "active" : "")" @onclick="() => SetMealType(MealType.Fish)">🐟 سمك</button>
-                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Vegetarian ? "active" : "")" @onclick="() => SetMealType(MealType.Vegetarian)">🥦 نباتي</button>
-                <button class="side-dish-toggle-chip @(selectedMealType == MealType.Vegan ? "active" : "")" @onclick="() => SetMealType(MealType.Vegan)">🌱 نباتي صرف</button>
+                <UiFilterChip Active="@(selectedMealType == null)" OnClick="() => SetMealType(null)">الكل</UiFilterChip>
+                <UiFilterChip Active="@(selectedMealType == MealType.Meat)" OnClick="() => SetMealType(MealType.Meat)">🥩 لحم</UiFilterChip>
+                <UiFilterChip Active="@(selectedMealType == MealType.Chicken)" OnClick="() => SetMealType(MealType.Chicken)">🍗 دجاج</UiFilterChip>
+                <UiFilterChip Active="@(selectedMealType == MealType.Fish)" OnClick="() => SetMealType(MealType.Fish)">🐟 سمك</UiFilterChip>
+                <UiFilterChip Active="@(selectedMealType == MealType.Vegetarian)" OnClick="() => SetMealType(MealType.Vegetarian)">🥦 نباتي</UiFilterChip>
+                <UiFilterChip Active="@(selectedMealType == MealType.Vegan)" OnClick="() => SetMealType(MealType.Vegan)">🌱 نباتي صرف</UiFilterChip>
             </div>
         </div>
     </div>
@@ -69,11 +64,7 @@
         }
         else if (FilteredMeals.Count == 0)
         {
-            <div class="card-playful" style="padding: 30px; text-align: center;">
-                <div style="font-size: 50px; margin-bottom: 12px;">🍳</div>
-                <h3 style="font-weight: 800; color: var(--color-text-main);">ما لقينا وجبات!</h3>
-                <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 6px;">جرب تغيير كلمة البحث أو الفلاتر لتجد وجبتك المفضلة.</p>
-            </div>
+            <UiEmptyState Icon="🍳" Title="ما لقينا وجبات!" Message="جرب تغيير كلمة البحث أو الفلاتر لتجد وجبتك المفضلة." />
         }
         else
         {
@@ -90,20 +81,12 @@
     </div>
 </div>
 
-@if (showDayPicker && browseMeal is not null)
-{
-    <div class="sheet-backdrop" @onclick="CloseDayPicker">
-        <section class="bottom-sheet" @onclick:stopPropagation="true">
-            <div class="sheet-handle"></div>
-            <p class="sheet-date">@browseMeal.Name</p>
-            <h2>أضيفي هذه الوجبة لأي يوم؟</h2>
-            <div class="move-days">
-                @foreach (var day in currentWeekDays)
-                { <button @onclick="() => ChooseBrowseDay(day)">@GetDayNameArabic(day.DayOfWeek)</button> }
-            </div>
-        </section>
+<UiBottomSheet IsOpen="@(showDayPicker && browseMeal is not null)" Eyebrow="@browseMeal?.Name" Title="أضيفي هذه الوجبة لأي يوم؟" OnDismiss="CloseDayPicker">
+    <div class="move-days">
+        @foreach (var day in currentWeekDays)
+        { <button @onclick="() => ChooseBrowseDay(day)">@GetDayNameArabic(day.DayOfWeek)</button> }
     </div>
-}
+</UiBottomSheet>
 
 @code {
     private List<MealCatalogItem> allMeals = new();

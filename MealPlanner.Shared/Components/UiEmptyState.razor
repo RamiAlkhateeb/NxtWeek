@@ -1,0 +1,13 @@
+<div class="ui-empty-state ui-card" dir="rtl">
+    <div class="ui-empty-state-icon" aria-hidden="true">@Icon</div>
+    <h2>@Title</h2>
+    @if (!string.IsNullOrWhiteSpace(Message)) { <p>@Message</p> }
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "🍲";
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

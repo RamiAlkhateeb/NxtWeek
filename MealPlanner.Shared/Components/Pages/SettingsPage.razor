@@ -6,10 +6,7 @@
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
-    <div class="header">
-        <h1>⚙️ الإعدادات</h1>
-        <p>تخصيص التطبيق وربط الحسابات</p>
-    </div>
+    <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="تخصيص التطبيق وربط الحسابات" />
 
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
         <!-- User Info Card -->
@@ -60,8 +57,7 @@
 
             <div class="form-group" style="margin: 0;">
                 <label for="other-uid" class="playful-label" style="font-size: 13px !important;">معرّف المستخدم الآخر (UID):</label>
-                <input id="other-uid" type="text" @bind="otherUid" @bind:event="oninput"
-                       class="playful-input" style="width: 100%;" placeholder="أدخل معرّف المستخدم..." />
+                <UiTextInput Id="other-uid" @bind-Value="otherUid" CssClass="settings-input" Placeholder="أدخل معرّف المستخدم..." />
             </div>
 
             @if (!string.IsNullOrEmpty(statusMessage))

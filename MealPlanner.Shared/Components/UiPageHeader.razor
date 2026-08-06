@@ -1,0 +1,14 @@
+<header class="ui-page-header" dir="rtl">
+    <div>
+        <h1>@if (!string.IsNullOrWhiteSpace(Icon)) { <span aria-hidden="true">@Icon</span> } @Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Subtitle)) { <p>@Subtitle</p> }
+    </div>
+    @ChildContent
+</header>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
