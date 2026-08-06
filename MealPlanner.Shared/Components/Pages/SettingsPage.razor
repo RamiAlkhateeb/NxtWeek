@@ -28,7 +28,7 @@
                 </button>
             </div>
 
-            <button class="primary-btn btn-playful" style="margin-top: 12px; background: #E74C3C !important;" @onclick="Logout">
+            <button class="danger-btn" style="margin-top: 12px; width: 100%;" @onclick="Logout">
                 🚪 تسجيل الخروج
             </button>
         </div>
@@ -43,8 +43,8 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; border-bottom: 1px dashed var(--color-border); padding-bottom: 10px;">
                         <span style="font-size: 14px; font-weight: 700;">@req.DisplayName <span style="font-size: 11px; color: var(--color-text-secondary);">(@req.Uid)</span></span>
                         <div style="display: flex; gap: 6px;">
-                            <button class="primary-btn btn-playful" style="padding: 6px 12px; font-size: 12px; background: #2ECC71 !important;" @onclick="() => AcceptRequest(req.Uid)">قبول ✅</button>
-                            <button class="primary-btn btn-playful" style="padding: 6px 12px; font-size: 12px; background: #E74C3C !important;" @onclick="() => RejectRequest(req.Uid)">رفض ❌</button>
+                            <button class="primary-btn btn-playful" style="padding: 6px 12px; font-size: 12px; background: var(--color-accent);" @onclick="() => AcceptRequest(req.Uid)">قبول ✅</button>
+                            <button class="danger-btn" style="padding: 6px 12px; font-size: 12px;" @onclick="() => RejectRequest(req.Uid)">رفض ❌</button>
                         </div>
                     </div>
                 }

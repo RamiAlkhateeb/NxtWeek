@@ -11,16 +11,19 @@
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
-    <div class="dashboard-header-container">
+    @if (!string.IsNullOrWhiteSpace(toastMessage))
+    {
+        <div class="toast-message" role="status">✅ @toastMessage</div>
+    }
+    <div class="dashboard-header-container compact-dashboard-header">
         <div class="user-greeting">
             <span>مرحباً، <strong>@displayName</strong> 👋</span>
             <button class="logout-btn" @onclick="SignOut">تسجيل الخروج</button>
         </div>
-        <button class="add-meal-btn-sm" title="إضافة وجبة" @onclick='() => Nav.NavigateTo("/edit/new")'>+</button>
     </div>
 
     <div class="week-page-header">
-        <button class="month-link" @onclick='() => Nav.NavigateTo("/month")'>📅 عرض الشهر</button>
+        <button class="month-link" title="عرض الشهر" aria-label="عرض الشهر" @onclick="OpenMonth">📅</button>
         <h1>مخططنا الأسبوعي</h1>
         <p>@WeekRangeLabel</p>
         <div class="week-nav week-nav-wide">
@@ -42,14 +45,14 @@
                 
                 @if (string.IsNullOrWhiteSpace(meal.MealId))
                 {
-                    <button class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "")" @onclick="() => EditRequested(meal)">
+                    <button class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" @onclick="() => OpenMealPicker(meal.Date)">
                         <span class="week-card-date">@DayDateLabel(meal.Date)</span>
-                        <span class="week-empty-copy">لسه فاضي... يلا نضيف وجبة؟ 🍽️</span>
+                        <span class="week-empty-copy">🤔 شو نطبخ اليوم؟ <b>🎲 اقترح وجبة</b></span>
                     </button>
                 }
                 else
                 {
-                    <article class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "")" @onclick="() => ViewDetails(meal)">
+                    <article id="@($"day-{meal.Date:yyyy-MM-dd}")" class="week-meal-card @(isPast ? "week-card-past" : "") @(animatedDate == meal.Date ? "meal-changed" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" @onclick="() => OpenActions(meal)">
                         <div class="week-card-topline">
                             <span class="week-card-date">@DayDateLabel(meal.Date)</span>
                             @if (meal.IsFavorite)
@@ -58,9 +61,10 @@
                             }
                         </div>
                         <div class="week-card-name">@meal.Name</div>
-                        <div class="meal-card-actions">
-                            <button @onclick="() => EditRequested(meal)" @onclick:stopPropagation="true">✏️ تعديل</button>
-                            <button class="primary" @onclick="() => SuggestNew(meal)" @onclick:stopPropagation="true">🔄 اقتراح جديد</button>
+                        <div class="meal-card-actions compact-actions">
+                            <button title="تعديل الوجبة" aria-label="تعديل الوجبة" @onclick="() => OpenActions(meal)" @onclick:stopPropagation="true">✏️</button>
+                            <button title="فاجئني باقتراح" aria-label="فاجئني باقتراح" @onclick="() => SuggestNew(meal)" @onclick:stopPropagation="true">🎲</button>
+                            <button title="المفضلة" aria-label="المفضلة" @onclick="() => ToggleFavorite(meal)" @onclick:stopPropagation="true">@(meal.IsFavorite ? "❤️" : "♡")</button>
                         </div>
                     </article>
                 }
@@ -69,15 +73,77 @@
     }
 </div>
 
+@if (selectedMeal is not null)
+{
+    <div class="sheet-backdrop" @onclick="CloseActions">
+        <section class="bottom-sheet" @onclick:stopPropagation="true" aria-label="خيارات الوجبة">
+            <div class="sheet-handle"></div>
+            <p class="sheet-date">@DayDateLabel(selectedMeal.Date)</p>
+            <h2>@(string.IsNullOrWhiteSpace(selectedMeal.MealId) ? "اختاري وجبة" : selectedMeal.Name)</h2>
+            @if (showQuickPicker)
+            {
+                <div class="quick-picker">
+                    @foreach (var item in catalogMeals.Take(8))
+                    {
+                        <button @onclick="() => ChooseMeal(item)"><span>@item.Name</span><small>@item.Cuisine</small></button>
+                    }
+                </div>
+            }
+            else if (showMoveDays)
+            {
+                <div class="move-days">
+                    @foreach (var day in weekMeals.Where(x => x.Date != selectedMeal.Date))
+                    { <button @onclick="() => MoveTo(day.Date)">@DayDateLabel(day.Date)</button> }
+                </div>
+            }
+            else
+            {
+                <div class="sheet-actions">
+                    <button @onclick="() => OpenMealPicker(selectedMeal.Date)">🍽️ تغيير الوجبة</button>
+                    <button @onclick="SuggestFromSheet">🎲 فاجئني</button>
+                    <button @onclick="() => showMoveDays = true">↔️ نقل ليوم آخر</button>
+                    @if (!string.IsNullOrWhiteSpace(selectedMeal.MealId))
+                    { <button class="danger" @onclick="DeleteSelected">🗑️ حذف من اليوم</button> }
+                </div>
+            }
+        </section>
+    </div>
+}
+
+@if (showMonth)
+{
+    <div class="sheet-backdrop" @onclick="CloseMonth">
+        <section class="month-sheet" @onclick:stopPropagation="true">
+            <div class="month-header"><button @onclick="PreviousMonth">›</button><h2>@MonthLabel</h2><button @onclick="NextMonth">‹</button></div>
+            <div class="month-weekdays">@foreach (var day in WeekdayLabels) { <span>@day</span> }</div>
+            <div class="month-grid">@foreach (var day in calendarDays) { if (day is null) { <div class="month-cell month-outside"></div> } else { <div class="month-cell @(day == today ? "today" : "")"><span class="month-day-number">@day.Value.Day</span>@if (monthEntries.TryGetValue(day.Value, out var name)) { <span class="month-meal-name">@name</span> }</div> } }</div>
+        </section>
+    </div>
+}
+
 @code {
     private List<Meal> weekMeals = new();
     private DateOnly currentWeekStart;
     private bool isLoading = true;
     private string uid = "";
     private string displayName = "";
+    private List<MealCatalogItem> catalogMeals = new();
+    private Meal? selectedMeal;
+    private bool showQuickPicker;
+    private bool showMoveDays;
+    private DateOnly? animatedDate;
+    private DateOnly? navigatingDate;
+    private string toastMessage = "";
+    private bool showMonth;
+    private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private List<DateOnly?> calendarDays = new();
+    private readonly Dictionary<DateOnly, string> monthEntries = new();
+    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private static readonly CultureInfo ArabicCulture = new("ar-EG");
 
     private string WeekRangeLabel => $"{DayDateLabel(currentWeekStart)} – {DayDateLabel(currentWeekStart.AddDays(6))}";
+    private string MonthLabel => currentMonth.ToString("MMMM yyyy", ArabicCulture);
+    private static readonly string[] WeekdayLabels = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -105,7 +171,23 @@
 
         currentWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         await EnsureSeededAsync();
+        catalogMeals = await CatalogService.GetAllMealsAsync();
         await LoadWeekAsync(currentWeekStart);
+        var uri = new Uri(Nav.Uri);
+        var updatedPrefix = "updated=";
+        var query = uri.Query;
+        var index = query.IndexOf(updatedPrefix, StringComparison.OrdinalIgnoreCase);
+        if (index >= 0 && DateOnly.TryParse(query[(index + updatedPrefix.Length)..].Split('&')[0], out var updatedDate))
+        {
+            animatedDate = updatedDate;
+        }
+        const string toastPrefix = "toast=";
+        var toastIndex = query.IndexOf(toastPrefix, StringComparison.OrdinalIgnoreCase);
+        if (toastIndex >= 0)
+        {
+            toastMessage = Uri.UnescapeDataString(query[(toastIndex + toastPrefix.Length)..].Split('&')[0]);
+            _ = HideToastAsync();
+        }
     }
 
     private async Task EnsureSeededAsync()
@@ -144,11 +226,63 @@
         meal.Cuisine = item?.Cuisine;
         meal.MealType = item?.MealType;
         await MealService.UpsertMealAsync(meal);
+        animatedDate = meal.Date;
         await LoadWeekAsync(currentWeekStart);
     }
 
-    private void EditRequested(Meal meal) => Nav.NavigateTo($"/edit/{meal.Date:yyyy-MM-dd}");
-    private void ViewDetails(Meal meal) => Nav.NavigateTo($"/meal/{meal.MealId}");
+    private void OpenActions(Meal meal) { selectedMeal = meal; showQuickPicker = false; showMoveDays = false; }
+    private async Task OpenMealPicker(DateOnly date)
+    {
+        navigatingDate = date;
+        StateHasChanged();
+        await Task.Delay(180);
+        Nav.NavigateTo($"/meals?day={date:yyyy-MM-dd}");
+    }
+    private async Task HideToastAsync()
+    {
+        await Task.Delay(2000);
+        toastMessage = "";
+        await InvokeAsync(StateHasChanged);
+    }
+    private void CloseActions() { selectedMeal = null; showQuickPicker = false; showMoveDays = false; }
+    private async Task SuggestFromSheet() { if (selectedMeal is not null) { await SuggestNew(selectedMeal); CloseActions(); } }
+    private async Task ChooseMeal(MealCatalogItem item)
+    {
+        if (selectedMeal is null) return;
+        selectedMeal.Name = item.Name; selectedMeal.MealId = item.Id; selectedMeal.Cuisine = item.Cuisine; selectedMeal.MealType = item.MealType; selectedMeal.Ingredients = item.Ingredients; selectedMeal.SideDishes = item.SideDishes;
+        await MealService.UpsertMealAsync(selectedMeal); animatedDate = selectedMeal.Date; await LoadWeekAsync(currentWeekStart); CloseActions();
+    }
+    private async Task ToggleFavorite(Meal meal)
+    {
+        if (string.IsNullOrWhiteSpace(meal.MealId)) return;
+        await UserService.ToggleFavoriteMealAsync(uid, meal.MealId); meal.IsFavorite = !meal.IsFavorite;
+        await MealService.UpsertMealAsync(meal);
+    }
+    private async Task DeleteSelected()
+    {
+        if (selectedMeal is null) return;
+        await UserService.SaveWeeklyPlanEntryAsync(uid, new WeeklyPlanEntry { Date = selectedMeal.Date, MealId = "", IsFavorite = false });
+        await LoadWeekAsync(currentWeekStart); CloseActions();
+    }
+    private async Task MoveTo(DateOnly date)
+    {
+        if (selectedMeal is null) return;
+        var target = weekMeals.First(m => m.Date == date); target.MealId = selectedMeal.MealId; target.Name = selectedMeal.Name; target.Cuisine = selectedMeal.Cuisine; target.MealType = selectedMeal.MealType; target.Ingredients = selectedMeal.Ingredients; target.SideDishes = selectedMeal.SideDishes; target.IsFavorite = selectedMeal.IsFavorite;
+        await MealService.UpsertMealAsync(target);
+        await UserService.SaveWeeklyPlanEntryAsync(uid, new WeeklyPlanEntry { Date = selectedMeal.Date, MealId = "", IsFavorite = false });
+        await LoadWeekAsync(currentWeekStart); CloseActions();
+    }
+    private async Task OpenMonth() { showMonth = true; await LoadMonthAsync(); }
+    private void CloseMonth() => showMonth = false;
+    private async Task PreviousMonth() { currentMonth = currentMonth.AddMonths(-1); await LoadMonthAsync(); }
+    private async Task NextMonth() { currentMonth = currentMonth.AddMonths(1); await LoadMonthAsync(); }
+    private async Task LoadMonthAsync()
+    {
+        monthEntries.Clear(); var plan = await UserService.GetMonthPlanAsync(uid, currentMonth.Year, currentMonth.Month); var names = catalogMeals.ToDictionary(m => m.Id, m => m.Name);
+        foreach (var entry in plan) if (names.TryGetValue(entry.MealId, out var name)) monthEntries[entry.Date] = name;
+        var offset = ((int)currentMonth.DayOfWeek + 6) % 7; var days = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month); var count = offset + days; count += (7 - count % 7) % 7;
+        calendarDays = Enumerable.Range(0, count).Select(i => i < offset || i >= offset + days ? (DateOnly?)null : currentMonth.AddDays(i - offset)).ToList();
+    }
 
     private async Task SignOut()
     {

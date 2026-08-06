@@ -8,10 +8,17 @@
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper" dir="rtl">
-    <div class="header">
-        <h1>🍽️ مكتبة الوجبات</h1>
-        <p>تصفح كل الوجبات وأضفها لجدولك الأسبوعي</p>
-    </div>
+    @if (isContextMode)
+    {
+        <SelectedDayHeader Date="selectedDate" />
+    }
+    else
+    {
+        <div class="header">
+            <h1>🍽️ مكتبة الوجبات</h1>
+            <p>تصفح الوجبات، احفظ المفضلة، واختر يوماً عند الاستخدام.</p>
+        </div>
+    }
 
     <!-- Search and Filters -->
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
@@ -72,83 +79,37 @@
         {
             @foreach (var meal in FilteredMeals)
             {
-                var isSelected = userProfile?.SelectedMealIds?.Contains(meal.Id) ?? false;
-                <div class="card-playful @(isSelected ? "playful-card-selected" : "")"
-                     style="padding: 16px; display: flex; flex-direction: column; gap: 8px; position: relative;">
-
-                    @if (isSelected)
-                    {
-                        <span class="playful-badge" style="position: absolute; left: 16px; top: 16px;">
-                            ✓ ضمن قائمتي
-                        </span>
-                    }
-
-                    <div @onclick="() => NavigateToDetails(meal.Id)" style="cursor: pointer;">
-                        <h3 style="font-size: 17px; font-weight: 800; color: var(--color-text-main); margin-bottom: 4px; padding-left: 80px;">@meal.Name</h3>
-                        <div class="badges-row">
-                            <span class="badge cuisine-badge">@GetCuisineLabel(meal.Cuisine)</span>
-                            <span class="badge type-badge">@GetMealTypeLabel(meal.MealType)</span>
-                        </div>
-                    </div>
-
-                    @if (activeAssignMealId == meal.Id)
-                    {
-                        <div style="margin-top: 12px; border-top: 1px dashed var(--color-border); padding-top: 12px;">
-                            <span style="font-size: 12px; font-weight: bold; color: var(--color-text-main); display: block; margin-bottom: 8px;">اختر يوماً لإضافة الوجبة:</span>
-                            <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
-                                @foreach (var day in currentWeekDays)
-                                {
-                                    var planDate = day;
-                                    <button class="day-pill" style="min-width: 65px; border-color: #2D3748;"
-                                            @onclick="() => AssignMeal(meal, planDate)">
-                                        <span class="day-name" style="font-size: 10px;">@GetDayNameArabic(planDate.DayOfWeek)</span>
-                                        <span class="day-num" style="font-size: 13px;">@planDate.ToString("dd/MM")</span>
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <button class="primary-btn btn-playful" style="margin-top: 8px; padding: 8px; font-size: 13px;"
-                                @onclick="() => ToggleAssignFlow(meal.Id)">
-                            ➕ أضف لهذا الأسبوع
-                        </button>
-                    }
-                </div>
+                <MealSelectionCard Meal="meal"
+                                   IsContextMode="isContextMode"
+                                   IsFavorite="@(userProfile?.FavoriteMealIds?.Contains(meal.Id) ?? false)"
+                                   OnSelect="SelectMeal"
+                                   OnFavorite="ToggleFavorite"
+                                   OnView="ViewMeal" />
             }
         }
     </div>
 </div>
 
-<!-- Conflict Replacement Modal -->
-@if (showReplaceModal)
+@if (showDayPicker && browseMeal is not null)
 {
-    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1100; padding: 16px;">
-        <div class="card-playful" style="max-width: 400px; width: 100%; padding: 24px; text-align: center;">
-            <div style="font-size: 40px; margin-bottom: 12px;">🤨</div>
-            <h3 style="font-weight: 900; font-size: 18px; color: var(--color-text-main);">تأكيد الاستبدال</h3>
-            <p style="font-size: 14px; color: var(--color-text-secondary); margin: 12px 0 20px; line-height: 1.6;">
-                يوم <strong>@GetDayNameArabic(replaceDate.DayOfWeek) (@replaceDate.ToString("dd/MM"))</strong> فيه وجبة <strong>@replaceExistingMealName</strong>.
-                هل تريد استبدالها بـ <strong>@replaceNewMealName</strong>؟
-            </p>
-            <div style="display: flex; gap: 12px;">
-                <button class="primary-btn btn-playful" style="background: #2ECC71 !important; flex: 1;" @onclick="ConfirmReplace">
-                    استبدال ✅
-                </button>
-                <button class="primary-btn btn-playful" style="background: #E74C3C !important; flex: 1;" @onclick="() => showReplaceModal = false">
-                    إلغاء ❌
-                </button>
+    <div class="sheet-backdrop" @onclick="CloseDayPicker">
+        <section class="bottom-sheet" @onclick:stopPropagation="true">
+            <div class="sheet-handle"></div>
+            <p class="sheet-date">@browseMeal.Name</p>
+            <h2>أضيفي هذه الوجبة لأي يوم؟</h2>
+            <div class="move-days">
+                @foreach (var day in currentWeekDays)
+                { <button @onclick="() => ChooseBrowseDay(day)">@GetDayNameArabic(day.DayOfWeek)</button> }
             </div>
-        </div>
+        </section>
     </div>
 }
 
 @code {
     private List<MealCatalogItem> allMeals = new();
     private List<WeeklyPlanEntry> currentWeekPlan = new();
-    private UserProfile? userProfile;
     private List<DateOnly> currentWeekDays = new();
+    private UserProfile? userProfile;
 
     private string uid = "";
     private bool isLoading = true;
@@ -157,16 +118,12 @@
     private Cuisine? selectedCuisine;
     private MealType? selectedMealType;
 
-    private string activeAssignMealId = "";
+    private DateOnly selectedDate;
+    private bool isContextMode;
+    private bool showDayPicker;
+    private MealCatalogItem? browseMeal;
     private string confirmMessage = "";
-    private System.Threading.Timer? confirmTimer;
 
-    private bool showReplaceModal = false;
-    private DateOnly replaceDate;
-    private string replaceMealId = "";
-    private string replaceExistingMealName = "";
-    private string replaceNewMealName = "";
-    private MealCatalogItem? replaceCatalogItem;
 
     private List<MealCatalogItem> FilteredMeals
     {
@@ -196,6 +153,15 @@
 
         var today = DateOnly.FromDateTime(DateTime.Today);
         var startOfWeek = StartOfWeek(today);
+        selectedDate = startOfWeek;
+        var query = new Uri(Nav.Uri).Query;
+        const string dateKey = "day=";
+        var index = query.IndexOf(dateKey, StringComparison.OrdinalIgnoreCase);
+        if (index >= 0)
+        {
+            var raw = query[(index + dateKey.Length)..].Split('&')[0];
+            if (DateOnly.TryParse(raw, out var parsed)) { selectedDate = parsed; isContextMode = true; }
+        }
         currentWeekDays = Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
 
         allMeals = await CatalogService.GetAllMealsAsync();
@@ -213,38 +179,20 @@
 
     private void SetCuisine(Cuisine? cuisine) => selectedCuisine = cuisine;
     private void SetMealType(MealType? type) => selectedMealType = type;
-    private void NavigateToDetails(string mealId) => Nav.NavigateTo($"/meal/{mealId}");
-
-    private void ToggleAssignFlow(string mealId)
+    private void ViewMeal(MealCatalogItem meal) => Nav.NavigateTo($"/meal/{meal.Id}");
+    private async Task ToggleFavorite(MealCatalogItem meal)
     {
-        activeAssignMealId = activeAssignMealId == mealId ? "" : mealId;
+        await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
+        userProfile ??= new UserProfile();
+        if (userProfile.FavoriteMealIds.Contains(meal.Id)) userProfile.FavoriteMealIds.Remove(meal.Id); else userProfile.FavoriteMealIds.Add(meal.Id);
     }
-
-    private async Task AssignMeal(MealCatalogItem meal, DateOnly date)
+    private async Task SelectMeal(MealCatalogItem meal)
     {
-        var existingEntry = currentWeekPlan.FirstOrDefault(e => e.Date == date);
-        if (existingEntry is null)
-        {
-            await ExecuteAssignment(meal, date);
-        }
-        else
-        {
-            replaceDate = date;
-            replaceMealId = meal.Id;
-            replaceCatalogItem = meal;
-            replaceNewMealName = meal.Name;
-            var existingMeal = allMeals.FirstOrDefault(m => m.Id == existingEntry.MealId);
-            replaceExistingMealName = existingMeal?.Name ?? "وجبة أخرى";
-            showReplaceModal = true;
-        }
+        if (isContextMode) await ExecuteAssignment(meal, selectedDate);
+        else { browseMeal = meal; showDayPicker = true; }
     }
-
-    private async Task ConfirmReplace()
-    {
-        showReplaceModal = false;
-        if (replaceCatalogItem is not null)
-            await ExecuteAssignment(replaceCatalogItem, replaceDate);
-    }
+    private async Task ChooseBrowseDay(DateOnly day) { if (browseMeal is not null) await ExecuteAssignment(browseMeal, day); }
+    private void CloseDayPicker() { showDayPicker = false; browseMeal = null; }
 
     private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
     {
@@ -279,29 +227,18 @@
                 await CacheService.SetCachedWeekAsync(currentCache);
             }
 
-            activeAssignMealId = "";
-            ShowPlayfulConfirm($"تمت إضافة {meal.Name} ليوم {GetDayNameArabic(date.DayOfWeek)}! 😋");
+            var message = Uri.EscapeDataString($"تمت إضافة {meal.Name} إلى {GetDayNameArabic(date.DayOfWeek)}");
+            Nav.NavigateTo($"/?updated={date:yyyy-MM-dd}&toast={message}");
         }
         catch (Exception ex)
         {
-            ShowPlayfulConfirm($"حدث خطأ أثناء الإضافة: {ex.Message}");
+            confirmMessage = $"حدث خطأ أثناء الإضافة: {ex.Message}";
         }
         finally
         {
             isLoading = false;
             StateHasChanged();
         }
-    }
-
-    private void ShowPlayfulConfirm(string message)
-    {
-        confirmMessage = message;
-        confirmTimer?.Dispose();
-        confirmTimer = new System.Threading.Timer(_ =>
-        {
-            confirmMessage = "";
-            InvokeAsync(StateHasChanged);
-        }, null, 3500, System.Threading.Timeout.Infinite);
     }
 
     private string GetCuisineLabel(Cuisine cuisine) => cuisine switch

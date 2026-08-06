@@ -1,0 +1,31 @@
+@using MealPlanner.Shared.Models
+
+<article class="meal-selection-card ui-card" dir="rtl">
+    <button class="meal-selection-main" @onclick="() => OnView.InvokeAsync(Meal)" aria-label="عرض تفاصيل @Meal.Name">
+        <h2>@Meal.Name</h2>
+        <div class="badges-row">
+            <span class="badge cuisine-badge">@Meal.Cuisine</span>
+            <span class="badge type-badge">@Meal.MealType</span>
+        </div>
+    </button>
+    <div class="meal-selection-actions">
+        <button class="icon-action" title="المفضلة" aria-label="المفضلة" @onclick="() => OnFavorite.InvokeAsync(Meal)">@(IsFavorite ? "❤️" : "♡")</button>
+        @if (IsContextMode)
+        {
+            <UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">✓ اختر هذه الوجبة</UiButton>
+        }
+        else
+        {
+            <UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">استخدام هذه الوجبة</UiButton>
+        }
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public MealCatalogItem Meal { get; set; } = new();
+    [Parameter] public bool IsContextMode { get; set; }
+    [Parameter] public bool IsFavorite { get; set; }
+    [Parameter] public EventCallback<MealCatalogItem> OnSelect { get; set; }
+    [Parameter] public EventCallback<MealCatalogItem> OnFavorite { get; set; }
+    [Parameter] public EventCallback<MealCatalogItem> OnView { get; set; }
+}

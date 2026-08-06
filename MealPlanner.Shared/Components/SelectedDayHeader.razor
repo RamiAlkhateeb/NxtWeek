@@ -1,0 +1,12 @@
+@using System.Globalization
+
+<header class="selected-day-header" dir="rtl">
+    <span class="caption">إضافة وجبة إلى</span>
+    <strong>🍲 @Date.ToString("dddd d MMMM", ArabicCulture)</strong>
+    <h1>اختر وجبة</h1>
+</header>
+
+@code {
+    [Parameter, EditorRequired] public DateOnly Date { get; set; }
+    private static readonly CultureInfo ArabicCulture = new("ar-EG");
+}
