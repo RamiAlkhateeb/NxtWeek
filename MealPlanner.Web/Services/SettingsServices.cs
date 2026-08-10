@@ -1,4 +1,3 @@
-using System.Text.Json;
 using MealPlanner.Shared.Services;
 using Microsoft.JSInterop;
 
@@ -18,7 +17,6 @@ public sealed class LocalHouseholdService(IAuthService auth, LocalGuestDataServi
                 Uid = user.Uid,
                 Email = localProfile.Email,
                 DisplayName = localProfile.DisplayName,
-                PreferredCuisines = localProfile.PreferredCuisines,
                 SelectedMealIds = localProfile.SelectedMealIds,
                 FavoriteMealIds = localProfile.FavoriteMealIds
             };
@@ -49,8 +47,8 @@ public sealed class LocalDataExportService(IAuthService auth, IUserService users
         var start = today.AddDays(-(7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7);
         var plan = await users.GetWeeklyPlanAsync(user.Uid, start, start.AddDays(6));
         var meals = await catalog.GetAllMealsAsync();
-        var output = plan.Select(x => new { Date = x.Date.ToString("yyyy-MM-dd"), Day = x.Date.DayOfWeek.ToString(), Meal = meals.FirstOrDefault(m => m.Id == x.MealId)?.Name ?? "" }).Where(x => x.Meal.Length > 0);
-        return JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
+        var rows = plan.Select(x => new { Date = x.Date.ToString("yyyy-MM-dd"), Day = x.Date.DayOfWeek.ToString(), Meal = meals.FirstOrDefault(m => m.Id == x.MealId)?.Name ?? "" }).Where(x => x.Meal.Length > 0);
+        return "Date,Day,Meal\n" + string.Join("\n", rows.Select(x => $"{x.Date},{x.Day},\"{x.Meal.Replace("\"", "\"\"")}\""));
     }
 }
 

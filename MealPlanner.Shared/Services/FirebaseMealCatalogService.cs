@@ -33,15 +33,10 @@ public class FirebaseMealCatalogService : IMealCatalogService
         return dto?.ToModel(id);
     }
 
-    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(List<Cuisine>? cuisines, MealType? mealType)
+    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? mealType)
     {
         var meals = await GetAllMealsAsync();
         var query = meals.AsEnumerable();
-
-        if (cuisines is not null && cuisines.Count > 0)
-        {
-            query = query.Where(m => cuisines.Contains(m.Cuisine));
-        }
 
         if (mealType is not null)
         {
@@ -100,7 +95,6 @@ public class FirebaseMealCatalogService : IMealCatalogService
     private class MealCatalogItemDto
     {
         public string Name { get; set; } = string.Empty;
-        public Cuisine Cuisine { get; set; }
         public MealType MealType { get; set; }
         public List<string>? Ingredients { get; set; }
         public List<string>? SideDishes { get; set; }
@@ -115,7 +109,6 @@ public class FirebaseMealCatalogService : IMealCatalogService
         public static MealCatalogItemDto FromModel(MealCatalogItem m) => new()
         {
             Name = m.Name,
-            Cuisine = m.Cuisine,
             MealType = m.MealType,
             Ingredients = m.Ingredients,
             SideDishes = m.SideDishes,
@@ -132,7 +125,6 @@ public class FirebaseMealCatalogService : IMealCatalogService
         {
             Id = id,
             Name = Name,
-            Cuisine = Cuisine,
             MealType = MealType,
             Ingredients = Ingredients ?? new(),
             SideDishes = SideDishes ?? new(),

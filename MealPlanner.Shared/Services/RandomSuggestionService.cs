@@ -27,15 +27,11 @@ public class RandomSuggestionService : ISuggestionService
         var allCatalog = await _catalogService.GetAllMealsAsync();
         if (allCatalog.Count == 0) return new List<string>();
 
-        // 3. Filter catalog items by preferred cuisines or selected meal IDs
-        var preferredCuisines = profile.PreferredCuisines ?? new();
+        // 3. Use selected meals when available; otherwise all catalog meals are eligible.
         var selectedMealIds = profile.SelectedMealIds ?? new();
         var favoriteMealIds = profile.FavoriteMealIds ?? new();
 
-        var eligible = allCatalog.Where(m =>
-            preferredCuisines.Contains(m.Cuisine) ||
-            selectedMealIds.Contains(m.Id)
-        ).ToList();
+        var eligible = allCatalog.Where(m => selectedMealIds.Contains(m.Id)).ToList();
 
         if (eligible.Count == 0)
         {

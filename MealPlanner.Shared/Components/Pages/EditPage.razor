@@ -178,7 +178,7 @@
         username = await JS.InvokeAsync<string>("localStorage.getItem", "nxtweek.currentUserRawEmail");
         if (string.IsNullOrWhiteSpace(username))
         {
-            Nav.NavigateTo("/onboarding/username");
+            Nav.NavigateTo("/");
             return;
         }
 
@@ -215,7 +215,7 @@
 
     private async Task LoadSuggestionsForType(MealType type)
     {
-        typeCatalogMeals = await CatalogService.GetFilteredMealsAsync(null, type);
+        typeCatalogMeals = await CatalogService.GetFilteredMealsAsync(type);
         suggestions = typeCatalogMeals.Select(m => m.Name).Take(8).ToList();
     }
 

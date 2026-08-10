@@ -1,6 +1,4 @@
 @page "/settings/import"
-@using System.Text.Json
-@using System.Text.Json.Serialization
 @using System.Text.RegularExpressions
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
@@ -16,14 +14,14 @@
     <div class="header">
         <button class="back-btn" @onclick="GoBack" style="margin-bottom: 12px;">➔ عودة للإعدادات</button>
         <h1>📥 استيراد السجل الذكي</h1>
-        <p>قم برفع ملف JSON يحتوي على سجل وجباتك. سيقوم النظام بمحاولة مطابقة الأسماء مع القائمة الخاصة بك وتحويل التواريخ تلقائياً.</p>
+        <p>قم برفع ملف CSV يحتوي على خطتك الأسبوعية. سيقوم النظام بمطابقة أسماء الوجبات والتحقق من التواريخ.</p>
     </div>
 
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
         <div class="card-playful" style="padding: 24px; text-align: center;">
             <div style="font-size: 40px; margin-bottom: 16px;">📂</div>
 
-            <InputFile OnChange="HandleFileSelected" class="playful-input" accept=".json" style="margin-bottom: 16px;" />
+            <InputFile OnChange="HandleFileSelected" class="playful-input" accept=".csv,text/csv" style="margin-bottom: 16px;" />
 
             @if (isProcessing)
             {
@@ -79,22 +77,15 @@
 
     private class RawMealDto
     {
-        [JsonPropertyName("Date")]
         public string DateStr { get; set; } = "";
-
-        [JsonPropertyName("Day")]
         public string Day { get; set; } = "";
-
-        [JsonPropertyName("Meal")]
         public string MealName { get; set; } = "";
     }
 
     private class TargetMealDto
     {
-        [JsonPropertyName("mealId")]
         public string MealId { get; set; } = "";
 
-        [JsonPropertyName("isFavorite")]
         public bool IsFavorite { get; set; }
     }
 
@@ -117,9 +108,9 @@
         skippedMeals.Clear();
         selectedFile = e.File;
 
-        if (selectedFile.ContentType != "application/json" && !selectedFile.Name.EndsWith(".json"))
+        if (!selectedFile.Name.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
         {
-            errorMessage = "الرجاء اختيار ملف JSON صالح.";
+            errorMessage = "الرجاء اختيار ملف CSV صالح.";
             selectedFile = null;
         }
     }
@@ -161,7 +152,8 @@
             }
 
             using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
-            var rawData = await JsonSerializer.DeserializeAsync<List<RawMealDto>>(stream);
+            using var reader = new StreamReader(stream);
+            var rawData = ParseCsv(await reader.ReadToEndAsync());
 
             if (rawData == null || rawData.Count == 0)
             {
@@ -180,7 +172,8 @@
             foreach (var raw in rawData)
             {
                 var formattedDate = ParseDate(raw.DateStr);
-                if (string.IsNullOrEmpty(formattedDate)) continue;
+                if (string.IsNullOrEmpty(formattedDate)) { skippedMeals.Add($"تاريخ غير صالح: {raw.DateStr}"); continue; }
+                if (patchData.ContainsKey(formattedDate)) { skippedMeals.Add($"تاريخ مكرر: {formattedDate}"); continue; }
 
                 var matchedMeal = catalog.FirstOrDefault(m =>
                     m.Name.Contains(raw.MealName.Trim(), StringComparison.OrdinalIgnoreCase) ||
@@ -210,10 +203,6 @@
             selectedFile = null;
             await CacheService.SetCachedWeekAsync(new List<Meal>());
         }
-        catch (JsonException)
-        {
-            errorMessage = "فشل قراءة الملف. تأكد من أنه عبارة عن مصفوفة Array (يبدأ بـ [ وينتهي بـ ]).";
-        }
         catch (Exception ex)
         {
             errorMessage = $"حدث خطأ غير متوقع: {ex.Message}";
@@ -223,5 +212,18 @@
             isProcessing = false;
             StateHasChanged();
         }
+    }
+
+    private static List<RawMealDto> ParseCsv(string csv)
+    {
+        var rows = csv.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var result = new List<RawMealDto>();
+        foreach (var row in rows.Skip(1))
+        {
+            var values = row.Split(',', 3);
+            if (values.Length < 3) continue;
+            result.Add(new RawMealDto { DateStr = values[0].Trim(), Day = values[1].Trim(), MealName = values[2].Trim().Trim('"').Replace("\"\"", "\"") });
+        }
+        return result;
     }
 }

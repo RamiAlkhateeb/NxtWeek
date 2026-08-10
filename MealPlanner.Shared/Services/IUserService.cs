@@ -9,7 +9,6 @@ public interface IUserService
 {
     Task<UserProfile?> GetProfileAsync(string uid);
     Task CreateProfileAsync(UserProfile profile);
-    Task SavePreferredCuisinesAsync(string uid, List<Cuisine> cuisines);
     Task SaveSelectedMealsAsync(string uid, List<string> mealIds);
     Task SaveFavoriteMealsAsync(string uid, List<string> mealIds);
     Task ToggleFavoriteMealAsync(string uid, string mealId);

@@ -23,17 +23,6 @@
         <UiTextInput CssClass="meal-search" Placeholder="🔍 ابحث عن وجبة..." @bind-Value="searchText" />
         <UiButton Variant="secondary" OnClick="OpenNewMeal">＋ وجبة جديدة</UiButton>
 
-        <!-- Cuisine Filter Chips -->
-        <div>
-            <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">المطبخ:</span>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <UiFilterChip Active="@(selectedCuisine == null)" OnClick="() => SetCuisine(null)">الكل</UiFilterChip>
-                <UiFilterChip Active="@(selectedCuisine == Cuisine.Syrian)" OnClick="() => SetCuisine(Cuisine.Syrian)">🇸🇾 سوري</UiFilterChip>
-                <UiFilterChip Active="@(selectedCuisine == Cuisine.Turkish)" OnClick="() => SetCuisine(Cuisine.Turkish)">🇹🇷 تركي</UiFilterChip>
-                <UiFilterChip Active="@(selectedCuisine == Cuisine.Lebanese)" OnClick="() => SetCuisine(Cuisine.Lebanese)">🇱🇧 لبناني</UiFilterChip>
-            </div>
-        </div>
-
         <!-- Meal Type Filter Chips -->
         <div>
             <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">النوع:</span>
@@ -108,7 +97,6 @@
     private bool isLoading = true;
     private string searchText = "";
 
-    private Cuisine? selectedCuisine;
     private MealType? selectedMealType;
 
     private DateOnly selectedDate;
@@ -128,8 +116,6 @@
             var query = allMeals.AsEnumerable();
             if (!string.IsNullOrWhiteSpace(searchText))
                 query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
-            if (selectedCuisine.HasValue)
-                query = query.Where(m => m.Cuisine == selectedCuisine.Value);
             if (selectedMealType.HasValue)
                 query = query.Where(m => m.MealType == selectedMealType.Value);
             return query.ToList();
@@ -174,7 +160,6 @@
         return date.AddDays(-diff);
     }
 
-    private void SetCuisine(Cuisine? cuisine) => selectedCuisine = cuisine;
     private void SetMealType(MealType? type) => selectedMealType = type;
     private void ViewMeal(MealCatalogItem meal) => Nav.NavigateTo($"/meal/{meal.Id}");
     private async Task ToggleFavorite(MealCatalogItem meal)
@@ -232,7 +217,6 @@
                     IsFavorite = false,
                     SideDishes = meal.SideDishes,
                     Ingredients = meal.Ingredients,
-                    Cuisine = meal.Cuisine,
                     MealType = meal.MealType
                 };
                 currentCache.Add(updated);
@@ -252,14 +236,6 @@
             StateHasChanged();
         }
     }
-
-    private string GetCuisineLabel(Cuisine cuisine) => cuisine switch
-    {
-        Cuisine.Syrian => "🇸🇾 سوري",
-        Cuisine.Turkish => "🇹🇷 تركي",
-        Cuisine.Lebanese => "🇱🇧 لبناني",
-        _ => cuisine.ToString()
-    };
 
     private string GetMealTypeLabel(MealType type) => type switch
     {

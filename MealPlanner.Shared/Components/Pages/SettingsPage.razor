@@ -81,6 +81,6 @@
         else householdMessage = "تعذر الاتصال. تأكد من المعرّف وحاول مجدداً.";
     }
     private void OpenImport() => Nav.NavigateTo("/settings/import");
-    private async Task ExportWeek() => await JS.InvokeVoidAsync("nxtweek.downloadJson", await ExportService.ExportCurrentWeekAsync(), "nxtweek-week.json");
+    private async Task ExportWeek() => await JS.InvokeVoidAsync("nxtweek.downloadJson", await ExportService.ExportCurrentWeekAsync(), "nxtweek-week.csv");
     private async Task ClearLocalData() { await ImportService.ClearLocalDataAsync(); Nav.NavigateTo("/", forceLoad: true); }
 }

@@ -16,6 +16,5 @@ public class Meal
     public bool IsFavorite { get; set; }
     public List<string> Ingredients { get; set; } = new();
     public List<string> SideDishes { get; set; } = new();
-    public Cuisine? Cuisine { get; set; }
     public MealType? MealType { get; set; }
 }

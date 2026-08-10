@@ -25,7 +25,6 @@ public sealed class LocalGuestDataService(IJSRuntime js) : IUserService, IMealCa
 
     public async Task<UserProfile?> GetProfileAsync(string uid) => (await ReadAsync()).Profiles.GetValueOrDefault(uid);
     public async Task CreateProfileAsync(UserProfile profile) { var s = await ReadAsync(); s.Profiles[profile.Uid] = profile; await WriteAsync(s); }
-    public async Task SavePreferredCuisinesAsync(string uid, List<Cuisine> cuisines) { var p = await RequireProfile(uid); p.PreferredCuisines = cuisines; await SaveProfile(p); }
     public async Task SaveSelectedMealsAsync(string uid, List<string> ids) { var p = await RequireProfile(uid); p.SelectedMealIds = ids; await SaveProfile(p); }
     public async Task SaveFavoriteMealsAsync(string uid, List<string> ids) { var p = await RequireProfile(uid); p.FavoriteMealIds = ids; await SaveProfile(p); }
     public async Task ToggleFavoriteMealAsync(string uid, string id) { var p = await RequireProfile(uid); if (!p.FavoriteMealIds.Remove(id)) p.FavoriteMealIds.Add(id); await SaveProfile(p); }
@@ -49,7 +48,7 @@ public sealed class LocalGuestDataService(IJSRuntime js) : IUserService, IMealCa
 
     public async Task<List<MealCatalogItem>> GetAllMealsAsync() => (await ReadAsync()).Catalog;
     public async Task<MealCatalogItem?> GetMealByIdAsync(string id) => (await ReadAsync()).Catalog.FirstOrDefault(x => x.Id == id);
-    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(List<Cuisine>? cuisines, MealType? type) => (await GetAllMealsAsync()).Where(x => (cuisines is null || cuisines.Count == 0 || cuisines.Contains(x.Cuisine)) && (!type.HasValue || x.MealType == type)).ToList();
+    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? type) => (await GetAllMealsAsync()).Where(x => !type.HasValue || x.MealType == type).ToList();
     public async Task<List<MealCatalogItem>> SearchMealsAsync(string query) => (await GetAllMealsAsync()).Where(x => x.Name.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
     public async Task<MealCatalogItem> CreateMealAsync(MealCatalogItem meal)
     {

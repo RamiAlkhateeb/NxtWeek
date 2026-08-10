@@ -856,6 +856,7 @@ html, body {
 .month-link { float: left; border: 1px solid var(--color-border); color: var(--color-primary); background: #fff; border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
 .week-nav-wide { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .week-nav-wide button { flex: 1; background: var(--color-primary-light); color: var(--color-primary); border: 0; border-radius: var(--radius-sm); padding: 9px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; }
 .week-cards { padding: 10px 16px; display: flex; flex-direction: column; gap: 7px; }
 .week-meal-card { width: 100%; background: #fff; border: 1px solid #f0ddd6; border-radius: var(--radius-md); padding: 10px 12px; box-shadow: 0 3px 10px rgba(89, 54, 42, .07); text-align: right; font: inherit; color: var(--color-text-main); transition: transform .2s ease, background-color .2s ease; }
 .week-meal-card-clickable { cursor: pointer; }

@@ -29,7 +29,6 @@
             <div class="meal-type-icon">🍳</div>
             <h1 class="meal-title">@meal.Name</h1>
             <div class="badges-row">
-                <span class="badge cuisine-badge">@GetCuisineArabic(meal.Cuisine)</span>
                 <span class="badge type-badge">@GetTypeArabic(meal.MealType)</span>
                 @if (isFavorite)
                 {
@@ -127,14 +126,6 @@
         await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
         isFavorite = !isFavorite;
     }
-
-    private string GetCuisineArabic(Cuisine cuisine) => cuisine switch
-    {
-        Cuisine.Syrian => "سوري 🇸🇾",
-        Cuisine.Turkish => "تركي 🇹🇷",
-        Cuisine.Lebanese => "لبناني 🇱🇧",
-        _ => cuisine.ToString()
-    };
 
     private string GetTypeArabic(MealType type) => type switch
     {

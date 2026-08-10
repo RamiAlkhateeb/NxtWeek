@@ -30,7 +30,6 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         await http.PutAsJsonAsync(await Url($"users/{Key(profile.Uid)}"), profile);
         householdId = profile.HouseholdId;
     }
-    public async Task SavePreferredCuisinesAsync(string uid, List<Cuisine> cuisines) => await http.PutAsJsonAsync(await Url($"users/{Key(uid)}/preferredCuisines"), cuisines);
     public async Task SaveSelectedMealsAsync(string uid, List<string> mealIds) => await http.PutAsJsonAsync(await Url($"users/{Key(uid)}/selectedMealIds"), mealIds);
     public async Task<string> GetHouseholdIdAsync(string uid) => householdId ?? (await GetProfileAsync(uid))?.HouseholdId ?? "";
     public void ClearCachedHouseholdId() => householdId = null;

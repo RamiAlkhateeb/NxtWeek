@@ -15,13 +15,6 @@
     {
         <div class="toast-message" role="status">✅ @toastMessage</div>
     }
-    <div class="dashboard-header-container compact-dashboard-header">
-        <div class="user-greeting">
-            <span>مرحباً، <strong>@displayName</strong> 👋</span>
-            <button class="logout-btn" @onclick="SignOut">تسجيل الخروج</button>
-        </div>
-    </div>
-
     <div class="week-page-header">
         <button class="month-link" title="عرض الشهر" aria-label="عرض الشهر" @onclick="OpenMonth">📅</button>
         <h1>مخططنا الأسبوعي</h1>
@@ -30,6 +23,7 @@
             <button @onclick="GoPreviousWeek">‹ الأسبوع السابق</button>
             <button @onclick="GoNextWeek">الأسبوع القادم ›</button>
         </div>
+        <button class="week-surprise" @onclick="() => showWeekSurpriseConfirm = true">🎲 فاجئني بالأسبوع</button>
     </div>
 
     @if (isLoading)
@@ -45,9 +39,9 @@
                 
                 @if (string.IsNullOrWhiteSpace(meal.MealId))
                 {
-                    <button class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" @onclick="() => OpenMealPicker(meal.Date)">
+                    <button class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" @onclick="() => SuggestEmpty(meal)">
                         <span class="week-card-date">@DayDateLabel(meal.Date)</span>
-                        <span class="week-empty-copy">🤔 شو نطبخ اليوم؟ <b>🎲 اقترح وجبة</b></span>
+                        <span class="week-empty-copy">🎲 فاجئني</span>
                     </button>
                 }
                 else
@@ -84,7 +78,7 @@
                 <div class="quick-picker">
                     @foreach (var item in catalogMeals.Take(8))
                     {
-                        <button @onclick="() => ChooseMeal(item)"><span>@item.Name</span><small>@item.Cuisine</small></button>
+                        <button @onclick="() => ChooseMeal(item)"><span>@item.Name</span></button>
                     }
                 </div>
             }
@@ -108,6 +102,13 @@
     }
 </UiBottomSheet>
 
+<UiBottomSheet IsOpen="showWeekSurpriseConfirm" Title="فاجئني بالأسبوع" Eyebrow="سنملأ الأيام الفارغة فقط" OnDismiss="() => showWeekSurpriseConfirm = false">
+    <div class="sheet-actions">
+        <p>لن يتم تغيير أي وجبة مخططة مسبقاً.</p>
+        <UiButton Variant="primary" OnClick="SurpriseWeek">تأكيد</UiButton>
+    </div>
+</UiBottomSheet>
+
 @if (showMonth)
 {
     <div class="sheet-backdrop" @onclick="CloseMonth">
@@ -124,7 +125,6 @@
     private DateOnly currentWeekStart;
     private bool isLoading = true;
     private string uid = "";
-    private string displayName = "";
     private List<MealCatalogItem> catalogMeals = new();
     private Meal? selectedMeal;
     private bool showQuickPicker;
@@ -133,6 +133,7 @@
     private DateOnly? navigatingDate;
     private string toastMessage = "";
     private bool showMonth;
+    private bool showWeekSurpriseConfirm;
     private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private List<DateOnly?> calendarDays = new();
     private readonly Dictionary<DateOnly, string> monthEntries = new();
@@ -156,16 +157,9 @@
         }
         uid = user.Uid;
 
-        Console.WriteLine($"[WeekPage] Loading profile for UID: {uid}...");
         var profile = await UserService.GetProfileAsync(uid);
-        Console.WriteLine($"[WeekPage] Profile returned: {(profile == null ? "null" : profile.DisplayName)}");
-        if (profile is null || string.IsNullOrWhiteSpace(profile.DisplayName))
-        {
-            Console.WriteLine("[WeekPage] Profile or DisplayName is missing. Redirecting to /onboarding/username.");
-            Nav.NavigateTo("/onboarding/username");
-            return;
-        }
-        displayName = profile.DisplayName;
+        if (profile is null)
+            await UserService.CreateProfileAsync(new UserProfile { Uid = uid });
 
         currentWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         await EnsureSeededAsync();
@@ -220,10 +214,32 @@
         meal.MealId = item?.Id ?? "";
         meal.Ingredients = item?.Ingredients ?? new();
         meal.SideDishes = item?.SideDishes ?? new();
-        meal.Cuisine = item?.Cuisine;
         meal.MealType = item?.MealType;
         await MealService.UpsertMealAsync(meal);
         animatedDate = meal.Date;
+        await LoadWeekAsync(currentWeekStart);
+    }
+
+    private async Task SuggestEmpty(Meal meal)
+    {
+        await SuggestNew(meal);
+        animatedDate = meal.Date;
+    }
+
+    private async Task SurpriseWeek()
+    {
+        showWeekSurpriseConfirm = false;
+        var emptyDays = weekMeals.Where(m => string.IsNullOrWhiteSpace(m.MealId)).ToList();
+        if (emptyDays.Count == 0) return;
+        var suggestions = await SuggestionService.GetSuggestionsAsync(uid, weekMeals, emptyDays.Count);
+        var catalog = await CatalogService.GetAllMealsAsync();
+        foreach (var pair in emptyDays.Zip(suggestions))
+        {
+            var item = catalog.FirstOrDefault(c => c.Name.Equals(pair.Second, StringComparison.OrdinalIgnoreCase));
+            if (item is null) continue;
+            await UserService.AssignMealToDateAsync(uid, pair.First.Date, item.Id);
+        }
+        animatedDate = emptyDays[0].Date;
         await LoadWeekAsync(currentWeekStart);
     }
 
@@ -246,7 +262,7 @@
     private async Task ChooseMeal(MealCatalogItem item)
     {
         if (selectedMeal is null) return;
-        selectedMeal.Name = item.Name; selectedMeal.MealId = item.Id; selectedMeal.Cuisine = item.Cuisine; selectedMeal.MealType = item.MealType; selectedMeal.Ingredients = item.Ingredients; selectedMeal.SideDishes = item.SideDishes;
+        selectedMeal.Name = item.Name; selectedMeal.MealId = item.Id; selectedMeal.MealType = item.MealType; selectedMeal.Ingredients = item.Ingredients; selectedMeal.SideDishes = item.SideDishes;
         await MealService.UpsertMealAsync(selectedMeal); animatedDate = selectedMeal.Date; await LoadWeekAsync(currentWeekStart); CloseActions();
     }
     private async Task ToggleFavorite(Meal meal)
@@ -264,7 +280,7 @@
     private async Task MoveTo(DateOnly date)
     {
         if (selectedMeal is null) return;
-        var target = weekMeals.First(m => m.Date == date); target.MealId = selectedMeal.MealId; target.Name = selectedMeal.Name; target.Cuisine = selectedMeal.Cuisine; target.MealType = selectedMeal.MealType; target.Ingredients = selectedMeal.Ingredients; target.SideDishes = selectedMeal.SideDishes; target.IsFavorite = selectedMeal.IsFavorite;
+        var target = weekMeals.First(m => m.Date == date); target.MealId = selectedMeal.MealId; target.Name = selectedMeal.Name; target.MealType = selectedMeal.MealType; target.Ingredients = selectedMeal.Ingredients; target.SideDishes = selectedMeal.SideDishes; target.IsFavorite = selectedMeal.IsFavorite;
         await MealService.UpsertMealAsync(target);
         await UserService.SaveWeeklyPlanEntryAsync(uid, new WeeklyPlanEntry { Date = selectedMeal.Date, MealId = "", IsFavorite = false });
         await LoadWeekAsync(currentWeekStart); CloseActions();
@@ -279,14 +295,6 @@
         foreach (var entry in plan) if (names.TryGetValue(entry.MealId, out var name)) monthEntries[entry.Date] = name;
         var offset = ((int)currentMonth.DayOfWeek + 6) % 7; var days = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month); var count = offset + days; count += (7 - count % 7) % 7;
         calendarDays = Enumerable.Range(0, count).Select(i => i < offset || i >= offset + days ? (DateOnly?)null : currentMonth.AddDays(i - offset)).ToList();
-    }
-
-    private async Task SignOut()
-    {
-        await Auth.SignOutAsync();
-        UserService.ClearCachedHouseholdId();
-        await CacheService.SetCachedWeekAsync(new List<Meal>());
-        Nav.NavigateTo("/signin", forceLoad: true);
     }
 
     private static string DayDateLabel(DateOnly date) => date.ToString("dddd d MMMM", ArabicCulture);
