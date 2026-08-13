@@ -33,6 +33,11 @@ public sealed class LocalGuestDataService(IJSRuntime js) : IUserService, IMealCa
         var s = await ReadAsync(); if (!s.Plans.TryGetValue(uid, out var plan)) return [];
         return plan.Values.Where(x => x.Date >= start && x.Date <= end).ToList();
     }
+    public async Task<List<WeeklyPlanEntry>> GetAllWeeklyPlanAsync(string uid)
+    {
+        var s = await ReadAsync();
+        return s.Plans.TryGetValue(uid, out var plan) ? plan.Values.OrderBy(x => x.Date).ToList() : [];
+    }
     public async Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month) => (await GetWeeklyPlanAsync(uid, new DateOnly(year, month, 1), new DateOnly(year, month, DateTime.DaysInMonth(year, month))));
     public async Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry)
     {

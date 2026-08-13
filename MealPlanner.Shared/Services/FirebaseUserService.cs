@@ -31,7 +31,17 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         householdId = profile.HouseholdId;
     }
     public async Task SaveSelectedMealsAsync(string uid, List<string> mealIds) => await http.PutAsJsonAsync(await Url($"users/{Key(uid)}/selectedMealIds"), mealIds);
-    public async Task<string> GetHouseholdIdAsync(string uid) => householdId ?? (await GetProfileAsync(uid))?.HouseholdId ?? "";
+    public async Task<string> GetHouseholdIdAsync(string uid)
+    {
+        if (!string.IsNullOrWhiteSpace(householdId)) return householdId;
+        var profile = await GetProfileAsync(uid);
+        if (profile is null)
+        {
+            profile = new UserProfile { Uid = uid, DisplayName = "ضيف" };
+            await CreateProfileAsync(profile);
+        }
+        return profile.HouseholdId;
+    }
     public void ClearCachedHouseholdId() => householdId = null;
     public async Task SaveFavoriteMealsAsync(string uid, List<string> mealIds) => await http.PutAsJsonAsync(await Url($"households/{await GetHouseholdIdAsync(uid)}/favoriteMealIds"), mealIds);
     public async Task ToggleFavoriteMealAsync(string uid, string mealId)

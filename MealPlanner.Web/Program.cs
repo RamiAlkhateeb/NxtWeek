@@ -19,7 +19,7 @@ builder.Services.AddSingleton(new FirebaseOptions
 
 builder.Services.AddScoped<LocalGuestDataService>();
 builder.Services.AddScoped<FirebaseUserService>();
-builder.Services.AddScoped<IUserService>(sp => sp.GetRequiredService<LocalGuestDataService>());
+builder.Services.AddScoped<IUserService>(sp => sp.GetRequiredService<FirebaseUserService>());
 builder.Services.AddScoped<FirebaseMealCatalogService>();
 builder.Services.AddScoped<IMealCatalogService>(sp => sp.GetRequiredService<FirebaseMealCatalogService>());
 builder.Services.AddScoped<FirebaseMealService>();
@@ -30,6 +30,7 @@ builder.Services.AddScoped<IAuthService, LocalAuthService>();
 builder.Services.AddScoped<IHouseholdService, LocalHouseholdService>();
 builder.Services.AddScoped<IDataExportService, LocalDataExportService>();
 builder.Services.AddScoped<IDataImportService, LocalDataImportService>();
+builder.Services.AddScoped<LocalPlanMigrationService>();
 builder.Services.AddScoped<BrowserPreferenceService>();
 builder.Services.AddScoped<IThemeService>(sp => sp.GetRequiredService<BrowserPreferenceService>());
 builder.Services.AddScoped<ILanguageService>(sp => sp.GetRequiredService<BrowserPreferenceService>());
