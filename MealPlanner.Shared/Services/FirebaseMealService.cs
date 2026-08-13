@@ -158,6 +158,65 @@ public class FirebaseMealService : IMealService
 
     new() { Id = "m19", Name = "ورق عنب", MealType = MealType.Vegan, Ingredients = new() { "ورق عنب", "أرز", "بقدونس", "طماطم", "زيت زيتون" }, SideDishes = new() { "سلطة" } },
 
+new() { Id = "m20", Name = "أرضي شوكي مع اللحمة والرز", MealType = MealType.Meat, Ingredients = new() { "أرضي شوكي", "لحم", "أرز", "بصل", "ثوم" }, SideDishes = new() { "لبن" } },
+
+new() { Id = "m21", Name = "إندومي مع تونة", MealType = MealType.Fish, Ingredients = new() { "إندومي", "تونة", "بصل" }, SideDishes = new() { "ليمون" } },
+
+new() { Id = "m22", Name = "برغر لحمة", MealType = MealType.Meat, Ingredients = new() { "خبز برغر", "لحم مفروم", "خس", "طماطم", "جبنة" }, SideDishes = new() { "بطاطا مقلية" } },
+
+new() { Id = "m23", Name = "برغر دجاج", MealType = MealType.Chicken, Ingredients = new() { "خبز برغر", "صدر دجاج", "خس", "طماطم" }, SideDishes = new() { "بطاطا مقلية" } },
+
+new() { Id = "m24", Name = "برغل مع حمص", MealType = MealType.Vegetarian, Ingredients = new() { "برغل", "حمص", "زيت زيتون", "ليمون" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m25", Name = "بطاطا بالبندورة", MealType = MealType.Vegan, Ingredients = new() { "بطاطا", "طماطم", "بصل", "ثوم" }, SideDishes = new() { "أرز" } },
+
+new() { Id = "m26", Name = "بطاطا مسلوقة", MealType = MealType.Vegan, Ingredients = new() { "بطاطا", "ملح", "زيت زيتون" }, SideDishes = new() { "لبن" } },
+
+new() { Id = "m27", Name = "بطاطا وبيض", MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "بيض", "بصل" }, SideDishes = new() { "خبز" } },
+
+new() { Id = "m28", Name = "بيتزا بيت", MealType = MealType.Vegetarian, Ingredients = new() { "عجينة بيتزا", "صلصة طماطم", "جبنة موزاريلا", "خضار" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m29", Name = "خضار وأرز مع لحمة ناعمة", MealType = MealType.Meat, Ingredients = new() { "خضار مشكلة", "أرز", "لحمة ناعمة", "بصل" }, SideDishes = new() { "لبن" } },
+
+new() { Id = "m30", Name = "دونر", MealType = MealType.Meat, Ingredients = new() { "خبز دونر", "لحمة دونر", "خس", "طماطم", "ثومية" }, SideDishes = new() { "بطاطا مقلية" } },
+
+new() { Id = "m31", Name = "رز وبازيلا مع اللحمة", MealType = MealType.Meat, Ingredients = new() { "أرز", "بازيلا", "لحم", "جزر" }, SideDishes = new() { "لبن" } },
+
+new() { Id = "m32", Name = "رز وفاصولية حب مع لحمة", MealType = MealType.Meat, Ingredients = new() { "فاصولية بيضاء", "لحم", "أرز", "ثوم" }, SideDishes = new() { "مخلل" } },
+
+new() { Id = "m33", Name = "فاصولية بالبندورة مع أرز", MealType = MealType.Vegan, Ingredients = new() { "فاصولية خضراء", "طماطم", "ثوم", "أرز" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m34", Name = "رز مع القريدس", MealType = MealType.Fish, Ingredients = new() { "قريدس", "أرز", "ثوم", "ذرة" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m35", Name = "فطر مقلي مع معكرونة", MealType = MealType.Vegetarian, Ingredients = new() { "فطر", "بقسماط", "معكرونة", "ثوم" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m36", Name = "سمك مقلي", MealType = MealType.Fish, Ingredients = new() { "سمك", "دقيق", "ليمون", "ثوم" }, SideDishes = new() { "أرز", "سلطة" } },
+
+new() { Id = "m37", Name = "سمك ورز", MealType = MealType.Fish, Ingredients = new() { "سمك", "أرز", "ليمون", "ثوم" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m38", Name = "شرمبس مع معكرونة", MealType = MealType.Fish, Ingredients = new() { "شرمبس", "معكرونة", "ثوم", "زيت زيتون" }, SideDishes = new() { "خبز" } },
+
+new() { Id = "m39", Name = "شوربة عدس مع بطاطا بالفرن", MealType = MealType.Vegan, Ingredients = new() { "عدس أحمر", "بطاطا", "بصل", "كمون" }, SideDishes = new() { "خبز" } },
+
+new() { Id = "m40", Name = "شوربة بطاطا", MealType = MealType.Vegan, Ingredients = new() { "بطاطا", "بصل", "ثوم", "كريمة نباتية" }, SideDishes = new() { "خبز محمص" } },
+
+new() { Id = "m41", Name = "تونة مع حمص", MealType = MealType.Fish, Ingredients = new() { "تونة", "حمص", "ليمون", "زيت زيتون" }, SideDishes = new() { "خبز" } },
+
+new() { Id = "m42", Name = "فتة حمص وفول", MealType = MealType.Vegetarian, Ingredients = new() { "حمص", "فول", "لبن", "طحينة", "خبز", "ثوم" }, SideDishes = new() { "مخلل" } },
+
+new() { Id = "m43", Name = "فخاد دجاج مع برغل", MealType = MealType.Chicken, Ingredients = new() { "فخاد دجاج", "برغل", "بصل", "بهارات" }, SideDishes = new() { "لبن" } },
+
+new() { Id = "m44", Name = "فخاد دجاج مع أرز", MealType = MealType.Chicken, Ingredients = new() { "فخاد دجاج", "أرز", "بصل", "بهارات" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m45", Name = "فول وحمص", MealType = MealType.Vegan, Ingredients = new() { "فول", "حمص", "ليمون", "زيت زيتون", "ثوم" }, SideDishes = new() { "خبز" } },
+
+new() { Id = "m46", Name = "قريدس مع معكرونة", MealType = MealType.Fish, Ingredients = new() { "قريدس", "معكرونة", "ثوم", "زيت زيتون" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m47", Name = "معكرونة بالجبنة والذرة والفطر", MealType = MealType.Vegetarian, Ingredients = new() { "معكرونة", "فطر", "ذرة", "جبنة" }, SideDishes = new() { "سلطة" } },
+
+new() { Id = "m48", Name = "مناقيش", MealType = MealType.Vegetarian, Ingredients = new() { "عجينة", "زعتر", "زيت زيتون", "جبنة" }, SideDishes = new() { "شاي" } },
+
+new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients = new() { "خبز برغر", "لحم مفروم", "خس", "طماطم", "مخلل" }, SideDishes = new() { "بطاطا مقلية" } }
 };
 
         await _catalogService.SeedCatalogAsync(catalogMeals);

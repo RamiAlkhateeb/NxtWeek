@@ -1,6 +1,7 @@
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 @if (isInitializing)
 {
@@ -46,5 +47,11 @@ else
         {
             isInitializing = false;
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("nxtweek.checkVersion");
     }
 }
