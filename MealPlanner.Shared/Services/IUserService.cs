@@ -16,18 +16,6 @@ public interface IUserService
     Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month);
     Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry);
     Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries);
-
-        
-    // Household helpers
-    Task<string> GetHouseholdIdAsync(string uid);
-    void ClearCachedHouseholdId();
-
-    // Account Linking
-    Task<bool> SendLinkRequestAsync(string fromUid, string toUid);
-    Task AcceptLinkRequestAsync(string acceptingUid, string requesterUid);
-    Task RejectLinkRequestAsync(string acceptingUid, string requesterUid);
-    
-    // Shared Date Assignment
     Task AssignMealToDateAsync(string uid, DateOnly date, string mealId);
 
 }

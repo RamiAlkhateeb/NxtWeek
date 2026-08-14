@@ -1,86 +1,10 @@
 @page "/settings"
-@using MealPlanner.Shared.Services
-@inject IHouseholdService HouseholdService
-@inject IDataExportService ExportService
-@inject IDataImportService ImportService
-@inject IThemeService ThemeService
-@inject ILanguageService LanguageService
-@inject IJSRuntime JS
-@inject NavigationManager Nav
-
 <div class="app app-content-wrapper" dir="rtl">
-    <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
-
-    <div class="settings-sections">
-        <UiCard CssClass="settings-card">
-            <h2>👤 المستخدم الحالي</h2>
-            <strong>@current.DisplayName</strong>
-            <span class="caption">منزل شخصي</span>
-            <div class="setting-id"><span>معرّف المنزل</span><code>@current.HouseholdId</code></div>
-            <UiButton Variant="secondary" OnClick="CopyHouseholdId">نسخ المعرّف</UiButton>
-        </UiCard>
-
-        <UiCard CssClass="settings-card">
-            <h2>🏠 المنزل</h2>
-            <p>شارك معرّف المنزل مع عائلتك لتتصلوا بنفس الخطة.</p>
-            <label for="household-id">الانضمام إلى منزل</label>
-            <UiTextInput Id="household-id" Placeholder="الصق معرّف المنزل" @bind-Value="householdIdInput" />
-            <UiButton Variant="primary" OnClick="JoinHousehold" Disabled="@string.IsNullOrWhiteSpace(householdIdInput)">اتصال</UiButton>
-            @if (!string.IsNullOrWhiteSpace(householdMessage)) { <div class="alert-playful settings-feedback">@householdMessage</div> }
-        </UiCard>
-
-        <UiCard CssClass="settings-card">
-            <h2>📦 البيانات</h2>
-            <UiButton Variant="secondary" OnClick="OpenImport">استيراد خطة أسبوعية</UiButton>
-            <UiButton Variant="secondary" OnClick="ExportWeek">تصدير خطة أسبوعية</UiButton>
-            @if (!confirmClear)
-            { <UiButton Variant="danger" OnClick="() => confirmClear = true">مسح البيانات المحلية</UiButton> }
-            else
-            { <UiButton Variant="danger" OnClick="ClearLocalData">تأكيد مسح البيانات</UiButton> }
-        </UiCard>
-
-        <UiCard CssClass="settings-card">
-            <h2>🎨 المظهر</h2>
-            <span class="caption">قريباً</span>
-            <div class="settings-choice"><UiFilterChip Disabled="true" Active="@(theme == "light")">فاتح</UiFilterChip><UiFilterChip Disabled="true" Active="@(theme == "dark")">داكن</UiFilterChip><UiFilterChip Disabled="true" Active="@(theme == "system")">النظام</UiFilterChip></div>
-        </UiCard>
-
-        <UiCard CssClass="settings-card">
-            <h2>🌍 اللغة</h2>
-            <span class="caption">قريباً</span>
-            <div class="settings-choice"><UiFilterChip Disabled="true" Active="@(language == "ar")">العربية</UiFilterChip><UiFilterChip Disabled="true" Active="@(language == "en")">English</UiFilterChip></div>
-        </UiCard>
-
-        <UiCard CssClass="settings-card">
-            <h2>ℹ️ حول التطبيق</h2>
-            <p>نكسـت ويك — مخطط وجبات عائلي</p>
-            <span class="caption">الإصدار 1.0</span>
-            <div class="settings-links"><button class="ghost-btn" disabled>ملاحظاتك</button><button class="ghost-btn" disabled>الخصوصية</button><button class="ghost-btn" disabled>المصدر المفتوح</button></div>
-        </UiCard>
-    </div>
+  <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
+  <div class="settings-sections">
+    <UiCard CssClass="settings-card settings-item-disabled"><h2>📦 البيانات <span class="caption">قريباً</span></h2><p>استيراد وتصدير الخطط سيصبح متاحاً قريباً.</p></UiCard>
+    <UiCard CssClass="settings-card settings-item-disabled"><h2>🎨 المظهر <span class="caption">قريباً</span></h2><p>اختيار المظهر قريباً.</p></UiCard>
+    <UiCard CssClass="settings-card settings-item-disabled"><h2>🌍 اللغة <span class="caption">قريباً</span></h2><p>تبديل اللغة قريباً.</p></UiCard>
+    <UiCard CssClass="settings-card"><h2>ℹ️ حول التطبيق</h2><p>نكست ويك — مخطط وجبات شخصي</p><span class="caption">الإصدار 1.0</span></UiCard>
+  </div>
 </div>
-
-@code {
-    private HouseholdSettings current = new("ضيف", "");
-    private string householdIdInput = "";
-    private string householdMessage = "";
-    private string theme = "system";
-    private string language = "ar";
-    private bool confirmClear;
-
-    protected override async Task OnInitializedAsync()
-    {
-        current = await HouseholdService.GetCurrentAsync();
-        theme = await ThemeService.GetAsync();
-        language = await LanguageService.GetAsync();
-    }
-    private async Task CopyHouseholdId() { await JS.InvokeVoidAsync("navigator.clipboard.writeText", current.HouseholdId); householdMessage = "✅ تم نسخ معرّف المنزل"; }
-    private async Task JoinHousehold()
-    {
-        if (await HouseholdService.JoinAsync(householdIdInput)) { current = await HouseholdService.GetCurrentAsync(); householdIdInput = ""; householdMessage = "✅ تم الاتصال بالمنزل"; }
-        else householdMessage = "تعذر الاتصال. تأكد من المعرّف وحاول مجدداً.";
-    }
-    private void OpenImport() => Nav.NavigateTo("/settings/import");
-    private async Task ExportWeek() => await JS.InvokeVoidAsync("nxtweek.downloadJson", await ExportService.ExportCurrentWeekAsync(), "nxtweek-week.csv");
-    private async Task ClearLocalData() { await ImportService.ClearLocalDataAsync(); Nav.NavigateTo("/", forceLoad: true); }
-}

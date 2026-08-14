@@ -2,8 +2,6 @@
 @inject IUserService UserService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
-@using MealPlanner.Web.Services
-@inject LocalPlanMigrationService PlanMigration
 
 @if (isInitializing)
 {
@@ -35,7 +33,6 @@ else
     {
         try
         {
-            await PlanMigration.MigrateAsync();
             var user = await Auth.GetCurrentUserAsync();
             if (user is not null && !string.IsNullOrEmpty(user.Uid))
             {
