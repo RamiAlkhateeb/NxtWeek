@@ -6,6 +6,7 @@ public interface IAuthService
 {
     ValueTask<AuthUser?> GetCurrentUserAsync();
     ValueTask<AuthUser> SignInAsync(string email);
+    ValueTask<AuthUser> SetDisplayNameAsync(string displayName);
     ValueTask SignOutAsync();
 }
 

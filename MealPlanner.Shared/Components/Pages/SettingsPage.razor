@@ -1,10 +1,19 @@
 @page "/settings"
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IUserService UserService
 <div class="app app-content-wrapper" dir="rtl">
   <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
   <div class="settings-sections">
+    <UiCard CssClass="settings-card"><h2>👤 المستخدم</h2><strong>@displayName</strong></UiCard>
     <UiCard CssClass="settings-card settings-item-disabled"><h2>📦 البيانات <span class="caption">قريباً</span></h2><p>استيراد وتصدير الخطط سيصبح متاحاً قريباً.</p></UiCard>
     <UiCard CssClass="settings-card settings-item-disabled"><h2>🎨 المظهر <span class="caption">قريباً</span></h2><p>اختيار المظهر قريباً.</p></UiCard>
     <UiCard CssClass="settings-card settings-item-disabled"><h2>🌍 اللغة <span class="caption">قريباً</span></h2><p>تبديل اللغة قريباً.</p></UiCard>
     <UiCard CssClass="settings-card"><h2>ℹ️ حول التطبيق</h2><p>نكست ويك — مخطط وجبات شخصي</p><span class="caption">الإصدار 1.0</span></UiCard>
   </div>
 </div>
+
+@code {
+  private string displayName = "ضيف";
+  protected override async Task OnInitializedAsync() { var user = await Auth.GetCurrentUserAsync(); if (user is not null) displayName = (await UserService.GetProfileAsync(user.Uid))?.DisplayName ?? "ضيف"; }
+}

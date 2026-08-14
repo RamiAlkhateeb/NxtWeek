@@ -33,7 +33,7 @@
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="nxtweek.js"></script>
-    <script>window.captureAndShare=async id=>{const c=await html2canvas(document.getElementById(id),{backgroundColor:'#FFF9F2',scale:2}),b=await new Promise(r=>c.toBlob(r,'image/png')),f=new File([b],'my-week.png',{type:'image/png'});if(navigator.canShare?.({files:[f]}))await navigator.share({files:[f],title:'مخططي الأسبوعي'});else{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='my-week.png';a.click();}};</script>
+    <script>window.captureAndShare=async id=>{const c=await html2canvas(document.getElementById(id),{backgroundColor:'#FFF9F2',scale:2}),b=await new Promise(r=>c.toBlob(r,'image/png')),f=new File([b],'my-week.png',{type:'image/png'});if(navigator.canShare?.({files:[f]}))await navigator.share({files:[f],title:'طبخات الاسبوع',text:'طبخات الاسبوع'});else{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='طبخات-الاسبوع.png';a.click();}};</script>
     <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
 </body>
 

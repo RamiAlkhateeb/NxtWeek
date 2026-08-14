@@ -56,7 +56,8 @@
     private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool isLoading = true;
     private string uid = "";
-    private string MonthLabel => currentMonth.ToString("MMMM yyyy", ArabicCulture);
+    private static readonly string[] ArabicMonths = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"];
+    private string MonthLabel => $"{ArabicMonths[currentMonth.Month - 1]} {currentMonth.Year}";
 
     protected override async Task OnInitializedAsync()
     {

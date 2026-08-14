@@ -1,7 +1,7 @@
 using MealPlanner.Shared.Services;
 using Microsoft.JSInterop;
 namespace MealPlanner.Web.Services;
-public sealed class LocalDataExportService(IAuthService auth, IUserService users, IMealCatalogService catalog) : IDataExportService
+public sealed class LocalDataExportService(IAuthService auth, IUserService users) : IDataExportService
 { public async Task<string> ExportCurrentWeekAsync() { var user = await auth.GetCurrentUserAsync() ?? throw new InvalidOperationException(); var start = DateOnly.FromDateTime(DateTime.Today).AddDays(-(7 + (int)DateTime.Today.DayOfWeek - 1) % 7); var plan = await users.GetWeeklyPlanAsync(user.Uid, start, start.AddDays(6)); return string.Join('\n', plan.Select(x => $"{x.Date:yyyy-MM-dd},{x.MealId}")); } }
 public sealed class LocalDataImportService(IJSRuntime js) : IDataImportService
 { public async Task ClearLocalDataAsync() { await js.InvokeVoidAsync("localStorage.removeItem", "meals-cache"); } }

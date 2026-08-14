@@ -69,6 +69,7 @@ public class FirebaseMealService : IMealService
                 if (catalogDict.TryGetValue(entry.MealId, out var catItem))
                 {
                     meal.Name = catItem.Name;
+                    meal.PhotoUrl = catItem.PhotoUrl;
                     meal.Ingredients = catItem.Ingredients;
                     meal.SideDishes = catItem.SideDishes;
                     meal.MealType = catItem.MealType;
@@ -219,6 +220,7 @@ new() { Id = "m48", Name = "مناقيش", MealType = MealType.Vegetarian, Ingre
 new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients = new() { "خبز برغر", "لحم مفروم", "خس", "طماطم", "مخلل" }, SideDishes = new() { "بطاطا مقلية" } }
 };
 
+        foreach (var catalogMeal in catalogMeals) catalogMeal.PhotoUrl = string.Empty;
         await _catalogService.SeedCatalogAsync(catalogMeals);
     }
 

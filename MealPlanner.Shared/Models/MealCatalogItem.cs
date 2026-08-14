@@ -24,7 +24,7 @@ public class MealCatalogItem
     public string CreatedBy { get; set; } = string.Empty;
     public bool IsSeed { get; set; }
     public List<string> Tags { get; set; } = new();
-    public string? ImageUrl { get; set; }
+    public string PhotoUrl { get; set; } = string.Empty;
     public int? PreparationMinutes { get; set; }
     public bool IsArchived { get; set; }
 }

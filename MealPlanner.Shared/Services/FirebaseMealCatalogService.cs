@@ -102,7 +102,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
         public string CreatedBy { get; set; } = string.Empty;
         public bool IsSeed { get; set; }
         public List<string>? Tags { get; set; }
-        public string? ImageUrl { get; set; }
+        public string PhotoUrl { get; set; } = string.Empty;
         public int? PreparationMinutes { get; set; }
         public bool IsArchived { get; set; }
 
@@ -116,7 +116,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
             CreatedBy = m.CreatedBy,
             IsSeed = m.IsSeed,
             Tags = m.Tags,
-            ImageUrl = m.ImageUrl,
+            PhotoUrl = m.PhotoUrl,
             PreparationMinutes = m.PreparationMinutes,
             IsArchived = m.IsArchived
         };
@@ -132,7 +132,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
             CreatedBy = CreatedBy,
             IsSeed = IsSeed,
             Tags = Tags ?? new(),
-            ImageUrl = ImageUrl,
+            PhotoUrl = PhotoUrl,
             PreparationMinutes = PreparationMinutes,
             IsArchived = IsArchived
         };

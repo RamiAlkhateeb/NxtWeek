@@ -91,4 +91,15 @@ public sealed class LocalAuthService(IJSRuntime js) : IAuthService
             Console.WriteLine($"[LocalAuthService] Error removing from localStorage: {ex.Message}");
         }
     }
+
+    public async ValueTask<AuthUser> SetDisplayNameAsync(string displayName)
+    {
+        var slug = new string(displayName.Trim().ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+        if (string.IsNullOrWhiteSpace(slug)) slug = "user";
+        var uid = $"{slug}-{Random.Shared.Next(1000, 10000)}";
+        await js.InvokeVoidAsync("localStorage.setItem", "nxtweek.currentUserEmail", uid);
+        await js.InvokeVoidAsync("localStorage.setItem", "nxtweek.currentUserRawEmail", displayName.Trim());
+        await js.InvokeVoidAsync("localStorage.removeItem", "nxtweek.guestId");
+        return _cachedUser = new AuthUser { Uid = uid, Email = displayName.Trim(), IsGuest = false };
+    }
 }
