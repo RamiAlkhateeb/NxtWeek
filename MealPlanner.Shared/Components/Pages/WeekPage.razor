@@ -225,7 +225,10 @@
 
     private async Task SuggestNew(Meal meal)
     {
-        var suggestions = await SuggestionService.GetSuggestionsAsync(uid, weekMeals, count: 1);
+        // Keep the current meal eligible as a last resort, but prefer options
+        // that are not already planned on another day this week.
+        var otherWeekMeals = weekMeals.Where(existing => existing.Date != meal.Date).ToList();
+        var suggestions = await SuggestionService.GetSuggestionsAsync(uid, otherWeekMeals, count: 1);
         if (suggestions.Count == 0) return;
 
         var suggestedName = suggestions[0];

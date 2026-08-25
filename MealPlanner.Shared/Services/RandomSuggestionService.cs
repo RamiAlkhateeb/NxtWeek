@@ -19,29 +19,26 @@ public class RandomSuggestionService : ISuggestionService
 
     public async Task<List<string>> GetSuggestionsAsync(string username, List<Meal> recentMeals, int count = 5)
     {
-        // 1. Fetch user profile
+        // 1. Fetch user profile. A profile is optional for suggestions; it only
+        // supplies the user's favorite meal IDs.
         var profile = await _userService.GetProfileAsync(username);
-        if (profile is null) return new List<string>();
 
         // 2. Fetch all catalog items
         var allCatalog = await _catalogService.GetAllMealsAsync();
         if (allCatalog.Count == 0) return new List<string>();
 
-        // 3. Use selected meals when available; otherwise all catalog meals are eligible.
-        var selectedMealIds = profile.SelectedMealIds ?? new();
-        var favoriteMealIds = profile.FavoriteMealIds ?? new();
+        // 3. Use the shared catalog as the candidate pool. Restricting this to a
+        // user's historical selection can make suggestions alternate between two meals.
+        var favoriteMealIds = profile?.FavoriteMealIds ?? new();
+        var eligible = allCatalog.Where(m => !m.IsArchived).ToList();
 
-        var eligible = allCatalog.Where(m => selectedMealIds.Contains(m.Id)).ToList();
-
-        if (eligible.Count == 0)
-        {
-            // fallback to all catalog if nothing matches
-            eligible = allCatalog;
-        }
-
-        // 4. Exclude recent meals (by name)
-        var usedNames = recentMeals.Select(m => m.Name).ToHashSet();
-        var nonRecent = eligible.Where(m => !usedNames.Contains(m.Name)).ToList();
+        // 4. Prefer meals not already used in the supplied period. IDs avoid
+        // false matches caused by casing or whitespace differences in names.
+        var usedMealIds = recentMeals
+            .Where(m => !string.IsNullOrWhiteSpace(m.MealId))
+            .Select(m => m.MealId)
+            .ToHashSet(StringComparer.Ordinal);
+        var nonRecent = eligible.Where(m => !usedMealIds.Contains(m.Id)).ToList();
         
         // If everything was filtered out, revert to eligible
         if (nonRecent.Count == 0)
@@ -61,8 +58,8 @@ public class RandomSuggestionService : ISuggestionService
             }
         }
 
-        // 6. Randomly select distinct names
-        var rng = new Random();
+        // 6. Randomly select distinct catalog entries.
+        var rng = Random.Shared;
         var result = new List<string>();
         var remainingPool = weightedPool.ToList();
 

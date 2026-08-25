@@ -82,6 +82,13 @@
 <UiBottomSheet IsOpen="showNewMeal" Title="وجبة جديدة" Eyebrow="أضفها مرة واحدة لتصبح متاحة للجميع" OnDismiss="CloseNewMeal">
     <div class="sheet-actions">
         <UiTextInput Placeholder="اسم الوجبة" @bind-Value="newMealName" />
+        <div class="new-meal-type-pills" aria-label="نوع الوجبة">
+            <UiFilterChip Active="@(newMealType == MealType.Meat)" OnClick='() => newMealType = MealType.Meat'>🥩 لحم</UiFilterChip>
+            <UiFilterChip Active="@(newMealType == MealType.Chicken)" OnClick='() => newMealType = MealType.Chicken'>🍗 دجاج</UiFilterChip>
+            <UiFilterChip Active="@(newMealType == MealType.Fish)" OnClick='() => newMealType = MealType.Fish'>🐟 سمك</UiFilterChip>
+            <UiFilterChip Active="@(newMealType == MealType.Vegetarian)" OnClick='() => newMealType = MealType.Vegetarian'>🥬 نباتي</UiFilterChip>
+            <UiFilterChip Active="@(newMealType == MealType.Vegan)" OnClick='() => newMealType = MealType.Vegan'>🌱 نباتي صرف</UiFilterChip>
+        </div>
         @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="alert-playful settings-feedback">@newMealError</div> }
         <UiButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">حفظ واختيار الوجبة</UiButton>
     </div>
@@ -107,6 +114,7 @@
     private bool showNewMeal;
     private string newMealName = "";
     private string newMealError = "";
+    private MealType newMealType = MealType.Vegetarian;
 
 
     private List<MealCatalogItem> FilteredMeals
@@ -175,7 +183,7 @@
     }
     private async Task ChooseBrowseDay(DateOnly day) { if (browseMeal is not null) await ExecuteAssignment(browseMeal, day); }
     private void CloseDayPicker() { showDayPicker = false; browseMeal = null; }
-    private void OpenNewMeal() { showNewMeal = true; newMealName = ""; newMealError = ""; }
+    private void OpenNewMeal() { showNewMeal = true; newMealName = ""; newMealError = ""; newMealType = MealType.Vegetarian; }
     private void CloseNewMeal() { showNewMeal = false; newMealError = ""; }
     private async Task CreateNewMeal()
     {
@@ -183,7 +191,7 @@
         if (string.IsNullOrWhiteSpace(name)) { newMealError = "أدخل اسم الوجبة."; return; }
         try
         {
-            var created = await CatalogService.CreateMealAsync(new MealCatalogItem { Name = name, CreatedBy = uid });
+            var created = await CatalogService.CreateMealAsync(new MealCatalogItem { Name = name, MealType = newMealType, CreatedBy = uid });
             allMeals = await CatalogService.GetAllMealsAsync();
             CloseNewMeal();
             await SelectMeal(created);
