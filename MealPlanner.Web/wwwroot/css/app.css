@@ -1025,10 +1025,96 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .link-request-banner, .alert-playful { border: 0; box-shadow: var(--shadow-sm); }
 .btn-accept { background: var(--color-accent); }.btn-reject { background: var(--color-danger); }
 
-/* Shared three-tab navigation */
-.bottom-nav-container { height: 72px; }
-.bottom-nav-item { width: 33.333%; font-size: 14px; min-height: 44px; }
-.bottom-nav-item.active { color: var(--color-primary); }
+/* Icon-first navigation — playful and easy to scan, with generous tap targets. */
+.bottom-nav-container {
+    height: 76px;
+    padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
+    gap: 8px;
+    border: 0;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -8px 24px rgba(58, 42, 56, .1);
+}
+
+.bottom-nav-item {
+    width: 25%;
+    height: 100%;
+    min-height: 48px;
+    border-radius: 18px;
+    color: #9a8a94;
+}
+
+.bottom-nav-icon {
+    width: 46px;
+    height: 46px;
+    margin: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+
+.bottom-nav-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.bottom-nav-item:hover .bottom-nav-icon { background: var(--color-primary-light); }
+.bottom-nav-item.active .bottom-nav-icon {
+    color: #fff;
+    background: var(--color-primary);
+    box-shadow: 0 5px 0 var(--color-primary-hover), 0 8px 15px rgba(228, 111, 90, .24);
+    transform: translateY(-4px);
+}
+
+/* ==========================================================================
+   Friends
+   ========================================================================== */
+.friends-page { padding-bottom: 98px; }
+.friend-share-card {
+    margin: 16px;
+    padding: 17px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #fff1e9, #fffaf4);
+    border: 1px solid #ffdcd1;
+    border-radius: 20px;
+}
+.friend-share-icon { font-size: 27px; }
+.friend-share-card div { min-width: 0; flex: 1; }
+.friend-share-card p { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 3px; }
+.friend-share-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-primary-hover); font-size: 14px; }
+.friend-copy-button, .friend-add-button, .friend-accept, .friend-decline {
+    border: 0;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 800;
+}
+.friend-copy-button { width: 40px; height: 40px; border-radius: 13px; background: #fff; color: var(--color-primary); font-size: 23px; box-shadow: var(--shadow-sm); }
+.friend-add-section { padding: 4px 16px 18px; }
+.friend-add-section label { display: block; font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+.friend-add-form { display: flex; direction: ltr; gap: 8px; }
+.friend-add-form .ui-text-input { min-width: 0; flex: 1; }
+.friend-add-button { width: 48px; height: 48px; border-radius: 15px; background: var(--color-primary); color: #fff; font-size: 28px; box-shadow: 0 4px 0 var(--color-primary-hover); }
+.friend-add-button:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.friend-feedback { margin: 9px 2px 0; color: var(--color-success); font-size: 13px; font-weight: 700; }.friend-feedback.error { color: var(--color-danger); }
+.friends-section { margin: 0 16px 18px; }
+.friends-section-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 9px; }.friends-section-heading h2 { font-size: 16px; margin: 0; font-weight: 800; }.friends-section-heading span { min-width: 24px; padding: 1px 7px; border-radius: 20px; color: var(--color-primary); background: var(--color-primary-light); font-size: 12px; font-weight: 800; text-align: center; }
+.friend-request-card, .friend-person-card { display: flex; align-items: center; width: 100%; padding: 12px; gap: 11px; background: #fff; border: 1px solid var(--color-border); border-radius: 17px; text-align: right; }
+.friend-request-card + .friend-request-card, .friend-person-card + .friend-person-card { margin-top: 8px; }
+.friend-avatar { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; background: #f7e4dc; color: var(--color-primary-hover); border-radius: 14px; font-size: 17px; font-weight: 800; }
+.friend-request-copy, .friend-person-copy { display: grid; gap: 1px; flex: 1; min-width: 0; }.friend-request-copy strong, .friend-person-copy strong { font-size: 14px; }.friend-request-copy small, .friend-person-copy small { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.friend-request-actions { display: flex; gap: 6px; direction: ltr; }.friend-accept, .friend-decline { width: 34px; height: 34px; border-radius: 11px; font-size: 19px; }.friend-accept { background: #ebf4d2; color: #657b17; }.friend-decline { background: #fff0ed; color: var(--color-danger); }
+.friends-empty-state { padding: 24px 18px; background: #fff; border: 1px dashed #e8d8d2; border-radius: 18px; text-align: center; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }.friends-empty-state span { display: block; font-size: 31px; margin-bottom: 6px; }
+.friend-person-card { border: 0; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; }.friend-person-card:hover, .friend-person-card.selected { border: 1px solid #f4b5a7; background: #fffaf7; box-shadow: var(--shadow-md); transform: translateY(-1px); }.friend-view-icon { color: var(--color-text-secondary); font-size: 24px; }
+.friend-week-section { margin: 0 16px 18px; padding: 16px; background: #3a2a38; border-radius: 22px; color: #fff; }.friend-week-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }.friend-week-heading div { flex: 1; }.friend-week-heading p { margin: 0; font-size: 16px; font-weight: 800; }.friend-week-heading small { opacity: .68; font-size: 11px; }.friend-week-heading button { width: 33px; height: 33px; border: 1px solid rgba(255,255,255,.25); border-radius: 11px; background: rgba(255,255,255,.08); color: #fff; font-size: 19px; cursor: pointer; }.friend-week-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }.friend-week-day { min-height: 72px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; padding: 10px; border-radius: 13px; background: rgba(255,255,255,.12); }.friend-week-day span { color: #fbc5b9; font-size: 11px; font-weight: 700; }.friend-week-day strong { font-size: 12px; line-height: 1.35; }.friend-week-day.empty strong { color: rgba(255,255,255,.45); }
 
 @media (max-width: 640px) {
     .app { box-shadow: none; }

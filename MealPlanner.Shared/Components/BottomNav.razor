@@ -4,17 +4,25 @@
 @if (!IsOnboarding())
 {
     <div class="bottom-nav-container" dir="rtl">
-        <a href="" class="bottom-nav-item @(IsActive("") ? "active" : "")">
-            <span class="bottom-nav-icon">🏠</span>
-            <span>الأسبوع</span>
+        <a href="" class="bottom-nav-item @(IsActive("") ? "active" : "")" title="الأسبوع" aria-label="الأسبوع">
+            <span class="bottom-nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m3 10.8 9-7.3 9 7.3v9.1a1.6 1.6 0 0 1-1.6 1.6H4.6A1.6 1.6 0 0 1 3 19.9z"/><path d="M9.2 21.5v-6h5.6v6"/></svg>
+            </span>
         </a>
-        <a href="meals" class="bottom-nav-item @(IsActive("meals") ? "active" : "")">
-            <span class="bottom-nav-icon">🍽️</span>
-            <span>الوجبات</span>
+        <a href="meals" class="bottom-nav-item @(IsActive("meals") ? "active" : "")" title="الوجبات" aria-label="الوجبات">
+            <span class="bottom-nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 3v8.2a3.1 3.1 0 0 0 6.2 0V3M7.1 3v18"/><path d="M14.5 3v18M14.5 3c3.4.3 5.5 2.7 5.5 6.3v3.2h-5.5"/></svg>
+            </span>
         </a>
-        <a href="settings" class="bottom-nav-item @(IsActive("settings") ? "active" : "")">
-            <span class="bottom-nav-icon">⚙️</span>
-            <span>الإعدادات</span>
+        <a href="friends" class="bottom-nav-item @(IsActive("friends") ? "active" : "")" title="الأصدقاء" aria-label="الأصدقاء">
+            <span class="bottom-nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/><path d="M16 5.5a2.8 2.8 0 0 1 0 5.4M17.7 14.3c2 .8 3.2 2.7 3.5 5.2"/></svg>
+            </span>
+        </a>
+        <a href="settings" class="bottom-nav-item @(IsActive("settings") ? "active" : "")" title="الإعدادات" aria-label="الإعدادات">
+            <span class="bottom-nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.8 7.8 0 0 0 .1-1.5 7.8 7.8 0 0 0-.1-1.5l2-1.5-2-3.4-2.4 1a7.2 7.2 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.6A7.2 7.2 0 0 0 7 6.6l-2.4-1-2 3.4 2 1.5a7.8 7.8 0 0 0-.1 1.5 7.8 7.8 0 0 0 .1 1.5l-2 1.5 2 3.4 2.4-1a7.2 7.2 0 0 0 2.6 1.5l.4 2.6h4l.4-2.6a7.2 7.2 0 0 0 2.6-1.5l2.4 1 2-3.4z"/></svg>
+            </span>
         </a>
     </div>
 }

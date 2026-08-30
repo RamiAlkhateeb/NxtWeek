@@ -1,0 +1,227 @@
+@page "/friends"
+@using System.Globalization
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IUserService UserService
+@inject IMealCatalogService CatalogService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="app app-content-wrapper friends-page" dir="rtl">
+    <UiPageHeader Icon="👋" Title="الأصدقاء" Subtitle="خطّطوا أسبوعكم معاً" />
+
+    @if (isLoading)
+    {
+        <p class="loading-text">جارِ تحميل الأصدقاء...</p>
+    }
+    else
+    {
+        <section class="friend-share-card">
+            <span class="friend-share-icon" aria-hidden="true">✨</span>
+            <div>
+                <p>اسم المستخدم الخاص بك</p>
+                <strong dir="ltr">@uid</strong>
+            </div>
+            <button class="friend-copy-button" @onclick="CopyUsername" title="نسخ اسم المستخدم" aria-label="نسخ اسم المستخدم">⧉</button>
+        </section>
+
+        <section class="friend-add-section">
+            <label for="friend-username">أضف صديقاً</label>
+            <div class="friend-add-form">
+                <input id="friend-username" class="ui-text-input" dir="ltr" @bind="friendUsername" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="اسم المستخدم" disabled="@isSendingRequest" />
+                <button class="friend-add-button" @onclick="SendRequest" disabled="@(isSendingRequest || string.IsNullOrWhiteSpace(friendUsername))" aria-label="إرسال طلب صداقة">+</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(feedback))
+            {
+                <p class="friend-feedback @(isError ? "error" : "")">@feedback</p>
+            }
+        </section>
+
+        @if (incomingRequests.Count > 0)
+        {
+            <section class="friends-section">
+                <div class="friends-section-heading"><h2>طلبات الصداقة</h2><span>@incomingRequests.Count</span></div>
+                @foreach (var request in incomingRequests)
+                {
+                    <article class="friend-request-card">
+                        <div class="friend-avatar">@Initial(request.SenderDisplayName)</div>
+                        <div class="friend-request-copy">
+                            <strong>@request.SenderDisplayName</strong>
+                            <small dir="ltr">@request.SenderUid</small>
+                        </div>
+                        <div class="friend-request-actions">
+                            <button class="friend-accept" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="قبول طلب الصداقة">✓</button>
+                            <button class="friend-decline" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="رفض طلب الصداقة">×</button>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+
+        <section class="friends-section">
+            <div class="friends-section-heading"><h2>أصدقاؤك</h2><span>@friends.Count</span></div>
+            @if (friends.Count == 0)
+            {
+                <div class="friends-empty-state">
+                    <span aria-hidden="true">🫶</span>
+                    <p>شارك اسم المستخدم أعلاه وابدأ التخطيط مع أصدقائك.</p>
+                </div>
+            }
+            else
+            {
+                <div class="friends-list">
+                    @foreach (var friend in friends)
+                    {
+                        <button class="friend-person-card @(selectedFriend?.Uid == friend.Uid ? "selected" : "")" @onclick="() => SelectFriend(friend)">
+                            <span class="friend-avatar">@Initial(friend.DisplayName)</span>
+                            <span class="friend-person-copy"><strong>@friend.DisplayName</strong><small dir="ltr">@friend.Uid</small></span>
+                            <span class="friend-view-icon" aria-hidden="true">‹</span>
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (selectedFriend is not null)
+        {
+            <section class="friend-week-section">
+                <div class="friend-week-heading">
+                    <div><p>أسبوع @selectedFriend.DisplayName</p><small>@WeekRangeLabel</small></div>
+                    <button @onclick="PreviousWeek" aria-label="الأسبوع السابق">›</button>
+                    <button @onclick="NextWeek" aria-label="الأسبوع القادم">‹</button>
+                </div>
+                <div class="friend-week-grid">
+                    @foreach (var day in selectedFriendWeek)
+                    {
+                        <article class="friend-week-day @(string.IsNullOrEmpty(day.MealId) ? "empty" : "")">
+                            <span>@ArabicDays[(int)day.Date.DayOfWeek]</span>
+                            <strong>@(string.IsNullOrEmpty(day.MealId) ? "—" : MealName(day.MealId))</strong>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    private string uid = "";
+    private bool isLoading = true;
+    private bool isSendingRequest;
+    private bool isError;
+    private string friendUsername = "";
+    private string feedback = "";
+    private List<FriendRequest> incomingRequests = new();
+    private List<UserProfile> friends = new();
+    private UserProfile? selectedFriend;
+    private List<WeeklyPlanEntry> selectedFriendWeek = new();
+    private Dictionary<string, string> mealNames = new();
+    private DateOnly displayedWeekStart;
+    private static readonly string[] ArabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    private static readonly CultureInfo ArabicCulture = new("ar-EG");
+    private string WeekRangeLabel => $"{displayedWeekStart.ToString("d MMMM", ArabicCulture)} – {displayedWeekStart.AddDays(6).ToString("d MMMM", ArabicCulture)}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid))
+        {
+            Nav.NavigateTo("/signin");
+            return;
+        }
+
+        uid = user.Uid;
+        displayedWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
+        mealNames = (await CatalogService.GetAllMealsAsync()).ToDictionary(meal => meal.Id, meal => meal.Name);
+        await LoadProfileAsync();
+        isLoading = false;
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        var profile = await UserService.GetProfileAsync(uid);
+        incomingRequests = profile?.IncomingFriendRequests?.Values.OrderByDescending(request => request.SentAtUtc).ToList() ?? new();
+        var friendIds = profile?.FriendIds?.Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new();
+        var profiles = await Task.WhenAll(friendIds.Select(UserService.GetProfileAsync));
+        friends = profiles.Where(profile => profile is not null).Cast<UserProfile>().OrderBy(profile => profile.DisplayName).ToList();
+        if (selectedFriend is not null)
+        {
+            selectedFriend = friends.FirstOrDefault(friend => friend.Uid == selectedFriend.Uid);
+            if (selectedFriend is not null) await LoadSelectedFriendWeekAsync();
+        }
+    }
+
+    private async Task SendRequest()
+    {
+        if (string.IsNullOrWhiteSpace(friendUsername)) return;
+        isSendingRequest = true;
+        feedback = "";
+        try
+        {
+            await UserService.SendFriendRequestAsync(uid, friendUsername.Trim());
+            friendUsername = "";
+            isError = false;
+            feedback = "تم إرسال طلب الصداقة ✨";
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+        }
+        finally { isSendingRequest = false; }
+    }
+
+    private async Task AcceptRequest(string senderUid)
+    {
+        try
+        {
+            await UserService.AcceptFriendRequestAsync(uid, senderUid);
+            isError = false;
+            feedback = "صرتما أصدقاء الآن 🎉";
+            await LoadProfileAsync();
+        }
+        catch (Exception ex) { isError = true; feedback = ex.Message; }
+    }
+
+    private async Task DeclineRequest(string senderUid)
+    {
+        try { await UserService.DeclineFriendRequestAsync(uid, senderUid); await LoadProfileAsync(); }
+        catch (Exception ex) { isError = true; feedback = ex.Message; }
+    }
+
+    private async Task SelectFriend(UserProfile friend)
+    {
+        selectedFriend = friend;
+        await LoadSelectedFriendWeekAsync();
+    }
+
+    private async Task PreviousWeek() { displayedWeekStart = displayedWeekStart.AddDays(-7); await LoadSelectedFriendWeekAsync(); }
+    private async Task NextWeek() { displayedWeekStart = displayedWeekStart.AddDays(7); await LoadSelectedFriendWeekAsync(); }
+    private async Task LoadSelectedFriendWeekAsync()
+    {
+        if (selectedFriend is null) return;
+        selectedFriendWeek = await UserService.GetWeeklyPlanAsync(selectedFriend.Uid, displayedWeekStart, displayedWeekStart.AddDays(6));
+        selectedFriendWeek = Enumerable.Range(0, 7).Select(offset =>
+        {
+            var date = displayedWeekStart.AddDays(offset);
+            return selectedFriendWeek.FirstOrDefault(entry => entry.Date == date) ?? new WeeklyPlanEntry { Date = date };
+        }).ToList();
+    }
+
+    private async Task CopyUsername()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", uid);
+            isError = false;
+            feedback = "تم نسخ اسم المستخدم. أرسله لصديقك!";
+        }
+        catch { isError = true; feedback = "تعذر النسخ. يمكنك تحديد الاسم ونسخه."; }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") await SendRequest(); }
+    private string MealName(string mealId) => mealNames.TryGetValue(mealId, out var name) ? name : "وجبة";
+    private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "؟" : name.Trim()[0].ToString();
+    private static DateOnly StartOfWeek(DateOnly date) => date.AddDays(-(7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7);
+}
