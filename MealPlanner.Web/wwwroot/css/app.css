@@ -1119,3 +1119,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (max-width: 640px) {
     .app { box-shadow: none; }
 }
+
+/* Account-link confirmation shown after an email sign-in link opens on another device. */
+.ios-install-backdrop { position: fixed; inset: 0; z-index: 2200; display: grid; place-items: center; padding: 20px; background: rgba(58,42,56,.45); }
+.ios-install-guide { width: min(100%, 390px); padding: 26px 22px; border-radius: 24px; background: #fff; text-align: center; box-shadow: var(--shadow-lg); }
+.ios-install-guide .ios-install-icon { display: block; font-size: 42px; margin-bottom: 10px; }.ios-install-guide h2 { font-size: 20px; margin-bottom: 8px; }.ios-install-guide p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 16px; }.ios-install-guide input { margin-bottom: 10px; text-align: left; direction: ltr; }.ios-install-guide button { width: 100%; border: 0; border-radius: 14px; padding: 13px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }

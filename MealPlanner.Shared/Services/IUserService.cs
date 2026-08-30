@@ -17,6 +17,10 @@ public interface IUserService
     Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry);
     Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries);
     Task AssignMealToDateAsync(string uid, DateOnly date, string mealId);
+    Task<bool> IsUsernameAvailableAsync(string username, string currentUid);
+    Task<string> RenameUserAsync(string currentUid, string requestedUsername);
+    Task<string?> GetDataKeyForAuthUidAsync(string authUid);
+    Task LinkAuthAccountAsync(string userKey, string authUid, string email);
     Task SendFriendRequestAsync(string senderUid, string recipientUid);
     Task AcceptFriendRequestAsync(string uid, string senderUid);
     Task DeclineFriendRequestAsync(string uid, string senderUid);

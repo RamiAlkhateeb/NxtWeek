@@ -10,6 +10,7 @@
 @inject IUserService UserService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="app app-content-wrapper" dir="rtl">
     @if (!string.IsNullOrWhiteSpace(toastMessage))
@@ -68,10 +69,6 @@
         </div>
     }
 </div>
-
-<UiBottomSheet IsOpen="showNamePrompt" Title="الاسم بلا صغرة" Eyebrow="حتى نحفظ خطتك باسمك" OnDismiss="() => { }">
-    <div class="sheet-actions"><UiTextInput Placeholder="اكتب اسمك" @bind-Value="displayName" /><UiButton Variant="primary" OnClick="SaveName" Disabled="@string.IsNullOrWhiteSpace(displayName)">حفظ</UiButton></div>
-</UiBottomSheet>
 
 <UiBottomSheet IsOpen="@(selectedMeal is not null)"
                Eyebrow="@(selectedMeal is null ? null : DayDateLabel(selectedMeal.Date))"
@@ -141,13 +138,13 @@
     private bool showMonth;
     private bool showWeekSurpriseConfirm;
     private bool isSharing;
-    private bool showNamePrompt;
-    private string displayName = "";
     private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private List<DateOnly?> calendarDays = new();
     private readonly Dictionary<DateOnly, string> monthEntries = new();
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private static readonly CultureInfo ArabicCulture = new("ar-EG");
+    private DotNetObjectReference<WeekPage>? remoteListener;
+    private bool disposed;
 
     private string WeekRangeLabel => $"{DayDateLabel(currentWeekStart)} – {DayDateLabel(currentWeekStart.AddDays(6))}";
     private string MonthLabel => $"{ArabicMonths[currentMonth.Month - 1]} {currentMonth.Year}";
@@ -168,14 +165,12 @@
         }
         uid = user.Uid;
 
-        var profile = await UserService.GetProfileAsync(uid);
-        if (profile is null || string.IsNullOrWhiteSpace(profile.DisplayName))
-            showNamePrompt = true;
-
         currentWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         await EnsureSeededAsync();
         catalogMeals = await CatalogService.GetAllMealsAsync();
         await LoadWeekAsync(currentWeekStart);
+        remoteListener = DotNetObjectReference.Create(this);
+        try { await JS.InvokeAsync<bool>("nxtweek.emailAuth.subscribeToUser", uid, remoteListener); } catch { /* Firebase configuration is optional until sync is enabled. */ }
         var uri = new Uri(Nav.Uri);
         var updatedPrefix = "updated=";
         var query = uri.Query;
@@ -208,21 +203,25 @@
         isLoading = false;
     }
 
+    [JSInvokable]
+    public async Task OnRemoteUserChanged()
+    {
+        if (disposed || isLoading) return;
+        await InvokeAsync(async () => await LoadWeekAsync(currentWeekStart));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        remoteListener?.Dispose();
+        try { await JS.InvokeVoidAsync("nxtweek.emailAuth.unsubscribe"); } catch { }
+    }
+
     private static DateOnly StartOfWeek(DateOnly date) => date.AddDays(-(7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7);
 
     private Task GoPreviousWeek() => LoadWeekAsync(currentWeekStart.AddDays(-7));
     private Task GoNextWeek() => LoadWeekAsync(currentWeekStart.AddDays(7));
     private async Task ShareWeek() { isSharing = true; try { await JS.InvokeVoidAsync("captureAndShare", "week-share-capture"); } finally { isSharing = false; } }
-    private async Task SaveName()
-    {
-        var user = await Auth.SetDisplayNameAsync(displayName);
-        uid = user.Uid;
-        await UserService.CreateProfileAsync(new UserProfile { Uid = uid, DisplayName = displayName.Trim() });
-        toastMessage = "والنعم ولله اتشرفنا";
-        showNamePrompt = false;
-        await LoadWeekAsync(currentWeekStart);
-    }
-
     private async Task SuggestNew(Meal meal)
     {
         // Keep the current meal eligible as a last resort, but prefer options

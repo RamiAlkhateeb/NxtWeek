@@ -88,6 +88,14 @@ The app uses Firebase Realtime Database REST services for household identity and
 - .NET 10 SDK
 - Firebase Realtime Database for household identity features
 
+## Cross-device sync (email link)
+
+Users first choose a unique username in **Settings**, then enter their email to receive a passwordless sign-in link. Opening that link on another browser or phone loads the same username-keyed plan and syncs plan changes live.
+
+Before testing, add the Web App configuration to `MealPlanner.Web/wwwroot/firebase-auth-config.js`, then in Firebase Console enable **Authentication → Sign-in method → Email/Password** and **Email link (passwordless sign-in)**. Add localhost and the deployed app domains in **Authentication → Settings → Authorized domains**.
+
+The database rules are intentionally still public for testing. Do not use this configuration for a production deployment: public rules allow anyone with the database URL to alter usernames, plans, or friendships.
+
 The Firebase database URL is configured in `MealPlanner.Web/Program.cs`. The catalog seed file is `MealPlanner.Shared/wwwroot/seed/meals_seed.json`.
 
 ## Run locally
@@ -110,4 +118,3 @@ The project is configured as a static Blazor WebAssembly PWA and includes Fireba
 - Browser `localStorage` through `IJSRuntime`
 - Bootstrap RTL assets and custom CSS
 - PWA manifest and service worker
-

@@ -24,20 +24,35 @@ else
             </LayoutView>
         </NotFound>
     </Router>
+
+    @if (needsEmailConfirmation)
+    {
+        <div class="ios-install-backdrop">
+            <section class="ios-install-guide" dir="rtl">
+                <span class="ios-install-icon">✉️</span>
+                <h2>أكمل تسجيل الدخول</h2>
+                <p>اكتب البريد الإلكتروني الذي أرسلنا إليه الرابط للتأكد من هويتك.</p>
+                <input class="ui-text-input" type="email" @bind="confirmationEmail" placeholder="name@example.com" />
+                @if (!string.IsNullOrWhiteSpace(emailLinkError)) { <p class="error-msg">@emailLinkError</p> }
+                <button @onclick="CompleteEmailLink" disabled="@string.IsNullOrWhiteSpace(confirmationEmail)">متابعة</button>
+            </section>
+        </div>
+    }
 }
 
 @code {
     private bool isInitializing = true;
+    private bool needsEmailConfirmation;
+    private string confirmationEmail = "";
+    private string emailLinkError = "";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var user = await Auth.GetCurrentUserAsync();
-            if (user is not null && !string.IsNullOrEmpty(user.Uid))
-            {
-                await UserService.GetProfileAsync(user.Uid);
-            }
+            var linked = await Auth.CompleteStoredEmailLinkAsync();
+            if (linked is null && await Auth.HasPendingEmailLinkAsync()) needsEmailConfirmation = true;
+            await ResolveUserAsync(linked ?? await Auth.GetCurrentUserAsync(), await Auth.GetPendingEmailLinkUsernameAsync());
         }
         catch (Exception ex)
         {
@@ -47,6 +62,41 @@ else
         {
             isInitializing = false;
         }
+    }
+
+    private async Task CompleteEmailLink()
+    {
+        try
+        {
+            var user = await Auth.CompleteEmailLinkAsync(confirmationEmail.Trim());
+            if (user is null) throw new InvalidOperationException("رابط تسجيل الدخول غير صالح.");
+            await ResolveUserAsync(user, await Auth.GetPendingEmailLinkUsernameAsync());
+            needsEmailConfirmation = false;
+        }
+        catch (Exception ex) { emailLinkError = ex.Message; }
+    }
+
+    private async Task ResolveUserAsync(AuthUser? user, string pendingUsername)
+    {
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
+        if (!user.IsGuest && !string.IsNullOrWhiteSpace(user.AuthUid))
+        {
+            var dataKey = await UserService.GetDataKeyForAuthUidAsync(user.AuthUid);
+            if (string.IsNullOrWhiteSpace(dataKey) && !string.IsNullOrWhiteSpace(pendingUsername))
+            {
+                await UserService.LinkAuthAccountAsync(pendingUsername, user.AuthUid, user.Email);
+                dataKey = pendingUsername;
+            }
+            if (!string.IsNullOrWhiteSpace(dataKey))
+            {
+                await Auth.SetActiveDataKeyAsync(dataKey);
+                user = await Auth.GetCurrentUserAsync();
+            }
+        }
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
+        var profile = await UserService.GetProfileAsync(user.Uid);
+        if (profile is null)
+            await UserService.CreateProfileAsync(new UserProfile { Uid = user.Uid, DisplayName = user.IsGuest ? "ضيف" : user.DisplayName });
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

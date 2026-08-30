@@ -17,6 +17,16 @@
     }
     else
     {
+        @if (!hasUsername)
+        {
+            <section class="friends-empty-state">
+                <span aria-hidden="true">🔒</span>
+                <p>اختر اسم مستخدم من الإعدادات أولاً لتتمكن من إرسال أو قبول طلبات الصداقة.</p>
+                <a class="secondary-btn" href="settings">اذهب إلى الإعدادات</a>
+            </section>
+        }
+        else
+        {
         <section class="friend-share-card">
             <span class="friend-share-icon" aria-hidden="true">✨</span>
             <div>
@@ -102,6 +112,7 @@
                 </div>
             </section>
         }
+        }
     }
 </div>
 
@@ -118,6 +129,7 @@
     private List<WeeklyPlanEntry> selectedFriendWeek = new();
     private Dictionary<string, string> mealNames = new();
     private DateOnly displayedWeekStart;
+    private bool hasUsername;
     private static readonly string[] ArabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
     private static readonly CultureInfo ArabicCulture = new("ar-EG");
     private string WeekRangeLabel => $"{displayedWeekStart.ToString("d MMMM", ArabicCulture)} – {displayedWeekStart.AddDays(6).ToString("d MMMM", ArabicCulture)}";
@@ -141,6 +153,7 @@
     private async Task LoadProfileAsync()
     {
         var profile = await UserService.GetProfileAsync(uid);
+        hasUsername = !string.IsNullOrWhiteSpace(profile?.Username);
         incomingRequests = profile?.IncomingFriendRequests?.Values.OrderByDescending(request => request.SentAtUtc).ToList() ?? new();
         var friendIds = profile?.FriendIds?.Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new();
         var profiles = await Task.WhenAll(friendIds.Select(UserService.GetProfileAsync));
@@ -154,6 +167,7 @@
 
     private async Task SendRequest()
     {
+        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
         if (string.IsNullOrWhiteSpace(friendUsername)) return;
         isSendingRequest = true;
         feedback = "";
@@ -174,6 +188,7 @@
 
     private async Task AcceptRequest(string senderUid)
     {
+        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
         try
         {
             await UserService.AcceptFriendRequestAsync(uid, senderUid);

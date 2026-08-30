@@ -1,19 +1,30 @@
 @page "/settings"
+@using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IAuthService Auth
 @inject IUserService UserService
+@inject IJSRuntime JS
 <div class="app app-content-wrapper" dir="rtl">
   <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
   <div class="settings-sections">
-    <UiCard CssClass="settings-card"><h2>👤 المستخدم</h2><strong>@displayName</strong></UiCard>
-    <UiCard CssClass="settings-card settings-item-disabled"><h2>📦 البيانات <span class="caption">قريباً</span></h2><p>استيراد وتصدير الخطط سيصبح متاحاً قريباً.</p></UiCard>
-    <UiCard CssClass="settings-card settings-item-disabled"><h2>🎨 المظهر <span class="caption">قريباً</span></h2><p>اختيار المظهر قريباً.</p></UiCard>
-    <UiCard CssClass="settings-card settings-item-disabled"><h2>🌍 اللغة <span class="caption">قريباً</span></h2><p>تبديل اللغة قريباً.</p></UiCard>
+    <UiCard CssClass="settings-card">
+      <h2>👤 اسم المستخدم</h2>
+      @if (hasUsername) { <div class="setting-id"><code dir="ltr">@currentUsername</code><button class="friend-copy-button" @onclick="CopyUsername" title="نسخ">⧉</button></div> }
+      else { <p>اختر اسماً قبل إرسال أو قبول طلبات الصداقة.</p> }
+      <label for="settings-username">@(hasUsername ? "تغيير اسم المستخدم" : "اختر اسم مستخدم")</label>
+      <div class="friend-add-form"><input id="settings-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="مثال: rami_food" /><button class="friend-add-button" @onclick="SaveUsername" disabled="@isSavingUsername">✓</button></div>
+      @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
+    </UiCard>
+    <UiCard CssClass="settings-card settings-item-disabled"><h2>✉️ مزامنة الأجهزة <span class="caption">قريباً</span></h2><p>ستتمكن قريباً من فتح ومزامنة خطتك بين الهاتف والكمبيوتر.</p></UiCard>
     <UiCard CssClass="settings-card"><h2>ℹ️ حول التطبيق</h2><p>نكست ويك — مخطط وجبات شخصي</p><span class="caption">الإصدار 1.0</span></UiCard>
   </div>
 </div>
 
 @code {
-  private string displayName = "ضيف";
-  protected override async Task OnInitializedAsync() { var user = await Auth.GetCurrentUserAsync(); if (user is not null) displayName = (await UserService.GetProfileAsync(user.Uid))?.DisplayName ?? "ضيف"; }
+  private string uid = ""; private string currentUsername = ""; private string usernameInput = ""; private string usernameFeedback = ""; private bool usernameError; private bool isSavingUsername;
+  private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
+  protected override async Task OnInitializedAsync() { var user = await Auth.GetCurrentUserAsync(); if (user is null) return; uid = user.Uid; var profile = await UserService.GetProfileAsync(uid); currentUsername = profile?.Username ?? ""; }
+  private async Task CheckUsername() { usernameFeedback = ""; if (string.IsNullOrWhiteSpace(usernameInput)) return; try { var available = await UserService.IsUsernameAvailableAsync(usernameInput, uid); usernameError = !available; usernameFeedback = available ? "اسم المستخدم متاح ✓" : "اسم المستخدم مستخدم بالفعل."; } catch (Exception ex) { usernameError = true; usernameFeedback = ex.Message; } }
+  private async Task SaveUsername() { isSavingUsername = true; usernameFeedback = ""; try { var username = await UserService.RenameUserAsync(uid, usernameInput); await Auth.SetActiveDataKeyAsync(username); currentUsername = username; uid = username; usernameInput = ""; usernameError = false; usernameFeedback = "تم حفظ اسم المستخدم ✨"; } catch (Exception ex) { usernameError = true; usernameFeedback = ex.Message; } finally { isSavingUsername = false; } }
+  private async Task CopyUsername() { await JS.InvokeVoidAsync("navigator.clipboard.writeText", currentUsername); usernameError = false; usernameFeedback = "تم نسخ اسم المستخدم."; }
 }
