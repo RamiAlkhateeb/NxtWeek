@@ -19,6 +19,38 @@ window.nxtweek = {
   },
   markIosInstallGuideSeen() {
     localStorage.setItem('nxtweek.iosInstallGuideSeen', 'true');
+  },
+  async captureAndShare(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element || typeof window.html2canvas !== 'function') {
+      throw new Error('The week preview could not be created.');
+    }
+
+    const canvas = await window.html2canvas(element, { backgroundColor: '#FFF9F2', scale: 2 });
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('The week image could not be created.');
+
+    const file = new File([blob], 'my-week.png', { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'طبخات الأسبوع', text: 'طبخات الأسبوع' });
+        return 'shared';
+      } catch (error) {
+        if (error?.name === 'AbortError') return 'cancelled';
+        throw error;
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'طبخات-الأسبوع.png';
+      link.click();
+      return 'downloaded';
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
   }
 };
 

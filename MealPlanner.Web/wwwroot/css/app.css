@@ -853,7 +853,8 @@ html, body {
 .week-page-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--color-border); text-align: right; }
 .week-page-header h1 { font-size: 21px; margin-bottom: 5px; }
 .week-page-header p { color: var(--color-text-secondary); font-size: 14px; font-weight: 600; }
-.month-link { float: left; border: 1px solid var(--color-border); color: var(--color-primary); background: #fff; border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+.week-header-action { float: left; min-height: 44px; border: 1px solid var(--color-border); color: var(--color-primary); background: #fff; border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+.week-profile-link { width: 44px; padding: 0; margin-right: var(--space-2); font-size: 20px; }
 .week-nav-wide { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .week-nav-wide button { flex: 1; background: var(--color-primary-light); color: var(--color-primary); border: 0; border-radius: var(--radius-sm); padding: 9px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; }
@@ -908,6 +909,7 @@ html, body {
 }
 
 .month-page { padding-bottom: 90px; }
+.month-settings-back { display: inline-flex; align-items: center; min-height: 44px; margin: var(--space-3) var(--space-4) 0; color: var(--color-primary); font-size: 14px; font-weight: 700; text-decoration: none; }
 .month-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px; border-bottom: 1px solid var(--color-border); }
 .month-header h1 { font-size: 21px; }
 .month-header button { width: 36px; height: 36px; border: 0; background: var(--color-primary-light); color: var(--color-primary); border-radius: 50%; font: inherit; font-size: 25px; cursor: pointer; line-height: 1; }
@@ -1036,7 +1038,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 .bottom-nav-item {
-    width: 20%;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 0;
     height: 100%;
     min-height: 48px;
     border-radius: 18px;
@@ -1070,6 +1074,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     box-shadow: 0 5px 0 var(--color-primary-hover), 0 8px 15px rgba(228, 111, 90, .24);
     transform: translateY(-4px);
 }
+.bottom-nav-add .bottom-nav-icon,
+.bottom-nav-add:hover .bottom-nav-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--color-primary);
+    box-shadow: 0 6px 0 var(--color-primary-hover), 0 10px 20px rgba(228, 111, 90, .3);
+    transform: translateY(-13px);
+}
+.bottom-nav-add:active .bottom-nav-icon { transform: translateY(-11px) scale(.96); }
+.bottom-nav-add .bottom-nav-icon svg { width: 27px; height: 27px; stroke-width: 2.4; }
 
 /* ==========================================================================
    Shopping list
@@ -1097,7 +1113,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .shopping-item.is-bought .shopping-item-name { text-decoration: line-through; }
 .shopping-empty-shop, .shopping-loading { margin: 0; color: var(--color-text-secondary); font-size: 14px; text-align: center; padding: var(--space-3); }
 .shopping-feedback { padding: var(--space-3); text-align: center; font-size: 14px; }
-.settings-developer-link { color: var(--color-primary); font-size: 14px; font-weight: 700; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+.settings-developer-link, .settings-action-link { color: var(--color-primary); font-size: 14px; font-weight: 700; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
 
 /* ==========================================================================
    Friends

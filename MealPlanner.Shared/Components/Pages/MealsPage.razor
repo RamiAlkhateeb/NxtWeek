@@ -95,6 +95,9 @@
 </UiBottomSheet>
 
 @code {
+    [SupplyParameterFromQuery(Name = "create")]
+    public bool CreateRequested { get; set; }
+
     private List<MealCatalogItem> allMeals = new();
     private List<WeeklyPlanEntry> currentWeekPlan = new();
     private List<DateOnly> currentWeekDays = new();
@@ -115,6 +118,8 @@
     private string newMealName = "";
     private string newMealError = "";
     private MealType newMealType = MealType.Vegetarian;
+    private bool pageInitialized;
+    private bool openedFromNavAction;
 
 
     private List<MealCatalogItem> FilteredMeals
@@ -160,6 +165,14 @@
         currentWeekPlan = await UserService.GetWeeklyPlanAsync(uid, startOfWeek, startOfWeek.AddDays(6));
 
         isLoading = false;
+        pageInitialized = true;
+        if (CreateRequested) OpenNewMealFromNavigation();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (pageInitialized && CreateRequested && !showNewMeal)
+            OpenNewMealFromNavigation();
     }
 
     private DateOnly StartOfWeek(DateOnly date)
@@ -183,8 +196,16 @@
     }
     private async Task ChooseBrowseDay(DateOnly day) { if (browseMeal is not null) await ExecuteAssignment(browseMeal, day); }
     private void CloseDayPicker() { showDayPicker = false; browseMeal = null; }
-    private void OpenNewMeal() { showNewMeal = true; newMealName = ""; newMealError = ""; newMealType = MealType.Vegetarian; }
-    private void CloseNewMeal() { showNewMeal = false; newMealError = ""; }
+    private void OpenNewMeal() { openedFromNavAction = false; showNewMeal = true; newMealName = ""; newMealError = ""; newMealType = MealType.Vegetarian; }
+    private void OpenNewMealFromNavigation() { OpenNewMeal(); openedFromNavAction = true; }
+    private void CloseNewMeal()
+    {
+        var clearCreateQuery = openedFromNavAction;
+        showNewMeal = false;
+        newMealError = "";
+        openedFromNavAction = false;
+        if (clearCreateQuery) Nav.NavigateTo("/meals", replace: true);
+    }
     private async Task CreateNewMeal()
     {
         var name = newMealName.Trim();

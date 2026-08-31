@@ -1,5 +1,4 @@
 @page "/"
-@using System.Globalization
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IMealService MealService
@@ -18,8 +17,8 @@
         <div class="toast-message" role="status">✅ @toastMessage</div>
     }
     <div class="week-page-header">
-        <button class="month-link" title="عرض الشهر" aria-label="عرض الشهر" @onclick="OpenMonth">📅</button>
-        <button class="month-link" @onclick="ShareWeek" disabled="@isSharing">@(isSharing ? "⏳ جاري التحضير..." : "📤 شارك أسبوعك")</button>
+        <button class="week-header-action week-profile-link" title="الملف الشخصي والإعدادات" aria-label="الملف الشخصي والإعدادات" @onclick='() => Nav.NavigateTo("/settings")'>👤</button>
+        <button class="week-header-action week-share-link" @onclick="ShareWeek" disabled="@isSharing">@(isSharing ? "⏳ جاري التحضير..." : "📤 شارك أسبوعك")</button>
         <h1>مكدوس</h1>
         <p>@WeekRangeLabel</p>
         <div class="week-nav week-nav-wide">
@@ -112,17 +111,6 @@
     </div>
 </UiBottomSheet>
 
-@if (showMonth)
-{
-    <div class="sheet-backdrop" @onclick="CloseMonth">
-        <section class="month-sheet" @onclick:stopPropagation="true">
-            <div class="month-header"><button @onclick="PreviousMonth">›</button><h2>@MonthLabel</h2><button @onclick="NextMonth">‹</button></div>
-            <div class="month-weekdays">@foreach (var day in WeekdayLabels) { <span>@day</span> }</div>
-            <div class="month-grid">@foreach (var day in calendarDays) { if (day is null) { <div class="month-cell month-outside"></div> } else { <div class="month-cell @(day == today ? "today" : "")"><span class="month-day-number">@day.Value.Day</span>@if (monthEntries.TryGetValue(day.Value, out var name)) { <span class="month-meal-name">@name</span> }</div> } }</div>
-        </section>
-    </div>
-}
-
 @code {
     private List<Meal> weekMeals = new();
     private DateOnly currentWeekStart;
@@ -135,22 +123,14 @@
     private DateOnly? animatedDate;
     private DateOnly? navigatingDate;
     private string toastMessage = "";
-    private bool showMonth;
     private bool showWeekSurpriseConfirm;
     private bool isSharing;
-    private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    private List<DateOnly?> calendarDays = new();
-    private readonly Dictionary<DateOnly, string> monthEntries = new();
-    private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
-    private static readonly CultureInfo ArabicCulture = new("ar-EG");
     private DotNetObjectReference<WeekPage>? remoteListener;
     private bool disposed;
 
     private string WeekRangeLabel => $"{DayDateLabel(currentWeekStart)} – {DayDateLabel(currentWeekStart.AddDays(6))}";
-    private string MonthLabel => $"{ArabicMonths[currentMonth.Month - 1]} {currentMonth.Year}";
     private static readonly string[] ArabicMonths = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"];
     private static readonly string[] ArabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-    private static readonly string[] WeekdayLabels = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -221,7 +201,20 @@
 
     private Task GoPreviousWeek() => LoadWeekAsync(currentWeekStart.AddDays(-7));
     private Task GoNextWeek() => LoadWeekAsync(currentWeekStart.AddDays(7));
-    private async Task ShareWeek() { isSharing = true; try { await JS.InvokeVoidAsync("captureAndShare", "week-share-capture"); } finally { isSharing = false; } }
+    private async Task ShareWeek()
+    {
+        isSharing = true;
+        try
+        {
+            await JS.InvokeAsync<string>("nxtweek.captureAndShare", "week-share-capture");
+        }
+        catch
+        {
+            toastMessage = "تعذرت مشاركة الأسبوع. حاول مرة أخرى.";
+            _ = HideToastAsync();
+        }
+        finally { isSharing = false; }
+    }
     private async Task SuggestNew(Meal meal)
     {
         // Keep the current meal eligible as a last resort, but prefer options
@@ -308,18 +301,6 @@
         await UserService.SaveWeeklyPlanEntryAsync(uid, new WeeklyPlanEntry { Date = selectedMeal.Date, MealId = "", IsFavorite = false });
         await LoadWeekAsync(currentWeekStart); CloseActions();
     }
-    private async Task OpenMonth() { showMonth = true; await LoadMonthAsync(); }
-    private void CloseMonth() => showMonth = false;
-    private async Task PreviousMonth() { currentMonth = currentMonth.AddMonths(-1); await LoadMonthAsync(); }
-    private async Task NextMonth() { currentMonth = currentMonth.AddMonths(1); await LoadMonthAsync(); }
-    private async Task LoadMonthAsync()
-    {
-        monthEntries.Clear(); var plan = await UserService.GetMonthPlanAsync(uid, currentMonth.Year, currentMonth.Month); var names = catalogMeals.ToDictionary(m => m.Id, m => m.Name);
-        foreach (var entry in plan) if (names.TryGetValue(entry.MealId, out var name)) monthEntries[entry.Date] = name;
-        var offset = ((int)currentMonth.DayOfWeek + 6) % 7; var days = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month); var count = offset + days; count += (7 - count % 7) % 7;
-        calendarDays = Enumerable.Range(0, count).Select(i => i < offset || i >= offset + days ? (DateOnly?)null : currentMonth.AddDays(i - offset)).ToList();
-    }
-
     private static string DayDateLabel(DateOnly date) => $"{ArabicDays[(int)date.DayOfWeek]} {date.Day} {ArabicMonths[date.Month - 1]}";
     private static string TypeIcon(MealType? type) => type switch { MealType.Meat => "🥩", MealType.Chicken => "🍗", MealType.Fish => "🐟", MealType.Vegetarian => "🥦", MealType.Vegan => "🌱", _ => "🍽️" };
 }

@@ -5,8 +5,9 @@
 @inject IUserService UserService
 @inject IJSRuntime JS
 <div class="app app-content-wrapper" dir="rtl">
-  <UiPageHeader Icon="⚙️" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
+  <UiPageHeader Icon="👤" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
   <div class="settings-sections">
+    <UiCard CssClass="settings-card settings-calendar-card"><h2>📅 التقويم الشهري</h2><p>شاهد خطة وجباتك للشهر بالكامل.</p><a class="settings-action-link" href="month">عرض التقويم ‹</a></UiCard>
     <UiCard CssClass="settings-card">
       <h2>👤 اسم المستخدم</h2>
       @if (hasUsername) { <div class="setting-id"><code dir="ltr">@currentUsername</code><button class="friend-copy-button" @onclick="CopyUsername" title="نسخ">⧉</button></div> }
