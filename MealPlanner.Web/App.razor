@@ -38,13 +38,31 @@ else
             </section>
         </div>
     }
+
+    @if (showIosInstallGuide && !needsEmailConfirmation)
+    {
+        <div class="ios-home-guide-backdrop" role="presentation">
+            <section class="ios-home-guide" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ios-home-guide-title">
+                <span class="ios-home-guide-icon" aria-hidden="true">📲</span>
+                <h2 id="ios-home-guide-title">أضف مكدوس إلى الشاشة الرئيسية</h2>
+                <p>اضغط زر المشاركة في Safari، ثم اختر «إضافة إلى الشاشة الرئيسية».</p>
+                <img class="ios-home-guide-gif" src="@($"assets/ios-add-to-home.gif?play={iosGuideReplayKey}")" alt="شرح إضافة مكدوس إلى الشاشة الرئيسية على iPhone" />
+                <div class="ios-home-guide-actions">
+                    <button class="ios-home-guide-replay" @onclick="ReplayIosInstallGuide">إعادة العرض</button>
+                    <button class="ios-home-guide-got-it" @onclick="DismissIosInstallGuide">فهمت</button>
+                </div>
+            </section>
+        </div>
+    }
 }
 
 @code {
     private bool isInitializing = true;
     private bool needsEmailConfirmation;
+    private bool showIosInstallGuide;
     private string confirmationEmail = "";
     private string emailLinkError = "";
+    private long iosGuideReplayKey;
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,6 +120,18 @@ else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
+        {
             await JS.InvokeVoidAsync("nxtweek.checkVersion");
+            showIosInstallGuide = await JS.InvokeAsync<bool>("nxtweek.shouldShowIosInstallGuide");
+            if (showIosInstallGuide) StateHasChanged();
+        }
     }
+
+    private async Task DismissIosInstallGuide()
+    {
+        showIosInstallGuide = false;
+        await JS.InvokeVoidAsync("nxtweek.markIosInstallGuideSeen");
+    }
+
+    private void ReplayIosInstallGuide() => iosGuideReplayKey = DateTime.UtcNow.Ticks;
 }

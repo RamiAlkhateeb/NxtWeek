@@ -23,6 +23,7 @@ builder.Services.AddScoped<FirebaseMealCatalogService>();
 builder.Services.AddScoped<IMealCatalogService>(sp => sp.GetRequiredService<FirebaseMealCatalogService>());
 builder.Services.AddScoped<FirebaseMealService>();
 builder.Services.AddScoped<IMealService>(sp => sp.GetRequiredService<FirebaseMealService>());
+builder.Services.AddScoped<IShoppingListService, FirebaseShoppingListService>();
 builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();
 builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();

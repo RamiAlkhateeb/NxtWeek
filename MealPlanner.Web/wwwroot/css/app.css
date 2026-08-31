@@ -792,7 +792,7 @@ html, body {
     text-decoration: none;
     font-size: 12px;
     font-weight: 600;
-    width: 33.333%;
+    width: 20%;
     height: 100%;
     transition: color 0.2s ease;
 }
@@ -1036,7 +1036,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 .bottom-nav-item {
-    width: 25%;
+    width: 20%;
     height: 100%;
     min-height: 48px;
     border-radius: 18px;
@@ -1070,6 +1070,34 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     box-shadow: 0 5px 0 var(--color-primary-hover), 0 8px 15px rgba(228, 111, 90, .24);
     transform: translateY(-4px);
 }
+
+/* ==========================================================================
+   Shopping list
+   ========================================================================== */
+.shopping-page { padding-bottom: 100px; }
+.shopping-content { padding: var(--space-4); display: grid; gap: var(--space-3); }
+.shopping-add-shop { width: 100%; }
+.shopping-shops { display: grid; gap: var(--space-3); }
+.shopping-shop-card { display: grid; gap: var(--space-3); }
+.shopping-shop-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.shopping-shop-header h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.shopping-count { color: var(--color-text-secondary); font-size: 14px; }
+.shopping-delete-shop { min-width: 44px; padding: var(--space-2); color: var(--color-danger); }
+.shopping-add-item { display: flex; align-items: center; gap: var(--space-2); }
+.shopping-add-item .ui-text-input { min-width: 0; flex: 1; }
+.shopping-add-item .ui-button { flex: 0 0 auto; }
+.shopping-items { display: grid; gap: var(--space-2); }
+.shopping-item { min-height: 48px; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg-light); border-radius: var(--radius-md); }
+.shopping-item-toggle, .shopping-item-delete, .shopping-item-name { border: 0; background: transparent; font: inherit; }
+.shopping-item-toggle, .shopping-item-delete { width: 44px; min-width: 44px; min-height: 44px; cursor: pointer; border-radius: 50%; }
+.shopping-item-toggle { color: var(--color-primary); font-size: 22px; font-weight: 700; }
+.shopping-item-name { flex: 1; min-width: 0; color: var(--color-text-main); text-align: right; cursor: pointer; padding: var(--space-2) 0; }
+.shopping-item-delete { color: var(--color-text-secondary); }
+.shopping-item.is-bought { opacity: .62; }
+.shopping-item.is-bought .shopping-item-name { text-decoration: line-through; }
+.shopping-empty-shop, .shopping-loading { margin: 0; color: var(--color-text-secondary); font-size: 14px; text-align: center; padding: var(--space-3); }
+.shopping-feedback { padding: var(--space-3); text-align: center; font-size: 14px; }
+.settings-developer-link { color: var(--color-primary); font-size: 14px; font-weight: 700; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
 
 /* ==========================================================================
    Friends
@@ -1124,3 +1152,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ios-install-backdrop { position: fixed; inset: 0; z-index: 2200; display: grid; place-items: center; padding: 20px; background: rgba(58,42,56,.45); }
 .ios-install-guide { width: min(100%, 390px); padding: 26px 22px; border-radius: 24px; background: #fff; text-align: center; box-shadow: var(--shadow-lg); }
 .ios-install-guide .ios-install-icon { display: block; font-size: 42px; margin-bottom: 10px; }.ios-install-guide h2 { font-size: 20px; margin-bottom: 8px; }.ios-install-guide p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 16px; }.ios-install-guide input { margin-bottom: 10px; text-align: left; direction: ltr; }.ios-install-guide button { width: 100%; border: 0; border-radius: 14px; padding: 13px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.ios-home-guide-backdrop { position: fixed; inset: 0; z-index: 2150; display: grid; place-items: center; padding: var(--space-4); background: rgba(58,42,56,.45); }
+.ios-home-guide { width: min(100%, 390px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: var(--space-5) var(--space-4); border-radius: var(--radius-lg); background: #fff; text-align: center; box-shadow: var(--shadow-lg); }
+.ios-home-guide-icon { display: block; font-size: 42px; margin-bottom: var(--space-2); }.ios-home-guide h2 { margin: 0 0 var(--space-2); font-size: 20px; }.ios-home-guide p { margin: 0 0 var(--space-3); color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; }
+.ios-home-guide-gif { display: block; width: 100%; min-height: 160px; object-fit: contain; border-radius: var(--radius-md); background: var(--color-bg-light); }.ios-home-guide-actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }.ios-home-guide-actions button { flex: 1; min-height: 44px; border-radius: var(--radius-md); padding: var(--space-3); font: inherit; font-weight: 700; cursor: pointer; }.ios-home-guide-replay { color: var(--color-primary); border: 1px solid var(--color-primary); background: #fff; }.ios-home-guide-got-it { color: #fff; border: 1px solid var(--color-primary); background: var(--color-primary); }

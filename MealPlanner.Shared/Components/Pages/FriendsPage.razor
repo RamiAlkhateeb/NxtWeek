@@ -207,6 +207,13 @@
 
     private async Task SelectFriend(UserProfile friend)
     {
+        if (string.Equals(selectedFriend?.Uid, friend.Uid, StringComparison.OrdinalIgnoreCase))
+        {
+            selectedFriend = null;
+            selectedFriendWeek.Clear();
+            return;
+        }
+
         selectedFriend = friend;
         await LoadSelectedFriendWeekAsync();
     }

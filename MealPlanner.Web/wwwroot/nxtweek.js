@@ -6,6 +6,19 @@ window.nxtweek = {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(link.href);
+  },
+  shouldShowIosInstallGuide() {
+    const storageKey = 'nxtweek.iosInstallGuideSeen';
+    const userAgent = navigator.userAgent || '';
+    const isIos = /iPad|iPhone|iPod/.test(userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+
+    return isIos && !isStandalone && localStorage.getItem(storageKey) !== 'true';
+  },
+  markIosInstallGuideSeen() {
+    localStorage.setItem('nxtweek.iosInstallGuideSeen', 'true');
   }
 };
 

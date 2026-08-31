@@ -1,0 +1,181 @@
+@page "/shopping"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IShoppingListService ShoppingListService
+@inject NavigationManager Nav
+
+<div class="app app-content-wrapper shopping-page" dir="rtl">
+    <UiPageHeader Icon="🛒" Title="المشتريات" Subtitle="رتّب مشترياتك حسب المتجر" />
+
+    <main class="shopping-content">
+        <UiButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ أضف متجرًا</UiButton>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert-playful shopping-feedback">@errorMessage</div>
+        }
+
+        @if (isLoading)
+        {
+            <div class="shopping-loading">جارٍ تحميل قائمة المشتريات…</div>
+        }
+        else if (shops.Count == 0)
+        {
+            <UiEmptyState Icon="🛒" Title="قائمة المشتريات جاهزة" Message="أضف متجرًا ثم دوّن ما تحتاجه منه.">
+                <UiButton Variant="primary" OnClick="OpenAddShop">أضف أول متجر</UiButton>
+            </UiEmptyState>
+        }
+        else
+        {
+            <div class="shopping-shops">
+                @foreach (var shop in shops)
+                {
+                    var items = shop.Items?.Values ?? Enumerable.Empty<ShoppingItem>();
+                    var orderedItems = items.OrderBy(item => item.IsBought).ThenBy(item => item.CreatedAtUtc).ToList();
+                    var deleteShopLabel = $"حذف {shop.Name}";
+                    var addItemLabel = $"أضف عنصرًا إلى {shop.Name}";
+                    <UiCard CssClass="shopping-shop-card">
+                        <div class="shopping-shop-header">
+                            <div>
+                                <h2>🏪 @shop.Name</h2>
+                                <span class="shopping-count">@items.Count() عنصر</span>
+                            </div>
+                            <UiButton Variant="ghost" CssClass="shopping-delete-shop" OnClick="() => RequestDeleteShop(shop)" title="حذف المتجر" aria-label="@deleteShopLabel">🗑</UiButton>
+                        </div>
+
+                        <div class="shopping-add-item">
+                            <UiTextInput Value="@GetItemDraft(shop.Id)" ValueChanged="value => SetItemDraft(shop.Id, value)" Placeholder="أضف عنصرًا" aria-label="@addItemLabel" />
+                            <UiButton Variant="secondary" OnClick="() => AddItemAsync(shop.Id)">إضافة</UiButton>
+                        </div>
+
+                        @if (orderedItems.Count == 0)
+                        {
+                            <p class="shopping-empty-shop">لا توجد عناصر بعد — أضف أول عنصر.</p>
+                        }
+                        else
+                        {
+                            <div class="shopping-items">
+                                @foreach (var item in orderedItems)
+                                {
+                                    var toggleItemLabel = $"{(item.IsBought ? "إلغاء شراء" : "تم الشراء")}: {item.Name}";
+                                    var deleteItemLabel = $"حذف {item.Name}";
+                                    <div class="shopping-item @(item.IsBought ? "is-bought" : "")">
+                                        <button class="shopping-item-toggle" @onclick="() => ToggleItemAsync(shop.Id, item)" aria-label="@toggleItemLabel">@(item.IsBought ? "✓" : "○")</button>
+                                        <button class="shopping-item-name" @onclick="() => ToggleItemAsync(shop.Id, item)">@item.Name</button>
+                                        <button class="shopping-item-delete" @onclick="() => DeleteItemAsync(shop.Id, item.Id)" aria-label="@deleteItemLabel">🗑</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </UiCard>
+                }
+            </div>
+        }
+    </main>
+</div>
+
+<UiBottomSheet IsOpen="showAddShop" Title="متجر جديد" Eyebrow="رتّب مشترياتك بالطريقة التي تناسبك" OnDismiss="CloseAddShop">
+    <div class="sheet-actions">
+        <UiTextInput Placeholder="اسم المتجر، مثل Lidl" @bind-Value="newShopName" />
+        @if (!string.IsNullOrWhiteSpace(addShopError)) { <div class="alert-playful shopping-feedback">@addShopError</div> }
+        <UiButton Variant="primary" OnClick="AddShopAsync" Disabled="@string.IsNullOrWhiteSpace(newShopName)">إضافة متجر</UiButton>
+    </div>
+</UiBottomSheet>
+
+<UiBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="حذف المتجر؟" Eyebrow="سيُحذف المتجر وكل العناصر الموجودة فيه." OnDismiss="CancelDeleteShop">
+    <div class="sheet-actions">
+        <UiButton Variant="danger" OnClick="ConfirmDeleteShopAsync">حذف @shopPendingDeletion?.Name</UiButton>
+        <UiButton Variant="ghost" OnClick="CancelDeleteShop">إلغاء</UiButton>
+    </div>
+</UiBottomSheet>
+
+@code {
+    private readonly Dictionary<string, string> itemDrafts = new();
+    private List<ShoppingShop> shops = new();
+    private string uid = "";
+    private bool isLoading = true;
+    private bool showAddShop;
+    private string newShopName = "";
+    private string addShopError = "";
+    private string errorMessage = "";
+    private ShoppingShop? shopPendingDeletion;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid))
+        {
+            Nav.NavigateTo("/signin");
+            return;
+        }
+
+        uid = user.Uid;
+        await LoadShopsAsync();
+    }
+
+    private async Task LoadShopsAsync()
+    {
+        isLoading = true;
+        errorMessage = "";
+        try
+        {
+            shops = await ShoppingListService.GetShopsAsync(uid);
+            foreach (var shop in shops) itemDrafts.TryAdd(shop.Id, "");
+        }
+        catch
+        {
+            errorMessage = "تعذر تحميل قائمة المشتريات. حاول مرة أخرى.";
+        }
+        finally { isLoading = false; }
+    }
+
+    private void OpenAddShop() { showAddShop = true; newShopName = ""; addShopError = ""; }
+    private void CloseAddShop() { showAddShop = false; addShopError = ""; }
+
+    private async Task AddShopAsync()
+    {
+        try
+        {
+            await ShoppingListService.AddShopAsync(uid, newShopName);
+            CloseAddShop();
+            await LoadShopsAsync();
+        }
+        catch (Exception ex) { addShopError = ex.Message; }
+    }
+
+    private string GetItemDraft(string shopId) => itemDrafts.TryGetValue(shopId, out var value) ? value : "";
+    private void SetItemDraft(string shopId, string value) => itemDrafts[shopId] = value;
+
+    private async Task AddItemAsync(string shopId)
+    {
+        try
+        {
+            await ShoppingListService.AddItemAsync(uid, shopId, GetItemDraft(shopId));
+            itemDrafts[shopId] = "";
+            await LoadShopsAsync();
+        }
+        catch (Exception ex) { errorMessage = ex.Message; }
+    }
+
+    private async Task ToggleItemAsync(string shopId, ShoppingItem item)
+    {
+        try { await ShoppingListService.SetItemBoughtAsync(uid, shopId, item.Id, !item.IsBought); await LoadShopsAsync(); }
+        catch (Exception ex) { errorMessage = ex.Message; }
+    }
+
+    private async Task DeleteItemAsync(string shopId, string itemId)
+    {
+        try { await ShoppingListService.DeleteItemAsync(uid, shopId, itemId); await LoadShopsAsync(); }
+        catch (Exception ex) { errorMessage = ex.Message; }
+    }
+
+    private void RequestDeleteShop(ShoppingShop shop) => shopPendingDeletion = shop;
+    private void CancelDeleteShop() => shopPendingDeletion = null;
+    private async Task ConfirmDeleteShopAsync()
+    {
+        if (shopPendingDeletion is null) return;
+        try { await ShoppingListService.DeleteShopAsync(uid, shopPendingDeletion.Id); shopPendingDeletion = null; await LoadShopsAsync(); }
+        catch (Exception ex) { errorMessage = ex.Message; }
+    }
+}
