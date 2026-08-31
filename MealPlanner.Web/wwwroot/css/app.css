@@ -854,11 +854,12 @@ html, body {
 .week-page-header h1 { font-size: 21px; margin-bottom: 5px; }
 .week-page-header p { color: var(--color-text-secondary); font-size: 14px; font-weight: 600; }
 .week-header-action { float: left; min-height: 44px; border: 1px solid var(--color-border); color: var(--color-primary); background: #fff; border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
-.week-profile-link { width: 44px; padding: 0; margin-right: var(--space-2); font-size: 20px; }
+.week-profile-link { width: 46px; height: 46px; min-height: 46px; padding: 0; margin-right: var(--space-2); display: grid; place-items: center; border: 0; border-radius: 16px; color: var(--color-text-secondary); background: transparent; }
+.week-profile-link svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.week-profile-link:hover { background: var(--color-primary-light); color: var(--color-primary); }.week-profile-link:active { transform: scale(.94); }
 .week-nav-wide { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .week-nav-wide button { flex: 1; background: var(--color-primary-light); color: var(--color-primary); border: 0; border-radius: var(--radius-sm); padding: 9px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; }
-.week-cards { padding: 10px 16px; display: flex; flex-direction: column; gap: 7px; }
+.week-cards { padding: 10px 16px; display: flex; flex-direction: column; gap: 7px; perspective: 900px; }
 .week-meal-card { width: 100%; background: #fff; border: 1px solid #f0ddd6; border-radius: var(--radius-md); padding: 10px 12px; box-shadow: 0 3px 10px rgba(89, 54, 42, .07); text-align: right; font: inherit; color: var(--color-text-main); transition: transform .2s ease, background-color .2s ease; }
 .week-meal-card-clickable { cursor: pointer; }
 .week-card-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -870,8 +871,8 @@ html, body {
 .compact-actions { justify-content: flex-end; }
 .compact-actions button { flex: 0 0 44px; min-height: 44px; padding: 0; font-size: 18px; border-radius: 50%; }
 .compact-actions button:nth-child(2) { color: var(--color-primary); }
-.meal-changed { animation: mealSwap .45s ease; }
-@keyframes mealSwap { 50% { transform: scale(.97); background: var(--color-primary-light); } }
+.meal-changed { animation: mealFlip .6s ease-in-out; transform-style: preserve-3d; }
+@keyframes mealFlip { 0% { transform: rotateY(0); } 48% { transform: rotateY(90deg); } 52% { transform: rotateY(90deg); background: var(--color-primary-light); } 100% { transform: rotateY(0); } }
 
 .sheet-backdrop { position: fixed; inset: 0; z-index: 1200; background: rgba(48, 34, 28, .32); display: flex; align-items: flex-end; justify-content: center; }
 .bottom-sheet, .month-sheet { width: min(600px, 100%); background: #fffaf7; border-radius: 24px 24px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); box-shadow: 0 -12px 35px rgba(48, 34, 28, .18); }
@@ -1074,18 +1075,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     box-shadow: 0 5px 0 var(--color-primary-hover), 0 8px 15px rgba(228, 111, 90, .24);
     transform: translateY(-4px);
 }
-.bottom-nav-add .bottom-nav-icon,
-.bottom-nav-add:hover .bottom-nav-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    color: #fff;
-    background: var(--color-primary);
-    box-shadow: 0 6px 0 var(--color-primary-hover), 0 10px 20px rgba(228, 111, 90, .3);
-    transform: translateY(-13px);
-}
-.bottom-nav-add:active .bottom-nav-icon { transform: translateY(-11px) scale(.96); }
-.bottom-nav-add .bottom-nav-icon svg { width: 27px; height: 27px; stroke-width: 2.4; }
+.bottom-nav-add .bottom-nav-icon { color: var(--color-primary); }
+.bottom-nav-add:hover .bottom-nav-icon { background: var(--color-primary-light); }
+.bottom-nav-add:active .bottom-nav-icon { transform: scale(.94); }
 
 /* ==========================================================================
    Shopping list

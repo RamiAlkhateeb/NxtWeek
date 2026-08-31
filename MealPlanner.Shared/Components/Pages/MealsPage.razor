@@ -94,6 +94,26 @@
     </div>
 </UiBottomSheet>
 
+<UiBottomSheet IsOpen="@(editingMeal is not null)" Title="تعديل الوجبة" Eyebrow="عدّل التفاصيل أو استخدمها في خطتك" OnDismiss="CloseMealEditor">
+    @if (editingMeal is not null)
+    {
+        <div class="sheet-actions">
+            <UiTextInput Placeholder="اسم الوجبة" @bind-Value="editingMealName" />
+            <div class="new-meal-type-pills" aria-label="نوع الوجبة">
+                <UiFilterChip Active="@(editingMealType == MealType.Meat)" OnClick='() => editingMealType = MealType.Meat'>🥩 لحم</UiFilterChip>
+                <UiFilterChip Active="@(editingMealType == MealType.Chicken)" OnClick='() => editingMealType = MealType.Chicken'>🍗 دجاج</UiFilterChip>
+                <UiFilterChip Active="@(editingMealType == MealType.Fish)" OnClick='() => editingMealType = MealType.Fish'>🐟 سمك</UiFilterChip>
+                <UiFilterChip Active="@(editingMealType == MealType.Vegetarian)" OnClick='() => editingMealType = MealType.Vegetarian'>🥬 نباتي</UiFilterChip>
+                <UiFilterChip Active="@(editingMealType == MealType.Vegan)" OnClick='() => editingMealType = MealType.Vegan'>🌱 نباتي صرف</UiFilterChip>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(mealEditorError)) { <div class="alert-playful settings-feedback">@mealEditorError</div> }
+            <UiButton Variant="primary" OnClick="SaveMealEdit" Disabled="@string.IsNullOrWhiteSpace(editingMealName)">حفظ التعديلات</UiButton>
+            <UiButton Variant="secondary" OnClick="UseEditedMeal">استخدم هذه الوجبة</UiButton>
+            <button class="danger" @onclick="ArchiveEditingMeal">إخفاء الوجبة من المكتبة</button>
+        </div>
+    }
+</UiBottomSheet>
+
 @code {
     [SupplyParameterFromQuery(Name = "create")]
     public bool CreateRequested { get; set; }
@@ -118,6 +138,10 @@
     private string newMealName = "";
     private string newMealError = "";
     private MealType newMealType = MealType.Vegetarian;
+    private MealCatalogItem? editingMeal;
+    private string editingMealName = "";
+    private string mealEditorError = "";
+    private MealType editingMealType;
     private bool pageInitialized;
     private bool openedFromNavAction;
 
@@ -126,7 +150,7 @@
     {
         get
         {
-            var query = allMeals.AsEnumerable();
+            var query = allMeals.Where(meal => !meal.IsArchived).AsEnumerable();
             if (!string.IsNullOrWhiteSpace(searchText))
                 query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
             if (selectedMealType.HasValue)
@@ -182,7 +206,14 @@
     }
 
     private void SetMealType(MealType? type) => selectedMealType = type;
-    private void ViewMeal(MealCatalogItem meal) => Nav.NavigateTo($"/meal/{meal.Id}");
+    private void ViewMeal(MealCatalogItem meal)
+    {
+        if (isContextMode) { Nav.NavigateTo($"/meal/{meal.Id}"); return; }
+        editingMeal = meal;
+        editingMealName = meal.Name;
+        editingMealType = meal.MealType;
+        mealEditorError = "";
+    }
     private async Task ToggleFavorite(MealCatalogItem meal)
     {
         await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
@@ -218,6 +249,54 @@
             await SelectMeal(created);
         }
         catch (Exception ex) { newMealError = ex.Message; }
+    }
+
+    private void CloseMealEditor() { editingMeal = null; editingMealName = ""; mealEditorError = ""; }
+    private async Task SaveMealEdit()
+    {
+        if (editingMeal is null) return;
+        var name = editingMealName.Trim();
+        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = "أدخل اسم الوجبة."; return; }
+        try
+        {
+            editingMeal.Name = name;
+            editingMeal.MealType = editingMealType;
+            await CatalogService.UpdateMealAsync(editingMeal);
+            allMeals = await CatalogService.GetAllMealsAsync();
+            confirmMessage = "تم حفظ تعديلات الوجبة ✨";
+            CloseMealEditor();
+        }
+        catch (Exception ex) { mealEditorError = ex.Message; }
+    }
+    private async Task UseEditedMeal()
+    {
+        if (editingMeal is null) return;
+        var meal = editingMeal;
+        var name = editingMealName.Trim();
+        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = "أدخل اسم الوجبة."; return; }
+        try
+        {
+            meal.Name = name;
+            meal.MealType = editingMealType;
+            await CatalogService.UpdateMealAsync(meal);
+            allMeals = await CatalogService.GetAllMealsAsync();
+            CloseMealEditor();
+            await SelectMeal(meal);
+        }
+        catch (Exception ex) { mealEditorError = ex.Message; }
+    }
+    private async Task ArchiveEditingMeal()
+    {
+        if (editingMeal is null) return;
+        try
+        {
+            editingMeal.IsArchived = true;
+            await CatalogService.UpdateMealAsync(editingMeal);
+            allMeals.RemoveAll(meal => meal.Id == editingMeal.Id);
+            confirmMessage = "تم إخفاء الوجبة من المكتبة.";
+            CloseMealEditor();
+        }
+        catch (Exception ex) { mealEditorError = ex.Message; }
     }
 
     private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)

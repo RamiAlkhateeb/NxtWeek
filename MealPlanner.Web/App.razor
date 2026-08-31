@@ -2,6 +2,7 @@
 @inject IUserService UserService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@using MealPlanner.Shared.Components
 
 @if (isInitializing)
 {
@@ -39,7 +40,7 @@ else
         </div>
     }
 
-    @if (showIosInstallGuide && !needsEmailConfirmation)
+    @if (showIosInstallGuide && !needsEmailConfirmation && !showUsernameOnboarding)
     {
         <div class="ios-home-guide-backdrop" role="presentation">
             <section class="ios-home-guide" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ios-home-guide-title">
@@ -54,6 +55,15 @@ else
             </section>
         </div>
     }
+
+    <UiBottomSheet IsOpen="showUsernameOnboarding" Title="اختر اسم مستخدم" Eyebrow="حتى يتمكن أصدقاؤك من العثور عليك" OnDismiss="() => { }">
+        <div class="sheet-actions">
+            <p>استخدم 3 إلى 20 حرفاً إنجليزياً أو رقماً أو علامة _.</p>
+            <input class="ui-text-input" dir="ltr" @bind="onboardingUsername" @bind:event="oninput" @onblur="CheckOnboardingUsername" placeholder="مثال: rami_food" />
+            @if (!string.IsNullOrWhiteSpace(usernameOnboardingFeedback)) { <p class="friend-feedback @(usernameOnboardingError ? "error" : "")">@usernameOnboardingFeedback</p> }
+            <UiButton Variant="primary" OnClick="SaveOnboardingUsername" Disabled="@(isSavingOnboardingUsername || string.IsNullOrWhiteSpace(onboardingUsername))">@(isSavingOnboardingUsername ? "جارِ الحفظ..." : "حفظ والمتابعة")</UiButton>
+        </div>
+    </UiBottomSheet>
 }
 
 @code {
@@ -63,6 +73,12 @@ else
     private string confirmationEmail = "";
     private string emailLinkError = "";
     private long iosGuideReplayKey;
+    private bool showUsernameOnboarding;
+    private bool usernameOnboardingError;
+    private bool isSavingOnboardingUsername;
+    private string onboardingUsername = "";
+    private string usernameOnboardingFeedback = "";
+    private AuthUser? onboardingUser;
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,7 +130,44 @@ else
         if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
         var profile = await UserService.GetProfileAsync(user.Uid);
         if (profile is null)
-            await UserService.CreateProfileAsync(new UserProfile { Uid = user.Uid, DisplayName = user.IsGuest ? "ضيف" : user.DisplayName });
+        {
+            profile = new UserProfile { Uid = user.Uid, DisplayName = user.IsGuest ? "ضيف" : user.DisplayName };
+            await UserService.CreateProfileAsync(profile);
+        }
+        if (user.IsGuest && string.IsNullOrWhiteSpace(profile.Username))
+        {
+            onboardingUser = user;
+            showUsernameOnboarding = true;
+        }
+    }
+
+    private async Task CheckOnboardingUsername()
+    {
+        usernameOnboardingFeedback = "";
+        if (string.IsNullOrWhiteSpace(onboardingUsername) || onboardingUser is null) return;
+        try
+        {
+            var available = await UserService.IsUsernameAvailableAsync(onboardingUsername, onboardingUser.Uid);
+            usernameOnboardingError = !available;
+            usernameOnboardingFeedback = available ? "اسم المستخدم متاح ✓" : "اسم المستخدم مستخدم بالفعل.";
+        }
+        catch (Exception ex) { usernameOnboardingError = true; usernameOnboardingFeedback = ex.Message; }
+    }
+
+    private async Task SaveOnboardingUsername()
+    {
+        if (onboardingUser is null) return;
+        isSavingOnboardingUsername = true;
+        usernameOnboardingFeedback = "";
+        try
+        {
+            var username = await UserService.RenameUserAsync(onboardingUser.Uid, onboardingUsername);
+            await Auth.SetActiveDataKeyAsync(username);
+            showUsernameOnboarding = false;
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex) { usernameOnboardingError = true; usernameOnboardingFeedback = ex.Message; }
+        finally { isSavingOnboardingUsername = false; }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
