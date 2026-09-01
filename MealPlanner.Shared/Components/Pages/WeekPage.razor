@@ -18,7 +18,9 @@
     }
     <div class="week-page-header">
         <button class="week-header-action week-profile-link" title="الملف الشخصي والإعدادات" aria-label="الملف الشخصي والإعدادات" @onclick='() => Nav.NavigateTo("/settings")'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/></svg></button>
-        <button class="week-header-action week-share-link" @onclick="ShareWeek" disabled="@isSharing">@(isSharing ? "⏳ جاري التحضير..." : "📤 شارك أسبوعك")</button>
+        <button class="week-header-action week-share-link" title="شارك أسبوعك" aria-label="شارك أسبوعك" aria-busy="@isSharing" @onclick="ShareWeek" disabled="@isSharing">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg>
+        </button>
         <h1>مكدوس</h1>
         <p>@WeekRangeLabel</p>
         <div class="week-nav week-nav-wide">
@@ -48,7 +50,7 @@
                 }
                 else
                 {
-                    <article id="@($"day-{meal.Date:yyyy-MM-dd}")" class="week-meal-card @(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : "has-photo") @(isPast ? "week-card-past" : "") @(animatedDate == meal.Date ? "meal-changed" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" style="@(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : $"background-image: url('{meal.PhotoUrl}');")" @onclick="() => OpenActions(meal)">
+                    <article @key="MealRenderKey(meal)" id="@($"day-{meal.Date:yyyy-MM-dd}")" class="week-meal-card @(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : "has-photo") @(isPast ? "week-card-past" : "") @(animatedDate == meal.Date ? "meal-changed" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" style="@(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : $"background-image: url('{meal.PhotoUrl}');")" @onclick="() => OpenActions(meal)">
                         <div class="week-card-topline">
                             <span class="week-card-date">@DayDateLabel(meal.Date)</span>
                             @if (meal.IsFavorite)
@@ -121,6 +123,7 @@
     private bool showQuickPicker;
     private bool showMoveDays;
     private DateOnly? animatedDate;
+    private int flipSequence;
     private DateOnly? navigatingDate;
     private string toastMessage = "";
     private bool showWeekSurpriseConfirm;
@@ -198,6 +201,8 @@
     }
 
     private static DateOnly StartOfWeek(DateOnly date) => date.AddDays(-(7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7);
+    private string MealRenderKey(Meal meal) => animatedDate == meal.Date ? $"{meal.Id}-flip-{flipSequence}" : meal.Id;
+    private void TriggerMealFlip(DateOnly date) { animatedDate = date; flipSequence++; }
 
     private Task GoPreviousWeek() => LoadWeekAsync(currentWeekStart.AddDays(-7));
     private Task GoNextWeek() => LoadWeekAsync(currentWeekStart.AddDays(7));
@@ -232,14 +237,13 @@
         meal.SideDishes = item?.SideDishes ?? new();
         meal.MealType = item?.MealType;
         await MealService.UpsertMealAsync(meal);
-        animatedDate = meal.Date;
+        TriggerMealFlip(meal.Date);
         await LoadWeekAsync(currentWeekStart);
     }
 
     private async Task SuggestEmpty(Meal meal)
     {
         await SuggestNew(meal);
-        animatedDate = meal.Date;
     }
 
     private async Task SurpriseWeek()

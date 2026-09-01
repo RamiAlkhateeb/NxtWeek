@@ -1,21 +1,21 @@
 @using MealPlanner.Shared.Models
 
-<article class="meal-selection-card ui-card" dir="rtl">
-    <button class="meal-selection-main" @onclick="() => OnView.InvokeAsync(Meal)" aria-label="عرض تفاصيل @Meal.Name">
+<article class="meal-selection-card ui-card" dir="rtl" @onclick="HandleCardClick">
+    <div class="meal-selection-main" role="button" tabindex="0" aria-label="تعديل @Meal.Name">
         <h2>@Meal.Name</h2>
         <div class="badges-row">
             <span class="badge type-badge">@Meal.MealType</span>
         </div>
-    </button>
+    </div>
     <div class="meal-selection-actions">
-        <button class="icon-action" title="المفضلة" aria-label="المفضلة" @onclick="() => OnFavorite.InvokeAsync(Meal)">@(IsFavorite ? "❤️" : "♡")</button>
+        <button class="icon-action" title="المفضلة" aria-label="المفضلة" @onclick="() => OnFavorite.InvokeAsync(Meal)" @onclick:stopPropagation="true">@(IsFavorite ? "❤️" : "♡")</button>
         @if (IsContextMode)
         {
-            <UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">✓ اختر هذه الوجبة</UiButton>
+            <span @onclick:stopPropagation="true"><UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">✓ اختر هذه الوجبة</UiButton></span>
         }
         else
         {
-            <UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">استخدام هذه الوجبة</UiButton>
+            <span @onclick:stopPropagation="true"><UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">استخدام هذه الوجبة</UiButton></span>
         }
     </div>
 </article>
@@ -27,4 +27,5 @@
     [Parameter] public EventCallback<MealCatalogItem> OnSelect { get; set; }
     [Parameter] public EventCallback<MealCatalogItem> OnFavorite { get; set; }
     [Parameter] public EventCallback<MealCatalogItem> OnView { get; set; }
+    private Task HandleCardClick() => IsContextMode ? Task.CompletedTask : OnView.InvokeAsync(Meal);
 }

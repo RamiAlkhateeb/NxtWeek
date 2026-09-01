@@ -6,7 +6,7 @@
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper shopping-page" dir="rtl">
-    <UiPageHeader Icon="🛒" Title="المشتريات" Subtitle="رتّب مشترياتك حسب المتجر" />
+    <header class="ui-page-header shopping-page-header"><div><h1><span class="shopping-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6z"/><path d="M8 8a4 4 0 0 1 8 0"/><path d="M9.5 13.5h.01M14.5 13.5h.01"/></svg></span> المشتريات</h1><p>رتّب مشترياتك حسب المتجر</p></div></header>
 
     <main class="shopping-content">
         <UiButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ أضف متجرًا</UiButton>
@@ -38,10 +38,10 @@
                     <UiCard CssClass="shopping-shop-card">
                         <div class="shopping-shop-header">
                             <div>
-                                <h2>🏪 @shop.Name</h2>
+                                <h2><span class="shopping-inline-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4z"/><path d="m4 10 2-6h12l2 6M8 20v-5h4v5M15 14h2"/></svg></span>@shop.Name</h2>
                                 <span class="shopping-count">@items.Count() عنصر</span>
                             </div>
-                            <UiButton Variant="ghost" CssClass="shopping-delete-shop" OnClick="() => RequestDeleteShop(shop)" title="حذف المتجر" aria-label="@deleteShopLabel">🗑</UiButton>
+                            <UiButton Variant="ghost" CssClass="shopping-delete-shop shopping-svg-action" OnClick="() => RequestDeleteShop(shop)" title="حذف المتجر" aria-label="@deleteShopLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></UiButton>
                         </div>
 
                         <div class="shopping-add-item">
@@ -61,9 +61,9 @@
                                     var toggleItemLabel = $"{(item.IsBought ? "إلغاء شراء" : "تم الشراء")}: {item.Name}";
                                     var deleteItemLabel = $"حذف {item.Name}";
                                     <div class="shopping-item @(item.IsBought ? "is-bought" : "")">
-                                        <button class="shopping-item-toggle" @onclick="() => ToggleItemAsync(shop.Id, item)" aria-label="@toggleItemLabel">@(item.IsBought ? "✓" : "○")</button>
+                                        <button class="shopping-item-toggle" @onclick="() => ToggleItemAsync(shop.Id, item)" aria-label="@toggleItemLabel"><svg viewBox="0 0 24 24" aria-hidden="true">@if (item.IsBought) { <path d="m5 12 4.2 4.2L19 6.5"/> } else { <circle cx="12" cy="12" r="8"/> }</svg></button>
                                         <button class="shopping-item-name" @onclick="() => ToggleItemAsync(shop.Id, item)">@item.Name</button>
-                                        <button class="shopping-item-delete" @onclick="() => DeleteItemAsync(shop.Id, item.Id)" aria-label="@deleteItemLabel">🗑</button>
+                                        <button class="shopping-item-delete shopping-svg-action" @onclick="() => DeleteItemAsync(shop.Id, item.Id)" aria-label="@deleteItemLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
                                     </div>
                                 }
                             </div>
