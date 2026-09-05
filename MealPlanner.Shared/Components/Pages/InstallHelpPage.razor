@@ -1,83 +1,26 @@
 @page "/settings/install"
-@using Microsoft.JSInterop
-@inject IJSRuntime JS
+@using MealPlanner.Shared.Components
 @inject NavigationManager Nav
 
 <div class="app app-content-wrapper install-help-page" dir="rtl">
     <UiPageHeader Icon="📲" Title="تثبيت مكدوس" Subtitle="أضف مكدوس إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق" />
 
-    <div class="install-segmented" role="tablist" aria-label="نظام التشغيل">
-        <button class="@(platform == "ios" ? "active" : "")" @onclick='() => platform = "ios"'>iPhone / iPad</button>
-        <button class="@(platform == "android" ? "active" : "")" @onclick='() => platform = "android"'>أندرويد</button>
+    <div class="install-carousel-wrap">
+        <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="تم ✓" />
     </div>
 
     <section class="install-section">
-        @if (platform == "ios")
-        {
-            <div class="install-step">
-                <span class="install-step-num">1</span>
-                <div>
-                    <h2>افتح مكدوس في Safari</h2>
-                    <p>يعمل التثبيت من متصفح <strong>Safari</strong> على iPhone/iPad.</p>
-                </div>
+        <div class="install-step">
+            <span class="install-step-num">💡</span>
+            <div>
+                <h2>يعمل على أندرويد و iPhone/iPad</h2>
+                <p>استخدم متصفح <strong>Safari</strong> على iPhone/iPad، أو <strong>Chrome</strong> على أندرويد، واتبع نفس الخطوات من قائمة المشاركة أو القائمة ⋮.</p>
             </div>
-            <div class="install-step">
-                <span class="install-step-num">2</span>
-                <div>
-                    <h2>اضغط زر «المشاركة»</h2>
-                    <p>هو الزر المربّع مع السهم للأعلى في أسفل الشاشة (أو أعلاها في الإصدارات الجديدة).</p>
-                </div>
-            </div>
-            <div class="install-step">
-                <span class="install-step-num">3</span>
-                <div>
-                    <h2>اختر «إضافة إلى الشاشة الرئيسية»</h2>
-                    <p>مرّر قائمة المشاركة للأعلى ثم اضغط «إضافة إلى الشاشة الرئيسية» (Add to Home Screen).</p>
-                </div>
-            </div>
-            <div class="install-step">
-                <span class="install-step-num">4</span>
-                <div>
-                    <h2>اضغط «إضافة»</h2>
-                    <p>تأكد من الاسم ثم اضغط «إضافة» في أعلى الصفحة. سيظهر أيقونة مكدوس على شاشتك الرئيسية.</p>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="install-step">
-                <span class="install-step-num">1</span>
-                <div>
-                    <h2>افتح مكدوس في Chrome</h2>
-                    <p>استخدم متصفح <strong>Chrome</strong> على هاتف أندرويد.</p>
-                </div>
-            </div>
-            <div class="install-step">
-                <span class="install-step-num">2</span>
-                <div>
-                    <h2>اضغط على قائمة النقاط الثلاث ⋮</h2>
-                    <p>في أعلى يسار المتصفح ثم اختر من القائمة.</p>
-                </div>
-            </div>
-            <div class="install-step">
-                <span class="install-step-num">3</span>
-                <div>
-                    <h2>اختر «إضافة إلى الشاشة الرئيسية»</h2>
-                    <p>أو «تثبيت التطبيق» / «Install app» حسب إصدار Chrome.</p>
-                </div>
-            </div>
-            <div class="install-step">
-                <span class="install-step-num">4</span>
-                <div>
-                    <h2>اضغط «إضافة»</h2>
-                    <p>ستظهر أيقونة مكدوس على شاشتك الرئيسية وتُفتح كتطبيق مستقل.</p>
-                </div>
-            </div>
-        }
+        </div>
     </section>
 
     <div class="install-tip">
-        <span aria-hidden="true">💡</span>
+        <span aria-hidden="true">✨</span>
         <p>عند التثبيت على الشاشة الرئيسية يعمل مكدوس في وضع ملء الشاشة، ويُفتح بشكل أسرع، ويمكنك استخدامه من الشاشة الرئيسية مباشرة دون كتابة العنوان.</p>
     </div>
 
@@ -85,20 +28,6 @@
 </div>
 
 @code {
-    private string platform = "android";
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var isIos = await JS.InvokeAsync<bool>("nxtweek.isIosDevice");
-            platform = isIos ? "ios" : "android";
-        }
-        catch
-        {
-            platform = "android";
-        }
-    }
-
+    private int welcomeSlide;
     private void GoBack() => Nav.NavigateTo("/settings");
 }

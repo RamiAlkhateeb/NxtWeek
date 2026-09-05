@@ -1,0 +1,81 @@
+@namespace MealPlanner.Shared.Components
+
+@* Reusable "add to home screen" screenshot carousel. Used in the first-launch
+   welcome wizard (App.razor) and on the /settings/install help page. *@
+<div class="addhome-carousel" dir="rtl">
+    @if (ShowProgress)
+    {
+        <p class="addhome-progress">الخطوة @(Current + 1) من @Slides.Count</p>
+    }
+
+    <div class="welcome-carousel">
+        <div class="welcome-carousel-track" style="transform: translateX(@(Current * -100)%);">
+            @foreach (var s in Slides)
+            {
+                <div class="welcome-carousel-slide">
+                    <div class="welcome-slide-copy"><span class="welcome-step-badge">@s.Badge</span><h3>@s.Action</h3></div>
+                    <img class="welcome-carousel-img" src="@s.Image" alt="@s.Alt" />
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="welcome-wizard-actions">
+        @if (Current > 0)
+        {
+            <button class="welcome-wizard-back" @onclick="GoBack">السابق</button>
+        }
+        else
+        {
+            <span></span>
+        }
+        @if (Current < Slides.Count - 1)
+        {
+            <button class="welcome-wizard-next" @onclick="GoNext">التالي</button>
+        }
+        else
+        {
+            <button class="welcome-wizard-start" @onclick="OnFinish">@FinishText</button>
+        }
+    </div>
+</div>
+
+@code {
+    private sealed record Slide(string Badge, string Action, string Image, string Alt);
+
+    private List<Slide> Slides { get; set; } = new();
+    private int Max => Math.Max(0, Slides.Count - 1);
+
+    [Parameter] public int Current { get; set; }
+    [Parameter] public EventCallback<int> CurrentChanged { get; set; }
+    [Parameter] public string FinishText { get; set; } = "ابدأ الآن 🚀";
+    [Parameter] public bool ShowProgress { get; set; } = true;
+    [Parameter] public string ImagePrefix { get; set; } = "images/";
+    [Parameter] public EventCallback OnFinish { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Slides =
+        [
+            new("الخطوة 1", "اضغط على زر المشاركة", $"{ImagePrefix}step1.jpg", "اضغط على زر المشاركة لإضافة مكدوس إلى الشاشة الرئيسية"),
+            new("الخطوة 2", "اختر «إضافة إلى الشاشة الرئيسية»", $"{ImagePrefix}step2.jpg", "اختر إضافة إلى الشاشة الرئيسية"),
+            new("الخطوة 3", "اضغط على «إضافة»", $"{ImagePrefix}step3.jpg", "اضغط على زر الإضافة للتأكيد")
+        ];
+    }
+
+    private async Task GoBack() => await SetCurrent(Current - 1);
+    private async Task GoNext() => await SetCurrent(Current + 1);
+
+    private async Task SetCurrent(int value)
+    {
+        var clamped = Math.Clamp(value, 0, Max);
+        if (CurrentChanged.HasDelegate)
+        {
+            await CurrentChanged.InvokeAsync(clamped);
+        }
+        else
+        {
+            Current = clamped;
+        }
+    }
+}

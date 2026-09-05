@@ -130,6 +130,7 @@
     private bool isSharing;
     private bool showProfileNudge;
     private bool userHasUsername;
+    private bool profileFirstWeekFilled;
     private DotNetObjectReference<WeekPage>? remoteListener;
     private bool disposed;
 
@@ -155,7 +156,7 @@
         catalogMeals = await CatalogService.GetAllMealsAsync();
         await LoadProfileAsync();
         await LoadWeekAsync(currentWeekStart);
-        if (IsFirstVisitAndWeekEmpty()) await AutoPopulateFirstWeekAsync();
+        if (!profileFirstWeekFilled) await AutoPopulateFirstWeeksAsync();
         remoteListener = DotNetObjectReference.Create(this);
         try { await JS.InvokeAsync<bool>("nxtweek.emailAuth.subscribeToUser", uid, remoteListener); } catch { /* Firebase configuration is optional until sync is enabled. */ }
         var uri = new Uri(Nav.Uri);
@@ -180,37 +181,50 @@
         await MealService.SeedAsync(new List<Meal>());
     }
 
-    // A first-time visitor (still a guest, never set a username) gets their week
-    // auto-filled with random meals. Existing users with a profile are left alone.
+    // Loads profile state. A brand-new visitor or new user has no username yet and
+    // no saved plan, so we auto-generate a random plan for the current + next week.
     private async Task LoadProfileAsync()
     {
         var profile = await UserService.GetProfileAsync(uid);
         userHasUsername = !string.IsNullOrWhiteSpace(profile?.Username);
+        profileFirstWeekFilled = profile?.FirstWeekAutoFilled ?? false;
         // Show a red nudge on the profile icon until the guest picks a username.
         showProfileNudge = !userHasUsername && uid.StartsWith("guest_", StringComparison.OrdinalIgnoreCase);
     }
 
-    private bool IsFirstVisitAndWeekEmpty()
-        => showProfileNudge && weekMeals.All(m => string.IsNullOrWhiteSpace(m.MealId));
-
-    private async Task AutoPopulateFirstWeekAsync()
+    private async Task AutoPopulateFirstWeeksAsync()
     {
-        // Only fill genuine first visits: a guest who has no profile username yet
-        // and has never saved a plan, so we don't wipe a deliberately cleared week.
+        // Only fill genuine first visits: a profile that has never been auto-filled
+        // and that has no plan entries anywhere yet (so we don't wipe a plan the
+        // user may have started or imported).
         var profile = await UserService.GetProfileAsync(uid);
         if (profile is null || profile.FirstWeekAutoFilled) return;
         if (await UserService.HasAnyPlanEntryAsync(uid)) return;
 
-        var suggestions = await SuggestionService.GetSuggestionsAsync(uid, weekMeals, weekMeals.Count);
+        // Fill the current week AND the following week with random meals. Meals are
+        // chosen distinct so the two weeks don't repeat the same dish where the
+        // catalog is large enough.
         var catalog = await CatalogService.GetAllMealsAsync();
+        var pool = catalog.Where(m => !m.IsArchived).ToList();
+        if (pool.Count == 0) return;
+
+        var rng = Random.Shared;
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var assigned = 0;
-        foreach (var pair in weekMeals.Where(m => string.IsNullOrWhiteSpace(m.MealId)).Zip(suggestions))
+        for (var weekOffset = 0; weekOffset < 2; weekOffset++)
         {
-            var item = catalog.FirstOrDefault(c => c.Name.Equals(pair.Second, StringComparison.OrdinalIgnoreCase));
-            if (item is null) continue;
-            await UserService.AssignMealToDateAsync(uid, pair.First.Date, item.Id);
-            assigned++;
+            var start = currentWeekStart.AddDays(weekOffset * 7);
+            for (var day = 0; day < 7; day++)
+            {
+                var options = pool.Where(m => !usedNames.Contains(m.Name)).ToList();
+                if (options.Count == 0) options = pool;
+                var pick = options[rng.Next(options.Count)];
+                usedNames.Add(pick.Name);
+                await UserService.AssignMealToDateAsync(uid, start.AddDays(day), pick.Id);
+                assigned++;
+            }
         }
+
         // Only persist the "filled" marker when we actually wrote meals, so an
         // offline/empty catalog can retry on a later visit instead of locking in.
         if (assigned > 0)

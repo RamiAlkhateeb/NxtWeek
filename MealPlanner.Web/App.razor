@@ -50,41 +50,7 @@ else
                     <p>اتبع الخطوات <b>@(welcomeSlide + 1) من 3</b> لفتح التطبيق كتطبيق سريع.</p>
                 </div>
 
-                <div class="welcome-carousel">
-                    <div class="welcome-carousel-track" style="transform: translateX(@(welcomeSlide * -100)%);">
-                        <div class="welcome-carousel-slide">
-                            <div class="welcome-slide-copy"><span class="welcome-step-badge">الخطوة 1</span><h3>اضغط على زر المشاركة</h3></div>
-                            <img class="welcome-carousel-img" src="images/step1.jpg" alt="اضغط على زر المشاركة لإضافة مكدوس إلى الشاشة الرئيسية" />
-                        </div>
-                        <div class="welcome-carousel-slide">
-                            <div class="welcome-slide-copy"><span class="welcome-step-badge">الخطوة 2</span><h3>اختر «إضافة إلى الشاشة الرئيسية»</h3></div>
-                            <img class="welcome-carousel-img" src="images/step2.jpg" alt="اختر إضافة إلى الشاشة الرئيسية" />
-                        </div>
-                        <div class="welcome-carousel-slide">
-                            <div class="welcome-slide-copy"><span class="welcome-step-badge">الخطوة 3</span><h3>اضغط على «إضافة»</h3></div>
-                            <img class="welcome-carousel-img" src="images/step3.jpg" alt="اضغط على زر الإضافة للتأكيد" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="welcome-wizard-actions">
-                    @if (welcomeSlide > 0)
-                    {
-                        <button class="welcome-wizard-back" @onclick="() => welcomeSlide--">السابق</button>
-                    }
-                    else
-                    {
-                        <span></span>
-                    }
-                    @if (welcomeSlide < 2)
-                    {
-                        <button class="welcome-wizard-next" @onclick="() => welcomeSlide++">التالي</button>
-                    }
-                    else
-                    {
-                        <button class="welcome-wizard-start" @onclick="DismissFirstLaunchWizard">ابدأ الآن 🚀</button>
-                    }
-                </div>
+                <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="false" FinishText="ابدأ الآن 🚀" OnFinish="DismissFirstLaunchWizard" />
 
                 <button class="welcome-wizard-skip" @onclick="DismissFirstLaunchWizard">تخطّي الإعداد لاحقاً</button>
             </section>

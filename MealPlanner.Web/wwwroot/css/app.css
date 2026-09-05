@@ -1189,6 +1189,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
    Install-to-home-screen help page
    ========================================================================== */
 .install-help-page { padding-bottom: 40px; }
+/* Shared add-to-home carousel component */
+.addhome-carousel { display: flex; flex-direction: column; min-height: 0; }
+.addhome-progress { margin: 0 0 8px; text-align: center; color: var(--color-text-secondary); font-size: 12px; font-weight: 700; }
+/* In the wizard modal the carousel should fill remaining height. */
+.welcome-wizard .addhome-carousel { flex: 1 1 auto; min-height: 0; }
+.welcome-wizard .welcome-carousel { flex: 1 1 auto; min-height: 0; }
+.welcome-wizard .welcome-carousel-img { max-height: none; }
+/* In the standalone install page, give the image a bounded height so flex sizing
+   inside the carousel resolves correctly. */
+.install-carousel-wrap { padding: 0 16px; margin-bottom: 6px; }
+.install-carousel-wrap .addhome-carousel .welcome-carousel { height: 58vh; max-height: 430px; flex: 0 0 auto; }
 .install-segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 16px 16px; padding: 5px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
 .install-segmented button { border: 0; border-radius: 11px; padding: 10px; font: inherit; font-size: 13px; font-weight: 800; color: var(--color-text-secondary); background: transparent; cursor: pointer; }
 .install-segmented button.active { color: var(--color-primary); background: #fff; box-shadow: var(--shadow-sm); }
