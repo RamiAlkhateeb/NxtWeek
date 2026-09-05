@@ -23,6 +23,17 @@ window.nxtweek = {
   markIosInstallGuideSeen() {
     localStorage.setItem('nxtweek.iosInstallGuideSeen', 'true');
   },
+  shouldShowFirstLaunchWizard() {
+    const storageKey = 'nxtweek.firstLaunchWizardSeen';
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    // Already installed / running as an app: no point showing install steps.
+    if (isStandalone) return false;
+    return localStorage.getItem(storageKey) !== 'true';
+  },
+  markFirstLaunchWizardSeen() {
+    localStorage.setItem('nxtweek.firstLaunchWizardSeen', 'true');
+  },
   async captureAndShare(elementId) {
     const element = document.getElementById(elementId);
     if (!element || typeof window.html2canvas !== 'function') {

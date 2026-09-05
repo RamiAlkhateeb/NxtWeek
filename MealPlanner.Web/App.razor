@@ -40,7 +40,57 @@ else
         </div>
     }
 
-    @if (showIosInstallGuide && !needsEmailConfirmation)
+    @if (showFirstLaunchWizard)
+    {
+        <div class="welcome-wizard-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-wizard-title">
+            <section class="welcome-wizard" dir="rtl">
+                <button class="welcome-wizard-close" @onclick="DismissFirstLaunchWizard" aria-label="إغلاق وإكمال">✕</button>
+                <div class="welcome-wizard-head">
+                    <span class="welcome-wizard-icon" aria-hidden="true">📲</span>
+                    <h2 id="welcome-wizard-title">مرحباً بك في مكدوس</h2>
+                    <p>أضف التطبيق إلى شاشتك الرئيسية لفتحه كتطبيق سريع في أي وقت.</p>
+                </div>
+
+                <div class="welcome-carousel">
+                    <div class="welcome-carousel-track" style="transform: translateX(@(welcomeSlide * -100)%);">
+                        <div class="welcome-carousel-slide"><img class="welcome-carousel-img" src="images/step1.jpg" alt="الخطوة الأولى: كيف تضيف مكدوس إلى الشاشة الرئيسية" /></div>
+                        <div class="welcome-carousel-slide"><img class="welcome-carousel-img" src="images/step2.jpg" alt="الخطوة الثانية" /></div>
+                        <div class="welcome-carousel-slide"><img class="welcome-carousel-img" src="images/step3.jpg" alt="الخطوة الثالثة" /></div>
+                    </div>
+                </div>
+
+                <div class="welcome-carousel-dots">
+                    @for (var i = 0; i < 3; i++)
+                    {
+                        <button class="welcome-dot @(welcomeSlide == i ? "active" : "")" @onclick="() => welcomeSlide = i" aria-label="عرض الخطوة @(i + 1)"></button>
+                    }
+                </div>
+
+                <div class="welcome-wizard-actions">
+                    @if (welcomeSlide > 0)
+                    {
+                        <button class="welcome-wizard-back" @onclick="() => welcomeSlide--">السابق</button>
+                    }
+                    else
+                    {
+                        <span></span>
+                    }
+                    @if (welcomeSlide < 2)
+                    {
+                        <button class="welcome-wizard-next" @onclick="() => welcomeSlide++">التالي</button>
+                    }
+                    else
+                    {
+                        <button class="welcome-wizard-start" @onclick="DismissFirstLaunchWizard">ابدأ الآن 🚀</button>
+                    }
+                </div>
+
+                <button class="welcome-wizard-skip" @onclick="DismissFirstLaunchWizard">تخطّي الإعداد لاحقاً</button>
+            </section>
+        </div>
+    }
+
+    @if (showIosInstallGuide && !needsEmailConfirmation && !showFirstLaunchWizard)
     {
         <div class="ios-home-guide-backdrop" role="presentation">
             <section class="ios-home-guide" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ios-home-guide-title">
@@ -61,6 +111,8 @@ else
     private bool isInitializing = true;
     private bool needsEmailConfirmation;
     private bool showIosInstallGuide;
+    private bool showFirstLaunchWizard;
+    private int welcomeSlide;
     private string confirmationEmail = "";
     private string emailLinkError = "";
     private long iosGuideReplayKey;
@@ -130,9 +182,17 @@ else
         if (firstRender)
         {
             await JS.InvokeVoidAsync("nxtweek.checkVersion");
+            showFirstLaunchWizard = !needsEmailConfirmation && await JS.InvokeAsync<bool>("nxtweek.shouldShowFirstLaunchWizard");
             showIosInstallGuide = await JS.InvokeAsync<bool>("nxtweek.shouldShowIosInstallGuide");
-            if (showIosInstallGuide) StateHasChanged();
+            if (showFirstLaunchWizard || showIosInstallGuide) StateHasChanged();
         }
+    }
+
+    private async Task DismissFirstLaunchWizard()
+    {
+        showFirstLaunchWizard = false;
+        welcomeSlide = 0;
+        await JS.InvokeVoidAsync("nxtweek.markFirstLaunchWizardSeen");
     }
 
     private async Task DismissIosInstallGuide()

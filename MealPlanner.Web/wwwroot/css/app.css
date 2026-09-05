@@ -1208,3 +1208,27 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .recover-warning { margin: 0 16px 14px; padding: 13px; border-radius: 14px; background: #fff8e1; border: 1px solid #f0e0ae; color: #7a5c14; font-size: 13px; line-height: 1.7; }
 .recover-actions { display: grid; gap: 10px; margin: 0 16px 18px; }
 .recover-back-button { display: block; width: calc(100% - 32px); margin: 4px 16px 0; border: 1px solid var(--color-border); border-radius: 14px; padding: 13px; background: #fff; color: var(--color-text-secondary); font: inherit; font-weight: 800; cursor: pointer; }
+
+/* ==========================================================================
+   First-launch welcome wizard (carousel of add-to-home screenshots)
+   ========================================================================== */
+.welcome-wizard-backdrop { position: fixed; inset: 0; z-index: 2300; display: grid; place-items: center; padding: var(--space-4); background: rgba(58,42,56,.5); }
+.welcome-wizard { position: relative; width: min(100%, 420px); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 20px 18px 16px; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-lg); }
+.welcome-wizard-close { position: absolute; top: 12px; left: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--color-bg-light); color: var(--color-text-secondary); font-size: 15px; cursor: pointer; z-index: 2; }
+.welcome-wizard-head { text-align: center; padding: 0 22px 12px; }
+.welcome-wizard-icon { display: block; font-size: 34px; margin-bottom: 6px; }
+.welcome-wizard-head h2 { font-size: 19px; margin: 0 0 6px; color: var(--color-text-main); }
+.welcome-wizard-head p { margin: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; }
+.welcome-carousel { position: relative; overflow: hidden; border-radius: var(--radius-md); background: var(--color-bg-light); }
+.welcome-carousel-track { display: flex; transition: transform .35s ease; }
+.welcome-carousel-slide { flex: 0 0 100%; min-width: 100%; display: grid; place-items: center; }
+.welcome-carousel-img { display: block; width: 100%; max-height: 52vh; object-fit: contain; border-radius: var(--radius-md); }
+.welcome-carousel-dots { display: flex; justify-content: center; gap: 7px; padding: 12px 0 4px; }
+.welcome-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: #d8ccc5; cursor: pointer; transition: background .2s ease, width .2s ease; }
+.welcome-dot.active { width: 22px; border-radius: 6px; background: var(--color-primary); }
+.welcome-wizard-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.welcome-wizard-actions button { flex: 1; min-height: 46px; border: 0; border-radius: var(--radius-md); font: inherit; font-weight: 800; cursor: pointer; }
+.welcome-wizard-actions .welcome-wizard-back { color: var(--color-primary); background: var(--color-primary-light); }
+.welcome-wizard-actions .welcome-wizard-next, .welcome-wizard-actions .welcome-wizard-start { color: #fff; background: var(--color-primary); }
+.welcome-wizard-actions span { flex: 1; }
+.welcome-wizard-skip { align-self: center; margin-top: 6px; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; padding: 8px; }

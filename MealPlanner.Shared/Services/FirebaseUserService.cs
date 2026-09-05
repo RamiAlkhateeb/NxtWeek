@@ -149,17 +149,21 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         }
 
         // Read the raw node so every child subtree (weeklyPlan, shopping, ...) is
-        // carried over to the new key instead of being dropped.
-        JsonNode? rawNode = null;
+        // carried over to the new key instead of being dropped. If the read fails
+        // we abort WITHOUT deleting anything — deleting on a failed read is how
+        // weekly plans were previously wiped from the DB.
+        JsonObject? rawNode = null;
         using (var rawGet = await http.GetAsync(Url($"users/{Key(currentUid)}")))
         {
             if (rawGet.IsSuccessStatusCode)
             {
                 var rawJson = await rawGet.Content.ReadAsStringAsync();
                 if (!string.IsNullOrWhiteSpace(rawJson) && rawJson != "null")
-                    rawNode = JsonNode.Parse(rawJson);
+                    rawNode = JsonNode.Parse(rawJson) as JsonObject;
             }
         }
+        if (rawNode is null)
+            throw new InvalidOperationException("تعذر قراءة بياناتك الحالية، لذلك لم نغيّر اسم المستخدم ولم نحذف أي شيء. حاول مرة أخرى.");
 
         // Update friend references across other users (explicit path writes only),
         // then move the user's own whole node. Each change targets just one field
@@ -203,10 +207,11 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
             }
         }
 
-        // 2) Move the entire user node to the new key and remove the old one.
-        // Apply the identity fields directly on the raw copy so weeklyPlan /
-        // shopping / favorites move untouched, and no conflicting sub-paths are sent.
-        JsonObject moved = rawNode as JsonObject ?? new JsonObject();
+        // 2) Copy the entire user node to the new key FIRST, and only delete the
+        // old node after the copy succeeds. This ordering guarantees that a failure
+        // at any point can never leave the user with zero data (worst case is a
+        // duplicate node, which is harmless and can be cleaned up later).
+        JsonObject moved = rawNode;
         moved["uid"] = username;
         moved["username"] = username;
         moved["authUid"] = current.AuthUid;
@@ -214,20 +219,29 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         // Display name mirrors the username (a user no longer shows as "ضيف" guest).
         moved["displayName"] = username;
 
-        var movePatch = new Dictionary<string, object?>
+        using (var copy = await http.PatchAsJsonAsync(Url(""), new Dictionary<string, object?>
         {
-            [$"users/{Key(username)}"] = moved,
+            [$"users/{Key(username)}"] = moved
+        }))
+        {
+            if (!copy.IsSuccessStatusCode)
+                throw new InvalidOperationException("تعذر حفظ اسم المستخدم، ولم تُحذف بياناتك. حاول مرة أخرى.");
+        }
+
+        // 3) Now remove the old node and update references.
+        var cleanupPatch = new Dictionary<string, object?>
+        {
             [$"users/{Key(currentUid)}"] = null,
             [$"usernames/{Key(username)}"] = new UsernameReservation { UserKey = username, AuthUid = current.AuthUid }
         };
-        if (!string.IsNullOrWhiteSpace(current.AuthUid)) movePatch[$"authUsers/{Key(current.AuthUid)}"] = username;
+        if (!string.IsNullOrWhiteSpace(current.AuthUid)) cleanupPatch[$"authUsers/{Key(current.AuthUid)}"] = username;
         if (!string.Equals(currentUid, username, StringComparison.OrdinalIgnoreCase) && !currentUid.StartsWith("guest_", StringComparison.OrdinalIgnoreCase))
-            movePatch[$"usernames/{Key(currentUid)}"] = null;
+            cleanupPatch[$"usernames/{Key(currentUid)}"] = null;
 
-        using (var update = await http.PatchAsJsonAsync(Url(""), movePatch))
+        using (var cleanup = await http.PatchAsJsonAsync(Url(""), cleanupPatch))
         {
-            if (!update.IsSuccessStatusCode)
-                throw new InvalidOperationException("تعذر حفظ اسم المستخدم. حاول مرة أخرى.");
+            if (!cleanup.IsSuccessStatusCode)
+                throw new InvalidOperationException("تم حفظ اسم المستخدم، لكن تعذر إزالة النسخة القديمة. بياناتك سليمة.");
         }
 
         return username;
