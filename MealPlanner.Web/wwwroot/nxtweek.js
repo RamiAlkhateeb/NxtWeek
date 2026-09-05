@@ -47,7 +47,7 @@ window.nxtweek = {
     const file = new File([blob], 'my-week.png', { type: 'image/png' });
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: 'طبخات الأسبوع', text: 'طبخات الأسبوع' });
+        await navigator.share({ files: [file], title: 'مكدوس — خطتي الأسبوعية', text: 'https://meal-planner-af799.web.app/' });
         return 'shared';
       } catch (error) {
         if (error?.name === 'AbortError') return 'cancelled';

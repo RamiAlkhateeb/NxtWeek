@@ -6,7 +6,7 @@
     <UiPageHeader Icon="📲" Title="تثبيت مكدوس" Subtitle="أضف مكدوس إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق" />
 
     <div class="install-carousel-wrap">
-        <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="تم ✓" />
+        <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="تم ✓" OnFinish="GoBack" />
     </div>
 
     <section class="install-section">
@@ -23,8 +23,6 @@
         <span aria-hidden="true">✨</span>
         <p>عند التثبيت على الشاشة الرئيسية يعمل مكدوس في وضع ملء الشاشة، ويُفتح بشكل أسرع، ويمكنك استخدامه من الشاشة الرئيسية مباشرة دون كتابة العنوان.</p>
     </div>
-
-    <button class="install-back-button" @onclick="GoBack">➔ العودة إلى الإعدادات</button>
 </div>
 
 @code {

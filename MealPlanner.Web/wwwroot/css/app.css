@@ -862,7 +862,11 @@ html, body {
 @keyframes profile-nudge-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.22); opacity: .8; } }
 .week-nav-wide { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .week-nav-wide button { flex: 1; background: var(--color-primary-light); color: var(--color-primary); border: 0; border-radius: var(--radius-sm); padding: 9px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; }
+.week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.week-surprise svg, .compact-actions svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+.compact-actions button.liked svg { fill: currentColor; }
+.week-empty-copy svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+.compact-actions button.liked { color: var(--color-primary); }
 .week-cards { padding: 10px 16px; display: flex; flex-direction: column; gap: 7px; perspective: 900px; }
 .week-meal-card { width: 100%; background: #fff; border: 1px solid #f0ddd6; border-radius: var(--radius-md); padding: 10px 12px; box-shadow: 0 3px 10px rgba(89, 54, 42, .07); text-align: right; font: inherit; color: var(--color-text-main); transition: transform .2s ease, background-color .2s ease; }
 .week-meal-card-clickable { cursor: pointer; }
@@ -870,7 +874,7 @@ html, body {
 .week-card-date { font-size: 14px; font-weight: 800; line-height: 1.3; }
 .week-card-name { font-size: 16px; font-weight: 700; margin-top: 3px; }
 .week-empty-card { border: 1px solid #f1d5cb; background: #fff8f5; cursor: pointer; min-height: 56px; }
-.week-empty-copy { display: block; color: var(--color-text-secondary); font-size: 13px; margin-top: 3px; }
+.week-empty-copy { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--color-text-secondary); font-size: 13px; margin-top: 3px; }
 .week-meal-card .meal-card-actions { margin: 5px 0 0; }
 .compact-actions { justify-content: flex-end; }
 .compact-actions button { flex: 0 0 44px; min-height: 44px; padding: 0; font-size: 18px; border-radius: 50%; }
@@ -1188,7 +1192,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ==========================================================================
    Install-to-home-screen help page
    ========================================================================== */
-.install-help-page { padding-bottom: 40px; }
+.install-help-page { padding-bottom: 110px; }
 /* Shared add-to-home carousel component */
 .addhome-carousel { display: flex; flex-direction: column; min-height: 0; }
 .addhome-progress { margin: 0 0 8px; text-align: center; color: var(--color-text-secondary); font-size: 12px; font-weight: 700; }
@@ -1210,7 +1214,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .install-step p { margin: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }
 .install-tip { display: flex; gap: 10px; margin: 16px; padding: 14px; border-radius: 16px; background: #f1f8f2; border: 1px solid #dceadd; color: #3f6b44; font-size: 13px; line-height: 1.7; align-items: flex-start; }
 .install-tip span { font-size: 20px; }
-.install-back-button { display: block; width: calc(100% - 32px); margin: 0 16px; border: 0; border-radius: 14px; padding: 13px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 
 /* ==========================================================================
    Recover-my-plan page
