@@ -83,11 +83,33 @@
                 <div class="friends-list">
                     @foreach (var friend in friends)
                     {
-                        <button class="friend-person-card @(selectedFriend?.Uid == friend.Uid ? "selected" : "")" @onclick="() => SelectFriend(friend)">
-                            <span class="friend-avatar">@Initial(friend.DisplayName)</span>
-                            <span class="friend-person-copy"><strong>@friend.DisplayName</strong><small dir="ltr">@friend.Uid</small></span>
-                            <span class="friend-view-icon" aria-hidden="true">‹</span>
-                        </button>
+                        <div class="friend-list-item">
+                            <button class="friend-person-card @(selectedFriend?.Uid == friend.Uid ? "selected" : "")" @onclick="() => SelectFriend(friend)" aria-expanded="@(selectedFriend?.Uid == friend.Uid)">
+                                <span class="friend-avatar">@Initial(friend.DisplayName)</span>
+                                <span class="friend-person-copy"><strong>@friend.DisplayName</strong><small dir="ltr">@friend.Uid</small></span>
+                                <span class="friend-view-icon @(selectedFriend?.Uid == friend.Uid ? "open" : "")" aria-hidden="true">⌄</span>
+                            </button>
+
+                            @if (selectedFriend?.Uid == friend.Uid)
+                            {
+                                <section class="friend-week-section friend-week-inline">
+                                    <div class="friend-week-heading">
+                                        <div><p>أسبوع @friend.DisplayName</p><small>@WeekRangeLabel</small></div>
+                                        <button @onclick="PreviousWeek" aria-label="الأسبوع السابق">›</button>
+                                        <button @onclick="NextWeek" aria-label="الأسبوع القادم">‹</button>
+                                    </div>
+                                    <div class="friend-week-grid">
+                                        @foreach (var day in selectedFriendWeek)
+                                        {
+                                            <article class="friend-week-day @(string.IsNullOrEmpty(day.MealId) ? "empty" : "")">
+                                                <span>@ArabicDays[(int)day.Date.DayOfWeek]</span>
+                                                <strong>@(string.IsNullOrEmpty(day.MealId) ? "—" : MealName(day.MealId))</strong>
+                                            </article>
+                                        }
+                                    </div>
+                                </section>
+                            }
+                        </div>
                     }
                 </div>
             }
@@ -117,26 +139,6 @@
                 </div>
             }
         </section>
-
-        @if (selectedFriend is not null)
-        {
-            <section class="friend-week-section">
-                <div class="friend-week-heading">
-                    <div><p>أسبوع @selectedFriend.DisplayName</p><small>@WeekRangeLabel</small></div>
-                    <button @onclick="PreviousWeek" aria-label="الأسبوع السابق">›</button>
-                    <button @onclick="NextWeek" aria-label="الأسبوع القادم">‹</button>
-                </div>
-                <div class="friend-week-grid">
-                    @foreach (var day in selectedFriendWeek)
-                    {
-                        <article class="friend-week-day @(string.IsNullOrEmpty(day.MealId) ? "empty" : "")">
-                            <span>@ArabicDays[(int)day.Date.DayOfWeek]</span>
-                            <strong>@(string.IsNullOrEmpty(day.MealId) ? "—" : MealName(day.MealId))</strong>
-                        </article>
-                    }
-                </div>
-            </section>
-        }
         }
     }
 </div>

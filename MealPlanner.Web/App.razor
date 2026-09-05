@@ -46,24 +46,25 @@ else
             <section class="welcome-wizard" dir="rtl">
                 <button class="welcome-wizard-close" @onclick="DismissFirstLaunchWizard" aria-label="إغلاق وإكمال">✕</button>
                 <div class="welcome-wizard-head">
-                    <span class="welcome-wizard-icon" aria-hidden="true">📲</span>
-                    <h2 id="welcome-wizard-title">مرحباً بك في مكدوس</h2>
-                    <p>أضف التطبيق إلى شاشتك الرئيسية لفتحه كتطبيق سريع في أي وقت.</p>
+                    <h2 id="welcome-wizard-title">أضف مكدوس إلى شاشتك الرئيسية</h2>
+                    <p>اتبع الخطوات <b>@(welcomeSlide + 1) من 3</b> لفتح التطبيق كتطبيق سريع.</p>
                 </div>
 
                 <div class="welcome-carousel">
                     <div class="welcome-carousel-track" style="transform: translateX(@(welcomeSlide * -100)%);">
-                        <div class="welcome-carousel-slide"><img class="welcome-carousel-img" src="images/step1.jpg" alt="الخطوة الأولى: كيف تضيف مكدوس إلى الشاشة الرئيسية" /></div>
-                        <div class="welcome-carousel-slide"><img class="welcome-carousel-img" src="images/step2.jpg" alt="الخطوة الثانية" /></div>
-                        <div class="welcome-carousel-slide"><img class="welcome-carousel-img" src="images/step3.jpg" alt="الخطوة الثالثة" /></div>
+                        <div class="welcome-carousel-slide">
+                            <div class="welcome-slide-copy"><span class="welcome-step-badge">الخطوة 1</span><h3>اضغط على زر المشاركة</h3></div>
+                            <img class="welcome-carousel-img" src="images/step1.jpg" alt="اضغط على زر المشاركة لإضافة مكدوس إلى الشاشة الرئيسية" />
+                        </div>
+                        <div class="welcome-carousel-slide">
+                            <div class="welcome-slide-copy"><span class="welcome-step-badge">الخطوة 2</span><h3>اختر «إضافة إلى الشاشة الرئيسية»</h3></div>
+                            <img class="welcome-carousel-img" src="images/step2.jpg" alt="اختر إضافة إلى الشاشة الرئيسية" />
+                        </div>
+                        <div class="welcome-carousel-slide">
+                            <div class="welcome-slide-copy"><span class="welcome-step-badge">الخطوة 3</span><h3>اضغط على «إضافة»</h3></div>
+                            <img class="welcome-carousel-img" src="images/step3.jpg" alt="اضغط على زر الإضافة للتأكيد" />
+                        </div>
                     </div>
-                </div>
-
-                <div class="welcome-carousel-dots">
-                    @for (var i = 0; i < 3; i++)
-                    {
-                        <button class="welcome-dot @(welcomeSlide == i ? "active" : "")" @onclick="() => welcomeSlide = i" aria-label="عرض الخطوة @(i + 1)"></button>
-                    }
                 </div>
 
                 <div class="welcome-wizard-actions">
