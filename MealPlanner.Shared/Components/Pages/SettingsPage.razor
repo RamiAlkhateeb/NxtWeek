@@ -15,6 +15,8 @@
       <div class="friend-add-form"><input id="settings-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="مثال: rami_food" /><button class="friend-add-button" @onclick="SaveUsername" disabled="@isSavingUsername">✓</button></div>
       @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
     </UiCard>
+    <UiCard CssClass="settings-card"><h2>🔁 استرجاع خطتي</h2><p>هل مسحت بيانات المتصفح أو غيّرت جهازك؟ استعد خططك ووجباتك باسم المستخدم الذي اخترته سابقاً.</p><a class="settings-action-link" href="settings/recover">استرجاع باسم المستخدم ←</a></UiCard>
+    <UiCard CssClass="settings-card"><h2>📲 تثبيت على الشاشة الرئيسية</h2><p>أضف مكدوس إلى شاشة هاتفك الرئيسية لفتحه كتطبيق سريع على أندرويد وiPhone.</p><a class="settings-action-link" href="settings/install">كيف أثبّت مكدوس؟ ←</a></UiCard>
     <UiCard CssClass="settings-card settings-item-disabled"><h2>✉️ مزامنة الأجهزة <span class="caption">قريباً</span></h2><p>ستتمكن قريباً من فتح ومزامنة خطتك بين الهاتف والكمبيوتر.</p></UiCard>
     <UiCard CssClass="settings-card"><h2>ℹ️ حول التطبيق</h2><p>المكدوس — مخطط وجبات شخصي</p><span class="caption">الإصدار 1.0</span><a class="settings-developer-link" href="https://ramialkhateeb.github.io/" target="_blank" rel="noopener noreferrer">الموقع الشخصي للمطور ↗</a></UiCard>
   </div>

@@ -17,7 +17,7 @@
         <div class="toast-message" role="status">✅ @toastMessage</div>
     }
     <div class="week-page-header">
-        <button class="week-header-action week-profile-link" title="الملف الشخصي والإعدادات" aria-label="الملف الشخصي والإعدادات" @onclick='() => Nav.NavigateTo("/settings")'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/></svg></button>
+        <button class="week-header-action week-profile-link" title="الملف الشخصي والإعدادات" aria-label="الملف الشخصي والإعدادات" @onclick='() => Nav.NavigateTo("/settings")'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/></svg>@if (showProfileNudge) { <span class="profile-nudge-dot" aria-label="اختر اسم مستخدم"></span> }</button>
         <button class="week-header-action week-share-link" title="شارك أسبوعك" aria-label="شارك أسبوعك" aria-busy="@isSharing" @onclick="ShareWeek" disabled="@isSharing">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg>
         </button>
@@ -128,6 +128,8 @@
     private string toastMessage = "";
     private bool showWeekSurpriseConfirm;
     private bool isSharing;
+    private bool showProfileNudge;
+    private bool userHasUsername;
     private DotNetObjectReference<WeekPage>? remoteListener;
     private bool disposed;
 
@@ -151,7 +153,9 @@
         currentWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         await EnsureSeededAsync();
         catalogMeals = await CatalogService.GetAllMealsAsync();
+        await LoadProfileAsync();
         await LoadWeekAsync(currentWeekStart);
+        if (IsFirstVisitAndWeekEmpty()) await AutoPopulateFirstWeekAsync();
         remoteListener = DotNetObjectReference.Create(this);
         try { await JS.InvokeAsync<bool>("nxtweek.emailAuth.subscribeToUser", uid, remoteListener); } catch { /* Firebase configuration is optional until sync is enabled. */ }
         var uri = new Uri(Nav.Uri);
@@ -174,6 +178,47 @@
     private async Task EnsureSeededAsync()
     {
         await MealService.SeedAsync(new List<Meal>());
+    }
+
+    // A first-time visitor (still a guest, never set a username) gets their week
+    // auto-filled with random meals. Existing users with a profile are left alone.
+    private async Task LoadProfileAsync()
+    {
+        var profile = await UserService.GetProfileAsync(uid);
+        userHasUsername = !string.IsNullOrWhiteSpace(profile?.Username);
+        // Show a red nudge on the profile icon until the guest picks a username.
+        showProfileNudge = !userHasUsername && uid.StartsWith("guest_", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsFirstVisitAndWeekEmpty()
+        => showProfileNudge && weekMeals.All(m => string.IsNullOrWhiteSpace(m.MealId));
+
+    private async Task AutoPopulateFirstWeekAsync()
+    {
+        // Only fill genuine first visits: a guest who has no profile username yet
+        // and has never saved a plan, so we don't wipe a deliberately cleared week.
+        var profile = await UserService.GetProfileAsync(uid);
+        if (profile is null || profile.FirstWeekAutoFilled) return;
+        if (await UserService.HasAnyPlanEntryAsync(uid)) return;
+
+        var suggestions = await SuggestionService.GetSuggestionsAsync(uid, weekMeals, weekMeals.Count);
+        var catalog = await CatalogService.GetAllMealsAsync();
+        var assigned = 0;
+        foreach (var pair in weekMeals.Where(m => string.IsNullOrWhiteSpace(m.MealId)).Zip(suggestions))
+        {
+            var item = catalog.FirstOrDefault(c => c.Name.Equals(pair.Second, StringComparison.OrdinalIgnoreCase));
+            if (item is null) continue;
+            await UserService.AssignMealToDateAsync(uid, pair.First.Date, item.Id);
+            assigned++;
+        }
+        // Only persist the "filled" marker when we actually wrote meals, so an
+        // offline/empty catalog can retry on a later visit instead of locking in.
+        if (assigned > 0)
+        {
+            profile.FirstWeekAutoFilled = true;
+            await UserService.CreateProfileAsync(profile);
+            await LoadWeekAsync(currentWeekStart);
+        }
     }
 
     private async Task LoadWeekAsync(DateOnly weekStart)

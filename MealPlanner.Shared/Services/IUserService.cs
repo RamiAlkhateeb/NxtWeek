@@ -14,6 +14,9 @@ public interface IUserService
     Task ToggleFavoriteMealAsync(string uid, string mealId);
     Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string uid, DateOnly start, DateOnly end);
     Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month);
+    Task<bool> HasAnyPlanEntryAsync(string uid);
+    Task<List<UserProfile>> GetRegisteredUsersAsync(string excludeUid);
+    Task<UserProfile?> GetNamedProfileAsync(string username);
     Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry);
     Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries);
     Task AssignMealToDateAsync(string uid, DateOnly date, string mealId);

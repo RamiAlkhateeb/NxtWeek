@@ -9,13 +9,16 @@ window.nxtweek = {
   },
   shouldShowIosInstallGuide() {
     const storageKey = 'nxtweek.iosInstallGuideSeen';
-    const userAgent = navigator.userAgent || '';
-    const isIos = /iPad|iPhone|iPod/.test(userAgent)
-      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isIos = this.isIosDevice();
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
 
     return isIos && !isStandalone && localStorage.getItem(storageKey) !== 'true';
+  },
+  isIosDevice() {
+    const userAgent = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   },
   markIosInstallGuideSeen() {
     localStorage.setItem('nxtweek.iosInstallGuideSeen', 'true');

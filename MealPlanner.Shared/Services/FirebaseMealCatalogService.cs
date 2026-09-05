@@ -50,7 +50,8 @@ public class FirebaseMealCatalogService : IMealCatalogService
     {
         if (string.IsNullOrWhiteSpace(meal.Id)) throw new ArgumentException("A meal ID is required.", nameof(meal));
         var dto = MealCatalogItemDto.FromModel(meal);
-        await _http.PutAsJsonAsync($"{_baseUrl}/{CatalogPath}/{meal.Id}.json", dto);
+        using var response = await _http.PutAsJsonAsync($"{_baseUrl}/{CatalogPath}/{meal.Id}.json", dto);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<MealCatalogItem> CreateMealAsync(MealCatalogItem meal)
@@ -66,7 +67,11 @@ public class FirebaseMealCatalogService : IMealCatalogService
     }
 
     public Task UpdateMealAsync(MealCatalogItem meal) => UpsertMealAsync(meal);
-    public Task DeleteMealAsync(string id) => _http.DeleteAsync($"{_baseUrl}/{CatalogPath}/{id}.json");
+    public async Task DeleteMealAsync(string id)
+    {
+        using var response = await _http.DeleteAsync($"{_baseUrl}/{CatalogPath}/{id}.json");
+        response.EnsureSuccessStatusCode();
+    }
     public async Task<List<MealCatalogItem>> SearchMealsAsync(string query)
     {
         var normalized = NormalizeName(query);

@@ -1,0 +1,123 @@
+@page "/settings/recover"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IUserService UserService
+@inject NavigationManager Nav
+
+<div class="app app-content-wrapper recover-page" dir="rtl">
+    <UiPageHeader Icon="🔁" Title="استرجاع خطتي" Subtitle="أعد فتح خطتك باسم المستخدم بعد مسح بيانات المتصفح أو على جهاز جديد" />
+
+    <section class="recover-intro">
+        <p>إذا اخترت اسم مستخدم سابقاً ثم حُذفت بيانات المتصفح (أو أضفت التطبيق من جديد)، يمكنك استعادة كل خططك ووجباتك بكتابة <strong>اسم المستخدم</strong> نفسه الذي اخترته سابقاً.</p>
+    </section>
+
+    <section class="recover-form-section">
+        <label for="recover-username">اسم المستخدم السابق</label>
+        <div class="friend-add-form">
+            <input id="recover-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" placeholder="مثال: rami_food" autocomplete="off" />
+            <button class="friend-add-button" @onclick="Lookup" disabled="@(isBusy || string.IsNullOrWhiteSpace(usernameInput))" aria-label="بحث">🔍</button>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(feedback))
+        {
+            <p class="friend-feedback @(isError ? "error" : "")">@feedback</p>
+        }
+    </section>
+
+    @if (foundProfile is not null)
+    {
+        <section class="recover-found">
+            <div class="friend-avatar">@Initial(foundProfile.DisplayName)</div>
+            <div class="recover-found-copy">
+                <strong>@foundProfile.DisplayName</strong>
+                <small dir="ltr">@@@foundProfile.Username</small>
+            </div>
+        </section>
+
+        <p class="recover-warning">⚠️ هذا الجهاز سيتحول الآن إلى حساب «@foundProfile.Username». لا يلزم إعادة تسمية أي شيء، وستُعرض كل خططك المخزّنة في السحابة.</p>
+
+        <div class="recover-actions">
+            <UiButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? "جارٍ الاسترجاع..." : "استرجاع خطتي الآن")</UiButton>
+            <UiButton Variant="ghost" OnClick="ResetFound">إلغاء</UiButton>
+        </div>
+    }
+
+    <button class="recover-back-button" @onclick="GoBack">➔ العودة إلى الإعدادات</button>
+</div>
+
+@code {
+    private string uid = "";
+    private string usernameInput = "";
+    private string feedback = "";
+    private bool isError;
+    private bool isBusy;
+    private UserProfile? foundProfile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
+        uid = user.Uid;
+    }
+
+    private async Task Lookup()
+    {
+        feedback = "";
+        isError = false;
+        foundProfile = null;
+        var username = usernameInput.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(username)) return;
+
+        // Already using this username? Nothing to recover.
+        if (string.Equals(uid, username, StringComparison.OrdinalIgnoreCase))
+        {
+            feedback = "أنت تستخدم اسم المستخدم هذا بالفعل على هذا الجهاز.";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            var profile = await UserService.GetNamedProfileAsync(username);
+            if (profile is null)
+            {
+                isError = true;
+                feedback = "لم نعثر على حساب بهذا الاسم. تأكد أنك كتبت اسم المستخدم الذي اخترته سابقاً، مع العلم أن البيانات المخزّنة كضيف (بدون اسم مستخدم) لا يمكن استرجاعها.";
+                return;
+            }
+            foundProfile = profile;
+            feedback = "";
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+        }
+        finally { isBusy = false; }
+    }
+
+    private async Task ConfirmRecovery()
+    {
+        if (foundProfile is null) return;
+        isBusy = true;
+        feedback = "";
+        try
+        {
+            // Adopt the recovered username as this device's active data key. All
+            // reads now resolve to users/{username}, which already holds the plan.
+            await Auth.SetActiveDataKeyAsync(foundProfile.Username);
+            Nav.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+            isBusy = false;
+        }
+    }
+
+    private void ResetFound() { foundProfile = null; feedback = ""; isError = false; }
+    private void GoBack() => Nav.NavigateTo("/settings");
+
+    private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "؟" : name.Trim()[0].ToString();
+}

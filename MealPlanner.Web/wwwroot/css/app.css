@@ -856,6 +856,10 @@ html, body {
 .week-header-action { float: left; min-height: 44px; border: 1px solid var(--color-border); color: var(--color-primary); background: #fff; border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
 .week-profile-link, .week-share-link { width: 46px; height: 46px; min-height: 46px; padding: 0; margin-right: var(--space-2); display: grid; place-items: center; border: 0; border-radius: 16px; color: var(--color-text-secondary); background: transparent; }
 .week-profile-link svg, .week-share-link svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.week-profile-link:hover, .week-share-link:hover { background: var(--color-primary-light); color: var(--color-primary); }.week-profile-link:active, .week-share-link:active { transform: scale(.94); }.week-share-link:disabled { opacity: .55; cursor: wait; }
+/* Red nudge on the profile icon until the visitor chooses a username. */
+.week-profile-link { position: relative; }
+.profile-nudge-dot { position: absolute; top: 3px; left: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--color-danger); box-shadow: 0 0 0 3px #fff; animation: profile-nudge-pulse 1.6s ease-in-out infinite; pointer-events: none; }
+@keyframes profile-nudge-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.22); opacity: .8; } }
 .week-nav-wide { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .week-nav-wide button { flex: 1; background: var(--color-primary-light); color: var(--color-primary); border: 0; border-radius: var(--radius-sm); padding: 9px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; }
@@ -1158,6 +1162,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .friend-request-actions { display: flex; gap: 6px; direction: ltr; }.friend-accept, .friend-decline { width: 34px; height: 34px; border-radius: 11px; font-size: 19px; }.friend-accept { background: #ebf4d2; color: #657b17; }.friend-decline { background: #fff0ed; color: var(--color-danger); }
 .friends-empty-state { padding: 24px 18px; background: #fff; border: 1px dashed #e8d8d2; border-radius: 18px; text-align: center; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }.friends-empty-state span { display: block; font-size: 31px; margin-bottom: 6px; }
 .friend-person-card { border: 0; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; }.friend-person-card:hover, .friend-person-card.selected { border: 1px solid #f4b5a7; background: #fffaf7; box-shadow: var(--shadow-md); transform: translateY(-1px); }.friend-view-icon { color: var(--color-text-secondary); font-size: 24px; }
+.discover-hint { margin: 0 2px 9px; color: var(--color-text-secondary); font-size: 12px; }
+.discover-card { cursor: default; }
+.discover-add { width: 40px; height: 40px; font-size: 24px; box-shadow: 0 3px 0 var(--color-primary-hover); }
 .friend-week-section { margin: 0 16px 18px; padding: 16px; background: #3a2a38; border-radius: 22px; color: #fff; }.friend-week-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }.friend-week-heading div { flex: 1; }.friend-week-heading p { margin: 0; font-size: 16px; font-weight: 800; }.friend-week-heading small { opacity: .68; font-size: 11px; }.friend-week-heading button { width: 33px; height: 33px; border: 1px solid rgba(255,255,255,.25); border-radius: 11px; background: rgba(255,255,255,.08); color: #fff; font-size: 19px; cursor: pointer; }.friend-week-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }.friend-week-day { min-height: 72px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; padding: 10px; border-radius: 13px; background: rgba(255,255,255,.12); }.friend-week-day span { color: #fbc5b9; font-size: 11px; font-weight: 700; }.friend-week-day strong { font-size: 12px; line-height: 1.35; }.friend-week-day.empty strong { color: rgba(255,255,255,.45); }
 
 @media (max-width: 640px) {
@@ -1172,3 +1179,32 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .ios-home-guide { width: min(100%, 390px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: var(--space-5) var(--space-4); border-radius: var(--radius-lg); background: #fff; text-align: center; box-shadow: var(--shadow-lg); }
 .ios-home-guide-icon { display: block; font-size: 42px; margin-bottom: var(--space-2); }.ios-home-guide h2 { margin: 0 0 var(--space-2); font-size: 20px; }.ios-home-guide p { margin: 0 0 var(--space-3); color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; }
 .ios-home-guide-gif { display: block; width: 100%; min-height: 160px; object-fit: contain; border-radius: var(--radius-md); background: var(--color-bg-light); }.ios-home-guide-actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }.ios-home-guide-actions button { flex: 1; min-height: 44px; border-radius: var(--radius-md); padding: var(--space-3); font: inherit; font-weight: 700; cursor: pointer; }.ios-home-guide-replay { color: var(--color-primary); border: 1px solid var(--color-primary); background: #fff; }.ios-home-guide-got-it { color: #fff; border: 1px solid var(--color-primary); background: var(--color-primary); }
+
+/* ==========================================================================
+   Install-to-home-screen help page
+   ========================================================================== */
+.install-help-page { padding-bottom: 40px; }
+.install-segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 16px 16px; padding: 5px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.install-segmented button { border: 0; border-radius: 11px; padding: 10px; font: inherit; font-size: 13px; font-weight: 800; color: var(--color-text-secondary); background: transparent; cursor: pointer; }
+.install-segmented button.active { color: var(--color-primary); background: #fff; box-shadow: var(--shadow-sm); }
+.install-section { display: grid; gap: 12px; padding: 0 16px; }
+.install-step { display: flex; gap: 12px; align-items: flex-start; padding: 14px; background: #fff; border: 1px solid var(--color-border); border-radius: 17px; }
+.install-step-num { flex: 0 0 30px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; background: var(--color-primary-light); color: var(--color-primary); font-weight: 800; }
+.install-step h2 { font-size: 15px; margin: 0 0 4px; }
+.install-step p { margin: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }
+.install-tip { display: flex; gap: 10px; margin: 16px; padding: 14px; border-radius: 16px; background: #f1f8f2; border: 1px solid #dceadd; color: #3f6b44; font-size: 13px; line-height: 1.7; align-items: flex-start; }
+.install-tip span { font-size: 20px; }
+.install-back-button { display: block; width: calc(100% - 32px); margin: 0 16px; border: 0; border-radius: 14px; padding: 13px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+
+/* ==========================================================================
+   Recover-my-plan page
+   ========================================================================== */
+.recover-page { padding-bottom: 40px; }
+.recover-intro { margin: 4px 16px 16px; padding: 15px; background: var(--color-primary-light); border: 1px solid #ffdcd1; border-radius: 17px; color: var(--color-text-main); font-size: 14px; line-height: 1.7; }
+.recover-form-section { padding: 4px 16px 16px; }
+.recover-form-section label { display: block; font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+.recover-found { margin: 0 16px 14px; padding: 14px; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--color-border); border-radius: 17px; }
+.recover-found-copy { display: grid; gap: 1px; min-width: 0; }.recover-found-copy strong { font-size: 15px; }.recover-found-copy small { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.recover-warning { margin: 0 16px 14px; padding: 13px; border-radius: 14px; background: #fff8e1; border: 1px solid #f0e0ae; color: #7a5c14; font-size: 13px; line-height: 1.7; }
+.recover-actions { display: grid; gap: 10px; margin: 0 16px 18px; }
+.recover-back-button { display: block; width: calc(100% - 32px); margin: 4px 16px 0; border: 1px solid var(--color-border); border-radius: 14px; padding: 13px; background: #fff; color: var(--color-text-secondary); font: inherit; font-weight: 800; cursor: pointer; }

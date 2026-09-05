@@ -15,4 +15,7 @@ public class UserProfile
     public List<string> FriendIds { get; set; } = new();
     public Dictionary<string, FriendRequest> IncomingFriendRequests { get; set; } = new();
     public List<string> OutgoingFriendRequestIds { get; set; } = new();
+    // True once a first-time visitor's current week has been auto-generated so the
+    // app never overwrites a deliberately-emptied week with random meals again.
+    public bool FirstWeekAutoFilled { get; set; }
 }

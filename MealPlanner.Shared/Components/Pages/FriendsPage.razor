@@ -93,6 +93,31 @@
             }
         </section>
 
+        <section class="friends-section">
+            <div class="friends-section-heading"><h2>أشخاص على مكدوس</h2><span>@discoverable.Count</span></div>
+            @if (discoverable.Count == 0)
+            {
+                <div class="friends-empty-state">
+                    <span aria-hidden="true">✨</span>
+                    <p>لا يوجد مستخدمون جدد حالياً. ادعُ من حولك ليبدأوا التخطيط أيضاً!</p>
+                </div>
+            }
+            else
+            {
+                <p class="discover-hint">أضفهم كأصدقاء وشاهد أسبوعهم مباشرة.</p>
+                <div class="friends-list">
+                    @foreach (var user in discoverable)
+                    {
+                        <article class="friend-person-card discover-card">
+                            <span class="friend-avatar">@Initial(user.DisplayName)</span>
+                            <span class="friend-person-copy"><strong>@user.DisplayName</strong><small dir="ltr">@@@user.Username</small></span>
+                            <button class="friend-add-button discover-add" @onclick="() => AddDiscovered(user)" disabled="@isSendingRequest" title="إضافة صديق" aria-label="إضافة @user.Username">+</button>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
         @if (selectedFriend is not null)
         {
             <section class="friend-week-section">
@@ -125,6 +150,8 @@
     private string feedback = "";
     private List<FriendRequest> incomingRequests = new();
     private List<UserProfile> friends = new();
+    private List<UserProfile> discoverable = new();
+    private HashSet<string> alreadyConnected = new(StringComparer.OrdinalIgnoreCase);
     private UserProfile? selectedFriend;
     private List<WeeklyPlanEntry> selectedFriendWeek = new();
     private Dictionary<string, string> mealNames = new();
@@ -158,6 +185,20 @@
         var friendIds = profile?.FriendIds?.Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new();
         var profiles = await Task.WhenAll(friendIds.Select(UserService.GetProfileAsync));
         friends = profiles.Where(profile => profile is not null).Cast<UserProfile>().OrderBy(profile => profile.DisplayName).ToList();
+
+        // People already friends, or with a request in-flight either way.
+        alreadyConnected = new HashSet<string>(friendIds, StringComparer.OrdinalIgnoreCase);
+        foreach (var incoming in profile?.IncomingFriendRequests?.Keys ?? Enumerable.Empty<string>())
+            alreadyConnected.Add(incoming);
+        foreach (var outgoing in profile?.OutgoingFriendRequestIds ?? new List<string>())
+            alreadyConnected.Add(outgoing);
+
+        var all = await UserService.GetRegisteredUsersAsync(uid);
+        discoverable = all
+            .Where(p => !alreadyConnected.Contains(p.Uid))
+            .OrderBy(p => p.DisplayName)
+            .ToList();
+
         if (selectedFriend is not null)
         {
             selectedFriend = friends.FirstOrDefault(friend => friend.Uid == selectedFriend.Uid);
@@ -177,6 +218,27 @@
             friendUsername = "";
             isError = false;
             feedback = "تم إرسال طلب الصداقة ✨";
+            await LoadProfileAsync();
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+        }
+        finally { isSendingRequest = false; }
+    }
+
+    private async Task AddDiscovered(UserProfile user)
+    {
+        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        isSendingRequest = true;
+        feedback = "";
+        try
+        {
+            await UserService.SendFriendRequestAsync(uid, user.Uid);
+            isError = false;
+            feedback = $"تم إرسال طلب الصداقة إلى @{user.Username} ✨";
+            await LoadProfileAsync();
         }
         catch (Exception ex)
         {
