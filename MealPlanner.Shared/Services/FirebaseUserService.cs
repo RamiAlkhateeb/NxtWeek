@@ -211,8 +211,8 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         moved["username"] = username;
         moved["authUid"] = current.AuthUid;
         moved["syncEmail"] = current.SyncEmail;
-        if (!string.IsNullOrWhiteSpace(current.DisplayName)) moved["displayName"] = current.DisplayName;
-        else if (moved["displayName"] is null) moved["displayName"] = username;
+        // Display name mirrors the username (a user no longer shows as "ضيف" guest).
+        moved["displayName"] = username;
 
         var movePatch = new Dictionary<string, object?>
         {
@@ -242,6 +242,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         profile.AuthUid = authUid;
         profile.SyncEmail = email;
         profile.Username = userKey;
+        profile.DisplayName = userKey; // mirror username instead of showing "ضيف"
         await CreateProfileAsync(profile);
         await http.PutAsJsonAsync(Url($"authUsers/{Key(authUid)}"), userKey);
         await http.PutAsJsonAsync(Url($"usernames/{Key(userKey)}"), new UsernameReservation { UserKey = userKey, AuthUid = authUid });
@@ -407,5 +408,10 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         profile.FriendIds ??= new();
         profile.OutgoingFriendRequestIds ??= new();
         profile.IncomingFriendRequests ??= new();
+        // displayName mirrors the username for any account that has claimed one
+        // (fixes legacy rows that still show "ضيف" / guest for a named user).
+        if (!string.IsNullOrWhiteSpace(profile.Username) &&
+            !string.Equals(profile.DisplayName, profile.Username, StringComparison.OrdinalIgnoreCase))
+            profile.DisplayName = profile.Username;
     }
 }
