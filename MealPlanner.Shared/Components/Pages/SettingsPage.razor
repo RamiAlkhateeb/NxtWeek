@@ -4,29 +4,117 @@
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject IJSRuntime JS
-<div class="app app-content-wrapper" dir="rtl">
-  <UiPageHeader Icon="👤" Title="الإعدادات" Subtitle="كل ما تحتاجه في مكان واحد" />
+@inject ILocalizationService Loc
+@implements IDisposable
+
+<div class="app app-content-wrapper" dir="@Loc.Direction">
+  <UiPageHeader Icon="👤" Title="@Loc["settings_title"]" Subtitle="@Loc["settings_subtitle"]" />
   <div class="settings-sections">
     <UiCard CssClass="settings-card">
-      <h2>👤 اسم المستخدم</h2>
-      @if (hasUsername) { <div class="setting-id"><code dir="ltr">@currentUsername</code><button class="friend-copy-button" @onclick="CopyUsername" title="نسخ">⧉</button></div> }
-      else { <p>اختر اسماً قبل إرسال أو قبول طلبات الصداقة.</p> }
-      <label for="settings-username">@(hasUsername ? "تغيير اسم المستخدم" : "اختر اسم مستخدم")</label>
-      <div class="friend-add-form"><input id="settings-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="مثال: rami_food" /><button class="friend-add-button" @onclick="SaveUsername" disabled="@isSavingUsername">✓</button></div>
+      <h2>@Loc["settings_lang_title"]</h2>
+      <p>@Loc["settings_lang_desc"]</p>
+      <div class="lang-switch">
+        <button type="button" class="@(Loc.IsArabic ? "active" : "")" @onclick="@(() => ChangeLanguage("ar"))">العربية</button>
+        <button type="button" class="@(Loc.IsEnglish ? "active" : "")" @onclick="@(() => ChangeLanguage("en"))">English</button>
+      </div>
+    </UiCard>
+
+    <UiCard CssClass="settings-card">
+      <h2>@Loc["settings_username_title"]</h2>
+      @if (hasUsername) { <div class="setting-id"><code dir="ltr">@currentUsername</code><button class="friend-copy-button" @onclick="CopyUsername" title="@Loc["copy"]">⧉</button></div> }
+      else { <p>@Loc["settings_username_prompt"]</p> }
+      <label for="settings-username">@(hasUsername ? Loc["settings_username_change"] : Loc["settings_username_choose"])</label>
+      <div class="friend-add-form"><input id="settings-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="@Loc["settings_username_placeholder"]" /><button class="friend-add-button" @onclick="SaveUsername" disabled="@isSavingUsername">✓</button></div>
       @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
     </UiCard>
-    <UiCard CssClass="settings-card"><h2>🔁 استرجاع خطتي</h2><p>هل مسحت بيانات المتصفح أو غيّرت جهازك؟ استعد خططك ووجباتك باسم المستخدم الذي اخترته سابقاً.</p><a class="settings-action-link" href="settings/recover">استرجاع باسم المستخدم ←</a></UiCard>
-    <UiCard CssClass="settings-card"><h2>📲 تثبيت على الشاشة الرئيسية</h2><p>أضف مكدوس إلى شاشة هاتفك الرئيسية لفتحه كتطبيق سريع على أندرويد وiPhone.</p><a class="settings-action-link" href="settings/install">كيف أثبّت مكدوس؟ ←</a></UiCard>
-    <UiCard CssClass="settings-card settings-item-disabled"><h2>✉️ مزامنة الأجهزة <span class="caption">قريباً</span></h2><p>ستتمكن قريباً من فتح ومزامنة خطتك بين الهاتف والكمبيوتر.</p></UiCard>
-    <UiCard CssClass="settings-card"><h2>ℹ️ حول التطبيق</h2><p>المكدوس — مخطط وجبات شخصي</p><span class="caption">الإصدار 1.0</span><a class="settings-developer-link" href="https://ramialkhateeb.github.io/" target="_blank" rel="noopener noreferrer">الموقع الشخصي للمطور ↗</a></UiCard>
+
+    <UiCard CssClass="settings-card">
+      <h2>@Loc["settings_recover_title"]</h2>
+      <p>@Loc["settings_recover_desc"]</p>
+      <a class="settings-action-link" href="settings/recover">@Loc["settings_recover_link"]</a>
+    </UiCard>
+
+    <UiCard CssClass="settings-card">
+      <h2>@Loc["settings_install_title"]</h2>
+      <p>@Loc["settings_install_desc"]</p>
+      <a class="settings-action-link" href="settings/install">@Loc["settings_install_link"]</a>
+    </UiCard>
+
+    <UiCard CssClass="settings-card">
+      <h2>@Loc["settings_about_title"]</h2>
+      <p>@Loc["settings_about_desc"]</p>
+      <span class="caption">@Loc["settings_about_version"]</span>
+      <a class="settings-developer-link" href="https://ramialkhateeb.github.io/" target="_blank" rel="noopener noreferrer">@Loc["settings_about_dev"]</a>
+    </UiCard>
   </div>
 </div>
 
 @code {
-  private string uid = ""; private string currentUsername = ""; private string usernameInput = ""; private string usernameFeedback = ""; private bool usernameError; private bool isSavingUsername;
+  private string uid = "";
+  private string currentUsername = "";
+  private string usernameInput = "";
+  private string usernameFeedback = "";
+  private bool usernameError;
+  private bool isSavingUsername;
   private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
-  protected override async Task OnInitializedAsync() { var user = await Auth.GetCurrentUserAsync(); if (user is null) return; uid = user.Uid; var profile = await UserService.GetProfileAsync(uid); currentUsername = profile?.Username ?? ""; }
-  private async Task CheckUsername() { usernameFeedback = ""; if (string.IsNullOrWhiteSpace(usernameInput)) return; try { var available = await UserService.IsUsernameAvailableAsync(usernameInput, uid); usernameError = !available; usernameFeedback = available ? "اسم المستخدم متاح ✓" : "اسم المستخدم مستخدم بالفعل."; } catch (Exception ex) { usernameError = true; usernameFeedback = ex.Message; } }
-  private async Task SaveUsername() { isSavingUsername = true; usernameFeedback = ""; try { var username = await UserService.RenameUserAsync(uid, usernameInput); await Auth.SetActiveDataKeyAsync(username); currentUsername = username; uid = username; usernameInput = ""; usernameError = false; usernameFeedback = "تم حفظ اسم المستخدم ✨"; } catch (Exception ex) { usernameError = true; usernameFeedback = ex.Message; } finally { isSavingUsername = false; } }
-  private async Task CopyUsername() { await JS.InvokeVoidAsync("navigator.clipboard.writeText", currentUsername); usernameError = false; usernameFeedback = "تم نسخ اسم المستخدم."; }
+
+  protected override async Task OnInitializedAsync() {
+    Loc.OnLanguageChanged += HandleLanguageChanged;
+    await Loc.InitializeAsync();
+    var user = await Auth.GetCurrentUserAsync();
+    if (user is null) return;
+    uid = user.Uid;
+    var profile = await UserService.GetProfileAsync(uid);
+    currentUsername = profile?.Username ?? "";
+  }
+
+  private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
+
+  private async Task ChangeLanguage(string lang) {
+    await Loc.SetLanguageAsync(lang);
+    StateHasChanged();
+  }
+
+  private async Task CheckUsername() {
+    usernameFeedback = "";
+    if (string.IsNullOrWhiteSpace(usernameInput)) return;
+    try {
+      var available = await UserService.IsUsernameAvailableAsync(usernameInput, uid);
+      usernameError = !available;
+      usernameFeedback = available ? Loc["settings_username_available"] : Loc["settings_username_taken"];
+    } catch (Exception ex) {
+      usernameError = true;
+      usernameFeedback = ex.Message;
+    }
+  }
+
+  private async Task SaveUsername() {
+    isSavingUsername = true;
+    usernameFeedback = "";
+    try {
+      var username = await UserService.RenameUserAsync(uid, usernameInput);
+      await Auth.SetActiveDataKeyAsync(username);
+      currentUsername = username;
+      uid = username;
+      usernameInput = "";
+      usernameError = false;
+      usernameFeedback = Loc["settings_username_saved"];
+    } catch (Exception ex) {
+      usernameError = true;
+      usernameFeedback = ex.Message;
+    } finally {
+      isSavingUsername = false;
+    }
+  }
+
+  private async Task CopyUsername() {
+    await JS.InvokeVoidAsync("navigator.clipboard.writeText", currentUsername);
+    usernameError = false;
+    usernameFeedback = Loc["settings_username_copied"];
+  }
+
+  public void Dispose() {
+    Loc.OnLanguageChanged -= HandleLanguageChanged;
+  }
 }
+

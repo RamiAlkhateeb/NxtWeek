@@ -32,6 +32,8 @@ builder.Services.AddScoped<IDataImportService, LocalDataImportService>();
 builder.Services.AddScoped<BrowserPreferenceService>();
 builder.Services.AddScoped<IThemeService>(sp => sp.GetRequiredService<BrowserPreferenceService>());
 builder.Services.AddScoped<ILanguageService>(sp => sp.GetRequiredService<BrowserPreferenceService>());
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+
 
 
 await builder.Build().RunAsync();

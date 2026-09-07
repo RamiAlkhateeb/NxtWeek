@@ -1,4 +1,4 @@
-@page "/meal/{MealId}"
+﻿@page "/meal/{MealId}"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
 @inject IJSRuntime JS
@@ -6,21 +6,22 @@
 @inject IUserService UserService
 @inject IAuthService Auth
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app meal-details-container" dir="rtl">
+<div class="app meal-details-container" dir="@Loc.Direction">
     <div class="back-nav">
-        <button class="back-btn" @onclick="GoBack">❌ إغلاق</button>
+        <button class="back-btn" @onclick="GoBack">❌ @Loc["close"]</button>
     </div>
 
     @if (isLoading)
     {
-        <p style="padding: 24px; text-align: center; color: #777">جارِ التحميل...</p>
+        <p style="padding: 24px; text-align: center; color: #777">@(Loc.IsArabic ? "جارِ التحميل..." : "Loading...")</p>
     }
     else if (meal is null)
     {
         <div style="padding: 24px; text-align: center;">
-            <p style="color: #777; margin-bottom: 16px;">لم يتم العثور على تفاصيل الوجبة.</p>
-            <button class="primary-btn" @onclick="GoBack">العودة للرئيسية</button>
+            <p style="color: #777; margin-bottom: 16px;">@(Loc.IsArabic ? "لم يتم العثور على تفاصيل الوجبة." : "Meal details not found.")</p>
+            <button class="primary-btn" @onclick="GoBack">@(Loc.IsArabic ? "العودة للرئيسية" : "Back to Home")</button>
         </div>
     }
     else
@@ -29,20 +30,20 @@
             <div class="meal-type-icon">🍳</div>
             <h1 class="meal-title">@meal.Name</h1>
             <div class="badges-row">
-                <span class="badge type-badge">@GetTypeArabic(meal.MealType)</span>
+                <span class="badge type-badge">@Loc.GetMealTypeName(meal.MealType)</span>
                 @if (isFavorite)
                 {
-                    <span class="badge favorite-badge">⭐ مفضلة</span>
+                    <span class="badge favorite-badge">⭐ @(Loc.IsArabic ? "مفضلة" : "Favorite")</span>
                 }
             </div>
         </div>
 
         <div class="details-body">
             <div class="details-section">
-                <h2>🛒 المكونات والمقادير</h2>
+                <h2>🛒 @Loc["meal_ingredients"]</h2>
                 @if (meal.Ingredients == null || meal.Ingredients.Count == 0)
                 {
-                    <p class="empty-text">لم يتم تحديد مكونات بعد لهذه الوجبة.</p>
+                    <p class="empty-text">@(Loc.IsArabic ? "لم يتم تحديد مكونات بعد لهذه الوجبة." : "No ingredients specified yet.")</p>
                 }
                 else
                 {
@@ -59,10 +60,10 @@
             </div>
 
             <div class="details-section">
-                <h2>🥗 الأطباق الجانبية المقترحة</h2>
+                <h2>🥗 @Loc["meal_side_dishes"]</h2>
                 @if (meal.SideDishes == null || meal.SideDishes.Count == 0)
                 {
-                    <p class="empty-text">لم يتم اختيار أطباق جانبية بعد.</p>
+                    <p class="empty-text">@(Loc.IsArabic ? "لم يتم اختيار أطباق جانبية بعد." : "No side dishes specified yet.")</p>
                 }
                 else
                 {
@@ -77,7 +78,7 @@
 
             <div class="action-buttons">
                 <button class="favorite-toggle-btn @(isFavorite ? "active" : "")" @onclick="ToggleFavorite">
-                    @(isFavorite ? "⭐ إزالة من المفضلة" : "☆ إضافة للمفضلة")
+                    @(isFavorite ? (Loc.IsArabic ? "⭐ إزالة من المفضلة" : "⭐ Remove from Favorites") : (Loc.IsArabic ? "☆ إضافة للمفضلة" : "☆ Add to Favorites"))
                 </button>
             </div>
         </div>
@@ -126,14 +127,4 @@
         await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
         isFavorite = !isFavorite;
     }
-
-    private string GetTypeArabic(MealType type) => type switch
-    {
-        MealType.Meat => "لحم 🥩",
-        MealType.Chicken => "دجاج 🍗",
-        MealType.Fish => "سمك 🐟",
-        MealType.Vegetarian => "نباتي 🥦",
-        MealType.Vegan => "نباتي صرف 🌱",
-        _ => type.ToString()
-    };
 }

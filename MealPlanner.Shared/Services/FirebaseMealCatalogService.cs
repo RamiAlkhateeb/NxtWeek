@@ -1,3 +1,4 @@
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -33,7 +34,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
         return dto?.ToModel(id);
     }
 
-    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? mealType)
+    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? mealType, string? language = null)
     {
         var meals = await GetAllMealsAsync();
         var query = meals.AsEnumerable();
@@ -41,6 +42,11 @@ public class FirebaseMealCatalogService : IMealCatalogService
         if (mealType is not null)
         {
             query = query.Where(m => m.MealType == mealType.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            query = query.Where(m => string.Equals(m.Language, language, StringComparison.OrdinalIgnoreCase));
         }
 
         return query.ToList();
@@ -80,7 +86,8 @@ public class FirebaseMealCatalogService : IMealCatalogService
 
     public async Task<bool> IsCatalogSeededAsync()
     {
-        return (await GetAllMealsAsync()).Count > 0;
+        var all = await GetAllMealsAsync();
+        return all.Any(m => m.Language == "ar") && all.Any(m => m.Language == "en");
     }
 
     public async Task SeedCatalogAsync(List<MealCatalogItem> meals)
@@ -110,6 +117,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
         public string PhotoUrl { get; set; } = string.Empty;
         public int? PreparationMinutes { get; set; }
         public bool IsArchived { get; set; }
+        public string? Language { get; set; }
 
         public static MealCatalogItemDto FromModel(MealCatalogItem m) => new()
         {
@@ -123,7 +131,8 @@ public class FirebaseMealCatalogService : IMealCatalogService
             Tags = m.Tags,
             PhotoUrl = m.PhotoUrl,
             PreparationMinutes = m.PreparationMinutes,
-            IsArchived = m.IsArchived
+            IsArchived = m.IsArchived,
+            Language = string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language
         };
 
         public MealCatalogItem ToModel(string id) => new()
@@ -139,7 +148,8 @@ public class FirebaseMealCatalogService : IMealCatalogService
             Tags = Tags ?? new(),
             PhotoUrl = PhotoUrl,
             PreparationMinutes = PreparationMinutes,
-            IsArchived = IsArchived
+            IsArchived = IsArchived,
+            Language = string.IsNullOrWhiteSpace(Language) ? "ar" : Language
         };
     }
 

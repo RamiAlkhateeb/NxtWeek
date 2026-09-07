@@ -73,6 +73,7 @@ public class FirebaseMealService : IMealService
                     meal.Ingredients = catItem.Ingredients;
                     meal.SideDishes = catItem.SideDishes;
                     meal.MealType = catItem.MealType;
+                    meal.Language = string.IsNullOrWhiteSpace(catItem.Language) ? "ar" : catItem.Language;
                 }
             }
 
@@ -99,6 +100,10 @@ public class FirebaseMealService : IMealService
             existing.MealType = meal.MealType ?? existing.MealType;
             existing.Ingredients = meal.Ingredients.Count > 0 ? meal.Ingredients : existing.Ingredients;
             existing.SideDishes = meal.SideDishes.Count > 0 ? meal.SideDishes : existing.SideDishes;
+            if (!string.IsNullOrWhiteSpace(meal.Language))
+            {
+                existing.Language = meal.Language;
+            }
             await _catalogService.UpdateMealAsync(existing);
         }
         else
@@ -108,7 +113,8 @@ public class FirebaseMealService : IMealService
                 Name = meal.Name,
                 MealType = meal.MealType ?? MealType.Vegetarian,
                 Ingredients = meal.Ingredients,
-                SideDishes = meal.SideDishes
+                SideDishes = meal.SideDishes,
+                Language = string.IsNullOrWhiteSpace(meal.Language) ? "ar" : meal.Language
             };
             newItem = await _catalogService.CreateMealAsync(newItem);
             mealId = newItem.Id;
@@ -217,10 +223,37 @@ new() { Id = "m47", Name = "معكرونة بالجبنة والذرة والف�
 
 new() { Id = "m48", Name = "مناقيش", MealType = MealType.Vegetarian, Ingredients = new() { "عجينة", "زعتر", "زيت زيتون", "جبنة" }, SideDishes = new() { "شاي" } },
 
-new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients = new() { "خبز برغر", "لحم مفروم", "خس", "طماطم", "مخلل" }, SideDishes = new() { "بطاطا مقلية" } }
+new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients = new() { "خبز برغر", "لحم مفروم", "خس", "طماطم", "مخلل" }, SideDishes = new() { "بطاطا مقلية" } },
+
+    // English meals
+    new() { Id = "en_m1", Name = "Grilled Chicken Breast with Rice", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken breast", "Rice", "Garlic", "Lemon", "Olive oil" }, SideDishes = new() { "Green salad", "Yogurt" } },
+    new() { Id = "en_m2", Name = "Spaghetti Bolognese", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Spaghetti", "Minced beef", "Tomato sauce", "Onion", "Parmesan" }, SideDishes = new() { "Garlic bread", "Side salad" } },
+    new() { Id = "en_m3", Name = "Beef Burger with Fries", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Burger bun", "Beef patty", "Lettuce", "Tomato", "Cheddar" }, SideDishes = new() { "French fries", "Coleslaw" } },
+    new() { Id = "en_m4", Name = "Red Lentil Soup", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Red lentils", "Onion", "Cumin", "Lemon", "Carrot" }, SideDishes = new() { "Toasted pita bread" } },
+    new() { Id = "en_m5", Name = "Grilled Salmon with Vegetables", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Salmon fillet", "Lemon", "Dill", "Asparagus", "Olive oil" }, SideDishes = new() { "Mashed potatoes", "Salad" } },
+    new() { Id = "en_m6", Name = "Chicken Fajitas", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken strips", "Bell peppers", "Onion", "Tortilla wraps", "Fajita spices" }, SideDishes = new() { "Guacamole", "Sour cream" } },
+    new() { Id = "en_m7", Name = "Margherita Pizza", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Pizza dough", "Tomato sauce", "Mozzarella", "Fresh basil" }, SideDishes = new() { "Caesar salad" } },
+    new() { Id = "en_m8", Name = "Crispy Fish and Chips", MealType = MealType.Fish, Language = "en", Ingredients = new() { "White fish fillet", "Batter", "Potatoes", "Lemon" }, SideDishes = new() { "Tartar sauce", "Peas" } },
+    new() { Id = "en_m9", Name = "Vegetable Stir Fry with Noodles", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Noodles", "Broccoli", "Carrots", "Soy sauce", "Sesame oil" }, SideDishes = new() { "Spring rolls" } },
+    new() { Id = "en_m10", Name = "Beef Steak with Mashed Potatoes", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Beef steak", "Potatoes", "Butter", "Black pepper", "Garlic" }, SideDishes = new() { "Steamed vegetables" } },
+    new() { Id = "en_m11", Name = "Chicken Shawarma Wrap", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken", "Pita bread", "Garlic sauce", "Pickles", "Spices" }, SideDishes = new() { "French fries" } },
+    new() { Id = "en_m12", Name = "Creamy Mushroom Pasta", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Penne pasta", "Mushrooms", "Cream", "Garlic", "Parmesan" }, SideDishes = new() { "Garlic bread" } },
+    new() { Id = "en_m13", Name = "Tuna Salad Sandwich", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Canned tuna", "Mayonnaise", "Celery", "Whole wheat bread" }, SideDishes = new() { "Potato chips", "Pickles" } },
+    new() { Id = "en_m14", Name = "Shepherd's Pie", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Minced lamb or beef", "Mashed potatoes", "Peas", "Carrots", "Gravy" }, SideDishes = new() { "Green salad" } },
+    new() { Id = "en_m15", Name = "Shakshuka with Warm Bread", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Eggs", "Tomatoes", "Bell peppers", "Onion", "Cumin" }, SideDishes = new() { "Pita bread" } },
+    new() { Id = "en_m16", Name = "Baked Chicken Thighs with Potatoes", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken thighs", "Potatoes", "Rosemary", "Garlic", "Olive oil" }, SideDishes = new() { "Cucumber yogurt salad" } },
+    new() { Id = "en_m17", Name = "Chickpea and Spinach Stew", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Chickpeas", "Spinach", "Tomato puree", "Garlic", "Coriander" }, SideDishes = new() { "Rice" } },
+    new() { Id = "en_m18", Name = "Shrimp Scampi with Pasta", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Shrimp", "Linguine", "Garlic", "Butter", "Lemon juice", "Parsley" }, SideDishes = new() { "Crusty bread" } }
 };
 
-        foreach (var catalogMeal in catalogMeals) catalogMeal.PhotoUrl = string.Empty;
+        foreach (var catalogMeal in catalogMeals)
+        {
+            catalogMeal.PhotoUrl = string.Empty;
+            if (string.IsNullOrWhiteSpace(catalogMeal.Language))
+            {
+                catalogMeal.Language = "ar";
+            }
+        }
         await _catalogService.SeedCatalogAsync(catalogMeals);
     }
 

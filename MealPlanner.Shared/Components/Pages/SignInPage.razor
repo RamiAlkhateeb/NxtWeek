@@ -4,8 +4,9 @@
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app onboarding-container" dir="rtl">
+<div class="app onboarding-container" dir="@Loc.Direction">
     <UiCard CssClass="onboarding-card">
         <div class="logo-container">
             <span class="emoji-bounce">🍳</span>

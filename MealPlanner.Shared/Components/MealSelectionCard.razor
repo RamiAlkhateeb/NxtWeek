@@ -1,21 +1,23 @@
-@using MealPlanner.Shared.Models
+﻿@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject ILocalizationService Loc
 
-<article class="meal-selection-card ui-card" dir="rtl" @onclick="HandleCardClick">
-    <div class="meal-selection-main" role="button" tabindex="0" aria-label="تعديل @Meal.Name">
+<article class="meal-selection-card ui-card" dir="@Loc.Direction" @onclick="HandleCardClick">
+    <div class="meal-selection-main" role="button" tabindex="0" aria-label="@Meal.Name">
         <h2>@Meal.Name</h2>
         <div class="badges-row">
-            <span class="badge type-badge">@Meal.MealType</span>
+            <span class="badge type-badge">@Loc.GetMealTypeName(Meal.MealType)</span>
         </div>
     </div>
     <div class="meal-selection-actions">
-        <button class="icon-action" title="المفضلة" aria-label="المفضلة" @onclick="() => OnFavorite.InvokeAsync(Meal)" @onclick:stopPropagation="true">@(IsFavorite ? "❤️" : "♡")</button>
+        <button class="icon-action" title="@Loc["meal_favorite"]" aria-label="@Loc["meal_favorite"]" @onclick="() => OnFavorite.InvokeAsync(Meal)" @onclick:stopPropagation="true">@(IsFavorite ? "❤️" : "♡")</button>
         @if (IsContextMode)
         {
-            <span @onclick:stopPropagation="true"><UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">✓ اختر هذه الوجبة</UiButton></span>
+            <span @onclick:stopPropagation="true"><UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@(Loc.IsArabic ? "✓ اختر هذه الوجبة" : "✓ Select This Meal")</UiButton></span>
         }
         else
         {
-            <span @onclick:stopPropagation="true"><UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">استخدام هذه الوجبة</UiButton></span>
+            <span @onclick:stopPropagation="true"><UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@(Loc.IsArabic ? "استخدام هذه الوجبة" : "Use This Meal")</UiButton></span>
         }
     </div>
 </article>

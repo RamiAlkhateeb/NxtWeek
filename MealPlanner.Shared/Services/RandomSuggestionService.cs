@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,11 +10,13 @@ public class RandomSuggestionService : ISuggestionService
 {
     private readonly IMealCatalogService _catalogService;
     private readonly IUserService _userService;
+    private readonly ILocalizationService? _loc;
 
-    public RandomSuggestionService(IMealCatalogService catalogService, IUserService userService)
+    public RandomSuggestionService(IMealCatalogService catalogService, IUserService userService, ILocalizationService? loc = null)
     {
         _catalogService = catalogService;
         _userService = userService;
+        _loc = loc;
     }
 
     public async Task<List<string>> GetSuggestionsAsync(string username, List<Meal> recentMeals, int count = 5)
@@ -30,7 +32,16 @@ public class RandomSuggestionService : ISuggestionService
         // 3. Use the shared catalog as the candidate pool. Restricting this to a
         // user's historical selection can make suggestions alternate between two meals.
         var favoriteMealIds = profile?.FavoriteMealIds ?? new();
-        var eligible = allCatalog.Where(m => !m.IsArchived).ToList();
+        var activeLang = _loc?.CurrentLanguage ?? "ar";
+        var eligible = allCatalog
+            .Where(m => !m.IsArchived)
+            .Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, activeLang, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (eligible.Count == 0)
+        {
+            eligible = allCatalog.Where(m => !m.IsArchived).ToList();
+        }
 
         // 4. Prefer meals not already used in the supplied period. IDs avoid
         // false matches caused by casing or whitespace differences in names.

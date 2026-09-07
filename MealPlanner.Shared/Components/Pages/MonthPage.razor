@@ -1,4 +1,4 @@
-@page "/month"
+﻿@page "/month"
 @using System.Globalization
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
@@ -6,18 +6,19 @@
 @inject IMealCatalogService CatalogService
 @inject IAuthService Auth
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app app-content-wrapper month-page" dir="rtl">
-    <a class="month-settings-back" href="settings">العودة إلى الإعدادات</a>
+<div class="app app-content-wrapper month-page" dir="@Loc.Direction">
+    <a class="month-settings-back" href="settings">@(Loc.IsArabic ? "العودة إلى الإعدادات" : "Back to Settings")</a>
     <div class="month-header">
-        <button aria-label="الشهر السابق" @onclick="PreviousMonth">‹</button>
+        <button aria-label="@(Loc.IsArabic ? "الشهر السابق" : "Previous Month")" @onclick="PreviousMonth">‹</button>
         <h1>@MonthLabel</h1>
-        <button aria-label="الشهر القادم" @onclick="NextMonth">›</button>
+        <button aria-label="@(Loc.IsArabic ? "الشهر القادم" : "Next Month")" @onclick="NextMonth">›</button>
     </div>
 
     @if (isLoading)
     {
-        <p class="loading-text">جارِ التحميل...</p>
+        <p class="loading-text">@(Loc.IsArabic ? "جارِ التحميل..." : "Loading...")</p>
     }
     else
     {
@@ -53,12 +54,15 @@
     private List<DateOnly?> calendarDays = new();
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private static readonly CultureInfo ArabicCulture = new("ar-EG");
-    private static readonly string[] WeekdayLabels = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"];
+    private static readonly string[] ArabicWeekdayLabels = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"];
+    private static readonly string[] EnglishWeekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    private string[] WeekdayLabels => Loc.IsArabic ? ArabicWeekdayLabels : EnglishWeekdayLabels;
     private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private bool isLoading = true;
     private string uid = "";
     private static readonly string[] ArabicMonths = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"];
-    private string MonthLabel => $"{ArabicMonths[currentMonth.Month - 1]} {currentMonth.Year}";
+    private static readonly string[] EnglishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    private string MonthLabel => Loc.IsArabic ? $"{ArabicMonths[currentMonth.Month - 1]} {currentMonth.Year}" : $"{EnglishMonths[currentMonth.Month - 1]} {currentMonth.Year}";
 
     protected override async Task OnInitializedAsync()
     {

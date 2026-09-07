@@ -1,9 +1,10 @@
 @page "/settings/install"
 @using MealPlanner.Shared.Components
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app app-content-wrapper install-help-page" dir="rtl">
-    <UiPageHeader Icon="📲" Title="تثبيت مكدوس" Subtitle="أضف مكدوس إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق" />
+<div class="app app-content-wrapper install-help-page" dir="@Loc.Direction">
+    <UiPageHeader Icon="📲" Title="@(Loc.IsArabic ? "تثبيت مكدوس" : "Install NxtWeek")" Subtitle="@(Loc.IsArabic ? "أضف مكدوس إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق" : "Add NxtWeek to your home screen for quick app-like access")" />
 
     <div class="install-carousel-wrap">
         <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="تم ✓" OnFinish="GoBack" />

@@ -17,4 +17,5 @@ public class Meal
     public List<string> Ingredients { get; set; } = new();
     public List<string> SideDishes { get; set; } = new();
     public MealType? MealType { get; set; }
+    public string Language { get; set; } = "ar";
 }

@@ -1,11 +1,12 @@
 @namespace MealPlanner.Shared.Components
+@inject ILocalizationService Loc
 
 @* Reusable "add to home screen" screenshot carousel. Used in the first-launch
    welcome wizard (App.razor) and on the /settings/install help page. *@
-<div class="addhome-carousel" dir="rtl">
+<div class="addhome-carousel" dir="@Loc.Direction">
     @if (ShowProgress)
     {
-        <p class="addhome-progress">الخطوة @(Current + 1) من @Slides.Count</p>
+        <p class="addhome-progress">@(Loc.IsArabic ? $"الخطوة {Current + 1} من {Slides.Count}" : $"Step {Current + 1} of {Slides.Count}")</p>
     }
 
     <div class="welcome-carousel">
@@ -23,7 +24,7 @@
     <div class="welcome-wizard-actions">
         @if (Current > 0)
         {
-            <button class="welcome-wizard-back" @onclick="GoBack">السابق</button>
+            <button class="welcome-wizard-back" @onclick="GoBack">@(Loc.IsArabic ? "السابق" : "Back")</button>
         }
         else
         {
@@ -31,7 +32,7 @@
         }
         @if (Current < Slides.Count - 1)
         {
-            <button class="welcome-wizard-next" @onclick="GoNext">التالي</button>
+            <button class="welcome-wizard-next" @onclick="GoNext">@(Loc.IsArabic ? "التالي" : "Next")</button>
         }
         else
         {

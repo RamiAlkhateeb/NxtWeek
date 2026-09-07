@@ -27,4 +27,5 @@ public class MealCatalogItem
     public string PhotoUrl { get; set; } = string.Empty;
     public int? PreparationMinutes { get; set; }
     public bool IsArchived { get; set; }
+    public string Language { get; set; } = "ar";
 }

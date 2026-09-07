@@ -7,8 +7,9 @@
 @inject ISuggestionService SuggestionService
 @inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app edit-page-container" dir="rtl">
+<div class="app edit-page-container" dir="@Loc.Direction">
     <div class="edit-header">
         <button class="close-btn" @onclick="Cancel">✕</button>
         <h1>@TitleText</h1>

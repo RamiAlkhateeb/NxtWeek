@@ -1,22 +1,23 @@
-@page "/settings/recover"
+﻿@page "/settings/recover"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app app-content-wrapper recover-page" dir="rtl">
-    <UiPageHeader Icon="🔁" Title="استرجاع خطتي" Subtitle="أعد فتح خطتك باسم المستخدم بعد مسح بيانات المتصفح أو على جهاز جديد" />
+<div class="app app-content-wrapper recover-page" dir="@Loc.Direction">
+    <UiPageHeader Icon="🔁" Title="@Loc["settings_recover_title"]" Subtitle="@(Loc.IsArabic ? "أعد فتح خطتك باسم المستخدم بعد مسح بيانات المتصفح أو على جهاز جديد" : "Restore your plan with your username after clearing browser data or on a new device")" />
 
     <section class="recover-intro">
-        <p>إذا اخترت اسم مستخدم سابقاً ثم حُذفت بيانات المتصفح (أو أضفت التطبيق من جديد)، يمكنك استعادة كل خططك ووجباتك بكتابة <strong>اسم المستخدم</strong> نفسه الذي اخترته سابقاً.</p>
+        <p>@(Loc.IsArabic ? "إذا اخترت اسم مستخدم سابقاً ثم حُذفت بيانات المتصفح (أو أضفت التطبيق من جديد)، يمكنك استعادة كل خططك ووجباتك بكتابة اسم المستخدم نفسه الذي اخترته سابقاً." : "If you previously set a username and browser data was cleared, you can recover all your plans and meals by typing the same username.")</p>
     </section>
 
     <section class="recover-form-section">
-        <label for="recover-username">اسم المستخدم السابق</label>
+        <label for="recover-username">@(Loc.IsArabic ? "اسم المستخدم السابق" : "Previous Username")</label>
         <div class="friend-add-form">
-            <input id="recover-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" placeholder="مثال: rami_food" autocomplete="off" />
-            <button class="friend-add-button" @onclick="Lookup" disabled="@(isBusy || string.IsNullOrWhiteSpace(usernameInput))" aria-label="بحث">🔍</button>
+            <input id="recover-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" placeholder="@Loc["settings_username_placeholder"]" autocomplete="off" />
+            <button class="friend-add-button" @onclick="Lookup" disabled="@(isBusy || string.IsNullOrWhiteSpace(usernameInput))" aria-label="Search">🔍</button>
         </div>
         @if (!string.IsNullOrWhiteSpace(feedback))
         {
@@ -34,15 +35,15 @@
             </div>
         </section>
 
-        <p class="recover-warning">⚠️ هذا الجهاز سيتحول الآن إلى حساب «@foundProfile.Username». لا يلزم إعادة تسمية أي شيء، وستُعرض كل خططك المخزّنة في السحابة.</p>
+        <p class="recover-warning">⚠️ @(Loc.IsArabic ? $"هذا الجهاز سيتحول الآن إلى حساب «{foundProfile.Username}». لا يلزم إعادة تسمية أي شيء، وستُعرض كل خططك المخزّنة في السحابة." : $"This device will switch to user '{foundProfile.Username}'. All your cloud-saved plans will be loaded.")</p>
 
         <div class="recover-actions">
-            <UiButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? "جارٍ الاسترجاع..." : "استرجاع خطتي الآن")</UiButton>
-            <UiButton Variant="ghost" OnClick="ResetFound">إلغاء</UiButton>
+            <UiButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? (Loc.IsArabic ? "جارٍ الاسترجاع..." : "Recovering...") : (Loc.IsArabic ? "استرجاع خطتي الآن" : "Recover My Plan Now"))</UiButton>
+            <UiButton Variant="ghost" OnClick="ResetFound">@Loc["cancel"]</UiButton>
         </div>
     }
 
-    <button class="recover-back-button" @onclick="GoBack">➔ العودة إلى الإعدادات</button>
+    <button class="recover-back-button" @onclick="GoBack">@(Loc.IsArabic ? "➔ العودة إلى الإعدادات" : "← Back to Settings")</button>
 </div>
 
 @code {
@@ -68,10 +69,9 @@
         var username = usernameInput.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(username)) return;
 
-        // Already using this username? Nothing to recover.
         if (string.Equals(uid, username, StringComparison.OrdinalIgnoreCase))
         {
-            feedback = "أنت تستخدم اسم المستخدم هذا بالفعل على هذا الجهاز.";
+            feedback = Loc.IsArabic ? "أنت تستخدم اسم المستخدم هذا بالفعل على هذا الجهاز." : "You are already using this username on this device.";
             return;
         }
 
@@ -82,7 +82,7 @@
             if (profile is null)
             {
                 isError = true;
-                feedback = "لم نعثر على حساب بهذا الاسم. تأكد أنك كتبت اسم المستخدم الذي اخترته سابقاً، مع العلم أن البيانات المخزّنة كضيف (بدون اسم مستخدم) لا يمكن استرجاعها.";
+                feedback = Loc.IsArabic ? "لم نعثر على حساب بهذا الاسم. تأكد أنك كتبت اسم المستخدم الذي اخترته سابقاً، مع العلم أن البيانات المخزّنة كضيف (بدون اسم مستخدم) لا يمكن استرجاعها." : "No account found with this username. Ensure you entered your previously registered username.";
                 return;
             }
             foundProfile = profile;
@@ -103,8 +103,6 @@
         feedback = "";
         try
         {
-            // Adopt the recovered username as this device's active data key. All
-            // reads now resolve to users/{username}, which already holds the plan.
             await Auth.SetActiveDataKeyAsync(foundProfile.Username);
             Nav.NavigateTo("/", forceLoad: true);
         }

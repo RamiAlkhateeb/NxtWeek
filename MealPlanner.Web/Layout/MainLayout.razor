@@ -1,6 +1,47 @@
 @inherits LayoutComponentBase
+@inject ILocalizationService Loc
+@inject IJSRuntime JS
+@implements IDisposable
 
-<div class="app-shell" style="flex-direction: column; align-items: center;">
+<div class="app-shell @(Loc.IsEnglish ? "lang-en" : "lang-ar")" dir="@Loc.Direction" lang="@Loc.CurrentLanguage" style="flex-direction: column; align-items: center;">
     <div style="width: 100%; display: flex; justify-content: center; flex: 1;">@Body</div>
     <MealPlanner.Shared.Components.BottomNav />
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Loc.InitializeAsync();
+        Loc.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("document.documentElement.setAttribute", "dir", Loc.Direction);
+                await JS.InvokeVoidAsync("document.documentElement.setAttribute", "lang", Loc.CurrentLanguage);
+            }
+            catch { }
+        }
+    }
+
+    private async void HandleLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await JS.InvokeVoidAsync("document.documentElement.setAttribute", "dir", Loc.Direction);
+            await JS.InvokeVoidAsync("document.documentElement.setAttribute", "lang", Loc.CurrentLanguage);
+        }
+        catch { }
+    }
+
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
+    }
+}
+

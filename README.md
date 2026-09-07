@@ -2,6 +2,11 @@
 
 NxtWeek is an Arabic-first, RTL weekly meal planner for family home cooking. It is currently a Blazor WebAssembly PWA with a warm, mobile-first interface.
 
+## Screenshots
+
+<!-- App Screenshot Placeholder: Add your app screenshot file here (e.g. docs/screenshots/app-preview.png) -->
+![NxtWeek App Screenshot](docs/screenshots/app-preview.png)
+
 ## Current experience
 
 - Week view with Monday-based weeks, compact meal cards, suggestions, favorites, editing, moving, and deletion.

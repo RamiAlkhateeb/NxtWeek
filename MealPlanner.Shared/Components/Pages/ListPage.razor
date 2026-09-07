@@ -4,8 +4,9 @@
 @inject IMealService MealService
 @inject IAuthService Auth
 @inject NavigationManager Nav
+@inject ILocalizationService Loc
 
-<div class="app app-content-wrapper" dir="rtl">
+<div class="app app-content-wrapper" dir="@Loc.Direction">
     <div class="header">
         <h1>📋 قائمة المشتريات</h1>
         <p>المكونات المطلوبة لتحضير وجبات هذا الأسبوع</p>

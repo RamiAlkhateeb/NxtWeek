@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using MealPlanner.Shared.Models;
 
@@ -8,7 +8,7 @@ public interface IMealCatalogService
 {
     Task<List<MealCatalogItem>> GetAllMealsAsync();
     Task<MealCatalogItem?> GetMealByIdAsync(string id);
-    Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? mealType);
+    Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? mealType, string? language = null);
     Task<List<MealCatalogItem>> SearchMealsAsync(string query);
     Task<MealCatalogItem> CreateMealAsync(MealCatalogItem meal);
     Task UpsertMealAsync(MealCatalogItem meal);

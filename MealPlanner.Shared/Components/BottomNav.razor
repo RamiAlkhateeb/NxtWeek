@@ -1,30 +1,31 @@
-@inject NavigationManager Nav
+﻿@inject NavigationManager Nav
+@inject ILocalizationService Loc
 @implements IDisposable
 
 @if (!IsOnboarding())
 {
-    <div class="bottom-nav-container" dir="rtl">
-        <a href="" class="bottom-nav-item @(IsActive("") ? "active" : "")" title="الأسبوع" aria-label="الأسبوع">
+    <div class="bottom-nav-container" dir="@Loc.Direction">
+        <a href="" class="bottom-nav-item @(IsActive("") ? "active" : "")" title="@Loc["nav_week"]" aria-label="@Loc["nav_week"]">
             <span class="bottom-nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="m3 10.8 9-7.3 9 7.3v9.1a1.6 1.6 0 0 1-1.6 1.6H4.6A1.6 1.6 0 0 1 3 19.9z"/><path d="M9.2 21.5v-6h5.6v6"/></svg>
             </span>
         </a>
-        <a href="meals" class="bottom-nav-item @(IsActive("meals") ? "active" : "")" title="الوجبات" aria-label="الوجبات">
+        <a href="meals" class="bottom-nav-item @(IsActive("meals") ? "active" : "")" title="@Loc["nav_meals"]" aria-label="@Loc["nav_meals"]">
             <span class="bottom-nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M4 3v8.2a3.1 3.1 0 0 0 6.2 0V3M7.1 3v18"/><path d="M14.5 3v18M14.5 3c3.4.3 5.5 2.7 5.5 6.3v3.2h-5.5"/></svg>
             </span>
         </a>
-        <a href="meals?create=true" class="bottom-nav-item bottom-nav-add" title="إضافة وجبة جديدة" aria-label="إضافة وجبة جديدة">
+        <a href="meals?create=true" class="bottom-nav-item bottom-nav-add" title="@Loc["meals_add_custom"]" aria-label="@Loc["meals_add_custom"]">
             <span class="bottom-nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </span>
         </a>
-        <a href="shopping" class="bottom-nav-item @(IsActive("shopping") ? "active" : "")" title="المشتريات" aria-label="المشتريات">
+        <a href="shopping" class="bottom-nav-item @(IsActive("shopping") ? "active" : "")" title="@Loc["nav_shopping"]" aria-label="@Loc["nav_shopping"]">
             <span class="bottom-nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6z"/><path d="M8 8a4 4 0 0 1 8 0"/><path d="M9.5 13.5h.01M14.5 13.5h.01"/></svg>
             </span>
         </a>
-        <a href="friends" class="bottom-nav-item @(IsActive("friends") ? "active" : "")" title="الأصدقاء" aria-label="الأصدقاء">
+        <a href="friends" class="bottom-nav-item @(IsActive("friends") ? "active" : "")" title="@Loc["nav_friends"]" aria-label="@Loc["nav_friends"]">
             <span class="bottom-nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/><path d="M16 5.5a2.8 2.8 0 0 1 0 5.4M17.7 14.3c2 .8 3.2 2.7 3.5 5.2"/></svg>
             </span>
@@ -36,11 +37,17 @@
     protected override void OnInitialized()
     {
         Nav.LocationChanged += OnLocationChanged;
+        Loc.OnLanguageChanged += HandleLanguageChanged;
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         StateHasChanged();
+    }
+
+    private void HandleLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
     }
 
     private bool IsOnboarding()
@@ -69,5 +76,6 @@
     public void Dispose()
     {
         Nav.LocationChanged -= OnLocationChanged;
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
     }
 }

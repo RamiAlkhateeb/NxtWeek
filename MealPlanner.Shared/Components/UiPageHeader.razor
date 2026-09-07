@@ -1,4 +1,6 @@
-<header class="ui-page-header" dir="rtl">
+﻿@inject ILocalizationService Loc
+
+<header class="ui-page-header" dir="@Loc.Direction">
     <div>
         <h1>@if (!string.IsNullOrWhiteSpace(Icon)) { <span aria-hidden="true">@Icon</span> } @Title</h1>
         @if (!string.IsNullOrWhiteSpace(Subtitle)) { <p>@Subtitle</p> }

@@ -7,9 +7,10 @@
 @inject IMealCatalogService CatalogService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ILocalizationService Loc
 
-<div class="app app-content-wrapper friends-page" dir="rtl">
-    <UiPageHeader Icon="👋" Title="الأصدقاء" Subtitle="خطّطوا أسبوعكم معاً" />
+<div class="app app-content-wrapper friends-page" dir="@Loc.Direction">
+    <UiPageHeader Icon="👋" Title="@(Loc.IsArabic ? "الأصدقاء" : "Friends")" Subtitle="@(Loc.IsArabic ? "خطّطوا أسبوعكم معاً" : "Plan your week together")" />
 
     @if (isLoading)
     {

@@ -9,30 +9,31 @@
 @inject IUserService UserService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ILocalizationService Loc
 @implements IAsyncDisposable
 
-<div class="app app-content-wrapper" dir="rtl">
+<div class="app app-content-wrapper" dir="@Loc.Direction">
     @if (!string.IsNullOrWhiteSpace(toastMessage))
     {
         <div class="toast-message" role="status">✅ @toastMessage</div>
     }
     <div class="week-page-header">
-        <button class="week-header-action week-profile-link" title="الملف الشخصي والإعدادات" aria-label="الملف الشخصي والإعدادات" @onclick='() => Nav.NavigateTo("/settings")'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/></svg>@if (showProfileNudge) { <span class="profile-nudge-dot" aria-label="اختر اسم مستخدم"></span> }</button>
-        <button class="week-header-action week-share-link" title="شارك أسبوعك" aria-label="شارك أسبوعك" aria-busy="@isSharing" @onclick="ShareWeek" disabled="@isSharing">
+        <button class="week-header-action week-profile-link" title="@Loc["settings_title"]" aria-label="@Loc["settings_title"]" @onclick='() => Nav.NavigateTo("/settings")'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/></svg>@if (showProfileNudge) { <span class="profile-nudge-dot" aria-label="@Loc["week_nudge_prompt"]"></span> }</button>
+        <button class="week-header-action week-share-link" title="@(Loc.IsArabic ? "شارك أسبوعك" : "Share Week")" aria-label="@(Loc.IsArabic ? "شارك أسبوعك" : "Share Week")" aria-busy="@isSharing" @onclick="ShareWeek" disabled="@isSharing">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg>
         </button>
-        <h1>مكدوس</h1>
+        <h1>@(Loc.IsArabic ? "مكدوس" : "NxtWeek")</h1>
         <p>@WeekRangeLabel</p>
         <div class="week-nav week-nav-wide">
-            <button @onclick="GoPreviousWeek">‹ الأسبوع السابق</button>
-            <button @onclick="GoNextWeek">الأسبوع القادم ›</button>
+            <button @onclick="GoPreviousWeek">‹ @Loc["week_prev"]</button>
+            <button @onclick="GoNextWeek">@Loc["week_next"] ›</button>
         </div>
-        <button class="week-surprise" @onclick="() => showWeekSurpriseConfirm = true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>فاجئني بالأسبوع</button>
+        <button class="week-surprise" @onclick="() => showWeekSurpriseConfirm = true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>@(Loc.IsArabic ? "فاجئني بالأسبوع" : "Surprise My Week")</button>
     </div>
 
     @if (isLoading)
     {
-        <p class="loading-text">جارِ التحميل...</p>
+        <p class="loading-text">@(Loc.IsArabic ? "جارِ التحميل..." : "Loading...")</p>
     }
     else
     {
@@ -45,7 +46,7 @@
                 {
                     <button class="week-meal-card week-empty-card @(isPast ? "week-card-past" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" @onclick="() => SuggestEmpty(meal)">
                         <span class="week-card-date">@DayDateLabel(meal.Date)</span>
-                        <span class="week-empty-copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>فاجئني</span>
+                        <span class="week-empty-copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>@(Loc.IsArabic ? "فاجئني" : "Surprise Me")</span>
                     </button>
                 }
                 else
@@ -55,18 +56,18 @@
                             <span class="week-card-date">@DayDateLabel(meal.Date)</span>
                             @if (meal.IsFavorite)
                             {
-                                <span class="meal-card-badge favorite">⭐ مفضلة</span>
+                                <span class="meal-card-badge favorite">⭐ @(Loc.IsArabic ? "مفضلة" : "Favorite")</span>
                             }
                         </div>
                         <div class="week-card-name"><span aria-hidden="true">@TypeIcon(meal.MealType)</span> @meal.Name</div>
                         <div class="meal-card-actions compact-actions">
-                            <button title="تعديل الوجبة" aria-label="تعديل الوجبة" @onclick="() => OpenActions(meal)" @onclick:stopPropagation="true">
+                            <button title="@(Loc.IsArabic ? "تعديل الوجبة" : "Edit Meal")" aria-label="@(Loc.IsArabic ? "تعديل الوجبة" : "Edit Meal")" @onclick="() => OpenActions(meal)" @onclick:stopPropagation="true">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z"/></svg>
                             </button>
-                            <button title="فاجئني باقتراح" aria-label="فاجئني باقتراح" @onclick="() => SuggestNew(meal)" @onclick:stopPropagation="true">
+                            <button title="@(Loc.IsArabic ? "فاجئني باقتراح" : "Suggest Meal")" aria-label="@(Loc.IsArabic ? "فاجئني باقتراح" : "Suggest Meal")" @onclick="() => SuggestNew(meal)" @onclick:stopPropagation="true">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>
                             </button>
-                            <button class="@(meal.IsFavorite ? "liked" : "")" title="المفضلة" aria-label="المفضلة" @onclick="() => ToggleFavorite(meal)" @onclick:stopPropagation="true">
+                            <button class="@(meal.IsFavorite ? "liked" : "")" title="@(Loc.IsArabic ? "المفضلة" : "Favorite")" aria-label="@(Loc.IsArabic ? "المفضلة" : "Favorite")" @onclick="() => ToggleFavorite(meal)" @onclick:stopPropagation="true">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg>
                             </button>
                         </div>
@@ -79,13 +80,13 @@
 
 <UiBottomSheet IsOpen="@(selectedMeal is not null)"
                Eyebrow="@(selectedMeal is null ? null : DayDateLabel(selectedMeal.Date))"
-               Title="@(selectedMeal is null || string.IsNullOrWhiteSpace(selectedMeal.MealId) ? "اختاري وجبة" : selectedMeal.Name)"
+               Title="@(selectedMeal is null || string.IsNullOrWhiteSpace(selectedMeal.MealId) ? (Loc.IsArabic ? "اختاري وجبة" : "Choose Meal") : selectedMeal.Name)"
                OnDismiss="CloseActions">
     @if (selectedMeal is not null)
     {
             @if (showQuickPicker)
             {
-                <div class="quick-picker">
+                <div class="quick-picker" dir="@Loc.Direction">
                     @foreach (var item in catalogMeals.Take(8))
                     {
                         <button @onclick="() => ChooseMeal(item)"><span>@item.Name</span></button>
@@ -94,28 +95,28 @@
             }
             else if (showMoveDays)
             {
-                <div class="move-days">
+                <div class="move-days" dir="@Loc.Direction">
                     @foreach (var day in weekMeals.Where(x => x.Date != selectedMeal.Date))
                     { <button @onclick="() => MoveTo(day.Date)">@DayDateLabel(day.Date)</button> }
                 </div>
             }
             else
             {
-                <div class="sheet-actions">
-                    <button @onclick="() => OpenMealPicker(selectedMeal.Date)">🍽️ تغيير الوجبة</button>
-                    <button @onclick="SuggestFromSheet">🎲 فاجئني</button>
-                    <button @onclick="() => showMoveDays = true">↔️ نقل ليوم آخر</button>
+                <div class="sheet-actions" dir="@Loc.Direction">
+                    <button @onclick="() => OpenMealPicker(selectedMeal.Date)">🍽️ @(Loc.IsArabic ? "تغيير الوجبة" : "Change Meal")</button>
+                    <button @onclick="SuggestFromSheet">🎲 @(Loc.IsArabic ? "فاجئني" : "Surprise Me")</button>
+                    <button @onclick="() => showMoveDays = true">↔️ @(Loc.IsArabic ? "نقل ليوم آخر" : "Move to another day")</button>
                     @if (!string.IsNullOrWhiteSpace(selectedMeal.MealId))
-                    { <button class="danger" @onclick="DeleteSelected">🗑️ حذف من اليوم</button> }
+                    { <button class="danger" @onclick="DeleteSelected">🗑️ @(Loc.IsArabic ? "حذف من اليوم" : "Remove from day")</button> }
                 </div>
             }
     }
 </UiBottomSheet>
 
-<UiBottomSheet IsOpen="showWeekSurpriseConfirm" Title="فاجئني بالأسبوع" Eyebrow="سنملأ الأيام الفارغة فقط" OnDismiss="() => showWeekSurpriseConfirm = false">
-    <div class="sheet-actions">
-        <p>لن يتم تغيير أي وجبة مخططة مسبقاً.</p>
-        <UiButton Variant="primary" OnClick="SurpriseWeek">تأكيد</UiButton>
+<UiBottomSheet IsOpen="showWeekSurpriseConfirm" Title="@(Loc.IsArabic ? "فاجئني بالأسبوع" : "Surprise My Week")" Eyebrow="@(Loc.IsArabic ? "سنملأ الأيام الفارغة فقط" : "We'll only fill empty days")" OnDismiss="() => showWeekSurpriseConfirm = false">
+    <div class="sheet-actions" dir="@Loc.Direction">
+        <p>@(Loc.IsArabic ? "لن يتم تغيير أي وجبة مخططة مسبقاً." : "No planned meals will be replaced.")</p>
+        <UiButton Variant="primary" OnClick="SurpriseWeek">@(Loc.IsArabic ? "تأكيد" : "Confirm")</UiButton>
     </div>
 </UiBottomSheet>
 
@@ -143,9 +144,12 @@
     private string WeekRangeLabel => $"{DayDateLabel(currentWeekStart)} – {DayDateLabel(currentWeekStart.AddDays(6))}";
     private static readonly string[] ArabicMonths = ["كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"];
     private static readonly string[] ArabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    private static readonly string[] EnglishMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     protected override async Task OnInitializedAsync()
     {
+        Loc.OnLanguageChanged += HandleLanguageChanged;
+        await Loc.InitializeAsync();
         Console.WriteLine("[WeekPage] OnInitializedAsync started.");
         var user = await Auth.GetCurrentUserAsync();
         Console.WriteLine($"[WeekPage] User returned: {(user == null ? "null" : user.Uid)}");
@@ -159,7 +163,7 @@
 
         currentWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         await EnsureSeededAsync();
-        catalogMeals = await CatalogService.GetAllMealsAsync();
+        await LoadCatalogMealsAsync();
         await LoadProfileAsync();
         await LoadWeekAsync(currentWeekStart);
         if (!profileFirstWeekFilled) await AutoPopulateFirstWeeksAsync();
@@ -182,19 +186,28 @@
         }
     }
 
+    private void HandleLanguageChanged() => InvokeAsync(async () =>
+    {
+        await LoadCatalogMealsAsync();
+        StateHasChanged();
+    });
+
+    private async Task LoadCatalogMealsAsync()
+    {
+        var all = await CatalogService.GetAllMealsAsync();
+        catalogMeals = all.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
     private async Task EnsureSeededAsync()
     {
         await MealService.SeedAsync(new List<Meal>());
     }
 
-    // Loads profile state. A brand-new visitor or new user has no username yet and
-    // no saved plan, so we auto-generate a random plan for the current + next week.
     private async Task LoadProfileAsync()
     {
         var profile = await UserService.GetProfileAsync(uid);
         userHasUsername = !string.IsNullOrWhiteSpace(profile?.Username);
         profileFirstWeekFilled = profile?.FirstWeekAutoFilled ?? false;
-        // Show a red nudge on the profile icon until the guest picks a username.
         showProfileNudge = !userHasUsername && uid.StartsWith("guest_", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -207,38 +220,45 @@
         if (profile is null || profile.FirstWeekAutoFilled) return;
         if (await UserService.HasAnyPlanEntryAsync(uid)) return;
 
-        // Fill the current week AND the following week with random meals. Meals are
-        // chosen distinct so the two weeks don't repeat the same dish where the
-        // catalog is large enough.
+        var nextWeekStart = currentWeekStart.AddDays(7);
+        var nextWeekMeals = await MealService.GetWeekAsync(nextWeekStart, nextWeekStart.AddDays(6));
+
+        await PopulateEmptyWeekAsync(weekMeals);
+        await PopulateEmptyWeekAsync(nextWeekMeals);
+        await LoadWeekAsync(currentWeekStart);
+
+        profile.FirstWeekAutoFilled = true;
+        await UserService.CreateProfileAsync(profile);
+        profileFirstWeekFilled = true;
+    }
+
+    private async Task PopulateEmptyWeekAsync(List<Meal> meals)
+    {
+        var emptyDays = meals.Where(m => string.IsNullOrWhiteSpace(m.MealId)).ToList();
+        if (emptyDays.Count == 0) return;
+
+        var suggestions = await SuggestionService.GetSuggestionsAsync(uid, meals, emptyDays.Count);
+        if (suggestions.Count == 0) return;
+
         var catalog = await CatalogService.GetAllMealsAsync();
-        var pool = catalog.Where(m => !m.IsArchived).ToList();
-        if (pool.Count == 0) return;
-
-        var rng = Random.Shared;
-        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var assigned = 0;
-        for (var weekOffset = 0; weekOffset < 2; weekOffset++)
+        for (var i = 0; i < emptyDays.Count && i < suggestions.Count; i++)
         {
-            var start = currentWeekStart.AddDays(weekOffset * 7);
-            for (var day = 0; day < 7; day++)
-            {
-                var options = pool.Where(m => !usedNames.Contains(m.Name)).ToList();
-                if (options.Count == 0) options = pool;
-                var pick = options[rng.Next(options.Count)];
-                usedNames.Add(pick.Name);
-                await UserService.AssignMealToDateAsync(uid, start.AddDays(day), pick.Id);
-                assigned++;
-            }
+            var day = emptyDays[i];
+            var item = catalog.FirstOrDefault(c => c.Name.Equals(suggestions[i], StringComparison.OrdinalIgnoreCase));
+            if (item is null) continue;
+
+            day.MealId = item.Id;
+            day.Name = item.Name;
+            day.PhotoUrl = item.PhotoUrl;
+            day.Ingredients = item.Ingredients;
+            day.SideDishes = item.SideDishes;
+            day.MealType = item.MealType;
+            day.Language = item.Language;
+
+            await UserService.AssignMealToDateAsync(uid, day.Date, item.Id);
         }
 
-        // Only persist the "filled" marker when we actually wrote meals, so an
-        // offline/empty catalog can retry on a later visit instead of locking in.
-        if (assigned > 0)
-        {
-            profile.FirstWeekAutoFilled = true;
-            await UserService.CreateProfileAsync(profile);
-            await LoadWeekAsync(currentWeekStart);
-        }
+        await CacheService.SetCachedWeekAsync(meals);
     }
 
     private async Task LoadWeekAsync(DateOnly weekStart)
@@ -260,6 +280,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        Loc.OnLanguageChanged -= HandleLanguageChanged;
         disposed = true;
         remoteListener?.Dispose();
         try { await JS.InvokeVoidAsync("nxtweek.emailAuth.unsubscribe"); } catch { }
@@ -280,15 +301,13 @@
         }
         catch
         {
-            toastMessage = "تعذرت مشاركة الأسبوع. حاول مرة أخرى.";
+            toastMessage = Loc.IsArabic ? "تعذرت مشاركة الأسبوع. حاول مرة أخرى." : "Could not share week. Please try again.";
             _ = HideToastAsync();
         }
         finally { isSharing = false; }
     }
     private async Task SuggestNew(Meal meal)
     {
-        // Keep the current meal eligible as a last resort, but prefer options
-        // that are not already planned on another day this week.
         var otherWeekMeals = weekMeals.Where(existing => existing.Date != meal.Date).ToList();
         var suggestions = await SuggestionService.GetSuggestionsAsync(uid, otherWeekMeals, count: 1);
         if (suggestions.Count == 0) return;
@@ -301,6 +320,7 @@
         meal.Ingredients = item?.Ingredients ?? new();
         meal.SideDishes = item?.SideDishes ?? new();
         meal.MealType = item?.MealType;
+        meal.Language = item?.Language ?? "ar";
         await MealService.UpsertMealAsync(meal);
         TriggerMealFlip(meal.Date);
         await LoadWeekAsync(currentWeekStart);
@@ -347,7 +367,7 @@
     private async Task ChooseMeal(MealCatalogItem item)
     {
         if (selectedMeal is null) return;
-        selectedMeal.Name = item.Name; selectedMeal.MealId = item.Id; selectedMeal.MealType = item.MealType; selectedMeal.Ingredients = item.Ingredients; selectedMeal.SideDishes = item.SideDishes;
+        selectedMeal.Name = item.Name; selectedMeal.MealId = item.Id; selectedMeal.MealType = item.MealType; selectedMeal.Ingredients = item.Ingredients; selectedMeal.SideDishes = item.SideDishes; selectedMeal.Language = item.Language;
         await MealService.UpsertMealAsync(selectedMeal); animatedDate = selectedMeal.Date; await LoadWeekAsync(currentWeekStart); CloseActions();
     }
     private async Task ToggleFavorite(Meal meal)
@@ -365,11 +385,15 @@
     private async Task MoveTo(DateOnly date)
     {
         if (selectedMeal is null) return;
-        var target = weekMeals.First(m => m.Date == date); target.MealId = selectedMeal.MealId; target.Name = selectedMeal.Name; target.MealType = selectedMeal.MealType; target.Ingredients = selectedMeal.Ingredients; target.SideDishes = selectedMeal.SideDishes; target.IsFavorite = selectedMeal.IsFavorite;
+        var target = weekMeals.First(m => m.Date == date); target.MealId = selectedMeal.MealId; target.Name = selectedMeal.Name; target.MealType = selectedMeal.MealType; target.Ingredients = selectedMeal.Ingredients; target.SideDishes = selectedMeal.SideDishes; target.IsFavorite = selectedMeal.IsFavorite; target.Language = selectedMeal.Language;
         await MealService.UpsertMealAsync(target);
         await UserService.SaveWeeklyPlanEntryAsync(uid, new WeeklyPlanEntry { Date = selectedMeal.Date, MealId = "", IsFavorite = false });
         await LoadWeekAsync(currentWeekStart); CloseActions();
     }
-    private static string DayDateLabel(DateOnly date) => $"{ArabicDays[(int)date.DayOfWeek]} {date.Day} {ArabicMonths[date.Month - 1]}";
+    private string DayDateLabel(DateOnly date) =>
+        Loc.IsArabic
+            ? $"{ArabicDays[(int)date.DayOfWeek]} {date.Day} {ArabicMonths[date.Month - 1]}"
+            : $"{Loc.GetDayName(date.DayOfWeek)}, {EnglishMonths[date.Month - 1]} {date.Day}";
+
     private static string TypeIcon(MealType? type) => type switch { MealType.Meat => "🥩", MealType.Chicken => "🍗", MealType.Fish => "🐟", MealType.Vegetarian => "🥦", MealType.Vegan => "🌱", _ => "🍽️" };
 }
