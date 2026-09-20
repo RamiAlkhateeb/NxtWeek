@@ -28,10 +28,10 @@
     else
     {
         <div class="meal-details-hero">
-            <img class="meal-details-image" src="@MealImages.GetImageUrl(meal)" alt="@meal.Name" />
+            <span class="meal-details-image-tile @MealTypeStyle.TileClass(meal.MealType)"><img class="meal-details-image" src="@MealImages.GetImageUrl(meal)" alt="@meal.Name" /></span>
             <h1 class="meal-title">@meal.Name</h1>
             <div class="badges-row">
-                <span class="badge type-badge">@Loc.GetMealTypeName(meal.MealType)</span>
+                <span class="badge type-badge @MealTypeStyle.BadgeClass(meal.MealType)">@Loc.GetMealTypeName(meal.MealType)</span>
                 @if (isFavorite)
                 {
                     <span class="badge favorite-badge">⭐ @Loc["badge_favorite"]</span>

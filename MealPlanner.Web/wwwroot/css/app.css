@@ -1,7 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
 
 /* ==========================================================================
-   Theme tokens — calm, natural palette (sage / cream), soft shadows
+   Theme tokens — Picnic-influenced: one bold accent used in blocks, flat
+   surfaces, generous rounding, colour-coded meal-type tiles instead of
+   borders. (--space-*, --color-accent and friends are appended further down
+   in the same :root — this used to be two separate blocks from different
+   iterations of the app; kept as one now.)
    ========================================================================== */
 :root {
     --color-primary: #e46f5a;
@@ -17,14 +21,27 @@
     --color-favorite: #B8860B;
     --color-danger: #CD3232;
 
-    --shadow-sm: 0 1px 3px rgba(58, 30, 40, 0.06);
-    --shadow-md: 0 4px 16px rgba(58, 30, 40, 0.07);
-    --shadow-lg: 0 8px 28px rgba(58, 30, 40, 0.09);
+    /* Flatter than before — Picnic relies on colour blocks and whitespace
+       rather than heavy elevation. */
+    --shadow-sm: 0 1px 2px rgba(58, 30, 40, 0.05);
+    --shadow-md: 0 3px 10px rgba(58, 30, 40, 0.06);
+    --shadow-lg: 0 8px 24px rgba(58, 30, 40, 0.08);
 
-    --radius-lg: 24px;
-    --radius-md: 16px;
-    --radius-sm: 12px;
-    --radius-pill: 20px;
+    --radius-sm: 14px;
+    --radius-md: 20px;
+    --radius-lg: 28px;
+    --radius-xl: 32px;
+    --radius-pill: 999px;
+
+    /* Meal-type colour system: a soft tile background behind every meal
+       illustration and a matching badge tint, so dishes read as belonging to
+       a category the way Picnic's product photos sit on tinted blobs. */
+    --type-meat-bg: #FBE7E1;    --type-meat-fg: #B24B33;
+    --type-chicken-bg: #FCEED2; --type-chicken-fg: #A5761E;
+    --type-fish-bg: #E1EEF6;    --type-fish-fg: #33698F;
+    --type-vegetarian-bg: #EAF3DE; --type-vegetarian-fg: #5C7A2E;
+    --type-vegan-bg: #E1F0E4;   --type-vegan-fg: #3C7A52;
+    --type-default-bg: var(--color-primary-light); --type-default-fg: var(--color-primary-hover);
 }
 
 /* ==========================================================================
@@ -956,19 +973,8 @@ button.month-cell:not(:disabled) { cursor: pointer; }
    NxtWeek design system — tokens and shared primitives
    =========================================================================== */
 :root {
-    --color-primary: #e46f5a;
-    --color-primary-light: #fff0eb;
-    --color-primary-hover: #bf503e;
     --color-accent: #6f9c78;
     --color-accent-light: #edf6ed;
-    --color-bg-light: #fffaf5;
-    --color-card-bg: #fff;
-    --color-text-main: #382f2b;
-    --color-text-secondary: #796e68;
-    --color-border: #eee3dc;
-    --color-success: var(--color-accent);
-    --color-favorite: #d66c5b;
-    --color-danger: #c8554c;
     --color-danger-light: #fff0ee;
 
     --space-1: 4px;
@@ -978,12 +984,6 @@ button.month-cell:not(:disabled) { cursor: pointer; }
     --space-6: 24px;
     --space-8: 32px;
     --space-12: 48px;
-    --radius-sm: 12px;
-    --radius-md: 16px;
-    --radius-lg: 20px;
-    --shadow-sm: 0 2px 8px rgba(75, 50, 39, .06);
-    --shadow-md: 0 6px 18px rgba(75, 50, 39, .09);
-    --shadow-lg: 0 12px 32px rgba(75, 50, 39, .12);
 }
 
 html, body { font-size: 16px; line-height: 1.5; }
@@ -1417,3 +1417,173 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* The list icon's bullets are filled discs, not outlines. */
 .icon-action svg circle,
 .compact-actions svg circle { fill: currentColor; stroke: none; }
+
+/* ==========================================================================
+   Picnic-style pass: meal-type colour tiles, flatter cards, pill buttons,
+   a flat bottom nav, and the Week day-strip.
+   ========================================================================== */
+
+/* --- Meal-type colour tiles: a soft, category-tinted mat behind every dish
+   illustration instead of a plain bordered square. The illustration itself
+   keeps its own cream card baked in, so this reads as a coloured frame. --- */
+.week-card-thumb-tile,
+.meal-selection-thumb-tile,
+.meal-details-image-tile,
+.ingredients-sheet-image-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--type-default-bg);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+.type-tile-meat { background: var(--type-meat-bg); }
+.type-tile-chicken { background: var(--type-chicken-bg); }
+.type-tile-fish { background: var(--type-fish-bg); }
+.type-tile-vegetarian { background: var(--type-vegetarian-bg); }
+.type-tile-vegan { background: var(--type-vegan-bg); }
+
+.type-badge-meat { background: var(--type-meat-bg); color: var(--type-meat-fg); }
+.type-badge-chicken { background: var(--type-chicken-bg); color: var(--type-chicken-fg); }
+.type-badge-fish { background: var(--type-fish-bg); color: var(--type-fish-fg); }
+.type-badge-vegetarian { background: var(--type-vegetarian-bg); color: var(--type-vegetarian-fg); }
+.type-badge-vegan { background: var(--type-vegan-bg); color: var(--type-vegan-fg); }
+.type-badge-default { background: var(--type-default-bg); color: var(--type-default-fg); }
+
+.week-card-thumb-tile {
+    grid-row: 1 / span 3;
+    width: 62px;
+    height: 62px;
+    border-radius: 18px;
+}
+.week-card-thumb-tile .week-card-thumb { width: 100%; height: 100%; border: 0; border-radius: 12px; }
+.week-card-past .week-card-thumb-tile { opacity: .6; }
+
+.meal-selection-thumb-tile {
+    grid-row: 1 / span 2;
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-sm);
+}
+.meal-selection-thumb-tile .meal-selection-thumb { width: 100%; height: 100%; border: 0; border-radius: 10px; }
+
+.meal-details-hero .meal-details-image-tile {
+    width: 128px;
+    height: 128px;
+    border-radius: var(--radius-lg);
+    margin: 0 auto 12px;
+    box-shadow: var(--shadow-md);
+}
+.meal-details-hero .meal-details-image { width: 100%; height: 100%; border: 0; border-radius: calc(var(--radius-lg) - 8px); box-shadow: none; background: transparent; }
+
+.ingredients-sheet-image-tile {
+    width: 128px;
+    height: 128px;
+    border-radius: var(--radius-lg);
+    align-self: center;
+}
+.ingredients-sheet-image-tile .ingredients-sheet-image { width: 100%; height: 100%; border: 0; border-radius: calc(var(--radius-lg) - 8px); }
+
+/* --- Flatter cards: colour and whitespace carry separation, not borders. --- */
+.week-meal-card { border: 0; box-shadow: var(--shadow-sm); }
+.week-empty-card { border: 1.5px dashed #f0c9bc; background: var(--color-primary-light); }
+.ui-card, .card-playful { box-shadow: var(--shadow-sm); }
+.friend-request-card, .friend-person-card { border: 0; box-shadow: var(--shadow-sm); }
+.recover-found, .install-step { border: 0; box-shadow: var(--shadow-sm); }
+
+/* --- Pill buttons: capsules, not rounded rectangles. --- */
+.ui-button,
+.primary-btn,
+.btn-playful,
+.secondary-btn,
+.ui-button-danger,
+.danger-btn,
+.favorite-toggle-btn,
+.week-surprise,
+.friend-add-button,
+.month-header button {
+    border-radius: var(--radius-pill);
+}
+
+/* --- Flat bottom nav: a simple filled pill on the active tab, no offset
+   "3D button" shadow. --- */
+.bottom-nav-item.active .bottom-nav-icon {
+    box-shadow: none;
+    transform: none;
+}
+.bottom-nav-item.active {
+    transform: none;
+}
+
+/* --- Week day-strip: a Picnic-style horizontal day picker, replacing the
+   plain prev/next text row. Purely a quick-jump + visual index — week
+   pagination is still the prev/next arrows at each end. --- */
+.day-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.day-strip-arrow {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    cursor: pointer;
+}
+.day-strip-arrow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+/* The chevrons are drawn pointing left/right in absolute terms; direction:rtl
+   reverses which side of the strip each button sits on but not the glyph
+   itself, so mirror it explicitly to keep "back" pointing outward. */
+[dir="rtl"] .day-strip-arrow svg { transform: scaleX(-1); }
+.day-strip-arrow:active { transform: scale(.94); }
+
+.day-strip-scroller {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 2px;
+    scrollbar-width: none;
+}
+.day-strip-scroller::-webkit-scrollbar { display: none; }
+
+.day-strip-pill {
+    flex: 1 1 0;
+    min-width: 38px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 7px 4px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-light);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    min-height: 0;
+}
+.day-strip-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+.day-strip-num { font-size: 15px; font-weight: 800; color: var(--color-text-main); }
+.day-strip-pill.is-today { background: var(--color-primary); color: #fff; }
+.day-strip-pill.is-today .day-strip-num { color: #fff; }
+
+/* --- Head-only mascot mark next to the wordmark. --- */
+.abu-saleh-avatar { display: block; overflow: visible; flex: 0 0 auto; }
+
+/* --- Softer hero block behind the week header. --- */
+.week-page-header {
+    background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-card-bg) 78%);
+    border-bottom: 0;
+}
