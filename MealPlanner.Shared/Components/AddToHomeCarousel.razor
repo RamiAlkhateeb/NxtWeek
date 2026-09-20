@@ -1,12 +1,13 @@
 @namespace MealPlanner.Shared.Components
 @inject ILocalizationService Loc
+@implements IDisposable
 
 @* Reusable "add to home screen" screenshot carousel. Used in the first-launch
    welcome wizard (App.razor) and on the /settings/install help page. *@
 <div class="addhome-carousel" dir="@Loc.Direction">
     @if (ShowProgress)
     {
-        <p class="addhome-progress">@(Loc.IsArabic ? $"الخطوة {Current + 1} من {Slides.Count}" : $"Step {Current + 1} of {Slides.Count}")</p>
+        <p class="addhome-progress">@Loc.T("carousel_step", Current + 1, Slides.Count)</p>
     }
 
     <div class="welcome-carousel">
@@ -24,7 +25,7 @@
     <div class="welcome-wizard-actions">
         @if (Current > 0)
         {
-            <button class="welcome-wizard-back" @onclick="GoBack">@(Loc.IsArabic ? "السابق" : "Back")</button>
+            <button class="welcome-wizard-back" @onclick="GoBack">@Loc["back"]</button>
         }
         else
         {
@@ -32,11 +33,11 @@
         }
         @if (Current < Slides.Count - 1)
         {
-            <button class="welcome-wizard-next" @onclick="GoNext">@(Loc.IsArabic ? "التالي" : "Next")</button>
+            <button class="welcome-wizard-next" @onclick="GoNext">@Loc["next"]</button>
         }
         else
         {
-            <button class="welcome-wizard-start" @onclick="OnFinish">@FinishText</button>
+            <button class="welcome-wizard-start" @onclick="OnFinish">@(string.IsNullOrWhiteSpace(FinishText) ? Loc["carousel_start"] : FinishText)</button>
         }
     </div>
 </div>
@@ -49,20 +50,29 @@
 
     [Parameter] public int Current { get; set; }
     [Parameter] public EventCallback<int> CurrentChanged { get; set; }
-    [Parameter] public string FinishText { get; set; } = "ابدأ الآن 🚀";
+    [Parameter] public string? FinishText { get; set; }
     [Parameter] public bool ShowProgress { get; set; } = true;
     [Parameter] public string ImagePrefix { get; set; } = "images/";
     [Parameter] public EventCallback OnFinish { get; set; }
 
     protected override void OnInitialized()
     {
+        Loc.OnLanguageChanged += RebuildSlides;
+        RebuildSlides();
+    }
+
+    private void RebuildSlides()
+    {
         Slides =
         [
-            new("الخطوة 1", "اضغط على زر المشاركة", $"{ImagePrefix}step1.jpg", "اضغط على زر المشاركة لإضافة مكدوس إلى الشاشة الرئيسية"),
-            new("الخطوة 2", "اختر «إضافة إلى الشاشة الرئيسية»", $"{ImagePrefix}step2.jpg", "اختر إضافة إلى الشاشة الرئيسية"),
-            new("الخطوة 3", "اضغط على «إضافة»", $"{ImagePrefix}step3.jpg", "اضغط على زر الإضافة للتأكيد")
+            new(Loc.T("carousel_badge", 1), Loc["carousel_step1"], $"{ImagePrefix}step1.jpg", Loc["carousel_step1_alt"]),
+            new(Loc.T("carousel_badge", 2), Loc["carousel_step2"], $"{ImagePrefix}step2.jpg", Loc["carousel_step2_alt"]),
+            new(Loc.T("carousel_badge", 3), Loc["carousel_step3"], $"{ImagePrefix}step3.jpg", Loc["carousel_step3_alt"])
         ];
+        InvokeAsync(StateHasChanged);
     }
+
+    public void Dispose() => Loc.OnLanguageChanged -= RebuildSlides;
 
     private async Task GoBack() => await SetCurrent(Current - 1);
     private async Task GoNext() => await SetCurrent(Current + 1);

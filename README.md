@@ -1,20 +1,25 @@
-# NxtWeek
+# Sahtein (صحتين)
 
-NxtWeek is an Arabic-first, RTL weekly meal planner for family home cooking. It is currently a Blazor WebAssembly PWA with a warm, mobile-first interface.
+Sahtein — formerly NxtWeek — is a weekly meal planner for family home cooking,
+available in **Arabic (RTL), English and German**. It is a Blazor WebAssembly PWA
+with a warm, mobile-first interface, fronted by its mascot **Abu Saleh**, a bald,
+moustached home cook.
 
 ## Screenshots
 
 <!-- App Screenshot Placeholder: Add your app screenshot file here (e.g. docs/screenshots/app-preview.png) -->
-![NxtWeek App Screenshot](docs/screenshots/app-preview.png)
+![Sahtein App Screenshot](docs/screenshots/app-preview.png)
 
 ## Current experience
 
 - Week view with Monday-based weeks, compact meal cards, suggestions, favorites, editing, moving, and deletion.
 - Meals page with search, meal-type filters, favorites, context-aware meal selection, and browse-mode day selection.
 - Monthly read-only calendar overlay from the Week page.
-- Meal details and ingredients/side dishes.
+- Meal details and ingredients/side dishes, plus an ingredients button on every meal card in the Week and Meals views that opens a bottom sheet with the dish picture, ingredients and side dishes.
+- A flat SVG illustration for every meal, resolved locally from the meal's tags, name or type — no remote photography, works offline.
 - Guest Mode starts directly without a name, username, cuisine, or email prompt. A first-time visitor gets an auto-generated current week of random meals.
 - Three-tab bottom navigation: Week, Meals, Settings.
+- Three UI languages, switched in Settings; each meal in the catalog belongs to a language, and the library falls back to showing everything if the active language has no meals yet.
 - Reusable UI components for buttons, cards, page headers, inputs, filter chips, empty states, and bottom sheets.
 
 ## Guest mode and storage

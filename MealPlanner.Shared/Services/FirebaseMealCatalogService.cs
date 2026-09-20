@@ -84,10 +84,23 @@ public class FirebaseMealCatalogService : IMealCatalogService
         return string.IsNullOrEmpty(normalized) ? await GetAllMealsAsync() : (await GetAllMealsAsync()).Where(x => NormalizeName(x.Name).Contains(normalized)).ToList();
     }
 
+    /// <summary>
+    /// True only when every language the app ships already has meals in the catalog.
+    /// Checking a fixed pair of languages here would silently skip the seed for any
+    /// language added later.
+    /// </summary>
     public async Task<bool> IsCatalogSeededAsync()
     {
+        var seeded = await GetSeededLanguagesAsync();
+        return LocalizationService.SupportedLanguageCodes.All(seeded.Contains);
+    }
+
+    public async Task<IReadOnlyCollection<string>> GetSeededLanguagesAsync()
+    {
         var all = await GetAllMealsAsync();
-        return all.Any(m => m.Language == "ar") && all.Any(m => m.Language == "en");
+        return all
+            .Select(m => string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task SeedCatalogAsync(List<MealCatalogItem> meals)

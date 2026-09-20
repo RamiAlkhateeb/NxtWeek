@@ -73,6 +73,7 @@ public class FirebaseMealService : IMealService
                     meal.Ingredients = catItem.Ingredients;
                     meal.SideDishes = catItem.SideDishes;
                     meal.MealType = catItem.MealType;
+                    meal.Tags = catItem.Tags;
                     meal.Language = string.IsNullOrWhiteSpace(catItem.Language) ? "ar" : catItem.Language;
                 }
             }
@@ -243,12 +244,41 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "en_m15", Name = "Shakshuka with Warm Bread", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Eggs", "Tomatoes", "Bell peppers", "Onion", "Cumin" }, SideDishes = new() { "Pita bread" } },
     new() { Id = "en_m16", Name = "Baked Chicken Thighs with Potatoes", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken thighs", "Potatoes", "Rosemary", "Garlic", "Olive oil" }, SideDishes = new() { "Cucumber yogurt salad" } },
     new() { Id = "en_m17", Name = "Chickpea and Spinach Stew", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Chickpeas", "Spinach", "Tomato puree", "Garlic", "Coriander" }, SideDishes = new() { "Rice" } },
-    new() { Id = "en_m18", Name = "Shrimp Scampi with Pasta", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Shrimp", "Linguine", "Garlic", "Butter", "Lemon juice", "Parsley" }, SideDishes = new() { "Crusty bread" } }
+    new() { Id = "en_m18", Name = "Shrimp Scampi with Pasta", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Shrimp", "Linguine", "Garlic", "Butter", "Lemon juice", "Parsley" }, SideDishes = new() { "Crusty bread" } },
+
+    // German meals. Tags drive the dish illustration picked by IMealImageService,
+    // so keep at least one archetype tag on every entry.
+    new() { Id = "de_m1", Name = "Käsespätzle", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "pasta" }, Ingredients = new() { "Spätzle", "Bergkäse", "Zwiebeln", "Butter", "Schnittlauch" }, SideDishes = new() { "Grüner Salat" } },
+    new() { Id = "de_m2", Name = "Rinderrouladen mit Rotkohl", MealType = MealType.Meat, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Rinderrouladen", "Senf", "Speck", "Gewürzgurken", "Zwiebeln" }, SideDishes = new() { "Rotkohl", "Kartoffelklöße" } },
+    new() { Id = "de_m3", Name = "Wiener Schnitzel mit Kartoffelsalat", MealType = MealType.Meat, Language = "de", Tags = new() { "potato" }, Ingredients = new() { "Kalbsschnitzel", "Semmelbrösel", "Ei", "Mehl", "Butterschmalz" }, SideDishes = new() { "Kartoffelsalat", "Zitrone" } },
+    new() { Id = "de_m4", Name = "Gulasch mit Nudeln", MealType = MealType.Meat, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Rindfleisch", "Zwiebeln", "Paprikapulver", "Tomatenmark", "Rotwein" }, SideDishes = new() { "Bandnudeln", "Gurkensalat" } },
+    new() { Id = "de_m5", Name = "Frikadellen mit Kartoffelpüree", MealType = MealType.Meat, Language = "de", Tags = new() { "potato" }, Ingredients = new() { "Hackfleisch", "Brötchen", "Ei", "Zwiebeln", "Petersilie" }, SideDishes = new() { "Kartoffelpüree", "Erbsen" } },
+    new() { Id = "de_m6", Name = "Königsberger Klopse", MealType = MealType.Meat, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Hackfleisch", "Kapern", "Sahne", "Zitrone", "Lorbeer" }, SideDishes = new() { "Salzkartoffeln", "Rote Bete" } },
+    new() { Id = "de_m7", Name = "Hähnchenschenkel mit Ofenkartoffeln", MealType = MealType.Chicken, Language = "de", Tags = new() { "potato" }, Ingredients = new() { "Hähnchenschenkel", "Kartoffeln", "Rosmarin", "Knoblauch", "Olivenöl" }, SideDishes = new() { "Kräuterquark", "Grüner Salat" } },
+    new() { Id = "de_m8", Name = "Zürcher Geschnetzeltes", MealType = MealType.Chicken, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Hähnchenbrust", "Champignons", "Sahne", "Weißwein", "Zwiebeln" }, SideDishes = new() { "Rösti", "Reis" } },
+    new() { Id = "de_m9", Name = "Hähnchenfrikassee mit Reis", MealType = MealType.Chicken, Language = "de", Tags = new() { "rice" }, Ingredients = new() { "Hähnchenfleisch", "Erbsen", "Spargel", "Sahne", "Zitrone" }, SideDishes = new() { "Reis" } },
+    new() { Id = "de_m10", Name = "Currywurst mit Pommes", MealType = MealType.Meat, Language = "de", Tags = new() { "potato" }, Ingredients = new() { "Bratwurst", "Tomatenketchup", "Currypulver", "Paprikapulver" }, SideDishes = new() { "Pommes frites", "Mayonnaise" } },
+    new() { Id = "de_m11", Name = "Lachs mit Dill und Kartoffeln", MealType = MealType.Fish, Language = "de", Tags = new() { "fish" }, Ingredients = new() { "Lachsfilet", "Dill", "Zitrone", "Butter", "Kartoffeln" }, SideDishes = new() { "Gurkensalat" } },
+    new() { Id = "de_m12", Name = "Fischstäbchen mit Kartoffelsalat", MealType = MealType.Fish, Language = "de", Tags = new() { "fish", "potato" }, Ingredients = new() { "Fischstäbchen", "Kartoffeln", "Essig", "Öl", "Zwiebeln" }, SideDishes = new() { "Remoulade" } },
+    new() { Id = "de_m13", Name = "Matjes nach Hausfrauenart", MealType = MealType.Fish, Language = "de", Tags = new() { "fish" }, Ingredients = new() { "Matjesfilet", "Saure Sahne", "Äpfel", "Zwiebeln", "Gewürzgurken" }, SideDishes = new() { "Pellkartoffeln" } },
+    new() { Id = "de_m14", Name = "Forelle Müllerin Art", MealType = MealType.Fish, Language = "de", Tags = new() { "fish" }, Ingredients = new() { "Forelle", "Mehl", "Butter", "Zitrone", "Petersilie" }, SideDishes = new() { "Salzkartoffeln", "Blattsalat" } },
+    new() { Id = "de_m15", Name = "Kartoffelpuffer mit Apfelmus", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "potato" }, Ingredients = new() { "Kartoffeln", "Zwiebeln", "Ei", "Mehl", "Muskat" }, SideDishes = new() { "Apfelmus" } },
+    new() { Id = "de_m16", Name = "Gemüseauflauf mit Käse", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Zucchini", "Brokkoli", "Möhren", "Sahne", "Gouda" }, SideDishes = new() { "Baguette" } },
+    new() { Id = "de_m17", Name = "Flammkuchen", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "pizza" }, Ingredients = new() { "Flammkuchenteig", "Schmand", "Zwiebeln", "Frühlingszwiebeln" }, SideDishes = new() { "Feldsalat" } },
+    new() { Id = "de_m18", Name = "Maultaschen in der Brühe", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Maultaschen", "Gemüsebrühe", "Zwiebeln", "Schnittlauch" }, SideDishes = new() { "Kartoffelsalat" } },
+    new() { Id = "de_m19", Name = "Spinat mit Spiegelei und Kartoffeln", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "eggs" }, Ingredients = new() { "Blattspinat", "Eier", "Kartoffeln", "Knoblauch", "Muskat" }, SideDishes = new() { "Salzkartoffeln" } },
+    new() { Id = "de_m20", Name = "Pfannkuchen mit Apfelmus", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "eggs" }, Ingredients = new() { "Mehl", "Milch", "Eier", "Zucker", "Butter" }, SideDishes = new() { "Apfelmus", "Zimtzucker" } },
+    new() { Id = "de_m21", Name = "Linsensuppe", MealType = MealType.Vegan, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Tellerlinsen", "Möhren", "Sellerie", "Lauch", "Lorbeer" }, SideDishes = new() { "Bauernbrot" } },
+    new() { Id = "de_m22", Name = "Erbsensuppe", MealType = MealType.Vegan, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Trockenerbsen", "Möhren", "Kartoffeln", "Majoran", "Zwiebeln" }, SideDishes = new() { "Roggenbrot" } },
+    new() { Id = "de_m23", Name = "Grünkohleintopf", MealType = MealType.Vegan, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Grünkohl", "Kartoffeln", "Zwiebeln", "Senf", "Gemüsebrühe" }, SideDishes = new() { "Senf", "Brot" } },
+    new() { Id = "de_m24", Name = "Kürbissuppe mit Ingwer", MealType = MealType.Vegan, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Hokkaidokürbis", "Ingwer", "Kokosmilch", "Zwiebeln", "Gemüsebrühe" }, SideDishes = new() { "Kürbiskerne", "Brot" } },
+    new() { Id = "de_m25", Name = "Gemüsepfanne mit Reis", MealType = MealType.Vegan, Language = "de", Tags = new() { "rice" }, Ingredients = new() { "Paprika", "Zucchini", "Möhren", "Sojasoße", "Reis" }, SideDishes = new() { "Sesam" } },
+    new() { Id = "de_m26", Name = "Brotzeit mit Obatzda", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "bread" }, Ingredients = new() { "Camembert", "Butter", "Zwiebeln", "Paprikapulver", "Brezn" }, SideDishes = new() { "Radieschen", "Gewürzgurken" } },
+    new() { Id = "de_m27", Name = "Bunter Sommersalat mit Feta", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "salad" }, Ingredients = new() { "Blattsalat", "Tomaten", "Gurke", "Feta", "Olivenöl" }, SideDishes = new() { "Baguette" } }
 };
 
         foreach (var catalogMeal in catalogMeals)
         {
-            catalogMeal.PhotoUrl = string.Empty;
             if (string.IsNullOrWhiteSpace(catalogMeal.Language))
             {
                 catalogMeal.Language = "ar";

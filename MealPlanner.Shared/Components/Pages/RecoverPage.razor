@@ -7,17 +7,17 @@
 @inject ILocalizationService Loc
 
 <div class="app app-content-wrapper recover-page" dir="@Loc.Direction">
-    <UiPageHeader Icon="🔁" Title="@Loc["settings_recover_title"]" Subtitle="@(Loc.IsArabic ? "أعد فتح خطتك باسم المستخدم بعد مسح بيانات المتصفح أو على جهاز جديد" : "Restore your plan with your username after clearing browser data or on a new device")" />
+    <UiPageHeader Icon="🔁" Title="@Loc["settings_recover_title"]" Subtitle="@Loc["recover_subtitle"]" />
 
     <section class="recover-intro">
-        <p>@(Loc.IsArabic ? "إذا اخترت اسم مستخدم سابقاً ثم حُذفت بيانات المتصفح (أو أضفت التطبيق من جديد)، يمكنك استعادة كل خططك ووجباتك بكتابة اسم المستخدم نفسه الذي اخترته سابقاً." : "If you previously set a username and browser data was cleared, you can recover all your plans and meals by typing the same username.")</p>
+        <p>@Loc["recover_intro"]</p>
     </section>
 
     <section class="recover-form-section">
-        <label for="recover-username">@(Loc.IsArabic ? "اسم المستخدم السابق" : "Previous Username")</label>
+        <label for="recover-username">@Loc["recover_prev_username"]</label>
         <div class="friend-add-form">
             <input id="recover-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" placeholder="@Loc["settings_username_placeholder"]" autocomplete="off" />
-            <button class="friend-add-button" @onclick="Lookup" disabled="@(isBusy || string.IsNullOrWhiteSpace(usernameInput))" aria-label="Search">🔍</button>
+            <button class="friend-add-button" @onclick="Lookup" disabled="@(isBusy || string.IsNullOrWhiteSpace(usernameInput))" aria-label="@Loc["search"]">🔍</button>
         </div>
         @if (!string.IsNullOrWhiteSpace(feedback))
         {
@@ -35,15 +35,15 @@
             </div>
         </section>
 
-        <p class="recover-warning">⚠️ @(Loc.IsArabic ? $"هذا الجهاز سيتحول الآن إلى حساب «{foundProfile.Username}». لا يلزم إعادة تسمية أي شيء، وستُعرض كل خططك المخزّنة في السحابة." : $"This device will switch to user '{foundProfile.Username}'. All your cloud-saved plans will be loaded.")</p>
+        <p class="recover-warning">⚠️ @Loc.T("recover_warning", foundProfile.Username)</p>
 
         <div class="recover-actions">
-            <UiButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? (Loc.IsArabic ? "جارٍ الاسترجاع..." : "Recovering...") : (Loc.IsArabic ? "استرجاع خطتي الآن" : "Recover My Plan Now"))</UiButton>
+            <UiButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? Loc["recover_busy"] : Loc["recover_now"])</UiButton>
             <UiButton Variant="ghost" OnClick="ResetFound">@Loc["cancel"]</UiButton>
         </div>
     }
 
-    <button class="recover-back-button" @onclick="GoBack">@(Loc.IsArabic ? "➔ العودة إلى الإعدادات" : "← Back to Settings")</button>
+    <button class="recover-back-button" @onclick="GoBack">@Loc["recover_back"]</button>
 </div>
 
 @code {
@@ -71,7 +71,7 @@
 
         if (string.Equals(uid, username, StringComparison.OrdinalIgnoreCase))
         {
-            feedback = Loc.IsArabic ? "أنت تستخدم اسم المستخدم هذا بالفعل على هذا الجهاز." : "You are already using this username on this device.";
+            feedback = Loc["recover_already_using"];
             return;
         }
 
@@ -82,7 +82,7 @@
             if (profile is null)
             {
                 isError = true;
-                feedback = Loc.IsArabic ? "لم نعثر على حساب بهذا الاسم. تأكد أنك كتبت اسم المستخدم الذي اخترته سابقاً، مع العلم أن البيانات المخزّنة كضيف (بدون اسم مستخدم) لا يمكن استرجاعها." : "No account found with this username. Ensure you entered your previously registered username.";
+                feedback = Loc["recover_not_found"];
                 return;
             }
             foundProfile = profile;

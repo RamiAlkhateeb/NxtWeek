@@ -7,6 +7,7 @@
 @inject IAuthService Auth
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
+@inject IMealImageService MealImages
 
 <div class="app meal-details-container" dir="@Loc.Direction">
     <div class="back-nav">
@@ -15,25 +16,25 @@
 
     @if (isLoading)
     {
-        <p style="padding: 24px; text-align: center; color: #777">@(Loc.IsArabic ? "جارِ التحميل..." : "Loading...")</p>
+        <p style="padding: 24px; text-align: center; color: #777">@Loc["loading"]</p>
     }
     else if (meal is null)
     {
         <div style="padding: 24px; text-align: center;">
-            <p style="color: #777; margin-bottom: 16px;">@(Loc.IsArabic ? "لم يتم العثور على تفاصيل الوجبة." : "Meal details not found.")</p>
-            <button class="primary-btn" @onclick="GoBack">@(Loc.IsArabic ? "العودة للرئيسية" : "Back to Home")</button>
+            <p style="color: #777; margin-bottom: 16px;">@Loc["meal_not_found"]</p>
+            <button class="primary-btn" @onclick="GoBack">@Loc["meal_back_home"]</button>
         </div>
     }
     else
     {
         <div class="meal-details-hero">
-            <div class="meal-type-icon">🍳</div>
+            <img class="meal-details-image" src="@MealImages.GetImageUrl(meal)" alt="@meal.Name" />
             <h1 class="meal-title">@meal.Name</h1>
             <div class="badges-row">
                 <span class="badge type-badge">@Loc.GetMealTypeName(meal.MealType)</span>
                 @if (isFavorite)
                 {
-                    <span class="badge favorite-badge">⭐ @(Loc.IsArabic ? "مفضلة" : "Favorite")</span>
+                    <span class="badge favorite-badge">⭐ @Loc["badge_favorite"]</span>
                 }
             </div>
         </div>
@@ -43,7 +44,7 @@
                 <h2>🛒 @Loc["meal_ingredients"]</h2>
                 @if (meal.Ingredients == null || meal.Ingredients.Count == 0)
                 {
-                    <p class="empty-text">@(Loc.IsArabic ? "لم يتم تحديد مكونات بعد لهذه الوجبة." : "No ingredients specified yet.")</p>
+                    <p class="empty-text">@Loc["meal_no_ingredients"]</p>
                 }
                 else
                 {
@@ -63,7 +64,7 @@
                 <h2>🥗 @Loc["meal_side_dishes"]</h2>
                 @if (meal.SideDishes == null || meal.SideDishes.Count == 0)
                 {
-                    <p class="empty-text">@(Loc.IsArabic ? "لم يتم اختيار أطباق جانبية بعد." : "No side dishes specified yet.")</p>
+                    <p class="empty-text">@Loc["meal_no_side_dishes"]</p>
                 }
                 else
                 {
@@ -78,7 +79,7 @@
 
             <div class="action-buttons">
                 <button class="favorite-toggle-btn @(isFavorite ? "active" : "")" @onclick="ToggleFavorite">
-                    @(isFavorite ? (Loc.IsArabic ? "⭐ إزالة من المفضلة" : "⭐ Remove from Favorites") : (Loc.IsArabic ? "☆ إضافة للمفضلة" : "☆ Add to Favorites"))
+                    @(isFavorite ? Loc["meal_remove_favorite"] : Loc["meal_add_favorite"])
                 </button>
             </div>
         </div>

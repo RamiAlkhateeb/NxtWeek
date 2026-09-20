@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sahtein-web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "MealPlanner.Web",
+        "--urls",
+        "http://localhost:5186"
+      ],
+      "port": 5186
+    }
+  ]
+}

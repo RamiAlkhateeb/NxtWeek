@@ -1,0 +1,60 @@
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject ILocalizationService Loc
+
+@* Shared "what's in this dish" sheet, opened from the meal cards on both the
+   Week and the Meals page so the two stay in sync. *@
+<UiBottomSheet IsOpen="IsOpen" Title="@MealName" Eyebrow="@Loc["meal_ingredients"]" OnDismiss="OnDismiss">
+    <div class="ingredients-sheet" dir="@Loc.Direction">
+        @if (!string.IsNullOrWhiteSpace(ImageUrl))
+        {
+            <img class="ingredients-sheet-image" src="@ImageUrl" alt="@MealName" loading="lazy" />
+        }
+
+        <section class="details-section">
+            <h2>🛒 @Loc["meal_ingredients"]</h2>
+            @if (Ingredients is null || Ingredients.Count == 0)
+            {
+                <p class="empty-text">@Loc["meal_no_ingredients"]</p>
+            }
+            else
+            {
+                <ul class="ingredients-list">
+                    @foreach (var ingredient in Ingredients)
+                    {
+                        <li><span class="bullet">🔹</span><span class="text">@ingredient</span></li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="details-section">
+            <h2>🥗 @Loc["meal_side_dishes"]</h2>
+            @if (SideDishes is null || SideDishes.Count == 0)
+            {
+                <p class="empty-text">@Loc["meal_no_side_dishes"]</p>
+            }
+            else
+            {
+                <div class="side-dishes-chips">
+                    @foreach (var side in SideDishes)
+                    {
+                        <span class="side-dish-chip">@side</span>
+                    }
+                </div>
+            }
+        </section>
+
+        @ChildContent
+    </div>
+</UiBottomSheet>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string MealName { get; set; } = "";
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public List<string>? Ingredients { get; set; }
+    [Parameter] public List<string>? SideDishes { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

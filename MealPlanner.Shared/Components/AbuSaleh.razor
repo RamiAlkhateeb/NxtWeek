@@ -1,0 +1,106 @@
+@inject ILocalizationService Loc
+
+@* Abu Saleh — the app's mascot: a bald, moustached home cook in an apron.
+   One component, several poses, so the character stays consistent everywhere.
+   Apron and accent shapes use the theme custom properties, so a repaint of the
+   palette carries the mascot along with it. *@
+<svg class="abu-saleh abu-saleh-@Pose @CssClass" viewBox="0 0 200 200" width="@Size" height="@Size"
+     role="@(string.IsNullOrWhiteSpace(Label) ? "presentation" : "img")"
+     aria-hidden="@(string.IsNullOrWhiteSpace(Label) ? "true" : null)"
+     aria-label="@Label"
+     xmlns="http://www.w3.org/2000/svg">
+
+    @* ---- body / apron ---- *@
+    <path d="M62 200v-34c0-21 17-34 38-34s38 13 38 34v34Z" fill="var(--color-primary)" />
+    <path d="M86 132h28v10a14 14 0 0 1-28 0Z" fill="#F0C9A4" />
+    <path d="M84 156h32v30H84Z" fill="#FFFCF2" opacity=".85" />
+    <path d="M86 156c-4-8-10-12-10-12M114 156c4-8 10-12 10-12"
+          fill="none" stroke="#FFFCF2" stroke-width="4" stroke-linecap="round" opacity=".85" />
+
+    @* ---- arms (pose specific) ---- *@
+    @if (Pose == "wave")
+    {
+        <path d="M138 168c14-6 22-18 20-32" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="157" cy="130" r="12" fill="#F0C9A4" />
+        <path d="M62 168c-10-4-16-12-16-22" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="46" cy="142" r="11" fill="#F0C9A4" />
+    }
+    else if (Pose == "cheer")
+    {
+        <path d="M138 166c16-10 22-26 18-42" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="155" cy="119" r="12" fill="#F0C9A4" />
+        <path d="M62 166c-16-10-22-26-18-42" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="45" cy="119" r="12" fill="#F0C9A4" />
+        <g fill="var(--color-warning)">
+            <path d="m24 60 4 10 10 4-10 4-4 10-4-10-10-4 10-4Z" />
+            <path d="m176 52 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" />
+        </g>
+    }
+    else if (Pose == "shrug")
+    {
+        <path d="M140 170c14 2 22-4 24-16" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="166" cy="148" r="11" fill="#F0C9A4" />
+        <path d="M60 170c-14 2-22-4-24-16" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="34" cy="148" r="11" fill="#F0C9A4" />
+    }
+    else if (Pose == "basket")
+    {
+        <path d="M138 168c12-4 18-12 18-22" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <path d="M62 168c-10-4-16-12-16-22" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="46" cy="142" r="11" fill="#F0C9A4" />
+        <circle cx="157" cy="142" r="11" fill="#F0C9A4" />
+        <path d="M128 148h56l-6 36a6 6 0 0 1-6 5h-32a6 6 0 0 1-6-5Z" fill="var(--color-success)" />
+        <path d="M142 148a14 14 0 0 1 28 0" fill="none" stroke="var(--color-success)" stroke-width="6" />
+    }
+    else @* cook *@
+    {
+        <path d="M138 168c14-4 20-14 18-26" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <path d="M62 168c-12-4-18-14-16-26" fill="none" stroke="var(--color-primary)" stroke-width="16" stroke-linecap="round" />
+        <circle cx="46" cy="138" r="11" fill="#F0C9A4" />
+        <circle cx="157" cy="138" r="11" fill="#F0C9A4" />
+        <ellipse cx="100" cy="150" rx="40" ry="10" fill="none" stroke="var(--color-border)" stroke-width="6" />
+        <g fill="none" stroke="var(--color-border)" stroke-width="5" stroke-linecap="round" opacity=".8">
+            <path d="M86 128c-6-7 6-12 0-20" /><path d="M114 128c-6-7 6-12 0-20" />
+        </g>
+    }
+
+    @* ---- head ---- *@
+    <circle cx="61" cy="74" r="9" fill="#E5B189" />
+    <circle cx="139" cy="74" r="9" fill="#E5B189" />
+    <circle cx="100" cy="70" r="38" fill="#F0C9A4" />
+    <path d="M78 46c8-9 36-11 46 2-14-6-32-6-46-2Z" fill="#FFFFFF" opacity=".45" />
+
+    @* brows, eyes, nose *@
+    <g stroke="#4A3B36" stroke-width="5" stroke-linecap="round" fill="none">
+        <path d="M80 58c4-4 10-4 14-1" />
+        <path d="M120 58c-4-4-10-4-14-1" />
+    </g>
+    <circle cx="87" cy="70" r="5" fill="#3A2A38" />
+    <circle cx="113" cy="70" r="5" fill="#3A2A38" />
+    <path d="M100 74v8" stroke="#D9A97F" stroke-width="5" stroke-linecap="round" fill="none" />
+
+    @* the moustache *@
+    <path d="M100 90c-6-8-18-10-24-4-5 5-2 12 6 13 8 1 15-3 18-9 3 6 10 10 18 9 8-1 11-8 6-13-6-6-18-4-24 4Z"
+          fill="#4A3B36" />
+
+    @if (Pose == "shrug")
+    {
+        <path d="M90 104c6 3 14 3 20 0" fill="none" stroke="#B9836A" stroke-width="4" stroke-linecap="round" />
+    }
+    else
+    {
+        <path d="M88 102c7 7 17 7 24 0" fill="none" stroke="#B9836A" stroke-width="4" stroke-linecap="round" />
+    }
+</svg>
+
+@code {
+    /// <summary>wave | cook | shrug | cheer | basket</summary>
+    [Parameter] public string Pose { get; set; } = "wave";
+    [Parameter] public int Size { get; set; } = 96;
+    [Parameter] public string CssClass { get; set; } = "";
+
+    /// <summary>Accessible name. Left empty the mascot is decorative and hidden
+    /// from screen readers, which is what we want next to a heading that already
+    /// says the same thing.</summary>
+    [Parameter] public string? Label { get; set; }
+}

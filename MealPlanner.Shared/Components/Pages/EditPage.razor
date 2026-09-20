@@ -127,7 +127,7 @@
                     <div class="form-group">
                         <label>🥗 الأطباق الجانبية المقترحة:</label>
                         <div class="side-dishes-selection">
-                            @foreach (var option in SideDishOptions.Options)
+                            @foreach (var option in SideDishOptions.For(Loc.CurrentLanguage))
                             {
                                 var isSelected = selectedSideDishes.Contains(option);
                                 <div class="side-dish-toggle-chip @(isSelected ? "active" : "")" @onclick="() => ToggleSideDish(option)">

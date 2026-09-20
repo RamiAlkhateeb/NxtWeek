@@ -14,8 +14,12 @@
       <h2>@Loc["settings_lang_title"]</h2>
       <p>@Loc["settings_lang_desc"]</p>
       <div class="lang-switch">
-        <button type="button" class="@(Loc.IsArabic ? "active" : "")" @onclick="@(() => ChangeLanguage("ar"))">العربية</button>
-        <button type="button" class="@(Loc.IsEnglish ? "active" : "")" @onclick="@(() => ChangeLanguage("en"))">English</button>
+        @foreach (var lang in Loc.AvailableLanguages)
+        {
+          <button type="button" class="@(Loc.CurrentLanguage == lang.Code ? "active" : "")" lang="@lang.Code" @onclick="@(() => ChangeLanguage(lang.Code))">
+            <span aria-hidden="true">@lang.Flag</span> @lang.NativeName
+          </button>
+        }
       </div>
     </UiCard>
 

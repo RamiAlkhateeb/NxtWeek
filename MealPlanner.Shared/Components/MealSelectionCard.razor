@@ -1,8 +1,10 @@
 ﻿@using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject ILocalizationService Loc
+@inject IMealImageService MealImages
 
 <article class="meal-selection-card ui-card" dir="@Loc.Direction" @onclick="HandleCardClick">
+    <img class="meal-selection-thumb" src="@MealImages.GetImageUrl(Meal)" alt="" aria-hidden="true" loading="lazy" />
     <div class="meal-selection-main" role="button" tabindex="0" aria-label="@Meal.Name">
         <h2>@Meal.Name</h2>
         <div class="badges-row">
@@ -10,14 +12,15 @@
         </div>
     </div>
     <div class="meal-selection-actions">
+        <button class="icon-action" title="@Loc["meal_view_ingredients"]" aria-label="@Loc["meal_view_ingredients"]" @onclick="() => OnViewIngredients.InvokeAsync(Meal)" @onclick:stopPropagation="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="7" r="1.5"/><circle cx="5.5" cy="12" r="1.5"/><circle cx="5.5" cy="17" r="1.5"/><path d="M10 7h9M10 12h9M10 17h6"/></svg></button>
         <button class="icon-action" title="@Loc["meal_favorite"]" aria-label="@Loc["meal_favorite"]" @onclick="() => OnFavorite.InvokeAsync(Meal)" @onclick:stopPropagation="true">@(IsFavorite ? "❤️" : "♡")</button>
         @if (IsContextMode)
         {
-            <span @onclick:stopPropagation="true"><UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@(Loc.IsArabic ? "✓ اختر هذه الوجبة" : "✓ Select This Meal")</UiButton></span>
+            <span @onclick:stopPropagation="true"><UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@Loc["meal_select_this"]</UiButton></span>
         }
         else
         {
-            <span @onclick:stopPropagation="true"><UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@(Loc.IsArabic ? "استخدام هذه الوجبة" : "Use This Meal")</UiButton></span>
+            <span @onclick:stopPropagation="true"><UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@Loc["meal_use_this"]</UiButton></span>
         }
     </div>
 </article>
@@ -29,5 +32,6 @@
     [Parameter] public EventCallback<MealCatalogItem> OnSelect { get; set; }
     [Parameter] public EventCallback<MealCatalogItem> OnFavorite { get; set; }
     [Parameter] public EventCallback<MealCatalogItem> OnView { get; set; }
+    [Parameter] public EventCallback<MealCatalogItem> OnViewIngredients { get; set; }
     private Task HandleCardClick() => IsContextMode ? Task.CompletedTask : OnView.InvokeAsync(Meal);
 }
