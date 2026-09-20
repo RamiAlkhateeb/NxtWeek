@@ -8,7 +8,7 @@
     <div class="ingredients-sheet" dir="@Loc.Direction">
         @if (!string.IsNullOrWhiteSpace(ImageUrl))
         {
-            <img class="ingredients-sheet-image" src="@ImageUrl" alt="@MealName" loading="lazy" />
+            <span class="ingredients-sheet-image-tile @MealTypeStyle.TileClass(MealType)"><img class="ingredients-sheet-image" src="@ImageUrl" alt="@MealName" loading="lazy" /></span>
         }
 
         <section class="details-section">
@@ -53,6 +53,7 @@
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public string MealName { get; set; } = "";
     [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public MealType? MealType { get; set; }
     [Parameter] public List<string>? Ingredients { get; set; }
     [Parameter] public List<string>? SideDishes { get; set; }
     [Parameter] public EventCallback OnDismiss { get; set; }

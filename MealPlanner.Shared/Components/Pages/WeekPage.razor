@@ -24,15 +24,29 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg>
         </button>
         <div class="week-brand">
-            <AbuSaleh Pose="wave" Size="56" CssClass="week-brand-mascot" />
+            <AbuSalehAvatar Size="44" CssClass="week-brand-mascot" />
             <div>
                 <h1>@Loc["app_title"]</h1>
                 <p>@WeekRangeLabel</p>
             </div>
         </div>
-        <div class="week-nav week-nav-wide">
-            <button @onclick="GoPreviousWeek">‹ @Loc["week_prev"]</button>
-            <button @onclick="GoNextWeek">@Loc["week_next"] ›</button>
+        <div class="day-strip" dir="@Loc.Direction">
+            <button class="day-strip-arrow" aria-label="@Loc["week_prev"]" title="@Loc["week_prev"]" @onclick="GoPreviousWeek">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div class="day-strip-scroller">
+                @foreach (var meal in weekMeals)
+                {
+                    var isToday = meal.Date == DateOnly.FromDateTime(DateTime.Today);
+                    <button class="day-strip-pill @(isToday ? "is-today" : "")" @onclick="() => JumpToDay(meal.Date)">
+                        <span class="day-strip-name">@Loc.GetShortDayName(meal.Date.DayOfWeek)</span>
+                        <span class="day-strip-num">@meal.Date.Day</span>
+                    </button>
+                }
+            </div>
+            <button class="day-strip-arrow" aria-label="@Loc["week_next"]" title="@Loc["week_next"]" @onclick="GoNextWeek">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
         </div>
         <button class="week-surprise" @onclick="() => showWeekSurpriseConfirm = true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>@Loc["week_surprise_week"]</button>
     </div>
@@ -61,7 +75,7 @@
                 else
                 {
                     <article @key="MealRenderKey(meal)" id="@($"day-{meal.Date:yyyy-MM-dd}")" class="week-meal-card has-illustration @(isPast ? "week-card-past" : "") @(animatedDate == meal.Date ? "meal-changed" : "") @(navigatingDate == meal.Date ? "day-selected" : "")" @onclick="() => OpenActions(meal)">
-                        <img class="week-card-thumb" src="@MealImages.GetImageUrl(meal)" alt="" aria-hidden="true" loading="lazy" />
+                        <span class="week-card-thumb-tile @MealTypeStyle.TileClass(meal.MealType)"><img class="week-card-thumb" src="@MealImages.GetImageUrl(meal)" alt="" aria-hidden="true" loading="lazy" /></span>
                         <div class="week-card-topline">
                             <span class="week-card-date">@DayDateLabel(meal.Date)</span>
                             @if (meal.IsFavorite)
@@ -129,6 +143,7 @@
 <MealIngredientsSheet IsOpen="@(ingredientsMeal is not null)"
                       MealName="@(ingredientsMeal?.Name ?? "")"
                       ImageUrl="@(ingredientsMeal is null ? null : MealImages.GetImageUrl(ingredientsMeal))"
+                      MealType="ingredientsMeal?.MealType"
                       Ingredients="ingredientsMeal?.Ingredients"
                       SideDishes="ingredientsMeal?.SideDishes"
                       OnDismiss="() => ingredientsMeal = null" />
@@ -314,6 +329,11 @@
 
     private Task GoPreviousWeek() => LoadWeekAsync(currentWeekStart.AddDays(-7));
     private Task GoNextWeek() => LoadWeekAsync(currentWeekStart.AddDays(7));
+    private async Task JumpToDay(DateOnly date)
+    {
+        try { await JS.InvokeVoidAsync("nxtweek.scrollToId", $"day-{date:yyyy-MM-dd}"); }
+        catch { /* best-effort visual convenience only */ }
+    }
     private async Task ShareWeek()
     {
         isSharing = true;

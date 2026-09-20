@@ -34,6 +34,10 @@ window.nxtweek = {
   markFirstLaunchWizardSeen() {
     localStorage.setItem('nxtweek.firstLaunchWizardSeen', 'true');
   },
+  scrollToId(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  },
   async captureAndShare(elementId) {
     const element = document.getElementById(elementId);
     if (!element || typeof window.html2canvas !== 'function') {

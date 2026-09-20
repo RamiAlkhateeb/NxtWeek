@@ -84,6 +84,7 @@
 <MealIngredientsSheet IsOpen="@(ingredientsMeal is not null)"
                       MealName="@(ingredientsMeal?.Name ?? "")"
                       ImageUrl="@(ingredientsMeal is null ? null : MealImages.GetImageUrl(ingredientsMeal))"
+                      MealType="ingredientsMeal?.MealType"
                       Ingredients="ingredientsMeal?.Ingredients"
                       SideDishes="ingredientsMeal?.SideDishes"
                       OnDismiss="() => ingredientsMeal = null" />

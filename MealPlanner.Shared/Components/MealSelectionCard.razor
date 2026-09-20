@@ -4,11 +4,11 @@
 @inject IMealImageService MealImages
 
 <article class="meal-selection-card ui-card" dir="@Loc.Direction" @onclick="HandleCardClick">
-    <img class="meal-selection-thumb" src="@MealImages.GetImageUrl(Meal)" alt="" aria-hidden="true" loading="lazy" />
+    <span class="meal-selection-thumb-tile @MealTypeStyle.TileClass(Meal.MealType)"><img class="meal-selection-thumb" src="@MealImages.GetImageUrl(Meal)" alt="" aria-hidden="true" loading="lazy" /></span>
     <div class="meal-selection-main" role="button" tabindex="0" aria-label="@Meal.Name">
         <h2>@Meal.Name</h2>
         <div class="badges-row">
-            <span class="badge type-badge">@Loc.GetMealTypeName(Meal.MealType)</span>
+            <span class="badge type-badge @MealTypeStyle.BadgeClass(Meal.MealType)">@Loc.GetMealTypeName(Meal.MealType)</span>
         </div>
     </div>
     <div class="meal-selection-actions">
