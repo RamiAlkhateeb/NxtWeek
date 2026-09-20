@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sahtein">
+  <rect width="512" height="512" rx="112" fill="#e46f5a"/>
+  <circle cx="256" cy="262" r="186" fill="#FFFCF2"/>
+  <!-- Abu Saleh: bald head, big moustache, chef's apron collar -->
+  <path d="M78 470v-6c0-76 80-122 178-122s178 46 178 122v6Z" fill="#e46f5a"/>
+  <path d="M222 318h68v30a34 34 0 0 1-68 0Z" fill="#F0C9A4"/>
+  <path d="M196 356c18 30 42 46 60 46s42-16 60-46l20 10c-22 42-50 62-80 62s-58-20-80-62Z" fill="#FFFCF2" opacity=".92"/>
+  <circle cx="132" cy="242" r="22" fill="#E5B189"/>
+  <circle cx="380" cy="242" r="22" fill="#E5B189"/>
+  <circle cx="256" cy="232" r="102" fill="#F0C9A4"/>
+  <path d="M198 168c22-24 96-30 124 6-38-16-86-16-124-6Z" fill="#FFFFFF" opacity=".45"/>
+  <g stroke="#4A3B36" stroke-width="13" stroke-linecap="round" fill="none">
+    <path d="M206 200c11-11 27-11 38-3"/>
+    <path d="M306 200c-11-11-27-11-38-3"/>
+  </g>
+  <circle cx="221" cy="232" r="13" fill="#3A2A38"/>
+  <circle cx="291" cy="232" r="13" fill="#3A2A38"/>
+  <path d="M256 242v22" stroke="#D9A97F" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <path d="M256 288c-16-21-48-27-64-11-14 14-6 33 16 35 21 3 40-8 48-24 8 16 27 27 48 24 22-2 30-21 16-35-16-16-48-10-64 11Z" fill="#4A3B36"/>
+</svg>

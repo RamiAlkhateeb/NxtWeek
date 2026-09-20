@@ -3,7 +3,7 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-<div class="app-shell @(Loc.IsEnglish ? "lang-en" : "lang-ar")" dir="@Loc.Direction" lang="@Loc.CurrentLanguage" style="flex-direction: column; align-items: center;">
+<div class="app-shell @($"lang-{Loc.CurrentLanguage}")" dir="@Loc.Direction" lang="@Loc.CurrentLanguage" style="flex-direction: column; align-items: center;">
     <div style="width: 100%; display: flex; justify-content: center; flex: 1;">@Body</div>
     <MealPlanner.Shared.Components.BottomNav />
 </div>

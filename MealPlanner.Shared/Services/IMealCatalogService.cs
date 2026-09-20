@@ -15,5 +15,6 @@ public interface IMealCatalogService
     Task UpdateMealAsync(MealCatalogItem meal);
     Task DeleteMealAsync(string id);
     Task<bool> IsCatalogSeededAsync();
+    Task<IReadOnlyCollection<string>> GetSeededLanguagesAsync();
     Task SeedCatalogAsync(List<MealCatalogItem> meals);
 }

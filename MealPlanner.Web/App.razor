@@ -2,13 +2,15 @@
 @inject IUserService UserService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ILocalizationService Loc
 @using MealPlanner.Shared.Components
+@using MealPlanner.Shared.Services
 
 @if (isInitializing)
 {
     <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: #f8fafc;">
         <span style="font-size: 64px; animation: bounce 1.5s infinite;">🍳</span>
-        <p style="font-family: sans-serif; color: #64748b; font-size: 18px; margin-top: 16px; direction: rtl;">جاري التحميل...</p>
+        <p style="font-family: sans-serif; color: #64748b; font-size: 18px; margin-top: 16px;">@Loc["loading"]</p>
     </div>
 }
 else
@@ -21,7 +23,7 @@ else
         <NotFound>
             <PageTitle>Not found</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
-                <p role="alert">Sorry, there's nothing at this address.</p>
+                <p role="alert">@Loc["not_found"]</p>
             </LayoutView>
         </NotFound>
     </Router>
@@ -29,13 +31,13 @@ else
     @if (needsEmailConfirmation)
     {
         <div class="ios-install-backdrop">
-            <section class="ios-install-guide" dir="rtl">
+            <section class="ios-install-guide" dir="@Loc.Direction">
                 <span class="ios-install-icon">✉️</span>
-                <h2>أكمل تسجيل الدخول</h2>
-                <p>اكتب البريد الإلكتروني الذي أرسلنا إليه الرابط للتأكد من هويتك.</p>
+                <h2>@Loc["email_confirm_title"]</h2>
+                <p>@Loc["email_confirm_desc"]</p>
                 <input class="ui-text-input" type="email" @bind="confirmationEmail" placeholder="name@example.com" />
                 @if (!string.IsNullOrWhiteSpace(emailLinkError)) { <p class="error-msg">@emailLinkError</p> }
-                <button @onclick="CompleteEmailLink" disabled="@string.IsNullOrWhiteSpace(confirmationEmail)">متابعة</button>
+                <button @onclick="CompleteEmailLink" disabled="@string.IsNullOrWhiteSpace(confirmationEmail)">@Loc["email_confirm_continue"]</button>
             </section>
         </div>
     }
@@ -43,16 +45,16 @@ else
     @if (showFirstLaunchWizard)
     {
         <div class="welcome-wizard-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-wizard-title">
-            <section class="welcome-wizard" dir="rtl">
-                <button class="welcome-wizard-close" @onclick="DismissFirstLaunchWizard" aria-label="إغلاق وإكمال">✕</button>
+            <section class="welcome-wizard" dir="@Loc.Direction">
+                <button class="welcome-wizard-close" @onclick="DismissFirstLaunchWizard" aria-label="@Loc["wizard_close"]">✕</button>
                 <div class="welcome-wizard-head">
-                    <h2 id="welcome-wizard-title">أضف مكدوس إلى شاشتك الرئيسية</h2>
-                    <p>اتبع الخطوات <b>@(welcomeSlide + 1) من 3</b> لفتح التطبيق كتطبيق سريع.</p>
+                    <h2 id="welcome-wizard-title">@Loc["wizard_title"]</h2>
+                    <p>@Loc.T("wizard_steps", welcomeSlide + 1)</p>
                 </div>
 
-                <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="false" FinishText="ابدأ الآن 🚀" OnFinish="DismissFirstLaunchWizard" />
+                <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="false" OnFinish="DismissFirstLaunchWizard" />
 
-                <button class="welcome-wizard-skip" @onclick="DismissFirstLaunchWizard">تخطّي الإعداد لاحقاً</button>
+                <button class="welcome-wizard-skip" @onclick="DismissFirstLaunchWizard">@Loc["wizard_skip"]</button>
             </section>
         </div>
     }
@@ -60,14 +62,14 @@ else
     @if (showIosInstallGuide && !needsEmailConfirmation && !showFirstLaunchWizard)
     {
         <div class="ios-home-guide-backdrop" role="presentation">
-            <section class="ios-home-guide" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="ios-home-guide-title">
+            <section class="ios-home-guide" dir="@Loc.Direction" role="dialog" aria-modal="true" aria-labelledby="ios-home-guide-title">
                 <span class="ios-home-guide-icon" aria-hidden="true">📲</span>
-                <h2 id="ios-home-guide-title">أضف مكدوس إلى الشاشة الرئيسية</h2>
-                <p>اضغط زر المشاركة في Safari، ثم اختر «إضافة إلى الشاشة الرئيسية».</p>
-                <img class="ios-home-guide-gif" src="@($"assets/ios-add-to-home.gif?play={iosGuideReplayKey}")" alt="شرح إضافة مكدوس إلى الشاشة الرئيسية على iPhone" />
+                <h2 id="ios-home-guide-title">@Loc["ios_guide_title"]</h2>
+                <p>@Loc["ios_guide_desc"]</p>
+                <img class="ios-home-guide-gif" src="@($"assets/ios-add-to-home.gif?play={iosGuideReplayKey}")" alt="@Loc["ios_guide_alt"]" />
                 <div class="ios-home-guide-actions">
-                    <button class="ios-home-guide-replay" @onclick="ReplayIosInstallGuide">إعادة العرض</button>
-                    <button class="ios-home-guide-got-it" @onclick="DismissIosInstallGuide">فهمت</button>
+                    <button class="ios-home-guide-replay" @onclick="ReplayIosInstallGuide">@Loc["ios_guide_replay"]</button>
+                    <button class="ios-home-guide-got-it" @onclick="DismissIosInstallGuide">@Loc["ios_guide_gotit"]</button>
                 </div>
             </section>
         </div>
@@ -88,6 +90,7 @@ else
     {
         try
         {
+            await Loc.InitializeAsync();
             var linked = await Auth.CompleteStoredEmailLinkAsync();
             if (linked is null && await Auth.HasPendingEmailLinkAsync()) needsEmailConfirmation = true;
             await ResolveUserAsync(linked ?? await Auth.GetCurrentUserAsync(), await Auth.GetPendingEmailLinkUsernameAsync());
@@ -107,7 +110,7 @@ else
         try
         {
             var user = await Auth.CompleteEmailLinkAsync(confirmationEmail.Trim());
-            if (user is null) throw new InvalidOperationException("رابط تسجيل الدخول غير صالح.");
+            if (user is null) throw new InvalidOperationException(Loc["email_link_invalid"]);
             await ResolveUserAsync(user, await Auth.GetPendingEmailLinkUsernameAsync());
             needsEmailConfirmation = false;
         }
@@ -139,7 +142,7 @@ else
         var profile = await UserService.GetProfileAsync(user.Uid);
         if (profile is null)
         {
-            profile = new UserProfile { Uid = user.Uid, DisplayName = user.IsGuest ? "ضيف" : user.DisplayName };
+            profile = new UserProfile { Uid = user.Uid, DisplayName = user.IsGuest ? Loc["guest_name"] : user.DisplayName };
             await UserService.CreateProfileAsync(profile);
         }
     }

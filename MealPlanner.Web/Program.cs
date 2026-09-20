@@ -33,6 +33,7 @@ builder.Services.AddScoped<BrowserPreferenceService>();
 builder.Services.AddScoped<IThemeService>(sp => sp.GetRequiredService<BrowserPreferenceService>());
 builder.Services.AddScoped<ILanguageService>(sp => sp.GetRequiredService<BrowserPreferenceService>());
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+builder.Services.AddSingleton<IMealImageService, MealImageService>();
 
 
 

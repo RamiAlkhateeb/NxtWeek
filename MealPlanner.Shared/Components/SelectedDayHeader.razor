@@ -1,14 +1,11 @@
-﻿@using System.Globalization
 @inject ILocalizationService Loc
 
 <header class="selected-day-header" dir="@Loc.Direction">
-    <span class="caption">@(Loc.IsArabic ? "إضافة وجبة إلى" : "Add meal to")</span>
-    <strong>🍲 @Date.ToString("dddd d MMMM", Loc.IsArabic ? ArabicCulture : EnglishCulture)</strong>
-    <h1>@(Loc.IsArabic ? "اختر وجبة" : "Choose Meal")</h1>
+    <span class="caption">@Loc["selectedday_add_to"]</span>
+    <strong>🍲 @Loc.FormatDayDate(Date)</strong>
+    <h1>@Loc["week_choose_meal"]</h1>
 </header>
 
 @code {
     [Parameter, EditorRequired] public DateOnly Date { get; set; }
-    private static readonly CultureInfo ArabicCulture = new("ar-EG");
-    private static readonly CultureInfo EnglishCulture = new("en-US");
 }

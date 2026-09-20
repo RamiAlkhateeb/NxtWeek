@@ -8,6 +8,7 @@
 @inject IMealService MealService
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
+@inject IMealImageService MealImages
 @implements IDisposable
 
 <div class="app app-content-wrapper" dir="@Loc.Direction">
@@ -17,14 +18,14 @@
     }
     else
     {
-        <UiPageHeader Icon="🍽️" Title="@Loc["meals_title"]" Subtitle="@(Loc.IsArabic ? "تصفح الوجبات، احفظ المفضلة، واختر يوماً عند الاستخدام." : "Browse meals, save favorites, and pick a day to add.")" />
+        <UiPageHeader Icon="🍽️" Title="@Loc["meals_title"]" Subtitle="@Loc["meals_subtitle"]" />
     }
 
     <!-- Search and Filters -->
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
         <UiTextInput CssClass="meal-search" Placeholder="@Loc["meals_search_placeholder"]" @bind-Value="searchText" />
         <div style="display: flex; gap: 8px;">
-            <UiButton Variant="secondary" OnClick="OpenNewMeal" Style="flex: 1;">＋ @(Loc.IsArabic ? "وجبة جديدة" : "New Meal")</UiButton>
+            <UiButton Variant="secondary" OnClick="OpenNewMeal" Style="flex: 1;">＋ @Loc["meals_new_meal"]</UiButton>
             <UiFilterChip Active="@(!filterByAppLanguage)" OnClick="ToggleLanguageFilter">
                 @(filterByAppLanguage ? Loc["meals_lang_app"] : Loc["meals_lang_all"])
             </UiFilterChip>
@@ -32,7 +33,7 @@
 
         <!-- Meal Type Filter Chips -->
         <div>
-            <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">@(Loc.IsArabic ? "النوع:" : "Type:")</span>
+            <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">@Loc["meals_type_label"]</span>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <UiFilterChip Active="@(selectedMealType == null)" OnClick="() => SetMealType(null)">@Loc["meals_filter_all"]</UiFilterChip>
                 <UiFilterChip Active="@(selectedMealType == MealType.Meat)" OnClick="() => SetMealType(MealType.Meat)">🥩 @Loc["meal_meat"]</UiFilterChip>
@@ -58,7 +59,7 @@
     <div style="padding: 0 16px 20px; display: flex; flex-direction: column; gap: 14px;">
         @if (isLoading)
         {
-            <p style="text-align: center; color: var(--color-text-secondary); padding: 20px;">@(Loc.IsArabic ? "جاري تحميل الوجبات... ⏳" : "Loading meals... ⏳")</p>
+            <p style="text-align: center; color: var(--color-text-secondary); padding: 20px;">@Loc["loading"]</p>
         }
         else if (FilteredMeals.Count == 0)
         {
@@ -73,23 +74,31 @@
                                    IsFavorite="@(userProfile?.FavoriteMealIds?.Contains(meal.Id) ?? false)"
                                    OnSelect="SelectMeal"
                                    OnFavorite="ToggleFavorite"
-                                   OnView="ViewMeal" />
+                                   OnView="ViewMeal"
+                                   OnViewIngredients="OpenIngredients" />
             }
         }
     </div>
 </div>
 
-<UiBottomSheet IsOpen="@(showDayPicker && browseMeal is not null)" Eyebrow="@browseMeal?.Name" Title="@(Loc.IsArabic ? "أضيفي هذه الوجبة لأي يوم؟" : "Add this meal to which day?")" OnDismiss="CloseDayPicker">
+<MealIngredientsSheet IsOpen="@(ingredientsMeal is not null)"
+                      MealName="@(ingredientsMeal?.Name ?? "")"
+                      ImageUrl="@(ingredientsMeal is null ? null : MealImages.GetImageUrl(ingredientsMeal))"
+                      Ingredients="ingredientsMeal?.Ingredients"
+                      SideDishes="ingredientsMeal?.SideDishes"
+                      OnDismiss="() => ingredientsMeal = null" />
+
+<UiBottomSheet IsOpen="@(showDayPicker && browseMeal is not null)" Eyebrow="@browseMeal?.Name" Title="@Loc["meals_add_to_day"]" OnDismiss="CloseDayPicker">
     <div class="move-days" dir="@Loc.Direction">
         @foreach (var day in currentWeekDays)
         { <button @onclick="() => ChooseBrowseDay(day)">@Loc.GetDayName(day.DayOfWeek)</button> }
     </div>
 </UiBottomSheet>
 
-<UiBottomSheet IsOpen="showNewMeal" Title="@(Loc.IsArabic ? "وجبة جديدة" : "New Meal")" Eyebrow="@(Loc.IsArabic ? "أضفها مرة واحدة لتصبح متاحة للجميع" : "Add it once to make it available to all")" OnDismiss="CloseNewMeal">
+<UiBottomSheet IsOpen="showNewMeal" Title="@Loc["meals_new_meal"]" Eyebrow="@Loc["meals_new_meal_eyebrow"]" OnDismiss="CloseNewMeal">
     <div class="sheet-actions" dir="@Loc.Direction">
-        <UiTextInput Placeholder="@(Loc.IsArabic ? "اسم الوجبة" : "Meal name")" @bind-Value="newMealName" />
-        <div class="new-meal-type-pills" aria-label="@(Loc.IsArabic ? "نوع الوجبة" : "Meal type")">
+        <UiTextInput Placeholder="@Loc["meals_meal_name"]" @bind-Value="newMealName" />
+        <div class="new-meal-type-pills" aria-label="@Loc["meals_meal_type"]">
             <UiFilterChip Active="@(newMealType == MealType.Meat)" OnClick='() => newMealType = MealType.Meat'>🥩 @Loc["meal_meat"]</UiFilterChip>
             <UiFilterChip Active="@(newMealType == MealType.Chicken)" OnClick='() => newMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</UiFilterChip>
             <UiFilterChip Active="@(newMealType == MealType.Fish)" OnClick='() => newMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</UiFilterChip>
@@ -97,16 +106,16 @@
             <UiFilterChip Active="@(newMealType == MealType.Vegan)" OnClick='() => newMealType = MealType.Vegan'>🌱 @Loc["meal_vegan"]</UiFilterChip>
         </div>
         @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="alert-playful settings-feedback">@newMealError</div> }
-        <UiButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">@(Loc.IsArabic ? "حفظ واختيار الوجبة" : "Save and Select Meal")</UiButton>
+        <UiButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">@Loc["meals_save_and_select"]</UiButton>
     </div>
 </UiBottomSheet>
 
-<UiBottomSheet IsOpen="@(editingMeal is not null)" Title="@(Loc.IsArabic ? "تعديل الوجبة" : "Edit Meal")" Eyebrow="@(Loc.IsArabic ? "عدّل التفاصيل أو استخدمها في خطتك" : "Edit details or use it in your plan")" OnDismiss="CloseMealEditor">
+<UiBottomSheet IsOpen="@(editingMeal is not null)" Title="@Loc["meals_edit_meal"]" Eyebrow="@Loc["meals_edit_eyebrow"]" OnDismiss="CloseMealEditor">
     @if (editingMeal is not null)
     {
         <div class="sheet-actions" dir="@Loc.Direction">
-            <UiTextInput Placeholder="@(Loc.IsArabic ? "اسم الوجبة" : "Meal name")" @bind-Value="editingMealName" />
-            <div class="new-meal-type-pills" aria-label="@(Loc.IsArabic ? "نوع الوجبة" : "Meal type")">
+            <UiTextInput Placeholder="@Loc["meals_meal_name"]" @bind-Value="editingMealName" />
+            <div class="new-meal-type-pills" aria-label="@Loc["meals_meal_type"]">
                 <UiFilterChip Active="@(editingMealType == MealType.Meat)" OnClick='() => editingMealType = MealType.Meat'>🥩 @Loc["meal_meat"]</UiFilterChip>
                 <UiFilterChip Active="@(editingMealType == MealType.Chicken)" OnClick='() => editingMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</UiFilterChip>
                 <UiFilterChip Active="@(editingMealType == MealType.Fish)" OnClick='() => editingMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</UiFilterChip>
@@ -114,9 +123,9 @@
                 <UiFilterChip Active="@(editingMealType == MealType.Vegan)" OnClick='() => editingMealType = MealType.Vegan'>🌱 @Loc["meal_vegan"]</UiFilterChip>
             </div>
             @if (!string.IsNullOrWhiteSpace(mealEditorError)) { <div class="alert-playful settings-feedback">@mealEditorError</div> }
-            <UiButton Variant="primary" OnClick="SaveMealEdit" Disabled="@string.IsNullOrWhiteSpace(editingMealName)">@(Loc.IsArabic ? "حفظ التعديلات" : "Save Changes")</UiButton>
-            <UiButton Variant="secondary" OnClick="UseEditedMeal">@(Loc.IsArabic ? "استخدم هذه الوجبة" : "Use this meal")</UiButton>
-            <button class="danger" @onclick="ArchiveEditingMeal">@(Loc.IsArabic ? "إخفاء الوجبة من المكتبة" : "Hide meal from library")</button>
+            <UiButton Variant="primary" OnClick="SaveMealEdit" Disabled="@string.IsNullOrWhiteSpace(editingMealName)">@Loc["meals_save_changes"]</UiButton>
+            <UiButton Variant="secondary" OnClick="UseEditedMeal">@Loc["meals_use_meal"]</UiButton>
+            <button class="danger" @onclick="ArchiveEditingMeal">@Loc["meals_hide_meal"]</button>
         </div>
     }
 </UiBottomSheet>
@@ -141,6 +150,7 @@
     private bool isContextMode;
     private bool showDayPicker;
     private MealCatalogItem? browseMeal;
+    private MealCatalogItem? ingredientsMeal;
     private string confirmMessage = "";
     private bool showNewMeal;
     private string newMealName = "";
@@ -161,7 +171,10 @@
             if (filterByAppLanguage)
             {
                 var activeLang = Loc.CurrentLanguage;
-                query = query.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, activeLang, StringComparison.OrdinalIgnoreCase));
+                var inLanguage = query.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, activeLang, StringComparison.OrdinalIgnoreCase)).ToList();
+                // Only narrow to the active language if that language actually has
+                // meals — an unseeded language should not produce an empty library.
+                if (inLanguage.Count > 0) query = inLanguage;
             }
             if (!string.IsNullOrWhiteSpace(searchText))
                 query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
@@ -223,6 +236,7 @@
     }
 
     private void SetMealType(MealType? type) => selectedMealType = type;
+    private void OpenIngredients(MealCatalogItem meal) => ingredientsMeal = meal;
     private void ViewMeal(MealCatalogItem meal)
     {
         if (isContextMode) { Nav.NavigateTo($"/meal/{meal.Id}"); return; }
@@ -257,7 +271,7 @@
     private async Task CreateNewMeal()
     {
         var name = newMealName.Trim();
-        if (string.IsNullOrWhiteSpace(name)) { newMealError = Loc.IsArabic ? "أدخل اسم الوجبة." : "Enter meal name."; return; }
+        if (string.IsNullOrWhiteSpace(name)) { newMealError = Loc["meals_name_required"]; return; }
         try
         {
             var created = await CatalogService.CreateMealAsync(new MealCatalogItem
@@ -279,14 +293,14 @@
     {
         if (editingMeal is null) return;
         var name = editingMealName.Trim();
-        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = Loc.IsArabic ? "أدخل اسم الوجبة." : "Enter meal name."; return; }
+        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = Loc["meals_name_required"]; return; }
         try
         {
             editingMeal.Name = name;
             editingMeal.MealType = editingMealType;
             await CatalogService.UpdateMealAsync(editingMeal);
             allMeals = await CatalogService.GetAllMealsAsync();
-            confirmMessage = Loc.IsArabic ? "تم حفظ تعديلات الوجبة ✨" : "Meal updated successfully ✨";
+            confirmMessage = Loc["meals_meal_updated"];
             CloseMealEditor();
         }
         catch (Exception ex) { mealEditorError = ex.Message; }
@@ -296,7 +310,7 @@
         if (editingMeal is null) return;
         var meal = editingMeal;
         var name = editingMealName.Trim();
-        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = Loc.IsArabic ? "أدخل اسم الوجبة." : "Enter meal name."; return; }
+        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = Loc["meals_name_required"]; return; }
         try
         {
             meal.Name = name;
@@ -316,7 +330,7 @@
             editingMeal.IsArchived = true;
             await CatalogService.UpdateMealAsync(editingMeal);
             allMeals.RemoveAll(meal => meal.Id == editingMeal.Id);
-            confirmMessage = Loc.IsArabic ? "تم إخفاء الوجبة من المكتبة." : "Meal hidden from library.";
+            confirmMessage = Loc["meals_meal_hidden"];
             CloseMealEditor();
         }
         catch (Exception ex) { mealEditorError = ex.Message; }
@@ -356,12 +370,12 @@
             }
 
             var dayLabel = Loc.GetDayName(date.DayOfWeek);
-            var message = Uri.EscapeDataString(Loc.IsArabic ? $"تمت إضافة {meal.Name} إلى {dayLabel}" : $"Added {meal.Name} to {dayLabel}");
+            var message = Uri.EscapeDataString(Loc.T("meals_added_toast", meal.Name, dayLabel));
             Nav.NavigateTo($"/?updated={date:yyyy-MM-dd}&toast={message}");
         }
         catch (Exception ex)
         {
-            confirmMessage = Loc.IsArabic ? $"حدث خطأ أثناء الإضافة: {ex.Message}" : $"Error assigning meal: {ex.Message}";
+            confirmMessage = Loc.T("meals_assign_error", ex.Message);
         }
         finally
         {

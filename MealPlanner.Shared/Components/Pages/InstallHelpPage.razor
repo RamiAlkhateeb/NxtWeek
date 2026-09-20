@@ -4,25 +4,25 @@
 @inject ILocalizationService Loc
 
 <div class="app app-content-wrapper install-help-page" dir="@Loc.Direction">
-    <UiPageHeader Icon="📲" Title="@(Loc.IsArabic ? "تثبيت مكدوس" : "Install NxtWeek")" Subtitle="@(Loc.IsArabic ? "أضف مكدوس إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق" : "Add NxtWeek to your home screen for quick app-like access")" />
+    <UiPageHeader Icon="📲" Title="@Loc["install_title"]" Subtitle="@Loc["install_subtitle"]" />
 
     <div class="install-carousel-wrap">
-        <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="تم ✓" OnFinish="GoBack" />
+        <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="@Loc["done"]" OnFinish="GoBack" />
     </div>
 
     <section class="install-section">
         <div class="install-step">
             <span class="install-step-num">💡</span>
             <div>
-                <h2>يعمل على أندرويد و iPhone/iPad</h2>
-                <p>استخدم متصفح <strong>Safari</strong> على iPhone/iPad، أو <strong>Chrome</strong> على أندرويد، واتبع نفس الخطوات من قائمة المشاركة أو القائمة ⋮.</p>
+                <h2>@Loc["install_works_title"]</h2>
+                <p>@Loc["install_works_desc"]</p>
             </div>
         </div>
     </section>
 
     <div class="install-tip">
         <span aria-hidden="true">✨</span>
-        <p>عند التثبيت على الشاشة الرئيسية يعمل مكدوس في وضع ملء الشاشة، ويُفتح بشكل أسرع، ويمكنك استخدامه من الشاشة الرئيسية مباشرة دون كتابة العنوان.</p>
+        <p>@Loc["install_tip"]</p>
     </div>
 </div>
 

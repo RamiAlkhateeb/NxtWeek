@@ -9,13 +9,13 @@
 <div class="app app-content-wrapper shopping-page" dir="@Loc.Direction">
     <header class="ui-page-header shopping-page-header">
         <div>
-            <h1><span class="shopping-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6z"/><path d="M8 8a4 4 0 0 1 8 0"/><path d="M9.5 13.5h.01M14.5 13.5h.01"/></svg></span> @(Loc.IsArabic ? "المشتريات" : "Shopping")</h1>
-            <p>@(Loc.IsArabic ? "رتّب مشترياتك حسب المتجر" : "Organize your shopping by store")</p>
+            <h1><span class="shopping-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6z"/><path d="M8 8a4 4 0 0 1 8 0"/><path d="M9.5 13.5h.01M14.5 13.5h.01"/></svg></span> @Loc["shopping_title"]</h1>
+            <p>@Loc["shopping_subtitle"]</p>
         </div>
     </header>
 
     <main class="shopping-content">
-        <UiButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ @(Loc.IsArabic ? "أضف متجرًا" : "Add Store")</UiButton>
+        <UiButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ @Loc["shopping_add_store"]</UiButton>
 
         @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
@@ -24,12 +24,12 @@
 
         @if (isLoading)
         {
-            <div class="shopping-loading">@(Loc.IsArabic ? "جارٍ تحميل قائمة المشتريات…" : "Loading shopping list…")</div>
+            <div class="shopping-loading">@Loc["shopping_loading"]</div>
         }
         else if (shops.Count == 0)
         {
-            <UiEmptyState Icon="🛒" Title="@(Loc.IsArabic ? "قائمة المشتريات جاهزة" : "Shopping list is ready")" Message="@(Loc.IsArabic ? "أضف متجرًا ثم دوّن ما تحتاجه منه." : "Add a store and list what you need.")">
-                <UiButton Variant="primary" OnClick="OpenAddShop">@(Loc.IsArabic ? "أضف أول متجر" : "Add First Store")</UiButton>
+            <UiEmptyState Icon="🛒" MascotPose="basket" Title="@Loc["shopping_empty_title"]" Message="@Loc["shopping_empty_desc"]">
+                <UiButton Variant="primary" OnClick="OpenAddShop">@Loc["shopping_add_first_store"]</UiButton>
             </UiEmptyState>
         }
         else
@@ -39,32 +39,32 @@
                 {
                     var items = shop.Items?.Values ?? Enumerable.Empty<ShoppingItem>();
                     var orderedItems = items.OrderBy(item => item.IsBought).ThenBy(item => item.CreatedAtUtc).ToList();
-                    var deleteShopLabel = Loc.IsArabic ? $"حذف {shop.Name}" : $"Delete {shop.Name}";
-                    var addItemLabel = Loc.IsArabic ? $"أضف عنصرًا إلى {shop.Name}" : $"Add item to {shop.Name}";
+                    var deleteShopLabel = Loc.T("shopping_delete_store_named", shop.Name);
+                    var addItemLabel = Loc.T("shopping_add_item_to", shop.Name);
                     <UiCard CssClass="shopping-shop-card">
                         <div class="shopping-shop-header">
                             <div>
                                 <h2><span class="shopping-inline-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4z"/><path d="m4 10 2-6h12l2 6M8 20v-5h4v5M15 14h2"/></svg></span>@shop.Name</h2>
-                                <span class="shopping-count">@items.Count() @(Loc.IsArabic ? "عنصر" : "items")</span>
+                                <span class="shopping-count">@items.Count() @Loc["shopping_items"]</span>
                             </div>
-                            <UiButton Variant="ghost" CssClass="shopping-delete-shop shopping-svg-action" OnClick="() => RequestDeleteShop(shop)" title="@(Loc.IsArabic ? "حذف المتجر" : "Delete Store")" aria-label="@deleteShopLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></UiButton>
+                            <UiButton Variant="ghost" CssClass="shopping-delete-shop shopping-svg-action" OnClick="() => RequestDeleteShop(shop)" title="@Loc["shopping_delete_store"]" aria-label="@deleteShopLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></UiButton>
                         </div>
 
                         <div class="shopping-add-item">
-                            <UiTextInput Value="@GetItemDraft(shop.Id)" ValueChanged="value => SetItemDraft(shop.Id, value)" Placeholder="@(Loc.IsArabic ? "أضف عنصرًا" : "Add item")" aria-label="@addItemLabel" />
-                            <UiButton Variant="secondary" OnClick="() => AddItemAsync(shop.Id)">@(Loc.IsArabic ? "إضافة" : "Add")</UiButton>
+                            <UiTextInput Value="@GetItemDraft(shop.Id)" ValueChanged="value => SetItemDraft(shop.Id, value)" Placeholder="@Loc["shopping_add_item"]" aria-label="@addItemLabel" />
+                            <UiButton Variant="secondary" OnClick="() => AddItemAsync(shop.Id)">@Loc["add"]</UiButton>
                         </div>
 
                         @if (orderedItems.Count == 0)
                         {
-                            <p class="shopping-empty-shop">@(Loc.IsArabic ? "لا توجد عناصر بعد — أضف أول عنصر." : "No items yet — add your first item.")</p>
+                            <p class="shopping-empty-shop">@Loc["shopping_no_items"]</p>
                         }
                         else
                         {
                             <div class="shopping-items">
                                 @foreach (var item in orderedItems)
                                 {
-                                    var toggleItemLabel = $"{(item.IsBought ? (Loc.IsArabic ? "إلغاء شراء" : "Uncheck") : (Loc.IsArabic ? "تم الشراء" : "Bought"))}: {item.Name}";
+                                    var toggleItemLabel = $"{(item.IsBought ? Loc["shopping_uncheck"] : Loc["shopping_bought"])}: {item.Name}";
                                     var deleteItemLabel = $"{Loc["delete"]} {item.Name}";
                                     <div class="shopping-item @(item.IsBought ? "is-bought" : "")">
                                         <button class="shopping-item-toggle" @onclick="() => ToggleItemAsync(shop.Id, item)" aria-label="@toggleItemLabel"><svg viewBox="0 0 24 24" aria-hidden="true">@if (item.IsBought) { <path d="m5 12 4.2 4.2L19 6.5"/> } else { <circle cx="12" cy="12" r="8"/> }</svg></button>
@@ -81,17 +81,17 @@
     </main>
 </div>
 
-<UiBottomSheet IsOpen="showAddShop" Title="@(Loc.IsArabic ? "متجر جديد" : "New Store")" Eyebrow="@(Loc.IsArabic ? "رتّب مشترياتك بالطريقة التي تناسبك" : "Organize your shopping the way you like")" OnDismiss="CloseAddShop">
+<UiBottomSheet IsOpen="showAddShop" Title="@Loc["shopping_new_store"]" Eyebrow="@Loc["shopping_new_store_eyebrow"]" OnDismiss="CloseAddShop">
     <div class="sheet-actions" dir="@Loc.Direction">
-        <UiTextInput Placeholder="@(Loc.IsArabic ? "اسم المتجر، مثل كارفور أو بنده" : "Store name, e.g. Walmart")" @bind-Value="newShopName" />
+        <UiTextInput Placeholder="@Loc["shopping_store_placeholder"]" @bind-Value="newShopName" />
         @if (!string.IsNullOrWhiteSpace(addShopError)) { <div class="alert-playful shopping-feedback">@addShopError</div> }
-        <UiButton Variant="primary" OnClick="AddShopAsync" Disabled="@string.IsNullOrWhiteSpace(newShopName)">@(Loc.IsArabic ? "إضافة متجر" : "Add Store")</UiButton>
+        <UiButton Variant="primary" OnClick="AddShopAsync" Disabled="@string.IsNullOrWhiteSpace(newShopName)">@Loc["shopping_add_store"]</UiButton>
     </div>
 </UiBottomSheet>
 
-<UiBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="@(Loc.IsArabic ? "حذف المتجر؟" : "Delete Store?")" Eyebrow="@(Loc.IsArabic ? "سيُحذف المتجر وكل العناصر الموجودة فيه." : "The store and all its items will be deleted.")" OnDismiss="CancelDeleteShop">
+<UiBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="@Loc["shopping_delete_store_q"]" Eyebrow="@Loc["shopping_delete_store_eyebrow"]" OnDismiss="CancelDeleteShop">
     <div class="sheet-actions" dir="@Loc.Direction">
-        <UiButton Variant="danger" OnClick="ConfirmDeleteShopAsync">@(Loc.IsArabic ? $"حذف {shopPendingDeletion?.Name}" : $"Delete {shopPendingDeletion?.Name}")</UiButton>
+        <UiButton Variant="danger" OnClick="ConfirmDeleteShopAsync">@Loc.T("shopping_delete_store_named", shopPendingDeletion?.Name ?? "")</UiButton>
         <UiButton Variant="ghost" OnClick="CancelDeleteShop">@Loc["cancel"]</UiButton>
     </div>
 </UiBottomSheet>
