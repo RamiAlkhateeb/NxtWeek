@@ -1,14 +1,7 @@
 ﻿@inject ILocalizationService Loc
 
 <div class="ui-empty-state ui-card" dir="@Loc.Direction">
-    @if (ShowMascot)
-    {
-        <AbuSaleh Pose="@MascotPose" Size="104" CssClass="ui-empty-state-mascot" />
-    }
-    else
-    {
-        <div class="ui-empty-state-icon" aria-hidden="true">@Icon</div>
-    }
+    <div class="ui-empty-state-icon" aria-hidden="true">@Icon</div>
     <h2>@Title</h2>
     @if (!string.IsNullOrWhiteSpace(Message)) { <p>@Message</p> }
     @ChildContent
@@ -19,9 +12,4 @@
     [Parameter, EditorRequired] public string Title { get; set; } = "";
     [Parameter] public string? Message { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
-
-    /// <summary>Abu Saleh fronts the empty state by default; pass false for the
-    /// few places where a plain icon reads better.</summary>
-    [Parameter] public bool ShowMascot { get; set; } = true;
-    [Parameter] public string MascotPose { get; set; } = "shrug";
 }

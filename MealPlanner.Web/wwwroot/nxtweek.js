@@ -44,14 +44,14 @@ window.nxtweek = {
       throw new Error('The week preview could not be created.');
     }
 
-    const canvas = await window.html2canvas(element, { backgroundColor: '#FFF9F2', scale: 2 });
+    const canvas = await window.html2canvas(element, { backgroundColor: '#0b0b0d', scale: 2 });
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('The week image could not be created.');
 
     const file = new File([blob], 'my-week.png', { type: 'image/png' });
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: 'صحتين — خطتي الأسبوعية', text: 'https://meal-planner-af799.web.app/' });
+        await navigator.share({ files: [file], title: 'مكدوس — خطتي الأسبوعية', text: 'https://meal-planner-af799.web.app/' });
         return 'shared';
       } catch (error) {
         if (error?.name === 'AbortError') return 'cancelled';

@@ -1,10 +1,10 @@
-/* Premium background and layout for desktop & mobile */
+/* Transparent so the radio-theme body background (black + red glow) shows through. */
 .app-shell {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
-    background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+    background: transparent;
     padding: 32px 16px;
     box-sizing: border-box;
 }
@@ -12,6 +12,6 @@
 @media (max-width: 640px) {
     .app-shell {
         padding: 0;
-        background: #fff;
+        background: transparent;
     }
 }

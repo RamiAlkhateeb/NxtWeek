@@ -1,8 +1,8 @@
-# Sahtein (صحتين)
+# Makdous (مكدوس)
 
 A weekly family meal planner, shipped as a **Blazor WebAssembly PWA**. Formerly
-"NxtWeek" / "مكدوس". Arabic-first and RTL-capable, also available in English and
-German. The mascot is **Abu Saleh**, a bald, moustached home cook.
+"NxtWeek". Arabic-first and RTL-capable, also available in English and German.
+There is no mascot; do not add one.
 
 ## Layout
 
@@ -77,11 +77,13 @@ No remote photography. `IMealImageService` resolves a flat SVG illustration from
 archetype `Tag`, then a name keyword (matched in all three languages), then the
 `MealType`. Seeded meals carry a `Tags` entry so they resolve by tag.
 
-## Mascot
+## Look and feel
 
-`<AbuSaleh Pose="wave|cook|shrug|cheer|basket" Size="96" />` — one component,
-inline SVG, coloured from the theme custom properties so a palette change carries
-it along. `wwwroot/logo.svg` is the master for the PWA icons.
+Styled to match the sibling `../Syrian-Radio` app: black page (`#0b0b0d`) with a
+red radial glow, dark cards (`#1a1517`), white text, red accent (`#ee1c25`),
+red-gradient primary buttons. Colours live in the `:root` tokens at the top of
+`app.css`; new UI should use the tokens, not hard-coded light colours. The meal
+illustrations keep their cream background and sit as white panels on dark cards.
 
 ## Conventions
 
