@@ -79,11 +79,11 @@ archetype `Tag`, then a name keyword (matched in all three languages), then the
 
 ## Look and feel
 
-Styled to match the sibling `../Syrian-Radio` app: black page (`#0b0b0d`) with a
-red radial glow, dark cards (`#1a1517`), white text, red accent (`#ee1c25`),
-red-gradient primary buttons. Colours live in the `:root` tokens at the top of
-`app.css`; new UI should use the tokens, not hard-coded light colours. The meal
-illustrations keep their cream background and sit as white panels on dark cards.
+Styled to match the sibling `../Syrian-Radio` *player* (its light theme, not its
+dark Ninar page): light grey page (`#f7f7f9`), white cards with ~28px radius,
+near-black text (`#1c1c1e`), pink-red accent (`#ff2d55`), black round/pill primary
+buttons, grey pill chips. Colours live in the `:root` tokens at the top of
+`app.css`; new UI should use the tokens rather than hard-coded colours.
 
 ## Conventions
 

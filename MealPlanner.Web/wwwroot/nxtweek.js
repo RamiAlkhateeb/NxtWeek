@@ -44,7 +44,7 @@ window.nxtweek = {
       throw new Error('The week preview could not be created.');
     }
 
-    const canvas = await window.html2canvas(element, { backgroundColor: '#0b0b0d', scale: 2 });
+    const canvas = await window.html2canvas(element, { backgroundColor: '#f7f7f9', scale: 2 });
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('The week image could not be created.');
 

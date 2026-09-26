@@ -2,8 +2,8 @@
 
 Makdous (formerly NxtWeek) is a weekly meal planner for family home cooking,
 available in **Arabic (RTL), English and German**. It is a Blazor WebAssembly PWA
-with a mobile-first interface styled after the sibling Syrian Radio app: a black
-page with a red glow, white text and red accents.
+with a mobile-first interface styled after the sibling Syrian Radio app: a light grey
+page, white rounded cards, near-black text, a pink-red accent and black round primary buttons.
 
 ## Screenshots
 
