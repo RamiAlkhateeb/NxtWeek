@@ -179,9 +179,8 @@ public class LocalizationService : ILocalizationService
     private static readonly Dictionary<string, Dictionary<string, string>> Translations = new(StringComparer.OrdinalIgnoreCase)
     {
         // Brand & shared
-        ["app_title"] = new() { ["ar"] = "صحتين", ["en"] = "Sahtein", ["de"] = "Sahtein" },
+        ["app_title"] = new() { ["ar"] = "مكدوس", ["en"] = "Makdous", ["de"] = "Makdous" },
         ["app_subtitle"] = new() { ["ar"] = "مخطط وجبات شخصي", ["en"] = "Personal Weekly Meal Planner", ["de"] = "Dein persönlicher Wochen-Essensplaner" },
-        ["mascot_name"] = new() { ["ar"] = "أبو صالح", ["en"] = "Abu Saleh", ["de"] = "Abu Saleh" },
         ["loading"] = new() { ["ar"] = "جارِ التحميل...", ["en"] = "Loading...", ["de"] = "Wird geladen …" },
         ["save"] = new() { ["ar"] = "حفظ", ["en"] = "Save", ["de"] = "Speichern" },
         ["cancel"] = new() { ["ar"] = "إلغاء", ["en"] = "Cancel", ["de"] = "Abbrechen" },
@@ -225,11 +224,11 @@ public class LocalizationService : ILocalizationService
         ["settings_recover_desc"] = new() { ["ar"] = "هل مسحت بيانات المتصفح أو غيّرت جهازك؟ استعد خططك ووجباتك باسم المستخدم الذي اخترته سابقاً.", ["en"] = "Cleared browser data or changed devices? Recover your plan and meals with your username.", ["de"] = "Browserdaten gelöscht oder Gerät gewechselt? Hol dir deinen Plan mit deinem Benutzernamen zurück." },
         ["settings_recover_link"] = new() { ["ar"] = "استرجاع باسم المستخدم ←", ["en"] = "Recover by username →", ["de"] = "Mit Benutzernamen wiederherstellen →" },
         ["settings_install_title"] = new() { ["ar"] = "📲 تثبيت على الشاشة الرئيسية", ["en"] = "📲 Install on Home Screen", ["de"] = "📲 Zum Startbildschirm hinzufügen" },
-        ["settings_install_desc"] = new() { ["ar"] = "أضف صحتين إلى شاشة هاتفك الرئيسية لفتحه كتطبيق سريع على أندرويد وiPhone.", ["en"] = "Add Sahtein to your home screen for quick access on Android & iPhone.", ["de"] = "Füge Sahtein zu deinem Startbildschirm hinzu — schneller Zugriff auf Android und iPhone." },
-        ["settings_install_link"] = new() { ["ar"] = "كيف أثبّت صحتين؟ ←", ["en"] = "How to install Sahtein? →", ["de"] = "Wie installiere ich Sahtein? →" },
+        ["settings_install_desc"] = new() { ["ar"] = "أضف مكدوس إلى شاشة هاتفك الرئيسية لفتحه كتطبيق سريع على أندرويد وiPhone.", ["en"] = "Add Makdous to your home screen for quick access on Android & iPhone.", ["de"] = "Füge Makdous zu deinem Startbildschirm hinzu — schneller Zugriff auf Android und iPhone." },
+        ["settings_install_link"] = new() { ["ar"] = "كيف أثبّت مكدوس؟ ←", ["en"] = "How to install Makdous? →", ["de"] = "Wie installiere ich Makdous? →" },
         ["settings_about_title"] = new() { ["ar"] = "ℹ️ حول التطبيق", ["en"] = "ℹ️ About", ["de"] = "ℹ️ Über die App" },
-        ["settings_about_desc"] = new() { ["ar"] = "صحتين — مخطط وجبات شخصي", ["en"] = "Sahtein — Personal Weekly Meal Planner", ["de"] = "Sahtein — dein persönlicher Wochen-Essensplaner" },
-        ["settings_about_version"] = new() { ["ar"] = "الإصدار 1.3", ["en"] = "Version 1.3", ["de"] = "Version 1.3" },
+        ["settings_about_desc"] = new() { ["ar"] = "مكدوس — مخطط وجبات شخصي", ["en"] = "Makdous — Personal Weekly Meal Planner", ["de"] = "Makdous — dein persönlicher Wochen-Essensplaner" },
+        ["settings_about_version"] = new() { ["ar"] = "الإصدار 1.4", ["en"] = "Version 1.4", ["de"] = "Version 1.4" },
         ["settings_about_dev"] = new() { ["ar"] = "الموقع الشخصي للمطور ↗", ["en"] = "Developer's Website ↗", ["de"] = "Website des Entwicklers ↗" },
 
         // Week page
@@ -358,11 +357,11 @@ public class LocalizationService : ILocalizationService
         ["recover_not_found"] = new() { ["ar"] = "لم نعثر على حساب بهذا الاسم. تأكد أنك كتبت اسم المستخدم الذي اخترته سابقاً، مع العلم أن البيانات المخزّنة كضيف (بدون اسم مستخدم) لا يمكن استرجاعها.", ["en"] = "No account found with this username. Ensure you entered your previously registered username.", ["de"] = "Kein Konto mit diesem Benutzernamen gefunden. Prüfe die Schreibweise — als Gast gespeicherte Daten lassen sich nicht wiederherstellen." },
 
         // Install help & add-to-home carousel
-        ["install_title"] = new() { ["ar"] = "تثبيت صحتين", ["en"] = "Install Sahtein", ["de"] = "Sahtein installieren" },
-        ["install_subtitle"] = new() { ["ar"] = "أضف صحتين إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق", ["en"] = "Add Sahtein to your home screen for quick app-like access", ["de"] = "Füge Sahtein zum Startbildschirm hinzu — schnell wie eine echte App" },
+        ["install_title"] = new() { ["ar"] = "تثبيت مكدوس", ["en"] = "Install Makdous", ["de"] = "Makdous installieren" },
+        ["install_subtitle"] = new() { ["ar"] = "أضف مكدوس إلى شاشتك الرئيسية لفتحه بسرعة مثل أي تطبيق", ["en"] = "Add Makdous to your home screen for quick app-like access", ["de"] = "Füge Makdous zum Startbildschirm hinzu — schnell wie eine echte App" },
         ["install_works_title"] = new() { ["ar"] = "يعمل على أندرويد و iPhone/iPad", ["en"] = "Works on Android and iPhone/iPad", ["de"] = "Funktioniert auf Android und iPhone/iPad" },
         ["install_works_desc"] = new() { ["ar"] = "استخدم متصفح Safari على iPhone/iPad، أو Chrome على أندرويد، واتبع نفس الخطوات من قائمة المشاركة أو القائمة ⋮.", ["en"] = "Use Safari on iPhone/iPad or Chrome on Android, then follow the same steps from the share menu or the ⋮ menu.", ["de"] = "Nutze Safari auf iPhone/iPad oder Chrome auf Android und folge den gleichen Schritten im Teilen-Menü oder im ⋮-Menü." },
-        ["install_tip"] = new() { ["ar"] = "عند التثبيت على الشاشة الرئيسية يعمل صحتين في وضع ملء الشاشة، ويُفتح بشكل أسرع، ويمكنك استخدامه من الشاشة الرئيسية مباشرة دون كتابة العنوان.", ["en"] = "Once installed, Sahtein runs full screen, starts faster, and opens straight from your home screen without typing a URL.", ["de"] = "Einmal installiert, läuft Sahtein im Vollbild, startet schneller und öffnet sich direkt vom Startbildschirm — ganz ohne Adresseingabe." },
+        ["install_tip"] = new() { ["ar"] = "عند التثبيت على الشاشة الرئيسية يعمل مكدوس في وضع ملء الشاشة، ويُفتح بشكل أسرع، ويمكنك استخدامه من الشاشة الرئيسية مباشرة دون كتابة العنوان.", ["en"] = "Once installed, Makdous runs full screen, starts faster, and opens straight from your home screen without typing a URL.", ["de"] = "Einmal installiert, läuft Makdous im Vollbild, startet schneller und öffnet sich direkt vom Startbildschirm — ganz ohne Adresseingabe." },
         // {0} = current step, {1} = total steps
         ["carousel_step"] = new() { ["ar"] = "الخطوة {0} من {1}", ["en"] = "Step {0} of {1}", ["de"] = "Schritt {0} von {1}" },
         ["carousel_start"] = new() { ["ar"] = "ابدأ الآن 🚀", ["en"] = "Get started 🚀", ["de"] = "Los geht's 🚀" },
@@ -371,19 +370,19 @@ public class LocalizationService : ILocalizationService
         ["carousel_step1"] = new() { ["ar"] = "اضغط على زر المشاركة", ["en"] = "Tap the share button", ["de"] = "Tippe auf „Teilen“" },
         ["carousel_step2"] = new() { ["ar"] = "اختر «إضافة إلى الشاشة الرئيسية»", ["en"] = "Choose \"Add to Home Screen\"", ["de"] = "Wähle „Zum Home-Bildschirm“" },
         ["carousel_step3"] = new() { ["ar"] = "اضغط على «إضافة»", ["en"] = "Tap \"Add\"", ["de"] = "Tippe auf „Hinzufügen“" },
-        ["carousel_step1_alt"] = new() { ["ar"] = "اضغط على زر المشاركة لإضافة صحتين إلى الشاشة الرئيسية", ["en"] = "Tap the share button to add Sahtein to your home screen", ["de"] = "Tippe auf „Teilen“, um Sahtein zum Startbildschirm hinzuzufügen" },
+        ["carousel_step1_alt"] = new() { ["ar"] = "اضغط على زر المشاركة لإضافة مكدوس إلى الشاشة الرئيسية", ["en"] = "Tap the share button to add Makdous to your home screen", ["de"] = "Tippe auf „Teilen“, um Makdous zum Startbildschirm hinzuzufügen" },
         ["carousel_step2_alt"] = new() { ["ar"] = "اختر إضافة إلى الشاشة الرئيسية", ["en"] = "Choose Add to Home Screen", ["de"] = "Wähle „Zum Home-Bildschirm“" },
         ["carousel_step3_alt"] = new() { ["ar"] = "اضغط على زر الإضافة للتأكيد", ["en"] = "Tap Add to confirm", ["de"] = "Tippe zur Bestätigung auf „Hinzufügen“" },
 
         // First-launch wizard & iOS install guide (App.razor)
-        ["wizard_title"] = new() { ["ar"] = "أضف صحتين إلى شاشتك الرئيسية", ["en"] = "Add Sahtein to your home screen", ["de"] = "Füge Sahtein zu deinem Startbildschirm hinzu" },
+        ["wizard_title"] = new() { ["ar"] = "أضف مكدوس إلى شاشتك الرئيسية", ["en"] = "Add Makdous to your home screen", ["de"] = "Füge Makdous zu deinem Startbildschirm hinzu" },
         // {0} = current step of 3
         ["wizard_steps"] = new() { ["ar"] = "اتبع الخطوات {0} من 3 لفتح التطبيق كتطبيق سريع.", ["en"] = "Follow step {0} of 3 to open it like a native app.", ["de"] = "Folge Schritt {0} von 3, um die App wie eine native App zu öffnen." },
         ["wizard_close"] = new() { ["ar"] = "إغلاق وإكمال", ["en"] = "Close and continue", ["de"] = "Schließen und fortfahren" },
         ["wizard_skip"] = new() { ["ar"] = "تخطّي الإعداد لاحقاً", ["en"] = "Skip setup for now", ["de"] = "Einrichtung später erledigen" },
-        ["ios_guide_title"] = new() { ["ar"] = "أضف صحتين إلى الشاشة الرئيسية", ["en"] = "Add Sahtein to your home screen", ["de"] = "Sahtein zum Startbildschirm hinzufügen" },
+        ["ios_guide_title"] = new() { ["ar"] = "أضف مكدوس إلى الشاشة الرئيسية", ["en"] = "Add Makdous to your home screen", ["de"] = "Makdous zum Startbildschirm hinzufügen" },
         ["ios_guide_desc"] = new() { ["ar"] = "اضغط زر المشاركة في Safari، ثم اختر «إضافة إلى الشاشة الرئيسية».", ["en"] = "Tap the share button in Safari, then choose \"Add to Home Screen\".", ["de"] = "Tippe in Safari auf „Teilen“ und wähle „Zum Home-Bildschirm“." },
-        ["ios_guide_alt"] = new() { ["ar"] = "شرح إضافة صحتين إلى الشاشة الرئيسية على iPhone", ["en"] = "How to add Sahtein to the home screen on iPhone", ["de"] = "So fügst du Sahtein auf dem iPhone zum Startbildschirm hinzu" },
+        ["ios_guide_alt"] = new() { ["ar"] = "شرح إضافة مكدوس إلى الشاشة الرئيسية على iPhone", ["en"] = "How to add Makdous to the home screen on iPhone", ["de"] = "So fügst du Makdous auf dem iPhone zum Startbildschirm hinzu" },
         ["ios_guide_replay"] = new() { ["ar"] = "إعادة العرض", ["en"] = "Replay", ["de"] = "Nochmal abspielen" },
         ["ios_guide_gotit"] = new() { ["ar"] = "فهمت", ["en"] = "Got it", ["de"] = "Verstanden" },
         ["email_confirm_title"] = new() { ["ar"] = "أكمل تسجيل الدخول", ["en"] = "Finish signing in", ["de"] = "Anmeldung abschließen" },
@@ -392,6 +391,6 @@ public class LocalizationService : ILocalizationService
         ["email_link_invalid"] = new() { ["ar"] = "رابط تسجيل الدخول غير صالح.", ["en"] = "That sign-in link is not valid.", ["de"] = "Dieser Anmeldelink ist ungültig." },
         ["guest_name"] = new() { ["ar"] = "ضيف", ["en"] = "Guest", ["de"] = "Gast" },
         ["not_found"] = new() { ["ar"] = "عذراً، لا يوجد شيء على هذا العنوان.", ["en"] = "Sorry, there's nothing at this address.", ["de"] = "Unter dieser Adresse gibt es leider nichts." },
-        ["friends_discoverable"] = new() { ["ar"] = "أشخاص على صحتين", ["en"] = "People on Sahtein", ["de"] = "Leute bei Sahtein" }
+        ["friends_discoverable"] = new() { ["ar"] = "أشخاص على مكدوس", ["en"] = "People on Makdous", ["de"] = "Leute bei Makdous" }
     };
 }

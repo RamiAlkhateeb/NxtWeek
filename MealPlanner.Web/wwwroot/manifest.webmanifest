@@ -1,11 +1,11 @@
 {
-  "name": "Sahtein — صحتين",
-  "short_name": "Sahtein",
+  "name": "مكدوس",
+  "short_name": "مكدوس",
   "id": "./",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#FFFCF2",
-  "theme_color": "#e46f5a",
+  "background_color": "#f7f7f9",
+  "theme_color": "#f7f7f9",
   "prefer_related_applications": false,
   "icons": [
     {

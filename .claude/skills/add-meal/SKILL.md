@@ -1,6 +1,6 @@
 ---
 name: add-meal
-description: Add meals to the Sahtein catalog seed, or change how a meal's picture is chosen. Use when asked to add dishes for a language, expand the meal library, or fix a meal showing the wrong illustration.
+description: Add meals to the Makdous catalog seed, or change how a meal's picture is chosen. Use when asked to add dishes for a language, expand the meal library, or fix a meal showing the wrong illustration.
 ---
 
 # Adding catalog meals

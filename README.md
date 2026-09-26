@@ -1,14 +1,14 @@
-# Sahtein (صحتين)
+# Makdous (مكدوس)
 
-Sahtein — formerly NxtWeek — is a weekly meal planner for family home cooking,
+Makdous (formerly NxtWeek) is a weekly meal planner for family home cooking,
 available in **Arabic (RTL), English and German**. It is a Blazor WebAssembly PWA
-with a warm, mobile-first interface, fronted by its mascot **Abu Saleh**, a bald,
-moustached home cook.
+with a mobile-first interface styled after the sibling Syrian Radio app: a light grey
+page, white rounded cards, near-black text, a pink-red accent and black round primary buttons.
 
 ## Screenshots
 
 <!-- App Screenshot Placeholder: Add your app screenshot file here (e.g. docs/screenshots/app-preview.png) -->
-![Sahtein App Screenshot](docs/screenshots/app-preview.png)
+![Makdous App Screenshot](docs/screenshots/app-preview.png)
 
 ## Current experience
 

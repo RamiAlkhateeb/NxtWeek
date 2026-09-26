@@ -24,8 +24,8 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/></svg>
         </button>
         <div class="week-brand">
-            <AbuSalehAvatar Size="44" CssClass="week-brand-mascot" />
             <div>
+                <p class="eyebrow">@Loc["week_title"]</p>
                 <h1>@Loc["app_title"]</h1>
                 <p>@WeekRangeLabel</p>
             </div>
@@ -53,10 +53,7 @@
 
     @if (isLoading)
     {
-        <div class="mascot-loading">
-            <AbuSaleh Pose="cook" Size="96" />
-            <p class="loading-text">@Loc["loading"]</p>
-        </div>
+        <p class="loading-text">@Loc["loading"]</p>
     }
     else
     {

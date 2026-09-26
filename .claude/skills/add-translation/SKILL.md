@@ -1,6 +1,6 @@
 ---
 name: add-translation
-description: Add or change a user-facing string in the Sahtein app, or add a new UI language. Use whenever you are about to put text on screen in a .razor component, when a string shows up untranslated, or when someone asks for another language.
+description: Add or change a user-facing string in the Makdous app, or add a new UI language. Use whenever you are about to put text on screen in a .razor component, when a string shows up untranslated, or when someone asks for another language.
 ---
 
 # Adding a translated string
