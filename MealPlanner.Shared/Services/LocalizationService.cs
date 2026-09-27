@@ -228,7 +228,7 @@ public class LocalizationService : ILocalizationService
         ["settings_install_link"] = new() { ["ar"] = "كيف أثبّت مكدوس؟ ←", ["en"] = "How to install Makdous? →", ["de"] = "Wie installiere ich Makdous? →" },
         ["settings_about_title"] = new() { ["ar"] = "ℹ️ حول التطبيق", ["en"] = "ℹ️ About", ["de"] = "ℹ️ Über die App" },
         ["settings_about_desc"] = new() { ["ar"] = "مكدوس — مخطط وجبات شخصي", ["en"] = "Makdous — Personal Weekly Meal Planner", ["de"] = "Makdous — dein persönlicher Wochen-Essensplaner" },
-        ["settings_about_version"] = new() { ["ar"] = "الإصدار 1.4", ["en"] = "Version 1.4", ["de"] = "Version 1.4" },
+        ["settings_about_version"] = new() { ["ar"] = "الإصدار 1.5", ["en"] = "Version 1.5", ["de"] = "Version 1.5" },
         ["settings_about_dev"] = new() { ["ar"] = "الموقع الشخصي للمطور ↗", ["en"] = "Developer's Website ↗", ["de"] = "Website des Entwicklers ↗" },
 
         // Week page
@@ -391,6 +391,18 @@ public class LocalizationService : ILocalizationService
         ["email_link_invalid"] = new() { ["ar"] = "رابط تسجيل الدخول غير صالح.", ["en"] = "That sign-in link is not valid.", ["de"] = "Dieser Anmeldelink ist ungültig." },
         ["guest_name"] = new() { ["ar"] = "ضيف", ["en"] = "Guest", ["de"] = "Gast" },
         ["not_found"] = new() { ["ar"] = "عذراً، لا يوجد شيء على هذا العنوان.", ["en"] = "Sorry, there's nothing at this address.", ["de"] = "Unter dieser Adresse gibt es leider nichts." },
-        ["friends_discoverable"] = new() { ["ar"] = "أشخاص على مكدوس", ["en"] = "People on Makdous", ["de"] = "Leute bei Makdous" }
+        ["friends_discoverable"] = new() { ["ar"] = "أشخاص على مكدوس", ["en"] = "People on Makdous", ["de"] = "Leute bei Makdous" },
+
+        // Friend week sync
+        ["friends_sync_button"] = new() { ["ar"] = "مزامنة أسبوعي", ["en"] = "Sync my week", ["de"] = "Meine Woche synchronisieren" },
+        ["friends_sync_confirm_title"] = new() { ["ar"] = "مزامنة الأسبوع؟", ["en"] = "Sync this week?", ["de"] = "Diese Woche synchronisieren?" },
+        // {0} = friend's display name
+        ["friends_sync_confirm_eyebrow"] = new() { ["ar"] = "سيتم استبدال خطتك لهذا الأسبوع بخطة {0}", ["en"] = "This will replace your plan for this week with {0}'s plan", ["de"] = "Dein Plan für diese Woche wird durch den von {0} ersetzt" },
+        ["friends_sync_confirm_note"] = new() { ["ar"] = "لا يمكن التراجع عن هذا تلقائياً، لكن يمكنك تعديل خطتك يدوياً بعد ذلك.", ["en"] = "This can't be undone automatically, but you can still edit your plan afterward.", ["de"] = "Das lässt sich nicht automatisch rückgängig machen, du kannst deinen Plan danach aber jederzeit bearbeiten." },
+        // {0} = friend's display name
+        ["friends_sync_confirm_action"] = new() { ["ar"] = "نعم، انسخ خطة {0}", ["en"] = "Yes, copy {0}'s plan", ["de"] = "Ja, Plan von {0} übernehmen" },
+        ["friends_sync_syncing"] = new() { ["ar"] = "جارٍ المزامنة...", ["en"] = "Syncing...", ["de"] = "Wird synchronisiert …" },
+        // {0} = friend's display name
+        ["friends_sync_success"] = new() { ["ar"] = "تمت مزامنة أسبوعك مع خطة {0} ✨", ["en"] = "Your week now matches {0}'s plan ✨", ["de"] = "Deine Woche entspricht jetzt dem Plan von {0} ✨" }
     };
 }

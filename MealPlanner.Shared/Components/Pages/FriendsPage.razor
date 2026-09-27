@@ -1,5 +1,4 @@
 @page "/friends"
-@using System.Globalization
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IAuthService Auth
@@ -103,11 +102,15 @@
                                         @foreach (var day in selectedFriendWeek)
                                         {
                                             <article class="friend-week-day @(string.IsNullOrEmpty(day.MealId) ? "empty" : "")">
-                                                <span>@ArabicDays[(int)day.Date.DayOfWeek]</span>
+                                                <span>@Loc.GetShortDayName(day.Date.DayOfWeek)</span>
                                                 <strong>@(string.IsNullOrEmpty(day.MealId) ? "—" : MealName(day.MealId))</strong>
                                             </article>
                                         }
                                     </div>
+                                    <button class="friend-sync-button" @onclick="() => showSyncConfirm = true">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+                                        @Loc["friends_sync_button"]
+                                    </button>
                                 </section>
                             }
                         </div>
@@ -144,6 +147,19 @@
     }
 </div>
 
+<UiBottomSheet IsOpen="showSyncConfirm"
+               Title="@Loc["friends_sync_confirm_title"]"
+               Eyebrow="@(selectedFriend is null ? null : Loc.T("friends_sync_confirm_eyebrow", selectedFriend.DisplayName))"
+               OnDismiss="() => showSyncConfirm = false">
+    <div class="sheet-actions" dir="@Loc.Direction">
+        <p>@Loc["friends_sync_confirm_note"]</p>
+        <UiButton Variant="primary" OnClick="SyncFriendWeek" Disabled="@isSyncing">
+            @(isSyncing ? Loc["friends_sync_syncing"] : (selectedFriend is null ? Loc["friends_sync_button"] : Loc.T("friends_sync_confirm_action", selectedFriend.DisplayName)))
+        </UiButton>
+        <UiButton Variant="ghost" OnClick="() => showSyncConfirm = false" Disabled="@isSyncing">@Loc["cancel"]</UiButton>
+    </div>
+</UiBottomSheet>
+
 @code {
     private string uid = "";
     private bool isLoading = true;
@@ -159,10 +175,10 @@
     private List<WeeklyPlanEntry> selectedFriendWeek = new();
     private Dictionary<string, string> mealNames = new();
     private DateOnly displayedWeekStart;
+    private bool showSyncConfirm;
+    private bool isSyncing;
     private bool hasUsername;
-    private static readonly string[] ArabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-    private static readonly CultureInfo ArabicCulture = new("ar-EG");
-    private string WeekRangeLabel => $"{displayedWeekStart.ToString("d MMMM", ArabicCulture)} – {displayedWeekStart.AddDays(6).ToString("d MMMM", ArabicCulture)}";
+    private string WeekRangeLabel => $"{displayedWeekStart.Day} {Loc.GetMonthName(displayedWeekStart.Month)} – {displayedWeekStart.AddDays(6).Day} {Loc.GetMonthName(displayedWeekStart.AddDays(6).Month)}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -294,6 +310,29 @@
             var date = displayedWeekStart.AddDays(offset);
             return selectedFriendWeek.FirstOrDefault(entry => entry.Date == date) ?? new WeeklyPlanEntry { Date = date };
         }).ToList();
+    }
+
+    private async Task SyncFriendWeek()
+    {
+        if (selectedFriend is null) return;
+        isSyncing = true;
+        try
+        {
+            // selectedFriendWeek is already hydrated to all 7 dates of the displayed
+            // week (empty days included), so writing it back verbatim makes this
+            // week a full copy of the friend's plan — a day the friend left empty
+            // clears the matching day in mine too.
+            await UserService.SaveWeeklyPlanEntriesAsync(uid, selectedFriendWeek);
+            isError = false;
+            feedback = Loc.T("friends_sync_success", selectedFriend.DisplayName);
+            showSyncConfirm = false;
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+        }
+        finally { isSyncing = false; }
     }
 
     private async Task CopyUsername()
