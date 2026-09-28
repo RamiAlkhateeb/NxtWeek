@@ -95,10 +95,10 @@
                                 <section class="friend-week-section friend-week-inline">
                                     <div class="friend-week-heading">
                                         <div><p>أسبوع @friend.DisplayName</p><small>@WeekRangeLabel</small></div>
-                                        <button @onclick="PreviousWeek" aria-label="الأسبوع السابق">›</button>
-                                        <button @onclick="NextWeek" aria-label="الأسبوع القادم">‹</button>
+                                        <button @onclick="PreviousWeek" disabled="@isLoadingFriendWeek" aria-label="الأسبوع السابق">›</button>
+                                        <button @onclick="NextWeek" disabled="@isLoadingFriendWeek" aria-label="الأسبوع القادم">‹</button>
                                     </div>
-                                    <div class="friend-week-grid">
+                                    <div class="friend-week-grid @(isLoadingFriendWeek ? "loading" : "")">
                                         @foreach (var day in selectedFriendWeek)
                                         {
                                             <article class="friend-week-day @(string.IsNullOrEmpty(day.MealId) ? "empty" : "")">
@@ -107,7 +107,7 @@
                                             </article>
                                         }
                                     </div>
-                                    <button class="friend-sync-button" @onclick="() => showSyncConfirm = true">
+                                    <button class="friend-sync-button" disabled="@isLoadingFriendWeek" @onclick="() => showSyncConfirm = true">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
                                         @Loc["friends_sync_button"]
                                     </button>
@@ -149,7 +149,7 @@
 
 <UiBottomSheet IsOpen="showSyncConfirm"
                Title="@Loc["friends_sync_confirm_title"]"
-               Eyebrow="@(selectedFriend is null ? null : Loc.T("friends_sync_confirm_eyebrow", selectedFriend.DisplayName))"
+               Eyebrow="@(selectedFriend is null ? null : Loc.T("friends_sync_confirm_eyebrow", selectedFriend.DisplayName, WeekRangeLabel))"
                OnDismiss="() => showSyncConfirm = false">
     <div class="sheet-actions" dir="@Loc.Direction">
         <p>@Loc["friends_sync_confirm_note"]</p>
@@ -177,6 +177,8 @@
     private DateOnly displayedWeekStart;
     private bool showSyncConfirm;
     private bool isSyncing;
+    private bool isLoadingFriendWeek;
+    private int friendWeekRequestId;
     private bool hasUsername;
     private string WeekRangeLabel => $"{displayedWeekStart.Day} {Loc.GetMonthName(displayedWeekStart.Month)} – {displayedWeekStart.AddDays(6).Day} {Loc.GetMonthName(displayedWeekStart.AddDays(6).Month)}";
 
@@ -292,10 +294,15 @@
         {
             selectedFriend = null;
             selectedFriendWeek.Clear();
+            friendWeekRequestId++;
+            isLoadingFriendWeek = false;
             return;
         }
 
         selectedFriend = friend;
+        // Always start on the current week for a newly opened friend, rather than
+        // silently keeping whatever week was last navigated to for a different friend.
+        displayedWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         await LoadSelectedFriendWeekAsync();
     }
 
@@ -304,17 +311,31 @@
     private async Task LoadSelectedFriendWeekAsync()
     {
         if (selectedFriend is null) return;
-        selectedFriendWeek = await UserService.GetWeeklyPlanAsync(selectedFriend.Uid, displayedWeekStart, displayedWeekStart.AddDays(6));
-        selectedFriendWeek = Enumerable.Range(0, 7).Select(offset =>
+        // Tag this fetch with a request id: if the user navigates again (or
+        // picks a different friend) before this one resolves, its result must
+        // not land after a newer request's, or the grid — and a sync started
+        // from it — would silently use the wrong week's data.
+        var requestId = ++friendWeekRequestId;
+        var requestedWeekStart = displayedWeekStart;
+        var requestedFriendUid = selectedFriend.Uid;
+        isLoadingFriendWeek = true;
+        try
         {
-            var date = displayedWeekStart.AddDays(offset);
-            return selectedFriendWeek.FirstOrDefault(entry => entry.Date == date) ?? new WeeklyPlanEntry { Date = date };
-        }).ToList();
+            var fetched = await UserService.GetWeeklyPlanAsync(requestedFriendUid, requestedWeekStart, requestedWeekStart.AddDays(6));
+            if (requestId != friendWeekRequestId) return;
+
+            selectedFriendWeek = Enumerable.Range(0, 7).Select(offset =>
+            {
+                var date = requestedWeekStart.AddDays(offset);
+                return fetched.FirstOrDefault(entry => entry.Date == date) ?? new WeeklyPlanEntry { Date = date };
+            }).ToList();
+        }
+        finally { if (requestId == friendWeekRequestId) isLoadingFriendWeek = false; }
     }
 
     private async Task SyncFriendWeek()
     {
-        if (selectedFriend is null) return;
+        if (selectedFriend is null || isLoadingFriendWeek) return;
         isSyncing = true;
         try
         {

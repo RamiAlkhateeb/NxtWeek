@@ -396,8 +396,8 @@ public class LocalizationService : ILocalizationService
         // Friend week sync
         ["friends_sync_button"] = new() { ["ar"] = "مزامنة أسبوعي", ["en"] = "Sync my week", ["de"] = "Meine Woche synchronisieren" },
         ["friends_sync_confirm_title"] = new() { ["ar"] = "مزامنة الأسبوع؟", ["en"] = "Sync this week?", ["de"] = "Diese Woche synchronisieren?" },
-        // {0} = friend's display name
-        ["friends_sync_confirm_eyebrow"] = new() { ["ar"] = "سيتم استبدال خطتك لهذا الأسبوع بخطة {0}", ["en"] = "This will replace your plan for this week with {0}'s plan", ["de"] = "Dein Plan für diese Woche wird durch den von {0} ersetzt" },
+        // {0} = friend's display name, {1} = the week's date range (e.g. "5 Oct – 11 Oct")
+        ["friends_sync_confirm_eyebrow"] = new() { ["ar"] = "سيتم استبدال خطتك لأسبوع {1} بخطة {0}", ["en"] = "This will replace your plan for the week of {1} with {0}'s plan", ["de"] = "Dein Plan für die Woche vom {1} wird durch den von {0} ersetzt" },
         ["friends_sync_confirm_note"] = new() { ["ar"] = "لا يمكن التراجع عن هذا تلقائياً، لكن يمكنك تعديل خطتك يدوياً بعد ذلك.", ["en"] = "This can't be undone automatically, but you can still edit your plan afterward.", ["de"] = "Das lässt sich nicht automatisch rückgängig machen, du kannst deinen Plan danach aber jederzeit bearbeiten." },
         // {0} = friend's display name
         ["friends_sync_confirm_action"] = new() { ["ar"] = "نعم، انسخ خطة {0}", ["en"] = "Yes, copy {0}'s plan", ["de"] = "Ja, Plan von {0} übernehmen" },
