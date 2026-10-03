@@ -202,6 +202,7 @@ public class LocalizationService : ILocalizationService
         ["nav_shopping"] = new() { ["ar"] = "المشتريات", ["en"] = "Shopping", ["de"] = "Einkauf" },
         ["nav_friends"] = new() { ["ar"] = "الأصدقاء", ["en"] = "Friends", ["de"] = "Freunde" },
         ["nav_settings"] = new() { ["ar"] = "الإعدادات", ["en"] = "Settings", ["de"] = "Einstellungen" },
+        ["ai_plan_nav_label"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
 
         // Settings
         ["settings_title"] = new() { ["ar"] = "الإعدادات", ["en"] = "Settings", ["de"] = "Einstellungen" },
@@ -403,6 +404,36 @@ public class LocalizationService : ILocalizationService
         ["friends_sync_confirm_action"] = new() { ["ar"] = "نعم، انسخ خطة {0}", ["en"] = "Yes, copy {0}'s plan", ["de"] = "Ja, Plan von {0} übernehmen" },
         ["friends_sync_syncing"] = new() { ["ar"] = "جارٍ المزامنة...", ["en"] = "Syncing...", ["de"] = "Wird synchronisiert …" },
         // {0} = friend's display name
-        ["friends_sync_success"] = new() { ["ar"] = "تمت مزامنة أسبوعك مع خطة {0} ✨", ["en"] = "Your week now matches {0}'s plan ✨", ["de"] = "Deine Woche entspricht jetzt dem Plan von {0} ✨" }
+        ["friends_sync_success"] = new() { ["ar"] = "تمت مزامنة أسبوعك مع خطة {0} ✨", ["en"] = "Your week now matches {0}'s plan ✨", ["de"] = "Deine Woche entspricht jetzt dem Plan von {0} ✨" },
+
+        // AI assistant (prompt -> meals + shopping list)
+        ["ai_plan_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
+        ["ai_plan_subtitle"] = new() { ["ar"] = "صف أسبوعك بكلماتك", ["en"] = "Describe your week in your own words", ["de"] = "Beschreibe deine Woche mit eigenen Worten" },
+        ["ai_plan_placeholder"] = new() { ["ar"] = "مثال: أضف بيتزا ليوم الثلاثاء ودجاج مع أرز ليوم الجمعة، وضع حليب وبيض وخبز في قائمة التسوق", ["en"] = "e.g. add pizza for Tuesday and chicken rice for Friday, and put milk, eggs and bread on my shopping list", ["de"] = "z. B. füge Pizza für Dienstag und Hähnchen mit Reis für Freitag hinzu und setze Milch, Eier und Brot auf die Einkaufsliste" },
+        ["ai_plan_submit"] = new() { ["ar"] = "إرسال", ["en"] = "Send", ["de"] = "Senden" },
+        ["ai_plan_parsing"] = new() { ["ar"] = "جارٍ التفكير...", ["en"] = "Thinking...", ["de"] = "Denke nach …" },
+        ["ai_plan_no_key_error"] = new() { ["ar"] = "أضف مفتاح Gemini الخاص بك من الإعدادات أولاً.", ["en"] = "Add your Gemini API key in Settings first.", ["de"] = "Füge zuerst deinen Gemini-API-Schlüssel in den Einstellungen hinzu." },
+        ["ai_plan_go_to_settings"] = new() { ["ar"] = "اذهب إلى الإعدادات", ["en"] = "Go to Settings", ["de"] = "Zu den Einstellungen" },
+        ["ai_plan_empty_parse_error"] = new() { ["ar"] = "لم أجد أي وجبات أو عناصر تسوق في ذلك — حاول إعادة الصياغة.", ["en"] = "Couldn't find any meals or shopping items in that — try rephrasing.", ["de"] = "Darin wurden keine Gerichte oder Einkaufsartikel gefunden – versuch es anders zu formulieren." },
+        ["ai_plan_preview_title"] = new() { ["ar"] = "راجع قبل الإضافة", ["en"] = "Review before adding", ["de"] = "Vor dem Hinzufügen prüfen" },
+        // {0} = Gemini model name
+        ["ai_plan_preview_eyebrow"] = new() { ["ar"] = "تم التحليل باستخدام {0}", ["en"] = "Parsed with {0}", ["de"] = "Analysiert mit {0}" },
+        ["ai_plan_preview_meals_heading"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
+        ["ai_plan_preview_items_heading"] = new() { ["ar"] = "عناصر قائمة التسوق", ["en"] = "Shopping list items", ["de"] = "Einkaufsartikel" },
+        ["ai_plan_confirm_action"] = new() { ["ar"] = "أضف إلى خطتي", ["en"] = "Add to my plan", ["de"] = "Zu meinem Plan hinzufügen" },
+        ["ai_plan_committing"] = new() { ["ar"] = "جارٍ الإضافة...", ["en"] = "Adding...", ["de"] = "Wird hinzugefügt …" },
+        ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
+        // {0} = meal count, {1} = shopping item count
+        ["ai_plan_success"] = new() { ["ar"] = "تمت إضافة {0} وجبة و {1} عنصر تسوق.", ["en"] = "Added {0} meals and {1} shopping items.", ["de"] = "{0} Gerichte und {1} Einkaufsartikel hinzugefügt." },
+
+        // AI assistant settings card
+        ["settings_ai_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
+        ["settings_ai_desc"] = new() { ["ar"] = "ألصق مفتاح Gemini المجاني الخاص بك لتفعيل المساعد الذكي.", ["en"] = "Paste your own free Gemini API key to enable the AI assistant.", ["de"] = "Füge deinen eigenen kostenlosen Gemini-API-Schlüssel ein, um den KI-Assistenten zu aktivieren." },
+        ["settings_ai_key_label"] = new() { ["ar"] = "مفتاح Gemini API", ["en"] = "Gemini API key", ["de"] = "Gemini-API-Schlüssel" },
+        ["settings_ai_key_placeholder"] = new() { ["ar"] = "ألصق مفتاح API الخاص بك", ["en"] = "Paste your API key", ["de"] = "API-Schlüssel einfügen" },
+        ["settings_ai_key_hint_link"] = new() { ["ar"] = "احصل على مفتاح API مجاني من Google AI Studio", ["en"] = "Get a free API key from Google AI Studio", ["de"] = "Hol dir einen kostenlosen API-Schlüssel von Google AI Studio" },
+        ["settings_ai_model_label"] = new() { ["ar"] = "النموذج", ["en"] = "Model", ["de"] = "Modell" },
+        ["settings_ai_refresh_models"] = new() { ["ar"] = "تحديث قائمة النماذج", ["en"] = "Refresh model list", ["de"] = "Modellliste aktualisieren" },
+        ["settings_ai_saved"] = new() { ["ar"] = "تم حفظ إعدادات الذكاء الاصطناعي.", ["en"] = "AI settings saved.", ["de"] = "KI-Einstellungen gespeichert." }
     };
 }

@@ -26,6 +26,8 @@ builder.Services.AddScoped<IMealService>(sp => sp.GetRequiredService<FirebaseMea
 builder.Services.AddScoped<IShoppingListService, FirebaseShoppingListService>();
 builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();
 builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
+builder.Services.AddScoped<IAiSettingsService, LocalStorageAiSettingsService>();
+builder.Services.AddScoped<IGeminiPlannerService, GeminiPlannerService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();
 builder.Services.AddScoped<IDataExportService, LocalDataExportService>();
 builder.Services.AddScoped<IDataImportService, LocalDataImportService>();

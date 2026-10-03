@@ -1682,3 +1682,14 @@ input, textarea, select, .ui-text-input, .playful-input, .form-group input, .for
 .friend-sync-button:hover { opacity: .9; }
 .friend-sync-button:active { transform: scale(.98); }
 .friend-sync-button:disabled { opacity: .55; cursor: not-allowed; }
+
+/* AI assistant composer (ai-plan page) */
+.ai-plan-composer { display: flex; flex-direction: column; gap: 10px; margin: 0 16px 10px; padding: 14px; background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+.ai-plan-textarea { width: 100%; min-height: 72px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-bg-light); color: var(--color-text-main); padding: var(--space-3) var(--space-4); font: inherit; resize: vertical; }
+.ai-plan-textarea:focus { border-color: var(--color-primary); outline: 0; }
+.ai-plan-submit { align-self: flex-end; min-width: 120px; }
+.ai-plan-preview-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--color-bg-light); margin-bottom: 6px; }
+.ai-plan-preview-row span { flex: 0 0 auto; color: var(--color-text-secondary); font-size: 12px; }
+.ai-plan-preview-row strong { flex: 1; min-width: 0; }
+.ai-plan-preview-remove { flex: 0 0 auto; width: 28px; height: 28px; border: 0; border-radius: 10px; background: var(--color-danger-light); color: var(--color-danger); cursor: pointer; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }

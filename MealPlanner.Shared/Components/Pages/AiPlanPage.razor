@@ -1,0 +1,220 @@
+@page "/ai-plan"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IGeminiPlannerService GeminiPlanner
+@inject IAiSettingsService AiSettings
+@inject IMealCatalogService CatalogService
+@inject IUserService UserService
+@inject IShoppingListService ShoppingListService
+@inject ILocalizationService Loc
+@inject NavigationManager Nav
+
+<div class="app app-content-wrapper" dir="@Loc.Direction">
+    <UiPageHeader Icon="✨" Title="@Loc["ai_plan_title"]" Subtitle="@Loc["ai_plan_subtitle"]" />
+
+    <div class="ai-plan-composer">
+        <textarea class="ai-plan-textarea" dir="auto" rows="@Rows"
+                  @bind="promptText" @bind:event="oninput"
+                  placeholder="@Loc["ai_plan_placeholder"]"
+                  aria-label="@Loc["ai_plan_placeholder"]"></textarea>
+        <UiButton Variant="primary" CssClass="ai-plan-submit" OnClick="SubmitPromptAsync"
+                  Disabled="@(string.IsNullOrWhiteSpace(promptText) || isParsing)">
+            @(isParsing ? Loc["ai_plan_parsing"] : Loc["ai_plan_submit"])
+        </UiButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(feedback))
+    {
+        <p class="friend-feedback @(isError ? "error" : "")">
+            @feedback
+            @if (showSettingsLink)
+            {
+                <a href="settings">@Loc["ai_plan_go_to_settings"]</a>
+            }
+        </p>
+    }
+</div>
+
+<UiBottomSheet IsOpen="showPreview"
+               Title="@Loc["ai_plan_preview_title"]"
+               Eyebrow="@(pendingModel is null ? null : Loc.T("ai_plan_preview_eyebrow", pendingModel))"
+               OnDismiss="() => showPreview = false">
+    <div class="sheet-actions" dir="@Loc.Direction">
+        @if (pendingMeals.Count > 0)
+        {
+            <h3>@Loc["ai_plan_preview_meals_heading"]</h3>
+            @foreach (var meal in pendingMeals)
+            {
+                <div class="ai-plan-preview-row">
+                    <span>@Loc.FormatDayDate(meal.Date)</span>
+                    <strong>@meal.Name</strong>
+                    <button class="ai-plan-preview-remove" @onclick="() => pendingMeals.Remove(meal)" aria-label="@Loc["delete"]">✕</button>
+                </div>
+            }
+        }
+
+        @if (pendingItems.Count > 0)
+        {
+            <h3>@Loc["ai_plan_preview_items_heading"]</h3>
+            @foreach (var item in pendingItems)
+            {
+                <div class="ai-plan-preview-row">
+                    <span>@item</span>
+                    <button class="ai-plan-preview-remove" @onclick="() => pendingItems.Remove(item)" aria-label="@Loc["delete"]">✕</button>
+                </div>
+            }
+
+            @if (shops.Count > 1)
+            {
+                <div class="chip-row">
+                    @foreach (var shop in shops)
+                    {
+                        <UiFilterChip Active="@(selectedShopId == shop.Id)" OnClick="() => selectedShopId = shop.Id">@shop.Name</UiFilterChip>
+                    }
+                </div>
+            }
+        }
+
+        <UiButton Variant="primary" OnClick="CommitAsync" Disabled="@isCommitting">
+            @(isCommitting ? Loc["ai_plan_committing"] : Loc["ai_plan_confirm_action"])
+        </UiButton>
+        <UiButton Variant="ghost" OnClick="() => showPreview = false" Disabled="@isCommitting">@Loc["cancel"]</UiButton>
+    </div>
+</UiBottomSheet>
+
+@code {
+    private string uid = "";
+    private string promptText = "";
+    private bool isParsing;
+    private bool isCommitting;
+    private string feedback = "";
+    private bool isError;
+    private bool showSettingsLink;
+
+    private bool showPreview;
+    private string? pendingModel;
+    private List<ParsedMealEntry> pendingMeals = new();
+    private List<string> pendingItems = new();
+    private List<ShoppingShop> shops = new();
+    private string? selectedShopId;
+
+    private int Rows => Math.Clamp(promptText.Split('\n').Length, 2, 6);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid))
+        {
+            Nav.NavigateTo("/signin");
+            return;
+        }
+
+        uid = user.Uid;
+    }
+
+    private async Task SubmitPromptAsync()
+    {
+        if (string.IsNullOrWhiteSpace(promptText)) return;
+
+        feedback = "";
+        isError = false;
+        showSettingsLink = false;
+
+        var key = await AiSettings.GetGeminiApiKeyAsync();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            isError = true;
+            showSettingsLink = true;
+            feedback = Loc["ai_plan_no_key_error"];
+            return;
+        }
+
+        isParsing = true;
+        try
+        {
+            var result = await GeminiPlanner.ParsePromptAsync(promptText.Trim());
+            pendingMeals = result.Meals.ToList();
+            pendingItems = result.ShoppingItems.ToList();
+            pendingModel = result.ModelUsed;
+
+            if (pendingMeals.Count == 0 && pendingItems.Count == 0)
+            {
+                isError = true;
+                feedback = Loc["ai_plan_empty_parse_error"];
+                return;
+            }
+
+            await PreparePreviewAsync();
+            showPreview = true;
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+        }
+        finally
+        {
+            isParsing = false;
+        }
+    }
+
+    private async Task PreparePreviewAsync()
+    {
+        if (pendingItems.Count == 0) return;
+
+        shops = await ShoppingListService.GetShopsAsync(uid);
+        if (shops.Count == 0)
+        {
+            var created = await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            shops = new List<ShoppingShop> { created };
+            selectedShopId = created.Id;
+        }
+        else
+        {
+            selectedShopId = shops[0].Id;
+        }
+    }
+
+    private async Task CommitAsync()
+    {
+        isCommitting = true;
+        try
+        {
+            foreach (var meal in pendingMeals)
+            {
+                var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
+                {
+                    Name = meal.Name,
+                    MealType = meal.MealType,
+                    Language = Loc.CurrentLanguage,
+                    CreatedBy = uid
+                });
+                await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
+            }
+
+            if (pendingItems.Count > 0 && !string.IsNullOrWhiteSpace(selectedShopId))
+            {
+                foreach (var item in pendingItems)
+                    await ShoppingListService.AddItemAsync(uid, selectedShopId, item);
+            }
+
+            var mealCount = pendingMeals.Count;
+            var itemCount = pendingItems.Count;
+
+            showPreview = false;
+            promptText = "";
+            isError = false;
+            feedback = Loc.T("ai_plan_success", mealCount, itemCount);
+        }
+        catch (Exception ex)
+        {
+            isError = true;
+            feedback = ex.Message;
+        }
+        finally
+        {
+            isCommitting = false;
+        }
+    }
+}
