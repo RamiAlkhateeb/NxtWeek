@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+/* Cairo is imported by Nxt.UI (nxt.css). */
 
 /* ==========================================================================
    Theme tokens — radio theme (black / white / red). (--space-*, --color-accent and friends are appended further down
@@ -6,43 +6,47 @@
    iterations of the app; kept as one now.)
    ========================================================================== */
 :root {
-    /* Radio player theme (../Syrian-Radio): light grey page, white cards,
-       near-black text, hot-pink red accent, black round primary control. */
-    --color-primary: #ff2d55;
-    --color-primary-light: rgba(255, 45, 85, .1);
-    --color-primary-hover: #e11d48;
-    --color-primary-deep: #e11d48;
-    --color-ink: #1c1c1e;
-    --color-bg-light: #f2f2f7;      /* inset / pill surface */
-    --color-page: #f7f7f9;
-    --color-card-bg: #ffffff;
-    --color-text-main: #1c1c1e;
-    --color-text-secondary: #8e8e93;
-    --color-border: #e5e5ea;
-    --color-success: #22a85a;
-    --color-warning: #b7791f;
-    --color-favorite: #ff2d55;
-    --color-danger: #e11d48;
+    /* Colours come from the shared family tokens in Nxt.UI (nxt.css), which also
+       carry the dark theme. These aliases keep the existing selectors working. */
+    --color-primary: var(--nxt-accent);
+    --color-primary-light: var(--nxt-accent-soft);
+    --color-primary-hover: var(--nxt-accent-hover);
+    --color-primary-deep: var(--nxt-accent-hover);
+    --color-ink: var(--nxt-ink);
+    --color-bg-light: var(--nxt-inset);      /* inset / pill surface */
+    --color-page: var(--nxt-page);
+    --color-card-bg: var(--nxt-card);
+    --color-text-main: var(--nxt-text);
+    --color-text-secondary: var(--nxt-text-2);
+    --color-border: var(--nxt-border);
+    --color-success: var(--nxt-success);
+    --color-warning: var(--nxt-warning);
+    --color-favorite: var(--nxt-accent);
+    --color-danger: var(--nxt-danger);
+    --color-danger-light: var(--nxt-danger-soft);
 
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, .05);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, .07);
-    --shadow-lg: 0 12px 36px rgba(0, 0, 0, .08);
-    --glow-red: 0 6px 16px rgba(255, 45, 85, .28);
+    --shadow-sm: var(--nxt-shadow-sm);
+    --shadow-md: var(--nxt-shadow-md);
+    --shadow-lg: var(--nxt-shadow-lg);
+    --glow-red: 0 6px 16px rgba(var(--nxt-accent-rgb), .28);
 
-    --radius-sm: 12px;
-    --radius-md: 16px;
-    --radius-lg: 28px;
-    --radius-xl: 32px;
-    --radius-pill: 999px;
+    --radius-sm: var(--nxt-radius-sm);
+    --radius-md: var(--nxt-radius-md);
+    --radius-lg: var(--nxt-radius-lg);
+    --radius-xl: var(--nxt-radius-xl);
+    --radius-pill: var(--nxt-radius-pill);
+
+    /* The fixed bottom nav; Nxt.UI lifts the AI composer and toasts above it. */
+    --nxt-bottom-nav-h: 76px;
 
     /* Meal-type tokens kept (MealTypeStyle still emits the classes) but the
-       palette is now neutral so the app stays black / white / red. */
-    --type-meat-bg: #f2f2f7;       --type-meat-fg: #1c1c1e;
-    --type-chicken-bg: #f2f2f7;    --type-chicken-fg: #1c1c1e;
-    --type-fish-bg: #f2f2f7;       --type-fish-fg: #1c1c1e;
-    --type-vegetarian-bg: #f2f2f7; --type-vegetarian-fg: #1c1c1e;
-    --type-vegan-bg: #f2f2f7;      --type-vegan-fg: #1c1c1e;
-    --type-default-bg: #f2f2f7;    --type-default-fg: #1c1c1e;
+       palette is neutral so the app stays black / white / red. */
+    --type-meat-bg: var(--nxt-inset);       --type-meat-fg: var(--nxt-text);
+    --type-chicken-bg: var(--nxt-inset);    --type-chicken-fg: var(--nxt-text);
+    --type-fish-bg: var(--nxt-inset);       --type-fish-fg: var(--nxt-text);
+    --type-vegetarian-bg: var(--nxt-inset); --type-vegetarian-fg: var(--nxt-text);
+    --type-vegan-bg: var(--nxt-inset);      --type-vegan-fg: var(--nxt-text);
+    --type-default-bg: var(--nxt-inset);    --type-default-fg: var(--nxt-text);
 }
 
 /* ==========================================================================
@@ -934,7 +938,6 @@ button.month-cell:not(:disabled) { cursor: pointer; }
 :root {
     --color-accent: #22a85a;
     --color-accent-light: rgba(34,168,90,.12);
-    --color-danger-light: rgba(225,29,72,.1);
 
     --space-1: 4px;
     --space-2: 8px;
@@ -1474,7 +1477,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
    white rounded cards on a light page, pink-red accent, black round
    primary control, grey pill chips.
    ========================================================================== */
-:root { color-scheme: light; }
 html, body { background-color: var(--color-page); color: var(--color-text-main); }
 body { background-image: none; }
 .app { background: transparent; box-shadow: none; border: 0; }
@@ -1512,7 +1514,7 @@ body { background-image: none; }
     color: #fff;
     box-shadow: 0 6px 16px rgba(0,0,0,.22);
 }
-.ui-button-primary:hover:not(:disabled), .primary-btn:hover:not(:disabled) { background: #000; }
+.ui-button-primary:hover:not(:disabled), .primary-btn:hover:not(:disabled) { filter: brightness(1.15); }
 .ui-button-secondary, .secondary-btn { background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); }
 .ui-button-ghost { color: var(--color-primary); }
 .primary-btn:disabled, .btn-playful:disabled { background: var(--color-bg-light); color: var(--color-text-secondary); box-shadow: none; }
@@ -1523,7 +1525,7 @@ input, textarea, select, .ui-text-input, .playful-input, .form-group input, .for
     background: var(--color-bg-light); color: var(--color-text-main); border-color: transparent;
 }
 ::placeholder { color: var(--color-text-secondary); opacity: 1; }
-.ui-text-input:focus, .playful-input:focus { border-color: var(--color-primary); background: #fff; }
+.ui-text-input:focus, .playful-input:focus { border-color: var(--color-primary); background: var(--color-card-bg); }
 
 /* Chips, badges: grey pills, active = black (like the "ready" pill / play button) */
 .ui-filter-chip { background: var(--color-bg-light); color: var(--color-text-secondary); border-color: transparent; }

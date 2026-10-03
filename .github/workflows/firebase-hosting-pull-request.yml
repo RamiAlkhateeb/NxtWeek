@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - run: dotnet publish MealPlanner.Web/MealPlanner.Web.csproj -c Release -o output
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

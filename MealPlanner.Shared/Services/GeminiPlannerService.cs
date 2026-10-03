@@ -1,109 +1,33 @@
-using System.Net.Http.Json;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using MealPlanner.Shared.Models;
+using Nxt.UI.Ai;
 
 namespace MealPlanner.Shared.Services;
 
 /// <summary>
-/// Parses a free-text prompt ("add pizza for Tuesday, put milk on my list") into
-/// explicit meal assignments and shopping-list items via the Gemini API, mirroring
-/// the sibling task-breaker app's GeminiService: try the user's selected model,
-/// fall back through a known-good list on failure, and force structured JSON back
-/// via generationConfig.response_schema instead of parsing free text ourselves.
+/// Parses a free-text prompt ("add pizza for Tuesday, put milk on my list") into explicit meal
+/// assignments and shopping-list items. Transport, model fallback and structured JSON come from the
+/// family's shared <see cref="GeminiClient"/>; this class only owns the meal-planning prompt and validation.
 /// </summary>
 public class GeminiPlannerService : IGeminiPlannerService
 {
     private const int MaxPastDays = 1;
     private const int MaxFutureDays = 60;
 
-    private static readonly string[] FallbackModels =
-    [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
-    ];
-
-    private readonly HttpClient _http;
-    private readonly IAiSettingsService _settings;
+    private readonly GeminiClient _gemini;
     private readonly ILocalizationService _loc;
 
-    public GeminiPlannerService(HttpClient http, IAiSettingsService settings, ILocalizationService loc)
+    public GeminiPlannerService(GeminiClient gemini, ILocalizationService loc)
     {
-        _http = http;
-        _settings = settings;
+        _gemini = gemini;
         _loc = loc;
-    }
-
-    public async Task<List<string>> ListAvailableModelsAsync()
-    {
-        var apiKey = await _settings.GetGeminiApiKeyAsync();
-        if (string.IsNullOrWhiteSpace(apiKey)) return [];
-
-        try
-        {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models?key={Uri.EscapeDataString(apiKey)}";
-            using var response = await _http.GetAsync(url);
-            if (!response.IsSuccessStatusCode) return [];
-
-            var result = await response.Content.ReadFromJsonAsync<ModelListResponse>();
-            return result?.Models?
-                .Where(model => model.SupportedGenerationMethods?.Contains("generateContent", StringComparer.OrdinalIgnoreCase) == true)
-                .Select(model => model.Name?.Replace("models/", "", StringComparison.OrdinalIgnoreCase))
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Select(name => name!)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList() ?? [];
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-        {
-            return [];
-        }
     }
 
     public async Task<ParsedPlanResult> ParsePromptAsync(string prompt)
     {
-        var apiKey = await _settings.GetGeminiApiKeyAsync();
-        if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("No Gemini API key set. Add one in Settings.");
-
-        var modelsToTry = await GetModelsToTryAsync();
-        Exception? lastError = null;
-
-        foreach (var model in modelsToTry)
-        {
-            try
-            {
-                return await ParsePromptCoreAsync(prompt, model, apiKey);
-            }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
-            {
-                lastError = ex;
-            }
-        }
-
-        throw new InvalidOperationException(
-            "None of the configured Gemini models could parse that. Check your API key, model access, and connection.",
-            lastError);
-    }
-
-    private async Task<IEnumerable<string>> GetModelsToTryAsync()
-    {
-        var selectedModel = await _settings.GetGeminiModelAsync();
-        var availableModels = await ListAvailableModelsAsync();
-        var knownFallbacks = availableModels.Count == 0
-            ? FallbackModels
-            : FallbackModels.Where(model => availableModels.Contains(model, StringComparer.OrdinalIgnoreCase));
-        return new[] { selectedModel }.Concat(knownFallbacks).Distinct(StringComparer.OrdinalIgnoreCase);
-    }
-
-    private async Task<ParsedPlanResult> ParsePromptCoreAsync(string prompt, string model, string apiKey)
-    {
         var today = DateOnly.FromDateTime(DateTime.Now);
         var languageName = _loc.AvailableLanguages.FirstOrDefault(l => l.Code == _loc.CurrentLanguage)?.NativeName ?? _loc.CurrentLanguage;
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
         var fullPrompt = $"""
             Today's date is {today:yyyy-MM-dd} ({today.DayOfWeek}). Resolve relative dates
             ("tomorrow", "Friday", "next week") against this date and return explicit ISO 8601
@@ -124,57 +48,47 @@ public class GeminiPlannerService : IGeminiPlannerService
             User request: {prompt}
             """;
 
-        var body = new
+        var schema = new
         {
-            contents = new[] { new { parts = new[] { new { text = fullPrompt } } } },
-            generationConfig = new
+            type = "OBJECT",
+            properties = new
             {
-                response_mime_type = "application/json",
-                response_schema = new
+                meals = new
                 {
-                    type = "OBJECT",
-                    properties = new
+                    type = "ARRAY",
+                    items = new
                     {
-                        meals = new
+                        type = "OBJECT",
+                        properties = new
                         {
-                            type = "ARRAY",
-                            items = new
-                            {
-                                type = "OBJECT",
-                                properties = new
-                                {
-                                    date = new { type = "STRING" },
-                                    name = new { type = "STRING" },
-                                    mealType = new { type = "STRING", @enum = new[] { "Meat", "Chicken", "Fish", "Vegetarian", "Vegan" } }
-                                },
-                                required = new[] { "date", "name", "mealType" }
-                            }
+                            date = new { type = "STRING" },
+                            name = new { type = "STRING" },
+                            mealType = new { type = "STRING", @enum = new[] { "Meat", "Chicken", "Fish", "Vegetarian", "Vegan" } }
                         },
-                        shoppingItems = new { type = "ARRAY", items = new { type = "STRING" } }
-                    },
-                    required = new[] { "meals", "shoppingItems" }
-                }
-            }
+                        required = new[] { "date", "name", "mealType" }
+                    }
+                },
+                shoppingItems = new { type = "ARRAY", items = new { type = "STRING" } }
+            },
+            required = new[] { "meals", "shoppingItems" }
         };
 
-        using var response = await _http.PostAsJsonAsync(url, body);
-        response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<GeminiResponse>();
-        var text = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
-            ?? throw new InvalidOperationException("Gemini returned no content.");
-        var parsed = JsonSerializer.Deserialize<ParseResultDto>(text)
-            ?? throw new InvalidOperationException("Gemini returned an invalid response.");
+        ParsedPlanResult? result = null;
+        await _gemini.GenerateJsonAsync<ParseResultDto>(fullPrompt, schema, parsed =>
+        {
+            var meals = ValidateMeals(parsed.Meals, today);
+            var shoppingItems = parsed.ShoppingItems
+                .Select(item => item.Trim())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .ToList();
 
-        var meals = ValidateMeals(parsed.Meals, today);
-        var shoppingItems = parsed.ShoppingItems
-            .Select(item => item.Trim())
-            .Where(item => !string.IsNullOrWhiteSpace(item))
-            .ToList();
+            if (meals.Count == 0 && shoppingItems.Count == 0)
+                throw new InvalidOperationException("Gemini could not find any meals or shopping items in that request.");
 
-        if (meals.Count == 0 && shoppingItems.Count == 0)
-            throw new InvalidOperationException("Gemini could not find any meals or shopping items in that request.");
-
-        return new ParsedPlanResult(meals, shoppingItems, model);
+            result = new ParsedPlanResult(meals, shoppingItems);
+            return parsed;
+        });
+        return result!;
     }
 
     private static List<ParsedMealEntry> ValidateMeals(List<ParsedMealDto> dtos, DateOnly today)
@@ -197,12 +111,6 @@ public class GeminiPlannerService : IGeminiPlannerService
         return meals;
     }
 
-    private sealed class ModelListResponse { [JsonPropertyName("models")] public List<GeminiModel>? Models { get; set; } }
-    private sealed class GeminiModel
-    {
-        [JsonPropertyName("name")] public string? Name { get; set; }
-        [JsonPropertyName("supportedGenerationMethods")] public List<string>? SupportedGenerationMethods { get; set; }
-    }
     private sealed class ParseResultDto
     {
         [JsonPropertyName("meals")] public List<ParsedMealDto> Meals { get; set; } = [];
@@ -214,8 +122,4 @@ public class GeminiPlannerService : IGeminiPlannerService
         [JsonPropertyName("name")] public string Name { get; set; } = "";
         [JsonPropertyName("mealType")] public string MealType { get; set; } = "";
     }
-    private sealed class GeminiResponse { [JsonPropertyName("candidates")] public List<Candidate>? Candidates { get; set; } }
-    private sealed class Candidate { [JsonPropertyName("content")] public Content? Content { get; set; } }
-    private sealed class Content { [JsonPropertyName("parts")] public List<Part>? Parts { get; set; } }
-    private sealed class Part { [JsonPropertyName("text")] public string? Text { get; set; } }
 }
