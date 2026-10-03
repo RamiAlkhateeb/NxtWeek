@@ -5,6 +5,8 @@
 @inject IUserService UserService
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
+@inject IAiSettingsService AiSettings
+@inject IGeminiPlannerService GeminiPlanner
 @implements IDisposable
 
 <div class="app app-content-wrapper" dir="@Loc.Direction">
@@ -30,6 +32,32 @@
       <label for="settings-username">@(hasUsername ? Loc["settings_username_change"] : Loc["settings_username_choose"])</label>
       <div class="friend-add-form"><input id="settings-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="@Loc["settings_username_placeholder"]" /><button class="friend-add-button" @onclick="SaveUsername" disabled="@isSavingUsername">✓</button></div>
       @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
+    </UiCard>
+
+    <UiCard CssClass="settings-card">
+      <h2>@Loc["settings_ai_title"]</h2>
+      <p>@Loc["settings_ai_desc"]</p>
+      <label for="settings-gemini-key">@Loc["settings_ai_key_label"]</label>
+      <div class="friend-add-form"><input id="settings-gemini-key" class="ui-text-input" type="password" dir="ltr" @bind="geminiKeyInput" @bind:event="oninput" placeholder="@Loc["settings_ai_key_placeholder"]" /></div>
+      <a class="settings-action-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">@Loc["settings_ai_key_hint_link"]</a>
+
+      <label for="settings-gemini-model">@Loc["settings_ai_model_label"]</label>
+      <div class="friend-add-form">
+        <select id="settings-gemini-model" class="ui-text-input" @bind="geminiModelInput">
+          @if (!availableModels.Contains(geminiModelInput, StringComparer.OrdinalIgnoreCase))
+          {
+            <option value="@geminiModelInput">@geminiModelInput</option>
+          }
+          @foreach (var model in availableModels)
+          {
+            <option value="@model">@model</option>
+          }
+        </select>
+        <button class="friend-add-button" @onclick="RefreshModelsAsync" disabled="@isRefreshingModels" title="@Loc["settings_ai_refresh_models"]" aria-label="@Loc["settings_ai_refresh_models"]">⟳</button>
+      </div>
+
+      <button class="friend-add-button" @onclick="SaveAiSettingsAsync" disabled="@isSavingAiSettings">✓</button>
+      @if (!string.IsNullOrWhiteSpace(aiSettingsFeedback)) { <p class="friend-feedback @(aiSettingsError ? "error" : "")">@aiSettingsFeedback</p> }
     </UiCard>
 
     <UiCard CssClass="settings-card">
@@ -62,6 +90,14 @@
   private bool isSavingUsername;
   private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
 
+  private string geminiKeyInput = "";
+  private string geminiModelInput = "gemini-2.0-flash";
+  private List<string> availableModels = new();
+  private bool isRefreshingModels;
+  private bool isSavingAiSettings;
+  private string aiSettingsFeedback = "";
+  private bool aiSettingsError;
+
   protected override async Task OnInitializedAsync() {
     Loc.OnLanguageChanged += HandleLanguageChanged;
     await Loc.InitializeAsync();
@@ -70,6 +106,9 @@
     uid = user.Uid;
     var profile = await UserService.GetProfileAsync(uid);
     currentUsername = profile?.Username ?? "";
+
+    geminiKeyInput = await AiSettings.GetGeminiApiKeyAsync() ?? "";
+    geminiModelInput = await AiSettings.GetGeminiModelAsync();
   }
 
   private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
@@ -115,6 +154,35 @@
     await JS.InvokeVoidAsync("navigator.clipboard.writeText", currentUsername);
     usernameError = false;
     usernameFeedback = Loc["settings_username_copied"];
+  }
+
+  private async Task RefreshModelsAsync() {
+    aiSettingsFeedback = "";
+    isRefreshingModels = true;
+    try {
+      availableModels = await GeminiPlanner.ListAvailableModelsAsync();
+      if (availableModels.Count == 0) {
+        aiSettingsError = true;
+        aiSettingsFeedback = Loc["ai_plan_no_key_error"];
+      }
+    } finally {
+      isRefreshingModels = false;
+    }
+  }
+
+  private async Task SaveAiSettingsAsync() {
+    isSavingAiSettings = true;
+    try {
+      await AiSettings.SaveGeminiApiKeyAsync(geminiKeyInput);
+      await AiSettings.SaveGeminiModelAsync(geminiModelInput);
+      aiSettingsError = false;
+      aiSettingsFeedback = Loc["settings_ai_saved"];
+    } catch (Exception ex) {
+      aiSettingsError = true;
+      aiSettingsFeedback = ex.Message;
+    } finally {
+      isSavingAiSettings = false;
+    }
   }
 
   public void Dispose() {

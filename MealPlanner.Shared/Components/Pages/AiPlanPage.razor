@@ -1,0 +1,222 @@
+@page "/ai-plan"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IGeminiPlannerService GeminiPlanner
+@inject IAiSettingsService AiSettings
+@inject IMealCatalogService CatalogService
+@inject IUserService UserService
+@inject IShoppingListService ShoppingListService
+@inject ILocalizationService Loc
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="app app-content-wrapper ai-chat-page" dir="@Loc.Direction">
+    <UiPageHeader Icon="✨" Title="@Loc["ai_plan_title"]" Subtitle="@Loc["ai_plan_subtitle"]" />
+
+    <div class="ai-chat-thread" aria-live="polite">
+        @if (messages.Count == 0 && !isBusy)
+        {
+            <div class="ai-chat-empty">
+                <div class="ai-orb" aria-hidden="true">
+                    <span class="ai-orb-ring ring-1"></span>
+                    <span class="ai-orb-ring ring-2"></span>
+                    <span class="ai-orb-orbit"><i></i></span>
+                    <span class="ai-orb-core">
+                        <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+                    </span>
+                    <svg class="ai-spark spark-1" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                    <svg class="ai-spark spark-2" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                    <svg class="ai-spark spark-3" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                </div>
+                <p>@Loc["ai_plan_chat_empty"]</p>
+            </div>
+        }
+
+        @foreach (var message in messages)
+        {
+            <div class="ai-chat-row @(message.FromUser ? "from-user" : "from-ai")">
+                <div class="ai-chat-bubble @(message.IsError ? "is-error" : "")">
+                    @if (!string.IsNullOrWhiteSpace(message.Text))
+                    {
+                        <p class="ai-chat-text">@message.Text</p>
+                    }
+
+                    @if (message.Meals.Count > 0)
+                    {
+                        <h3>@Loc["ai_plan_preview_meals_heading"]</h3>
+                        <ul class="ai-chat-list">
+                            @foreach (var meal in message.Meals)
+                            {
+                                <li><span>@Loc.FormatDayDate(meal.Date)</span><strong>@meal.Name</strong></li>
+                            }
+                        </ul>
+                    }
+
+                    @if (message.Items.Count > 0)
+                    {
+                        <h3>@Loc.T("ai_plan_reply_items_heading", message.ShopName ?? "")</h3>
+                        <ul class="ai-chat-list">
+                            @foreach (var item in message.Items)
+                            {
+                                <li><strong>@item</strong></li>
+                            }
+                        </ul>
+                    }
+
+                    @if (message.ShowSettingsLink)
+                    {
+                        <a class="ai-chat-link" href="settings">@Loc["ai_plan_go_to_settings"]</a>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (isBusy)
+        {
+            <div class="ai-chat-row from-ai">
+                <div class="ai-chat-bubble is-typing">@Loc["ai_plan_parsing"]</div>
+            </div>
+        }
+
+        <div id="ai-chat-end" class="ai-chat-end"></div>
+    </div>
+</div>
+
+@* Composer: pinned above the bottom navigation bar, send icon inside the text area. *@
+<div class="ai-chat-composer" dir="@Loc.Direction">
+    <div class="ai-chat-input">
+        <textarea class="ai-chat-textarea" dir="auto" rows="@Rows"
+                  @bind="promptText" @bind:event="oninput"
+                  placeholder="@Loc["ai_plan_placeholder"]"
+                  aria-label="@Loc["ai_plan_placeholder"]"></textarea>
+        <button type="button" class="ai-chat-send" @onclick="SendAsync"
+                disabled="@(string.IsNullOrWhiteSpace(promptText) || isBusy)"
+                title="@Loc["ai_plan_submit"]" aria-label="@Loc["ai_plan_submit"]">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+        </button>
+    </div>
+</div>
+
+@code {
+    private sealed class ChatMessage
+    {
+        public bool FromUser { get; init; }
+        public string Text { get; init; } = "";
+        public List<ParsedMealEntry> Meals { get; init; } = new();
+        public List<string> Items { get; init; } = new();
+        public string? ShopName { get; init; }
+        public bool IsError { get; init; }
+        public bool ShowSettingsLink { get; init; }
+    }
+
+    private readonly List<ChatMessage> messages = new();
+    private string uid = "";
+    private string promptText = "";
+    private bool isBusy;
+    private bool scrollPending;
+
+    private int Rows => Math.Clamp(promptText.Split('\n').Length, 2, 5);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid))
+        {
+            Nav.NavigateTo("/signin");
+            return;
+        }
+
+        uid = user.Uid;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!scrollPending) return;
+        scrollPending = false;
+        try { await JS.InvokeVoidAsync("nxtweek.scrollToId", "ai-chat-end", "end"); }
+        catch { /* purely cosmetic */ }
+    }
+
+    private void AddMessage(ChatMessage message)
+    {
+        messages.Add(message);
+        scrollPending = true;
+    }
+
+    private async Task SendAsync()
+    {
+        var text = promptText.Trim();
+        if (text.Length == 0 || isBusy) return;
+
+        // Show the user's message straight away, then work on the reply.
+        AddMessage(new ChatMessage { FromUser = true, Text = text });
+        promptText = "";
+        isBusy = true;
+        StateHasChanged();
+
+        try
+        {
+            var key = await AiSettings.GetGeminiApiKeyAsync();
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                AddMessage(new ChatMessage { Text = Loc["ai_plan_no_key_error"], IsError = true, ShowSettingsLink = true });
+                return;
+            }
+
+            var result = await GeminiPlanner.ParsePromptAsync(text);
+            if (result.Meals.Count == 0 && result.ShoppingItems.Count == 0)
+            {
+                AddMessage(new ChatMessage { Text = Loc["ai_plan_empty_parse_error"], IsError = true });
+                return;
+            }
+
+            foreach (var meal in result.Meals)
+            {
+                var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
+                {
+                    Name = meal.Name,
+                    MealType = meal.MealType,
+                    Language = Loc.CurrentLanguage,
+                    CreatedBy = uid
+                });
+                await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
+            }
+
+            string? shopName = null;
+            if (result.ShoppingItems.Count > 0)
+            {
+                var shop = await GetOrCreateShopAsync();
+                shopName = shop.Name;
+                foreach (var item in result.ShoppingItems)
+                    await ShoppingListService.AddItemAsync(uid, shop.Id, item);
+            }
+
+            // The reply reports what was actually done.
+            AddMessage(new ChatMessage
+            {
+                Text = Loc["ai_plan_reply_done"],
+                Meals = result.Meals,
+                Items = result.ShoppingItems,
+                ShopName = shopName
+            });
+        }
+        catch (Exception ex)
+        {
+            AddMessage(new ChatMessage { Text = ex.Message, IsError = true });
+        }
+        finally
+        {
+            isBusy = false;
+            scrollPending = true;
+        }
+    }
+
+    private async Task<ShoppingShop> GetOrCreateShopAsync()
+    {
+        var shops = await ShoppingListService.GetShopsAsync(uid);
+        return shops.Count > 0
+            ? shops[0]
+            : await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+    }
+}
