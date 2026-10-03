@@ -409,6 +409,7 @@ public class LocalizationService : ILocalizationService
         // AI assistant (prompt -> meals + shopping list)
         ["ai_plan_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
         ["ai_plan_subtitle"] = new() { ["ar"] = "صف أسبوعك بكلماتك", ["en"] = "Describe your week in your own words", ["de"] = "Beschreibe deine Woche mit eigenen Worten" },
+        ["ai_plan_placeholder_short"] = new() { ["ar"] = "ماذا تريد أن تضيف؟", ["en"] = "What should I add?", ["de"] = "Was soll ich hinzufügen?" },
         ["ai_plan_placeholder"] = new() { ["ar"] = "مثال: أضف بيتزا ليوم الثلاثاء ودجاج مع أرز ليوم الجمعة، وضع حليب وبيض وخبز في قائمة التسوق", ["en"] = "e.g. add pizza for Tuesday and chicken rice for Friday, and put milk, eggs and bread on my shopping list", ["de"] = "z. B. füge Pizza für Dienstag und Hähnchen mit Reis für Freitag hinzu und setze Milch, Eier und Brot auf die Einkaufsliste" },
         ["ai_plan_submit"] = new() { ["ar"] = "إرسال", ["en"] = "Send", ["de"] = "Senden" },
         ["ai_plan_parsing"] = new() { ["ar"] = "جارٍ التفكير...", ["en"] = "Thinking...", ["de"] = "Denke nach …" },
