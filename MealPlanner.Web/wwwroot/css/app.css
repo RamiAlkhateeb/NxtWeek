@@ -1686,7 +1686,30 @@ input, textarea, select, .ui-text-input, .playful-input, .form-group input, .for
 /* AI assistant: chat thread + composer pinned above the bottom nav (76px tall). */
 .ai-chat-page { padding-bottom: calc(76px + 120px + env(safe-area-inset-bottom)); }
 .ai-chat-thread { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
-.ai-chat-empty { margin: 32px 8px; text-align: center; color: var(--color-text-secondary); font-size: 14px; }
+.ai-chat-empty { margin: 40px 8px 0; display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center; color: var(--color-text-secondary); font-size: 14px; }
+.ai-chat-empty p { margin: 0; max-width: 260px; }
+
+/* Idle animation shown until the first message: a floating glowing orb with
+   pulsing rings, an orbiting dot and twinkling sparkles. */
+.ai-orb { position: relative; width: 150px; height: 150px; display: grid; place-items: center; }
+.ai-orb-core { position: relative; z-index: 2; width: 76px; height: 76px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 30% 28%, #ff6b85 0%, var(--color-primary) 38%, var(--color-ink) 100%); box-shadow: 0 10px 30px rgba(255, 45, 85, .35); animation: ai-orb-float 3.6s ease-in-out infinite; }
+.ai-orb-core svg { width: 34px; height: 34px; fill: #fff; animation: ai-orb-spin 9s linear infinite; }
+.ai-orb-ring { position: absolute; inset: 37px; border-radius: 50%; border: 2px solid var(--color-primary); opacity: 0; animation: ai-orb-ring 3.2s ease-out infinite; }
+.ai-orb-ring.ring-2 { animation-delay: 1.6s; }
+.ai-orb-orbit { position: absolute; inset: 0; animation: ai-orb-spin 6s linear infinite; }
+.ai-orb-orbit i { position: absolute; top: 6px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 12px var(--color-primary); }
+.ai-spark { position: absolute; width: 18px; height: 18px; fill: var(--color-primary); opacity: 0; animation: ai-twinkle 2.8s ease-in-out infinite; }
+.ai-spark.spark-1 { top: 8px; inset-inline-start: 14px; animation-delay: 0s; }
+.ai-spark.spark-2 { top: 34px; inset-inline-end: 4px; width: 13px; height: 13px; animation-delay: .9s; }
+.ai-spark.spark-3 { bottom: 10px; inset-inline-start: 24px; width: 12px; height: 12px; animation-delay: 1.8s; }
+@keyframes ai-orb-float { 0%, 100% { transform: translateY(5px); } 50% { transform: translateY(-7px); } }
+@keyframes ai-orb-spin { to { transform: rotate(360deg); } }
+@keyframes ai-orb-ring { 0% { transform: scale(.9); opacity: .55; } 100% { transform: scale(2); opacity: 0; } }
+@keyframes ai-twinkle { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); } 50% { opacity: 1; transform: scale(1) rotate(25deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .ai-orb-core, .ai-orb-core svg, .ai-orb-ring, .ai-orb-orbit, .ai-spark { animation: none; }
+    .ai-spark { opacity: .8; }
+}
 .ai-chat-row { display: flex; }
 .ai-chat-row.from-user { justify-content: flex-end; }
 .ai-chat-row.from-ai { justify-content: flex-start; }

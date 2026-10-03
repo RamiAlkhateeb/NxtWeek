@@ -17,7 +17,20 @@
     <div class="ai-chat-thread" aria-live="polite">
         @if (messages.Count == 0 && !isBusy)
         {
-            <p class="ai-chat-empty">@Loc["ai_plan_chat_empty"]</p>
+            <div class="ai-chat-empty">
+                <div class="ai-orb" aria-hidden="true">
+                    <span class="ai-orb-ring ring-1"></span>
+                    <span class="ai-orb-ring ring-2"></span>
+                    <span class="ai-orb-orbit"><i></i></span>
+                    <span class="ai-orb-core">
+                        <svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+                    </span>
+                    <svg class="ai-spark spark-1" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                    <svg class="ai-spark spark-2" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                    <svg class="ai-spark spark-3" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                </div>
+                <p>@Loc["ai_plan_chat_empty"]</p>
+            </div>
         }
 
         @foreach (var message in messages)
