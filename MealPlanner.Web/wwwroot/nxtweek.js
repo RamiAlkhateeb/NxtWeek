@@ -34,9 +34,9 @@ window.nxtweek = {
   markFirstLaunchWizardSeen() {
     localStorage.setItem('nxtweek.firstLaunchWizardSeen', 'true');
   },
-  scrollToId(elementId) {
+  scrollToId(elementId, block = 'center') {
     const element = document.getElementById(elementId);
-    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    if (element) element.scrollIntoView({ behavior: 'smooth', block, inline: 'nearest' });
   },
   async captureAndShare(elementId) {
     const element = document.getElementById(elementId);

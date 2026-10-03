@@ -415,16 +415,13 @@ public class LocalizationService : ILocalizationService
         ["ai_plan_no_key_error"] = new() { ["ar"] = "أضف مفتاح Gemini الخاص بك من الإعدادات أولاً.", ["en"] = "Add your Gemini API key in Settings first.", ["de"] = "Füge zuerst deinen Gemini-API-Schlüssel in den Einstellungen hinzu." },
         ["ai_plan_go_to_settings"] = new() { ["ar"] = "اذهب إلى الإعدادات", ["en"] = "Go to Settings", ["de"] = "Zu den Einstellungen" },
         ["ai_plan_empty_parse_error"] = new() { ["ar"] = "لم أجد أي وجبات أو عناصر تسوق في ذلك — حاول إعادة الصياغة.", ["en"] = "Couldn't find any meals or shopping items in that — try rephrasing.", ["de"] = "Darin wurden keine Gerichte oder Einkaufsartikel gefunden – versuch es anders zu formulieren." },
-        ["ai_plan_preview_title"] = new() { ["ar"] = "راجع قبل الإضافة", ["en"] = "Review before adding", ["de"] = "Vor dem Hinzufügen prüfen" },
-        // {0} = Gemini model name
-        ["ai_plan_preview_eyebrow"] = new() { ["ar"] = "تم التحليل باستخدام {0}", ["en"] = "Parsed with {0}", ["de"] = "Analysiert mit {0}" },
         ["ai_plan_preview_meals_heading"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
         ["ai_plan_preview_items_heading"] = new() { ["ar"] = "عناصر قائمة التسوق", ["en"] = "Shopping list items", ["de"] = "Einkaufsartikel" },
-        ["ai_plan_confirm_action"] = new() { ["ar"] = "أضف إلى خطتي", ["en"] = "Add to my plan", ["de"] = "Zu meinem Plan hinzufügen" },
-        ["ai_plan_committing"] = new() { ["ar"] = "جارٍ الإضافة...", ["en"] = "Adding...", ["de"] = "Wird hinzugefügt …" },
         ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
-        // {0} = meal count, {1} = shopping item count
-        ["ai_plan_success"] = new() { ["ar"] = "تمت إضافة {0} وجبة و {1} عنصر تسوق.", ["en"] = "Added {0} meals and {1} shopping items.", ["de"] = "{0} Gerichte und {1} Einkaufsartikel hinzugefügt." },
+        ["ai_plan_chat_empty"] = new() { ["ar"] = "اكتب ما تريد إضافته وسأتولى الأمر.", ["en"] = "Tell me what to add and I'll take care of it.", ["de"] = "Sag mir, was ich hinzufügen soll – ich kümmere mich darum." },
+        ["ai_plan_reply_done"] = new() { ["ar"] = "تم! هذا ما أضفته:", ["en"] = "Done! Here's what I added:", ["de"] = "Erledigt! Das habe ich hinzugefügt:" },
+        // {0} = shopping list name
+        ["ai_plan_reply_items_heading"] = new() { ["ar"] = "أضيف إلى {0}", ["en"] = "Added to {0}", ["de"] = "Hinzugefügt zu {0}" },
 
         // AI assistant settings card
         ["settings_ai_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },

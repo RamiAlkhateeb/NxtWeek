@@ -9,97 +9,101 @@
 @inject IShoppingListService ShoppingListService
 @inject ILocalizationService Loc
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
-<div class="app app-content-wrapper" dir="@Loc.Direction">
+<div class="app app-content-wrapper ai-chat-page" dir="@Loc.Direction">
     <UiPageHeader Icon="✨" Title="@Loc["ai_plan_title"]" Subtitle="@Loc["ai_plan_subtitle"]" />
 
-    <div class="ai-plan-composer">
-        <textarea class="ai-plan-textarea" dir="auto" rows="@Rows"
+    <div class="ai-chat-thread" aria-live="polite">
+        @if (messages.Count == 0 && !isBusy)
+        {
+            <p class="ai-chat-empty">@Loc["ai_plan_chat_empty"]</p>
+        }
+
+        @foreach (var message in messages)
+        {
+            <div class="ai-chat-row @(message.FromUser ? "from-user" : "from-ai")">
+                <div class="ai-chat-bubble @(message.IsError ? "is-error" : "")">
+                    @if (!string.IsNullOrWhiteSpace(message.Text))
+                    {
+                        <p class="ai-chat-text">@message.Text</p>
+                    }
+
+                    @if (message.Meals.Count > 0)
+                    {
+                        <h3>@Loc["ai_plan_preview_meals_heading"]</h3>
+                        <ul class="ai-chat-list">
+                            @foreach (var meal in message.Meals)
+                            {
+                                <li><span>@Loc.FormatDayDate(meal.Date)</span><strong>@meal.Name</strong></li>
+                            }
+                        </ul>
+                    }
+
+                    @if (message.Items.Count > 0)
+                    {
+                        <h3>@Loc.T("ai_plan_reply_items_heading", message.ShopName ?? "")</h3>
+                        <ul class="ai-chat-list">
+                            @foreach (var item in message.Items)
+                            {
+                                <li><strong>@item</strong></li>
+                            }
+                        </ul>
+                    }
+
+                    @if (message.ShowSettingsLink)
+                    {
+                        <a class="ai-chat-link" href="settings">@Loc["ai_plan_go_to_settings"]</a>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (isBusy)
+        {
+            <div class="ai-chat-row from-ai">
+                <div class="ai-chat-bubble is-typing">@Loc["ai_plan_parsing"]</div>
+            </div>
+        }
+
+        <div id="ai-chat-end" class="ai-chat-end"></div>
+    </div>
+</div>
+
+@* Composer: pinned above the bottom navigation bar, send icon inside the text area. *@
+<div class="ai-chat-composer" dir="@Loc.Direction">
+    <div class="ai-chat-input">
+        <textarea class="ai-chat-textarea" dir="auto" rows="@Rows"
                   @bind="promptText" @bind:event="oninput"
                   placeholder="@Loc["ai_plan_placeholder"]"
                   aria-label="@Loc["ai_plan_placeholder"]"></textarea>
-        <UiButton Variant="primary" CssClass="ai-plan-submit" OnClick="SubmitPromptAsync"
-                  Disabled="@(string.IsNullOrWhiteSpace(promptText) || isParsing)">
-            @(isParsing ? Loc["ai_plan_parsing"] : Loc["ai_plan_submit"])
-        </UiButton>
+        <button type="button" class="ai-chat-send" @onclick="SendAsync"
+                disabled="@(string.IsNullOrWhiteSpace(promptText) || isBusy)"
+                title="@Loc["ai_plan_submit"]" aria-label="@Loc["ai_plan_submit"]">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+        </button>
     </div>
-
-    @if (!string.IsNullOrWhiteSpace(feedback))
-    {
-        <p class="friend-feedback @(isError ? "error" : "")">
-            @feedback
-            @if (showSettingsLink)
-            {
-                <a href="settings">@Loc["ai_plan_go_to_settings"]</a>
-            }
-        </p>
-    }
 </div>
 
-<UiBottomSheet IsOpen="showPreview"
-               Title="@Loc["ai_plan_preview_title"]"
-               Eyebrow="@(pendingModel is null ? null : Loc.T("ai_plan_preview_eyebrow", pendingModel))"
-               OnDismiss="() => showPreview = false">
-    <div class="sheet-actions" dir="@Loc.Direction">
-        @if (pendingMeals.Count > 0)
-        {
-            <h3>@Loc["ai_plan_preview_meals_heading"]</h3>
-            @foreach (var meal in pendingMeals)
-            {
-                <div class="ai-plan-preview-row">
-                    <span>@Loc.FormatDayDate(meal.Date)</span>
-                    <strong>@meal.Name</strong>
-                    <button class="ai-plan-preview-remove" @onclick="() => pendingMeals.Remove(meal)" aria-label="@Loc["delete"]">✕</button>
-                </div>
-            }
-        }
-
-        @if (pendingItems.Count > 0)
-        {
-            <h3>@Loc["ai_plan_preview_items_heading"]</h3>
-            @foreach (var item in pendingItems)
-            {
-                <div class="ai-plan-preview-row">
-                    <span>@item</span>
-                    <button class="ai-plan-preview-remove" @onclick="() => pendingItems.Remove(item)" aria-label="@Loc["delete"]">✕</button>
-                </div>
-            }
-
-            @if (shops.Count > 1)
-            {
-                <div class="chip-row">
-                    @foreach (var shop in shops)
-                    {
-                        <UiFilterChip Active="@(selectedShopId == shop.Id)" OnClick="() => selectedShopId = shop.Id">@shop.Name</UiFilterChip>
-                    }
-                </div>
-            }
-        }
-
-        <UiButton Variant="primary" OnClick="CommitAsync" Disabled="@isCommitting">
-            @(isCommitting ? Loc["ai_plan_committing"] : Loc["ai_plan_confirm_action"])
-        </UiButton>
-        <UiButton Variant="ghost" OnClick="() => showPreview = false" Disabled="@isCommitting">@Loc["cancel"]</UiButton>
-    </div>
-</UiBottomSheet>
-
 @code {
+    private sealed class ChatMessage
+    {
+        public bool FromUser { get; init; }
+        public string Text { get; init; } = "";
+        public List<ParsedMealEntry> Meals { get; init; } = new();
+        public List<string> Items { get; init; } = new();
+        public string? ShopName { get; init; }
+        public bool IsError { get; init; }
+        public bool ShowSettingsLink { get; init; }
+    }
+
+    private readonly List<ChatMessage> messages = new();
     private string uid = "";
     private string promptText = "";
-    private bool isParsing;
-    private bool isCommitting;
-    private string feedback = "";
-    private bool isError;
-    private bool showSettingsLink;
+    private bool isBusy;
+    private bool scrollPending;
 
-    private bool showPreview;
-    private string? pendingModel;
-    private List<ParsedMealEntry> pendingMeals = new();
-    private List<string> pendingItems = new();
-    private List<ShoppingShop> shops = new();
-    private string? selectedShopId;
-
-    private int Rows => Math.Clamp(promptText.Split('\n').Length, 2, 6);
+    private int Rows => Math.Clamp(promptText.Split('\n').Length, 2, 5);
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,75 +117,48 @@
         uid = user.Uid;
     }
 
-    private async Task SubmitPromptAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (string.IsNullOrWhiteSpace(promptText)) return;
+        if (!scrollPending) return;
+        scrollPending = false;
+        try { await JS.InvokeVoidAsync("nxtweek.scrollToId", "ai-chat-end", "end"); }
+        catch { /* purely cosmetic */ }
+    }
 
-        feedback = "";
-        isError = false;
-        showSettingsLink = false;
+    private void AddMessage(ChatMessage message)
+    {
+        messages.Add(message);
+        scrollPending = true;
+    }
 
-        var key = await AiSettings.GetGeminiApiKeyAsync();
-        if (string.IsNullOrWhiteSpace(key))
-        {
-            isError = true;
-            showSettingsLink = true;
-            feedback = Loc["ai_plan_no_key_error"];
-            return;
-        }
+    private async Task SendAsync()
+    {
+        var text = promptText.Trim();
+        if (text.Length == 0 || isBusy) return;
 
-        isParsing = true;
+        // Show the user's message straight away, then work on the reply.
+        AddMessage(new ChatMessage { FromUser = true, Text = text });
+        promptText = "";
+        isBusy = true;
+        StateHasChanged();
+
         try
         {
-            var result = await GeminiPlanner.ParsePromptAsync(promptText.Trim());
-            pendingMeals = result.Meals.ToList();
-            pendingItems = result.ShoppingItems.ToList();
-            pendingModel = result.ModelUsed;
-
-            if (pendingMeals.Count == 0 && pendingItems.Count == 0)
+            var key = await AiSettings.GetGeminiApiKeyAsync();
+            if (string.IsNullOrWhiteSpace(key))
             {
-                isError = true;
-                feedback = Loc["ai_plan_empty_parse_error"];
+                AddMessage(new ChatMessage { Text = Loc["ai_plan_no_key_error"], IsError = true, ShowSettingsLink = true });
                 return;
             }
 
-            await PreparePreviewAsync();
-            showPreview = true;
-        }
-        catch (Exception ex)
-        {
-            isError = true;
-            feedback = ex.Message;
-        }
-        finally
-        {
-            isParsing = false;
-        }
-    }
+            var result = await GeminiPlanner.ParsePromptAsync(text);
+            if (result.Meals.Count == 0 && result.ShoppingItems.Count == 0)
+            {
+                AddMessage(new ChatMessage { Text = Loc["ai_plan_empty_parse_error"], IsError = true });
+                return;
+            }
 
-    private async Task PreparePreviewAsync()
-    {
-        if (pendingItems.Count == 0) return;
-
-        shops = await ShoppingListService.GetShopsAsync(uid);
-        if (shops.Count == 0)
-        {
-            var created = await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
-            shops = new List<ShoppingShop> { created };
-            selectedShopId = created.Id;
-        }
-        else
-        {
-            selectedShopId = shops[0].Id;
-        }
-    }
-
-    private async Task CommitAsync()
-    {
-        isCommitting = true;
-        try
-        {
-            foreach (var meal in pendingMeals)
+            foreach (var meal in result.Meals)
             {
                 var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
                 {
@@ -193,28 +170,40 @@
                 await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
             }
 
-            if (pendingItems.Count > 0 && !string.IsNullOrWhiteSpace(selectedShopId))
+            string? shopName = null;
+            if (result.ShoppingItems.Count > 0)
             {
-                foreach (var item in pendingItems)
-                    await ShoppingListService.AddItemAsync(uid, selectedShopId, item);
+                var shop = await GetOrCreateShopAsync();
+                shopName = shop.Name;
+                foreach (var item in result.ShoppingItems)
+                    await ShoppingListService.AddItemAsync(uid, shop.Id, item);
             }
 
-            var mealCount = pendingMeals.Count;
-            var itemCount = pendingItems.Count;
-
-            showPreview = false;
-            promptText = "";
-            isError = false;
-            feedback = Loc.T("ai_plan_success", mealCount, itemCount);
+            // The reply reports what was actually done.
+            AddMessage(new ChatMessage
+            {
+                Text = Loc["ai_plan_reply_done"],
+                Meals = result.Meals,
+                Items = result.ShoppingItems,
+                ShopName = shopName
+            });
         }
         catch (Exception ex)
         {
-            isError = true;
-            feedback = ex.Message;
+            AddMessage(new ChatMessage { Text = ex.Message, IsError = true });
         }
         finally
         {
-            isCommitting = false;
+            isBusy = false;
+            scrollPending = true;
         }
+    }
+
+    private async Task<ShoppingShop> GetOrCreateShopAsync()
+    {
+        var shops = await ShoppingListService.GetShopsAsync(uid);
+        return shops.Count > 0
+            ? shops[0]
+            : await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
     }
 }
