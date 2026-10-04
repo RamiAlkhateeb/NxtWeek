@@ -7,7 +7,7 @@
 @inject ILocalizationService Loc
 
 <div class="app onboarding-container" dir="@Loc.Direction">
-    <UiCard CssClass="onboarding-card">
+    <NxtCard CssClass="onboarding-card">
         <div class="logo-container">
             <span class="emoji-bounce">🍳</span>
             <span class="emoji-float emoji-delay-1">🥑</span>
@@ -18,14 +18,14 @@
         <p class="subtitle">أدخل بريدك الإلكتروني للبدء فوراً دون الحاجة لكلمة مرور.</p>
 
         <div class="form-group">
-            <UiTextInput CssClass="sign-in-input" Type="email" @bind-Value="email" @onkeydown="HandleKeyDown" Placeholder="name@example.com" Disabled="@isProcessing" />
+            <NxtTextInput CssClass="sign-in-input" Type="email" @bind-Value="email" @onkeydown="HandleKeyDown" Placeholder="name@example.com" Disabled="@isProcessing" />
             @if (!string.IsNullOrEmpty(error))
             {
                 <span class="error-msg text-danger mt-2 d-block">⚠️ @error</span>
             }
         </div>
 
-        <UiButton Variant="primary" CssClass="sign-in-submit" OnClick="Submit" Disabled="@(string.IsNullOrWhiteSpace(email) || isProcessing)">
+        <NxtButton Variant="primary" CssClass="sign-in-submit" OnClick="Submit" Disabled="@(string.IsNullOrWhiteSpace(email) || isProcessing)">
             @if (isProcessing)
             {
                 <span>جاري التحميل... ⏳</span>
@@ -34,8 +34,8 @@
             {
                 <span>متابعة 🚀</span>
             }
-        </UiButton>
-    </UiCard>
+        </NxtButton>
+    </NxtCard>
 </div>
 
 @code {

@@ -16,11 +16,11 @@
         <button class="icon-action" title="@Loc["meal_favorite"]" aria-label="@Loc["meal_favorite"]" @onclick="() => OnFavorite.InvokeAsync(Meal)" @onclick:stopPropagation="true">@(IsFavorite ? "❤️" : "♡")</button>
         @if (IsContextMode)
         {
-            <span @onclick:stopPropagation="true"><UiButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@Loc["meal_select_this"]</UiButton></span>
+            <span @onclick:stopPropagation="true"><NxtButton Variant="primary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@Loc["meal_select_this"]</NxtButton></span>
         }
         else
         {
-            <span @onclick:stopPropagation="true"><UiButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@Loc["meal_use_this"]</UiButton></span>
+            <span @onclick:stopPropagation="true"><NxtButton Variant="secondary" CssClass="meal-select-button" OnClick="() => OnSelect.InvokeAsync(Meal)">@Loc["meal_use_this"]</NxtButton></span>
         }
     </div>
 </article>

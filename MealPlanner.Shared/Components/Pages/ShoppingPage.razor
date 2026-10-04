@@ -15,7 +15,7 @@
     </header>
 
     <main class="shopping-content">
-        <UiButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ @Loc["shopping_add_store"]</UiButton>
+        <NxtButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ @Loc["shopping_add_store"]</NxtButton>
 
         @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
@@ -28,9 +28,9 @@
         }
         else if (shops.Count == 0)
         {
-            <UiEmptyState Icon="🛒" Title="@Loc["shopping_empty_title"]" Message="@Loc["shopping_empty_desc"]">
-                <UiButton Variant="primary" OnClick="OpenAddShop">@Loc["shopping_add_first_store"]</UiButton>
-            </UiEmptyState>
+            <NxtEmptyState Icon="🛒" Title="@Loc["shopping_empty_title"]" Message="@Loc["shopping_empty_desc"]">
+                <NxtButton Variant="primary" OnClick="OpenAddShop">@Loc["shopping_add_first_store"]</NxtButton>
+            </NxtEmptyState>
         }
         else
         {
@@ -41,18 +41,18 @@
                     var orderedItems = items.OrderBy(item => item.IsBought).ThenBy(item => item.CreatedAtUtc).ToList();
                     var deleteShopLabel = Loc.T("shopping_delete_store_named", shop.Name);
                     var addItemLabel = Loc.T("shopping_add_item_to", shop.Name);
-                    <UiCard CssClass="shopping-shop-card">
+                    <NxtCard CssClass="shopping-shop-card">
                         <div class="shopping-shop-header">
                             <div>
                                 <h2><span class="shopping-inline-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4z"/><path d="m4 10 2-6h12l2 6M8 20v-5h4v5M15 14h2"/></svg></span>@shop.Name</h2>
                                 <span class="shopping-count">@items.Count() @Loc["shopping_items"]</span>
                             </div>
-                            <UiButton Variant="ghost" CssClass="shopping-delete-shop shopping-svg-action" OnClick="() => RequestDeleteShop(shop)" title="@Loc["shopping_delete_store"]" aria-label="@deleteShopLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></UiButton>
+                            <NxtButton Variant="ghost" CssClass="shopping-delete-shop shopping-svg-action" OnClick="() => RequestDeleteShop(shop)" title="@Loc["shopping_delete_store"]" aria-label="@deleteShopLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></NxtButton>
                         </div>
 
                         <div class="shopping-add-item">
-                            <UiTextInput Value="@GetItemDraft(shop.Id)" ValueChanged="value => SetItemDraft(shop.Id, value)" Placeholder="@Loc["shopping_add_item"]" aria-label="@addItemLabel" />
-                            <UiButton Variant="secondary" OnClick="() => AddItemAsync(shop.Id)">@Loc["add"]</UiButton>
+                            <NxtTextInput Value="@GetItemDraft(shop.Id)" ValueChanged="value => SetItemDraft(shop.Id, value)" Placeholder="@Loc["shopping_add_item"]" aria-label="@addItemLabel" />
+                            <NxtButton Variant="secondary" OnClick="() => AddItemAsync(shop.Id)">@Loc["add"]</NxtButton>
                         </div>
 
                         @if (orderedItems.Count == 0)
@@ -74,27 +74,27 @@
                                 }
                             </div>
                         }
-                    </UiCard>
+                    </NxtCard>
                 }
             </div>
         }
     </main>
 </div>
 
-<UiBottomSheet IsOpen="showAddShop" Title="@Loc["shopping_new_store"]" Eyebrow="@Loc["shopping_new_store_eyebrow"]" OnDismiss="CloseAddShop">
+<NxtBottomSheet IsOpen="showAddShop" Title="@Loc["shopping_new_store"]" Eyebrow="@Loc["shopping_new_store_eyebrow"]" OnDismiss="CloseAddShop">
     <div class="sheet-actions" dir="@Loc.Direction">
-        <UiTextInput Placeholder="@Loc["shopping_store_placeholder"]" @bind-Value="newShopName" />
+        <NxtTextInput Placeholder="@Loc["shopping_store_placeholder"]" @bind-Value="newShopName" />
         @if (!string.IsNullOrWhiteSpace(addShopError)) { <div class="alert-playful shopping-feedback">@addShopError</div> }
-        <UiButton Variant="primary" OnClick="AddShopAsync" Disabled="@string.IsNullOrWhiteSpace(newShopName)">@Loc["shopping_add_store"]</UiButton>
+        <NxtButton Variant="primary" OnClick="AddShopAsync" Disabled="@string.IsNullOrWhiteSpace(newShopName)">@Loc["shopping_add_store"]</NxtButton>
     </div>
-</UiBottomSheet>
+</NxtBottomSheet>
 
-<UiBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="@Loc["shopping_delete_store_q"]" Eyebrow="@Loc["shopping_delete_store_eyebrow"]" OnDismiss="CancelDeleteShop">
+<NxtBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="@Loc["shopping_delete_store_q"]" Eyebrow="@Loc["shopping_delete_store_eyebrow"]" OnDismiss="CancelDeleteShop">
     <div class="sheet-actions" dir="@Loc.Direction">
-        <UiButton Variant="danger" OnClick="ConfirmDeleteShopAsync">@Loc.T("shopping_delete_store_named", shopPendingDeletion?.Name ?? "")</UiButton>
-        <UiButton Variant="ghost" OnClick="CancelDeleteShop">@Loc["cancel"]</UiButton>
+        <NxtButton Variant="danger" OnClick="ConfirmDeleteShopAsync">@Loc.T("shopping_delete_store_named", shopPendingDeletion?.Name ?? "")</NxtButton>
+        <NxtButton Variant="ghost" OnClick="CancelDeleteShop">@Loc["cancel"]</NxtButton>
     </div>
-</UiBottomSheet>
+</NxtBottomSheet>
 
 @code {
     private readonly Dictionary<string, string> itemDrafts = new();

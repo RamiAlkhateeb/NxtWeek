@@ -87,9 +87,13 @@ buttons, grey pill chips. Colours live in the `:root` tokens at the top of
 
 ## Conventions
 
-- Reuse the `Ui*` components (`UiButton`, `UiCard`, `UiBottomSheet`,
-  `UiEmptyState`, `UiPageHeader`, `UiTextInput`, `UiFilterChip`) rather than
-  hand-rolling markup.
+- Reuse the shared `Nxt*` components from the `Nxt.UI` submodule (`lib/Nxt.UI`,
+  shared with NxtTask and Syrian Radio): `NxtButton`, `NxtCard`, `NxtBottomSheet`,
+  `NxtEmptyState`, `NxtPageHeader`, `NxtTextInput`, `NxtChip`, `NxtSegmented`,
+  `NxtIconButton`, plus `ToastService`, `AiChat` and `NxtSettingsPage`, rather than
+  hand-rolling markup. Colours are `--nxt-*` tokens (light and dark) in
+  `_content/Nxt.UI/nxt.css`; the `--color-*` names in `app.css` alias them.
+  Change shared UI in the Nxt.UI repo, then bump the submodule in all three apps.
 - Pages that read `Loc` subscribe to `Loc.OnLanguageChanged` and unsubscribe in
   `Dispose`.
 - Bump `wwwroot/version.json` for a release; the service worker keys its cache

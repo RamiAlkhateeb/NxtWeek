@@ -11,13 +11,10 @@
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
 @inject IMealImageService MealImages
+@inject ToastService Toasts
 @implements IAsyncDisposable
 
 <div class="app app-content-wrapper" dir="@Loc.Direction">
-    @if (!string.IsNullOrWhiteSpace(toastMessage))
-    {
-        <div class="toast-message" role="status">✅ @toastMessage</div>
-    }
     <div class="week-page-header">
         <button class="week-header-action week-profile-link" title="@Loc["settings_title"]" aria-label="@Loc["settings_title"]" @onclick='() => Nav.NavigateTo("/settings")'><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.8 20c.7-4 3-6 6.2-6s5.5 2 6.2 6"/></svg>@if (showProfileNudge) { <span class="profile-nudge-dot" aria-label="@Loc["week_nudge_prompt"]"></span> }</button>
         <button class="week-header-action week-share-link" title="@Loc["week_share_week"]" aria-label="@Loc["week_share_week"]" aria-busy="@isSharing" @onclick="ShareWeek" disabled="@isSharing">
@@ -102,7 +99,7 @@
     }
 </div>
 
-<UiBottomSheet IsOpen="@(selectedMeal is not null)"
+<NxtBottomSheet IsOpen="@(selectedMeal is not null)"
                Eyebrow="@(selectedMeal is null ? null : DayDateLabel(selectedMeal.Date))"
                Title="@(selectedMeal is null || string.IsNullOrWhiteSpace(selectedMeal.MealId) ? Loc["week_choose_meal"] : selectedMeal.Name)"
                OnDismiss="CloseActions">
@@ -135,7 +132,7 @@
                 </div>
             }
     }
-</UiBottomSheet>
+</NxtBottomSheet>
 
 <MealIngredientsSheet IsOpen="@(ingredientsMeal is not null)"
                       MealName="@(ingredientsMeal?.Name ?? "")"
@@ -145,12 +142,12 @@
                       SideDishes="ingredientsMeal?.SideDishes"
                       OnDismiss="() => ingredientsMeal = null" />
 
-<UiBottomSheet IsOpen="showWeekSurpriseConfirm" Title="@Loc["week_surprise_week"]" Eyebrow="@Loc["week_surprise_week_eyebrow"]" OnDismiss="() => showWeekSurpriseConfirm = false">
+<NxtBottomSheet IsOpen="showWeekSurpriseConfirm" Title="@Loc["week_surprise_week"]" Eyebrow="@Loc["week_surprise_week_eyebrow"]" OnDismiss="() => showWeekSurpriseConfirm = false">
     <div class="sheet-actions" dir="@Loc.Direction">
         <p>@Loc["week_surprise_week_note"]</p>
-        <UiButton Variant="primary" OnClick="SurpriseWeek">@Loc["confirm"]</UiButton>
+        <NxtButton Variant="primary" OnClick="SurpriseWeek">@Loc["confirm"]</NxtButton>
     </div>
-</UiBottomSheet>
+</NxtBottomSheet>
 
 @code {
     private List<Meal> weekMeals = new();
@@ -164,7 +161,6 @@
     private DateOnly? animatedDate;
     private int flipSequence;
     private DateOnly? navigatingDate;
-    private string toastMessage = "";
     private bool showWeekSurpriseConfirm;
     private Meal? ingredientsMeal;
     private bool isSharing;
@@ -211,8 +207,7 @@
         var toastIndex = query.IndexOf(toastPrefix, StringComparison.OrdinalIgnoreCase);
         if (toastIndex >= 0)
         {
-            toastMessage = Uri.UnescapeDataString(query[(toastIndex + toastPrefix.Length)..].Split('&')[0]);
-            _ = HideToastAsync();
+            Toasts.Show("✅ " + Uri.UnescapeDataString(query[(toastIndex + toastPrefix.Length)..].Split('&')[0]));
         }
     }
 
@@ -340,8 +335,7 @@
         }
         catch
         {
-            toastMessage = Loc["week_share_failed"];
-            _ = HideToastAsync();
+            Toasts.Show(Loc["week_share_failed"], isError: true);
         }
         finally { isSharing = false; }
     }
@@ -397,12 +391,6 @@
         StateHasChanged();
         await Task.Delay(180);
         Nav.NavigateTo($"/meals?day={date:yyyy-MM-dd}");
-    }
-    private async Task HideToastAsync()
-    {
-        await Task.Delay(2000);
-        toastMessage = "";
-        await InvokeAsync(StateHasChanged);
     }
     private void CloseActions() { selectedMeal = null; showQuickPicker = false; showMoveDays = false; }
     private async Task SuggestFromSheet() { if (selectedMeal is not null) { await SuggestNew(selectedMeal); CloseActions(); } }

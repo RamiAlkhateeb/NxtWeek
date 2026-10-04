@@ -4,7 +4,7 @@
 @inject ILocalizationService Loc
 
 <div class="app app-content-wrapper install-help-page" dir="@Loc.Direction">
-    <UiPageHeader Icon="📲" Title="@Loc["install_title"]" Subtitle="@Loc["install_subtitle"]" />
+    <NxtPageHeader Icon="📲" Title="@Loc["install_title"]" Subtitle="@Loc["install_subtitle"]" />
 
     <div class="install-carousel-wrap">
         <AddToHomeCarousel @bind-Current="welcomeSlide" ShowProgress="true" FinishText="@Loc["done"]" OnFinish="GoBack" />
