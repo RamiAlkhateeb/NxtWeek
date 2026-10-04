@@ -23,10 +23,14 @@ public class GeminiPlannerService : IGeminiPlannerService
         _loc = loc;
     }
 
-    public async Task<ParsedPlanResult> ParsePromptAsync(string prompt)
+    public async Task<ParsedPlanResult> ParsePromptAsync(string prompt, IReadOnlyList<string>? currentShoppingItems = null)
     {
         var today = DateOnly.FromDateTime(DateTime.Now);
         var languageName = _loc.AvailableLanguages.FirstOrDefault(l => l.Code == _loc.CurrentLanguage)?.NativeName ?? _loc.CurrentLanguage;
+
+        var currentList = currentShoppingItems is { Count: > 0 }
+            ? string.Join("\n", currentShoppingItems.Take(300).Select(item => $"- {item}"))
+            : "(the list is empty)";
 
         var fullPrompt = $"""
             Today's date is {today:yyyy-MM-dd} ({today.DayOfWeek}). Resolve relative dates
@@ -38,12 +42,19 @@ public class GeminiPlannerService : IGeminiPlannerService
             and shopping item names in your response must be written in that language, using
             natural everyday food vocabulary a home cook would use.
 
-            Pull out two independent things from the user's request:
+            Pull out three independent things from the user's request:
             - "meals": dishes to add to specific days, each with an explicit ISO date, a name,
               and a mealType (exactly one of: Meat, Chicken, Fish, Vegetarian, Vegan).
             - "shoppingItems": plain grocery items to add to a shopping list.
+            - "removeShoppingItems": items the user wants taken OFF or deleted from the shopping
+              list ("remove", "delete", "take off", "clear"). Each entry must be copied exactly,
+              character for character, from the current list below. Only include items that are
+              on that list. To clear the whole list, return every item on it.
 
-            Either list may be empty if the request doesn't mention that kind of thing.
+            Any list may be empty if the request doesn't mention that kind of thing.
+
+            Current shopping list:
+            {currentList}
 
             User request: {prompt}
             """;
@@ -68,9 +79,10 @@ public class GeminiPlannerService : IGeminiPlannerService
                         required = new[] { "date", "name", "mealType" }
                     }
                 },
-                shoppingItems = new { type = "ARRAY", items = new { type = "STRING" } }
+                shoppingItems = new { type = "ARRAY", items = new { type = "STRING" } },
+                removeShoppingItems = new { type = "ARRAY", items = new { type = "STRING" } }
             },
-            required = new[] { "meals", "shoppingItems" }
+            required = new[] { "meals", "shoppingItems", "removeShoppingItems" }
         };
 
         ParsedPlanResult? result = null;
@@ -82,10 +94,15 @@ public class GeminiPlannerService : IGeminiPlannerService
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .ToList();
 
-            if (meals.Count == 0 && shoppingItems.Count == 0)
+            var removals = parsed.RemoveShoppingItems
+                .Select(item => item.Trim())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .ToList();
+
+            if (meals.Count == 0 && shoppingItems.Count == 0 && removals.Count == 0)
                 throw new InvalidOperationException("Gemini could not find any meals or shopping items in that request.");
 
-            result = new ParsedPlanResult(meals, shoppingItems);
+            result = new ParsedPlanResult(meals, shoppingItems, removals);
             return parsed;
         });
         return result!;
@@ -115,6 +132,7 @@ public class GeminiPlannerService : IGeminiPlannerService
     {
         [JsonPropertyName("meals")] public List<ParsedMealDto> Meals { get; set; } = [];
         [JsonPropertyName("shoppingItems")] public List<string> ShoppingItems { get; set; } = [];
+        [JsonPropertyName("removeShoppingItems")] public List<string> RemoveShoppingItems { get; set; } = [];
     }
     private sealed class ParsedMealDto
     {

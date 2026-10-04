@@ -420,7 +420,11 @@ public class LocalizationService : ILocalizationService
         ["ai_plan_preview_items_heading"] = new() { ["ar"] = "عناصر قائمة التسوق", ["en"] = "Shopping list items", ["de"] = "Einkaufsartikel" },
         ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
         ["ai_plan_chat_empty"] = new() { ["ar"] = "اكتب ما تريد إضافته وسأتولى الأمر.", ["en"] = "Tell me what to add and I'll take care of it.", ["de"] = "Sag mir, was ich hinzufügen soll – ich kümmere mich darum." },
-        ["ai_plan_reply_done"] = new() { ["ar"] = "تم! هذا ما أضفته:", ["en"] = "Done! Here's what I added:", ["de"] = "Erledigt! Das habe ich hinzugefügt:" },
+        ["ai_plan_reply_done"] = new() { ["ar"] = "تم! هذا ما قمت به:", ["en"] = "Done! Here's what I did:", ["de"] = "Erledigt! Das habe ich gemacht:" },
+        // {0} = shopping list name
+        ["ai_plan_reply_removed_heading"] = new() { ["ar"] = "حُذف من {0}", ["en"] = "Removed from {0}", ["de"] = "Entfernt aus {0}" },
+        ["ai_plan_reply_not_found_heading"] = new() { ["ar"] = "غير موجود في قائمتك", ["en"] = "Not on your list", ["de"] = "Nicht auf deiner Liste" },
+        ["ai_plan_reply_nothing_found"] = new() { ["ar"] = "لم أجد ذلك في قائمة التسوق.", ["en"] = "I couldn't find that on your shopping list.", ["de"] = "Das habe ich auf deiner Einkaufsliste nicht gefunden." },
         // {0} = shopping list name
         ["ai_plan_reply_items_heading"] = new() { ["ar"] = "أضيف إلى {0}", ["en"] = "Added to {0}", ["de"] = "Hinzugefügt zu {0}" },
 
