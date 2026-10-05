@@ -1693,3 +1693,20 @@ input, textarea, select, .ui-text-input, .playful-input, .form-group input, .for
 .ai-plan-preview-row strong { flex: 1; min-width: 0; }
 .ai-plan-preview-remove { flex: 0 0 auto; width: 28px; height: 28px; border: 0; border-radius: 10px; background: var(--color-danger-light); color: var(--color-danger); cursor: pointer; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+
+/* AI assistant chat */
+.ai-chat-toolbar { display: flex; justify-content: flex-end; margin: 0 16px 6px; }
+.ai-chat-new { border: 0; border-radius: var(--radius-pill); background: var(--color-bg-light); color: var(--color-text-main); padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ai-chat-new:disabled { opacity: .55; cursor: not-allowed; }
+.ai-chat-messages { display: flex; flex-direction: column; gap: 10px; margin: 0 16px 12px; }
+.ai-bubble { max-width: 85%; padding: 10px 14px; border-radius: 20px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; text-align: start; }
+.ai-bubble.assistant { align-self: flex-start; background: var(--color-card-bg); color: var(--color-text-main); border: 1px solid var(--color-border); border-end-start-radius: 6px; }
+.ai-bubble.user { align-self: flex-end; background: var(--color-text-main); color: var(--color-card-bg); border-end-end-radius: 6px; }
+.ai-bubble.is-thinking { color: var(--color-text-secondary); font-style: italic; }
+.ai-proposal { align-self: stretch; padding: 12px; border-radius: var(--radius-md); background: var(--color-card-bg); border: 1px solid var(--color-primary); box-shadow: var(--shadow-sm); }
+.ai-proposal.is-closed { border-color: var(--color-border); opacity: .7; }
+.ai-proposal h3 { margin: 4px 0 8px; font-size: 14px; font-weight: 800; }
+.ai-proposal-hint, .ai-proposal-status { margin: 8px 0 0; color: var(--color-text-secondary); font-size: 12px; }
+.ai-proposal-actions { display: flex; gap: 8px; margin-top: 10px; }
+.ai-proposal-actions .ui-button { flex: 1; }
+.ai-chat-composer { position: sticky; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 5; }

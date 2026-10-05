@@ -408,16 +408,12 @@ public class LocalizationService : ILocalizationService
 
         // AI assistant (prompt -> meals + shopping list)
         ["ai_plan_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
-        ["ai_plan_subtitle"] = new() { ["ar"] = "صف أسبوعك بكلماتك", ["en"] = "Describe your week in your own words", ["de"] = "Beschreibe deine Woche mit eigenen Worten" },
-        ["ai_plan_placeholder"] = new() { ["ar"] = "مثال: أضف بيتزا ليوم الثلاثاء ودجاج مع أرز ليوم الجمعة، وضع حليب وبيض وخبز في قائمة التسوق", ["en"] = "e.g. add pizza for Tuesday and chicken rice for Friday, and put milk, eggs and bread on my shopping list", ["de"] = "z. B. füge Pizza für Dienstag und Hähnchen mit Reis für Freitag hinzu und setze Milch, Eier und Brot auf die Einkaufsliste" },
+        ["ai_plan_subtitle"] = new() { ["ar"] = "أخبرني بما في مطبخك أو بما تريد تخطيطه", ["en"] = "Tell me what's in your kitchen or what you'd like to plan", ["de"] = "Erzähl mir, was du in der Küche hast oder was du planen möchtest" },
+        ["ai_plan_placeholder"] = new() { ["ar"] = "مثال: لدي دجاج وأرز وكوسا، ماذا يمكنني أن أطبخ؟", ["en"] = "e.g. I have chicken, rice and zucchini — what can I cook?", ["de"] = "z. B. Ich habe Hähnchen, Reis und Zucchini – was kann ich kochen?" },
         ["ai_plan_submit"] = new() { ["ar"] = "إرسال", ["en"] = "Send", ["de"] = "Senden" },
         ["ai_plan_parsing"] = new() { ["ar"] = "جارٍ التفكير...", ["en"] = "Thinking...", ["de"] = "Denke nach …" },
         ["ai_plan_no_key_error"] = new() { ["ar"] = "أضف مفتاح Gemini الخاص بك من الإعدادات أولاً.", ["en"] = "Add your Gemini API key in Settings first.", ["de"] = "Füge zuerst deinen Gemini-API-Schlüssel in den Einstellungen hinzu." },
         ["ai_plan_go_to_settings"] = new() { ["ar"] = "اذهب إلى الإعدادات", ["en"] = "Go to Settings", ["de"] = "Zu den Einstellungen" },
-        ["ai_plan_empty_parse_error"] = new() { ["ar"] = "لم أجد أي وجبات أو عناصر تسوق في ذلك — حاول إعادة الصياغة.", ["en"] = "Couldn't find any meals or shopping items in that — try rephrasing.", ["de"] = "Darin wurden keine Gerichte oder Einkaufsartikel gefunden – versuch es anders zu formulieren." },
-        ["ai_plan_preview_title"] = new() { ["ar"] = "راجع قبل الإضافة", ["en"] = "Review before adding", ["de"] = "Vor dem Hinzufügen prüfen" },
-        // {0} = Gemini model name
-        ["ai_plan_preview_eyebrow"] = new() { ["ar"] = "تم التحليل باستخدام {0}", ["en"] = "Parsed with {0}", ["de"] = "Analysiert mit {0}" },
         ["ai_plan_preview_meals_heading"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
         ["ai_plan_preview_items_heading"] = new() { ["ar"] = "عناصر قائمة التسوق", ["en"] = "Shopping list items", ["de"] = "Einkaufsartikel" },
         ["ai_plan_confirm_action"] = new() { ["ar"] = "أضف إلى خطتي", ["en"] = "Add to my plan", ["de"] = "Zu meinem Plan hinzufügen" },
@@ -425,6 +421,14 @@ public class LocalizationService : ILocalizationService
         ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
         // {0} = meal count, {1} = shopping item count
         ["ai_plan_success"] = new() { ["ar"] = "تمت إضافة {0} وجبة و {1} عنصر تسوق.", ["en"] = "Added {0} meals and {1} shopping items.", ["de"] = "{0} Gerichte und {1} Einkaufsartikel hinzugefügt." },
+        ["ai_chat_greeting"] = new() { ["ar"] = "أهلاً! أخبرني بالمكونات المتوفرة لديك وسأقترح عليك أطباقاً، أو أخبرني بما تريد تخطيطه لهذا الأسبوع. لن أضيف شيئاً قبل أن نتفق.", ["en"] = "Hi! Tell me which ingredients you have and I'll suggest dishes, or tell me what you'd like to plan this week. I won't add anything until we agree.", ["de"] = "Hallo! Sag mir, welche Zutaten du hast, und ich schlage dir Gerichte vor – oder erzähl mir, was du diese Woche planen möchtest. Ich füge nichts hinzu, bevor wir uns einig sind." },
+        ["ai_chat_chip_ingredients"] = new() { ["ar"] = "لدي بيض وبطاطا وبصل، ماذا أطبخ؟", ["en"] = "I have eggs, potatoes and onions — what can I cook?", ["de"] = "Ich habe Eier, Kartoffeln und Zwiebeln – was kann ich kochen?" },
+        ["ai_chat_chip_plan"] = new() { ["ar"] = "ساعدني في تخطيط بقية الأسبوع", ["en"] = "Help me plan the rest of the week", ["de"] = "Hilf mir, den Rest der Woche zu planen" },
+        ["ai_chat_proposal_hint"] = new() { ["ar"] = "لن يُضاف شيء قبل أن تضغط زر الإضافة.", ["en"] = "Nothing is added until you tap Add.", ["de"] = "Es wird nichts hinzugefügt, bevor du auf Hinzufügen tippst." },
+        ["ai_chat_dismiss"] = new() { ["ar"] = "ليس الآن", ["en"] = "Not now", ["de"] = "Jetzt nicht" },
+        ["ai_chat_status_dismissed"] = new() { ["ar"] = "تم التجاهل", ["en"] = "Dismissed", ["de"] = "Verworfen" },
+        ["ai_chat_status_superseded"] = new() { ["ar"] = "استُبدل باقتراح أحدث", ["en"] = "Replaced by a newer suggestion", ["de"] = "Durch einen neueren Vorschlag ersetzt" },
+        ["ai_chat_new_chat"] = new() { ["ar"] = "محادثة جديدة", ["en"] = "New chat", ["de"] = "Neuer Chat" },
 
         // AI assistant settings card
         ["settings_ai_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
