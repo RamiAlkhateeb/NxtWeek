@@ -9,7 +9,7 @@
 @inject ILocalizationService Loc
 
 <div class="app app-content-wrapper friends-page" dir="@Loc.Direction">
-    <UiPageHeader Icon="👋" Title="@Loc["friends_title"]" Subtitle="@Loc["friends_subtitle"]" />
+    <NxtPageHeader Icon="👋" Title="@Loc["friends_title"]" Subtitle="@Loc["friends_subtitle"]" />
 
     @if (isLoading)
     {
@@ -147,18 +147,18 @@
     }
 </div>
 
-<UiBottomSheet IsOpen="showSyncConfirm"
+<NxtBottomSheet IsOpen="showSyncConfirm"
                Title="@Loc["friends_sync_confirm_title"]"
                Eyebrow="@(selectedFriend is null ? null : Loc.T("friends_sync_confirm_eyebrow", selectedFriend.DisplayName, WeekRangeLabel))"
                OnDismiss="() => showSyncConfirm = false">
     <div class="sheet-actions" dir="@Loc.Direction">
         <p>@Loc["friends_sync_confirm_note"]</p>
-        <UiButton Variant="primary" OnClick="SyncFriendWeek" Disabled="@isSyncing">
+        <NxtButton Variant="primary" OnClick="SyncFriendWeek" Disabled="@isSyncing">
             @(isSyncing ? Loc["friends_sync_syncing"] : (selectedFriend is null ? Loc["friends_sync_button"] : Loc.T("friends_sync_confirm_action", selectedFriend.DisplayName)))
-        </UiButton>
-        <UiButton Variant="ghost" OnClick="() => showSyncConfirm = false" Disabled="@isSyncing">@Loc["cancel"]</UiButton>
+        </NxtButton>
+        <NxtButton Variant="ghost" OnClick="() => showSyncConfirm = false" Disabled="@isSyncing">@Loc["cancel"]</NxtButton>
     </div>
-</UiBottomSheet>
+</NxtBottomSheet>
 
 @code {
     private string uid = "";

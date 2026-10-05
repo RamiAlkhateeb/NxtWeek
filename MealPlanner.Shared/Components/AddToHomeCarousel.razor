@@ -2,51 +2,13 @@
 @inject ILocalizationService Loc
 @implements IDisposable
 
-@* Reusable "add to home screen" screenshot carousel. Used in the first-launch
-   welcome wizard (App.razor) and on the /settings/install help page. *@
-<div class="addhome-carousel" dir="@Loc.Direction">
-    @if (ShowProgress)
-    {
-        <p class="addhome-progress">@Loc.T("carousel_step", Current + 1, Slides.Count)</p>
-    }
-
-    <div class="welcome-carousel">
-        <div class="welcome-carousel-track" style="transform: translateX(@(Current * -100)%);">
-            @foreach (var s in Slides)
-            {
-                <div class="welcome-carousel-slide">
-                    <div class="welcome-slide-copy"><span class="welcome-step-badge">@s.Badge</span><h3>@s.Action</h3></div>
-                    <img class="welcome-carousel-img" src="@s.Image" alt="@s.Alt" />
-                </div>
-            }
-        </div>
-    </div>
-
-    <div class="welcome-wizard-actions">
-        @if (Current > 0)
-        {
-            <button class="welcome-wizard-back" @onclick="GoBack">@Loc["back"]</button>
-        }
-        else
-        {
-            <span></span>
-        }
-        @if (Current < Slides.Count - 1)
-        {
-            <button class="welcome-wizard-next" @onclick="GoNext">@Loc["next"]</button>
-        }
-        else
-        {
-            <button class="welcome-wizard-start" @onclick="OnFinish">@(string.IsNullOrWhiteSpace(FinishText) ? Loc["carousel_start"] : FinishText)</button>
-        }
-    </div>
-</div>
+@* The app's "add to home screen" screenshots on the shared Nxt.UI carousel. Used in the first-launch
+   welcome wizard and the iOS guide (App.razor) and on the /settings/install help page. *@
+<NxtInstallCarousel Slides="slides" @bind-Current="Current" ShowProgress="ShowProgress"
+                    FinishText="@(string.IsNullOrWhiteSpace(FinishText) ? Loc["carousel_start"] : FinishText)" OnFinish="OnFinish" />
 
 @code {
-    private sealed record Slide(string Badge, string Action, string Image, string Alt);
-
-    private List<Slide> Slides { get; set; } = new();
-    private int Max => Math.Max(0, Slides.Count - 1);
+    private List<NxtInstallCarousel.Slide> slides = new();
 
     [Parameter] public int Current { get; set; }
     [Parameter] public EventCallback<int> CurrentChanged { get; set; }
@@ -63,30 +25,14 @@
 
     private void RebuildSlides()
     {
-        Slides =
+        slides =
         [
-            new(Loc.T("carousel_badge", 1), Loc["carousel_step1"], $"{ImagePrefix}step1.jpg", Loc["carousel_step1_alt"]),
-            new(Loc.T("carousel_badge", 2), Loc["carousel_step2"], $"{ImagePrefix}step2.jpg", Loc["carousel_step2_alt"]),
-            new(Loc.T("carousel_badge", 3), Loc["carousel_step3"], $"{ImagePrefix}step3.jpg", Loc["carousel_step3_alt"])
+            new(Loc["carousel_step1"], $"{ImagePrefix}step1.jpg", Loc["carousel_step1_alt"], Loc.T("carousel_badge", 1)),
+            new(Loc["carousel_step2"], $"{ImagePrefix}step2.jpg", Loc["carousel_step2_alt"], Loc.T("carousel_badge", 2)),
+            new(Loc["carousel_step3"], $"{ImagePrefix}step3.jpg", Loc["carousel_step3_alt"], Loc.T("carousel_badge", 3))
         ];
         InvokeAsync(StateHasChanged);
     }
 
     public void Dispose() => Loc.OnLanguageChanged -= RebuildSlides;
-
-    private async Task GoBack() => await SetCurrent(Current - 1);
-    private async Task GoNext() => await SetCurrent(Current + 1);
-
-    private async Task SetCurrent(int value)
-    {
-        var clamped = Math.Clamp(value, 0, Max);
-        if (CurrentChanged.HasDelegate)
-        {
-            await CurrentChanged.InvokeAsync(clamped);
-        }
-        else
-        {
-            Current = clamped;
-        }
-    }
 }

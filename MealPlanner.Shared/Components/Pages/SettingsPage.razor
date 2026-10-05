@@ -5,80 +5,38 @@
 @inject IUserService UserService
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
-@inject IAiSettingsService AiSettings
-@inject IGeminiPlannerService GeminiPlanner
+@inject ToastService Toasts
 @implements IDisposable
 
-<div class="app app-content-wrapper" dir="@Loc.Direction">
-  <UiPageHeader Icon="👤" Title="@Loc["settings_title"]" Subtitle="@Loc["settings_subtitle"]" />
-  <div class="settings-sections">
-    <UiCard CssClass="settings-card">
-      <h2>@Loc["settings_lang_title"]</h2>
-      <p>@Loc["settings_lang_desc"]</p>
-      <div class="lang-switch">
-        @foreach (var lang in Loc.AvailableLanguages)
+@* The family settings shell (language, appearance, AI, install, about) with Makdous' own account sections first. *@
+<div class="app app-content-wrapper">
+  <NxtSettingsPage InstallHref="settings/install">
+    <AppSections>
+      <NxtSettingsSection Icon="👤" Title="@Loc["settings_username_title"]" Description="@(hasUsername ? null : Loc["settings_username_prompt"])">
+        @if (hasUsername)
         {
-          <button type="button" class="@(Loc.CurrentLanguage == lang.Code ? "active" : "")" lang="@lang.Code" @onclick="@(() => ChangeLanguage(lang.Code))">
-            <span aria-hidden="true">@lang.Flag</span> @lang.NativeName
-          </button>
+          <div class="nxt-input-row">
+            <code class="nxt-input setting-id-code" dir="ltr">@currentUsername</code>
+            <NxtIconButton Label="@Loc["copy"]" OnClick="CopyUsername">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            </NxtIconButton>
+          </div>
         }
-      </div>
-    </UiCard>
+        <label class="nxt-label" for="settings-username">@(hasUsername ? Loc["settings_username_change"] : Loc["settings_username_choose"])</label>
+        <div class="nxt-input-row">
+          <input id="settings-username" class="nxt-input" dir="ltr" autocomplete="off" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="@Loc["settings_username_placeholder"]" />
+          <NxtIconButton Label="@Loc["save"]" Accent="true" OnClick="SaveUsername" Disabled="isSavingUsername">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          </NxtIconButton>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
+      </NxtSettingsSection>
 
-    <UiCard CssClass="settings-card">
-      <h2>@Loc["settings_username_title"]</h2>
-      @if (hasUsername) { <div class="setting-id"><code dir="ltr">@currentUsername</code><button class="friend-copy-button" @onclick="CopyUsername" title="@Loc["copy"]">⧉</button></div> }
-      else { <p>@Loc["settings_username_prompt"]</p> }
-      <label for="settings-username">@(hasUsername ? Loc["settings_username_change"] : Loc["settings_username_choose"])</label>
-      <div class="friend-add-form"><input id="settings-username" class="ui-text-input" dir="ltr" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="@Loc["settings_username_placeholder"]" /><button class="friend-add-button" @onclick="SaveUsername" disabled="@isSavingUsername">✓</button></div>
-      @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
-    </UiCard>
-
-    <UiCard CssClass="settings-card">
-      <h2>@Loc["settings_ai_title"]</h2>
-      <p>@Loc["settings_ai_desc"]</p>
-      <label for="settings-gemini-key">@Loc["settings_ai_key_label"]</label>
-      <div class="friend-add-form"><input id="settings-gemini-key" class="ui-text-input" type="password" dir="ltr" @bind="geminiKeyInput" @bind:event="oninput" placeholder="@Loc["settings_ai_key_placeholder"]" /></div>
-      <a class="settings-action-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">@Loc["settings_ai_key_hint_link"]</a>
-
-      <label for="settings-gemini-model">@Loc["settings_ai_model_label"]</label>
-      <div class="friend-add-form">
-        <select id="settings-gemini-model" class="ui-text-input" @bind="geminiModelInput">
-          @if (!availableModels.Contains(geminiModelInput, StringComparer.OrdinalIgnoreCase))
-          {
-            <option value="@geminiModelInput">@geminiModelInput</option>
-          }
-          @foreach (var model in availableModels)
-          {
-            <option value="@model">@model</option>
-          }
-        </select>
-        <button class="friend-add-button" @onclick="RefreshModelsAsync" disabled="@isRefreshingModels" title="@Loc["settings_ai_refresh_models"]" aria-label="@Loc["settings_ai_refresh_models"]">⟳</button>
-      </div>
-
-      <button class="friend-add-button" @onclick="SaveAiSettingsAsync" disabled="@isSavingAiSettings">✓</button>
-      @if (!string.IsNullOrWhiteSpace(aiSettingsFeedback)) { <p class="friend-feedback @(aiSettingsError ? "error" : "")">@aiSettingsFeedback</p> }
-    </UiCard>
-
-    <UiCard CssClass="settings-card">
-      <h2>@Loc["settings_recover_title"]</h2>
-      <p>@Loc["settings_recover_desc"]</p>
-      <a class="settings-action-link" href="settings/recover">@Loc["settings_recover_link"]</a>
-    </UiCard>
-
-    <UiCard CssClass="settings-card">
-      <h2>@Loc["settings_install_title"]</h2>
-      <p>@Loc["settings_install_desc"]</p>
-      <a class="settings-action-link" href="settings/install">@Loc["settings_install_link"]</a>
-    </UiCard>
-
-    <UiCard CssClass="settings-card">
-      <h2>@Loc["settings_about_title"]</h2>
-      <p>@Loc["settings_about_desc"]</p>
-      <span class="caption">@Loc["settings_about_version"]</span>
-      <a class="settings-developer-link" href="https://ramialkhateeb.github.io/" target="_blank" rel="noopener noreferrer">@Loc["settings_about_dev"]</a>
-    </UiCard>
-  </div>
+      <NxtSettingsSection Icon="🔁" Title="@Loc["settings_recover_title"]" Description="@Loc["settings_recover_desc"]">
+        <a class="nxt-link" href="settings/recover">@Loc["settings_recover_link"]</a>
+      </NxtSettingsSection>
+    </AppSections>
+  </NxtSettingsPage>
 </div>
 
 @code {
@@ -90,14 +48,6 @@
   private bool isSavingUsername;
   private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
 
-  private string geminiKeyInput = "";
-  private string geminiModelInput = "gemini-2.0-flash";
-  private List<string> availableModels = new();
-  private bool isRefreshingModels;
-  private bool isSavingAiSettings;
-  private string aiSettingsFeedback = "";
-  private bool aiSettingsError;
-
   protected override async Task OnInitializedAsync() {
     Loc.OnLanguageChanged += HandleLanguageChanged;
     await Loc.InitializeAsync();
@@ -106,17 +56,9 @@
     uid = user.Uid;
     var profile = await UserService.GetProfileAsync(uid);
     currentUsername = profile?.Username ?? "";
-
-    geminiKeyInput = await AiSettings.GetGeminiApiKeyAsync() ?? "";
-    geminiModelInput = await AiSettings.GetGeminiModelAsync();
   }
 
   private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
-
-  private async Task ChangeLanguage(string lang) {
-    await Loc.SetLanguageAsync(lang);
-    StateHasChanged();
-  }
 
   private async Task CheckUsername() {
     usernameFeedback = "";
@@ -141,7 +83,7 @@
       uid = username;
       usernameInput = "";
       usernameError = false;
-      usernameFeedback = Loc["settings_username_saved"];
+      Toasts.Show(Loc["settings_username_saved"]);
     } catch (Exception ex) {
       usernameError = true;
       usernameFeedback = ex.Message;
@@ -152,41 +94,10 @@
 
   private async Task CopyUsername() {
     await JS.InvokeVoidAsync("navigator.clipboard.writeText", currentUsername);
-    usernameError = false;
-    usernameFeedback = Loc["settings_username_copied"];
-  }
-
-  private async Task RefreshModelsAsync() {
-    aiSettingsFeedback = "";
-    isRefreshingModels = true;
-    try {
-      availableModels = await GeminiPlanner.ListAvailableModelsAsync();
-      if (availableModels.Count == 0) {
-        aiSettingsError = true;
-        aiSettingsFeedback = Loc["ai_plan_no_key_error"];
-      }
-    } finally {
-      isRefreshingModels = false;
-    }
-  }
-
-  private async Task SaveAiSettingsAsync() {
-    isSavingAiSettings = true;
-    try {
-      await AiSettings.SaveGeminiApiKeyAsync(geminiKeyInput);
-      await AiSettings.SaveGeminiModelAsync(geminiModelInput);
-      aiSettingsError = false;
-      aiSettingsFeedback = Loc["settings_ai_saved"];
-    } catch (Exception ex) {
-      aiSettingsError = true;
-      aiSettingsFeedback = ex.Message;
-    } finally {
-      isSavingAiSettings = false;
-    }
+    Toasts.Show(Loc["settings_username_copied"]);
   }
 
   public void Dispose() {
     Loc.OnLanguageChanged -= HandleLanguageChanged;
   }
 }
-

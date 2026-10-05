@@ -8,9 +8,9 @@
 
 @if (isInitializing)
 {
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: #f7f7f9;">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: var(--nxt-page);">
         <span style="font-size: 64px; animation: bounce 1.5s infinite;">🍳</span>
-        <p style="font-family: sans-serif; color: #8e8e93; font-size: 18px; margin-top: 16px;">@Loc["loading"]</p>
+        <p style="font-family: sans-serif; color: var(--nxt-text-2); font-size: 18px; margin-top: 16px;">@Loc["loading"]</p>
     </div>
 }
 else
@@ -66,11 +66,7 @@ else
                 <span class="ios-home-guide-icon" aria-hidden="true">📲</span>
                 <h2 id="ios-home-guide-title">@Loc["ios_guide_title"]</h2>
                 <p>@Loc["ios_guide_desc"]</p>
-                <img class="ios-home-guide-gif" src="@($"assets/ios-add-to-home.gif?play={iosGuideReplayKey}")" alt="@Loc["ios_guide_alt"]" />
-                <div class="ios-home-guide-actions">
-                    <button class="ios-home-guide-replay" @onclick="ReplayIosInstallGuide">@Loc["ios_guide_replay"]</button>
-                    <button class="ios-home-guide-got-it" @onclick="DismissIosInstallGuide">@Loc["ios_guide_gotit"]</button>
-                </div>
+                <AddToHomeCarousel ShowProgress="true" FinishText="@Loc["ios_guide_gotit"]" OnFinish="DismissIosInstallGuide" />
             </section>
         </div>
     }
@@ -84,7 +80,6 @@ else
     private int welcomeSlide;
     private string confirmationEmail = "";
     private string emailLinkError = "";
-    private long iosGuideReplayKey;
 
     protected override async Task OnInitializedAsync()
     {
@@ -151,7 +146,6 @@ else
     {
         if (firstRender)
         {
-            await JS.InvokeVoidAsync("nxtweek.checkVersion");
             showFirstLaunchWizard = !needsEmailConfirmation && await JS.InvokeAsync<bool>("nxtweek.shouldShowFirstLaunchWizard");
             showIosInstallGuide = await JS.InvokeAsync<bool>("nxtweek.shouldShowIosInstallGuide");
             if (showFirstLaunchWizard || showIosInstallGuide) StateHasChanged();
@@ -170,6 +164,4 @@ else
         showIosInstallGuide = false;
         await JS.InvokeVoidAsync("nxtweek.markIosInstallGuideSeen");
     }
-
-    private void ReplayIosInstallGuide() => iosGuideReplayKey = DateTime.UtcNow.Ticks;
 }

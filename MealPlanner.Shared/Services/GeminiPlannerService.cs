@@ -1,210 +1,168 @@
-using System.Net.Http.Json;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using MealPlanner.Shared.Models;
+using Nxt.UI.Ai;
 
 namespace MealPlanner.Shared.Services;
 
 /// <summary>
-/// A conversational cooking assistant on top of the Gemini API, mirroring the sibling
-/// task-breaker app's GeminiService: try the user's selected model, fall back through a
-/// known-good list on failure, and force structured JSON back via response_schema. Each
-/// reply carries a chat message plus an optional proposal (meals and/or shopping items)
-/// that the page shows behind an explicit "Add" button.
+/// The meal-planning side of the family AI assistant. Transport, model fallback and structured JSON
+/// come from the shared <see cref="GeminiClient"/>; this class owns the cooking-assistant prompt and
+/// validation. The shared client is single-turn, so the conversation is passed as a transcript.
 /// </summary>
 public class GeminiPlannerService : IGeminiPlannerService
 {
     private const int MaxPastDays = 1;
     private const int MaxFutureDays = 60;
+    private const int MaxTranscriptTurns = 20;
 
-    private static readonly string[] FallbackModels =
-    [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
-    ];
-
-    private readonly HttpClient _http;
-    private readonly IAiSettingsService _settings;
+    private readonly GeminiClient _gemini;
     private readonly ILocalizationService _loc;
 
-    public GeminiPlannerService(HttpClient http, IAiSettingsService settings, ILocalizationService loc)
+    public GeminiPlannerService(GeminiClient gemini, ILocalizationService loc)
     {
-        _http = http;
-        _settings = settings;
+        _gemini = gemini;
         _loc = loc;
     }
 
-    public async Task<List<string>> ListAvailableModelsAsync()
+    public async Task<AssistantReply> ChatAsync(IReadOnlyList<ChatTurn> history, PlanChanges? pending, string planContext,
+        IReadOnlyList<string> currentShoppingItems)
     {
-        var apiKey = await _settings.GetGeminiApiKeyAsync();
-        if (string.IsNullOrWhiteSpace(apiKey)) return [];
-
-        try
-        {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models?key={Uri.EscapeDataString(apiKey)}";
-            using var response = await _http.GetAsync(url);
-            if (!response.IsSuccessStatusCode) return [];
-
-            var result = await response.Content.ReadFromJsonAsync<ModelListResponse>();
-            return result?.Models?
-                .Where(model => model.SupportedGenerationMethods?.Contains("generateContent", StringComparer.OrdinalIgnoreCase) == true)
-                .Select(model => model.Name?.Replace("models/", "", StringComparison.OrdinalIgnoreCase))
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Select(name => name!)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList() ?? [];
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
-        {
-            return [];
-        }
-    }
-
-    public async Task<AssistantReply> ChatAsync(IReadOnlyList<ChatTurn> history, string planContext)
-    {
-        var apiKey = await _settings.GetGeminiApiKeyAsync();
-        if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("No Gemini API key set. Add one in Settings.");
         if (history.Count == 0 || !history[^1].IsUser)
             throw new ArgumentException("The conversation must end with a user message.", nameof(history));
 
-        var modelsToTry = await GetModelsToTryAsync();
-        Exception? lastError = null;
-
-        foreach (var model in modelsToTry)
-        {
-            try
-            {
-                return await ChatCoreAsync(history, planContext, model, apiKey);
-            }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
-            {
-                lastError = ex;
-            }
-        }
-
-        throw new InvalidOperationException(
-            "None of the configured Gemini models could answer. Check your API key, model access, and connection.",
-            lastError);
-    }
-
-    private async Task<IEnumerable<string>> GetModelsToTryAsync()
-    {
-        var selectedModel = await _settings.GetGeminiModelAsync();
-        var availableModels = await ListAvailableModelsAsync();
-        var knownFallbacks = availableModels.Count == 0
-            ? FallbackModels
-            : FallbackModels.Where(model => availableModels.Contains(model, StringComparer.OrdinalIgnoreCase));
-        return new[] { selectedModel }.Concat(knownFallbacks).Distinct(StringComparer.OrdinalIgnoreCase);
-    }
-
-    private async Task<AssistantReply> ChatCoreAsync(IReadOnlyList<ChatTurn> history, string planContext, string model, string apiKey)
-    {
         var today = DateOnly.FromDateTime(DateTime.Now);
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
+        var prompt = BuildPrompt(history, pending, planContext, currentShoppingItems, today);
 
-        var body = new
+        var schema = new
         {
-            system_instruction = new { parts = new[] { new { text = BuildSystemInstruction(today, planContext) } } },
-            contents = history.Select(turn => new
+            type = "OBJECT",
+            properties = new
             {
-                role = turn.IsUser ? "user" : "model",
-                parts = new[] { new { text = turn.Text } }
-            }).ToArray(),
-            generationConfig = new
-            {
-                response_mime_type = "application/json",
-                response_schema = new
+                message = new { type = "STRING" },
+                action = new { type = "STRING", @enum = new[] { "chat", "propose", "apply", "cancel" } },
+                meals = new
                 {
-                    type = "OBJECT",
-                    properties = new
+                    type = "ARRAY",
+                    items = new
                     {
-                        message = new { type = "STRING" },
-                        meals = new
+                        type = "OBJECT",
+                        properties = new
                         {
-                            type = "ARRAY",
-                            items = new
-                            {
-                                type = "OBJECT",
-                                properties = new
-                                {
-                                    date = new { type = "STRING" },
-                                    name = new { type = "STRING" },
-                                    mealType = new { type = "STRING", @enum = new[] { "Meat", "Chicken", "Fish", "Vegetarian", "Vegan" } },
-                                    ingredients = new { type = "ARRAY", items = new { type = "STRING" } }
-                                },
-                                required = new[] { "date", "name", "mealType" }
-                            }
+                            date = new { type = "STRING" },
+                            name = new { type = "STRING" },
+                            mealType = new { type = "STRING", @enum = new[] { "Meat", "Chicken", "Fish", "Vegetarian", "Vegan" } },
+                            ingredients = new { type = "ARRAY", items = new { type = "STRING" } }
                         },
-                        shoppingItems = new { type = "ARRAY", items = new { type = "STRING" } }
-                    },
-                    required = new[] { "message", "meals", "shoppingItems" }
-                }
-            }
+                        required = new[] { "date", "name", "mealType" }
+                    }
+                },
+                shoppingItems = new { type = "ARRAY", items = new { type = "STRING" } },
+                removeShoppingItems = new { type = "ARRAY", items = new { type = "STRING" } }
+            },
+            required = new[] { "message", "action", "meals", "shoppingItems", "removeShoppingItems" }
         };
 
-        using var response = await _http.PostAsJsonAsync(url, body);
-        response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<GeminiResponse>();
-        var text = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
-            ?? throw new InvalidOperationException("Gemini returned no content.");
-        var parsed = JsonSerializer.Deserialize<ChatResultDto>(text)
-            ?? throw new InvalidOperationException("Gemini returned an invalid response.");
+        AssistantReply? reply = null;
+        await _gemini.GenerateJsonAsync<ChatResultDto>(prompt, schema, parsed =>
+        {
+            var message = parsed.Message?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(message))
+                throw new InvalidOperationException("Gemini returned an empty reply.");
 
-        var message = parsed.Message?.Trim() ?? "";
-        if (string.IsNullOrWhiteSpace(message))
-            throw new InvalidOperationException("Gemini returned an empty reply.");
+            var changes = new PlanChanges(
+                ValidateMeals(parsed.Meals ?? [], today),
+                CleanList(parsed.ShoppingItems),
+                CleanList(parsed.RemoveShoppingItems));
 
-        var meals = ValidateMeals(parsed.Meals ?? [], today);
-        var shoppingItems = CleanList(parsed.ShoppingItems);
-        var proposal = meals.Count == 0 && shoppingItems.Count == 0 ? null : new AssistantProposal(meals, shoppingItems);
+            var action = parsed.Action?.Trim().ToLowerInvariant() switch
+            {
+                "propose" when !changes.IsEmpty => AssistantAction.Propose,
+                "apply" => AssistantAction.Apply,
+                "cancel" => AssistantAction.Cancel,
+                _ => AssistantAction.Chat
+            };
 
-        return new AssistantReply(message, proposal, model);
+            reply = new AssistantReply(message, action, changes);
+            return parsed;
+        });
+        return reply!;
     }
 
-    private string BuildSystemInstruction(DateOnly today, string planContext)
+    private string BuildPrompt(IReadOnlyList<ChatTurn> history, PlanChanges? pending, string planContext,
+        IReadOnlyList<string> currentShoppingItems, DateOnly today)
     {
         var languageName = _loc.AvailableLanguages.FirstOrDefault(l => l.Code == _loc.CurrentLanguage)?.NativeName ?? _loc.CurrentLanguage;
+        var shoppingList = currentShoppingItems.Count > 0
+            ? string.Join("\n", currentShoppingItems.Take(300).Select(item => $"- {item}"))
+            : "(the list is empty)";
+        var transcript = string.Join("\n\n", history.TakeLast(MaxTranscriptTurns)
+            .Select(turn => $"{(turn.IsUser ? "USER" : "ASSISTANT")}: {turn.Text}"));
 
         return $"""
             You are the friendly home-cooking assistant inside "Makdous", a family weekly meal planner.
-            You help the user decide what to cook, plan meals onto days, and keep a shopping list.
+            You help the user decide what to cook, plan meals onto days, and keep their shopping list.
 
-            Today is {today:yyyy-MM-dd} ({today.DayOfWeek}).
-            Always reply in {languageName} (language code: {_loc.CurrentLanguage}), including dish and item names,
-            using everyday food vocabulary a home cook would use.
+            Today is {today:yyyy-MM-dd} ({today.DayOfWeek}). Resolve relative dates ("tomorrow", "Friday",
+            "next week") against this date and always give explicit ISO dates (yyyy-MM-dd), never before today.
+            Always reply in {languageName} (language code: {_loc.CurrentLanguage}), including dish and item
+            names, using everyday food vocabulary a home cook would use.
 
             The user's plan for the coming days (FREE means nothing is planned yet):
             {(string.IsNullOrWhiteSpace(planContext) ? "(unknown)" : planContext)}
 
-            How to behave:
+            Current shopping list:
+            {shoppingList}
+
+            Proposal waiting for the user's answer:
+            {DescribePending(pending)}
+
+            HOW TO BEHAVE
             - Talk like a helpful friend: short, warm replies (2 to 5 sentences). Discuss before acting.
-            - When the user tells you what ingredients they have, suggest 2 to 4 dishes that mostly use them,
-              say in a few words what each one still needs (if anything), and ask which ones they like and for
-              which days. Do not add anything yet.
-            - If something important is missing (which dish, which day, dietary needs), ask ONE short question
-              instead of guessing. Don't ask more than you need.
-            - Prefer FREE days when the user hasn't said which day. Mention when a day already has a meal and
-              ask before replacing it.
+            - When the user tells you which ingredients they have, suggest 2 to 4 dishes that mostly use
+              them, say in a few words what each still needs (if anything), and ask which they like and
+              for which days.
+            - If something important is missing (which dish, which day, dietary needs), ask ONE short
+              question instead of guessing.
+            - Prefer FREE days when the user hasn't said which day. Mention when a day already has a meal
+              and ask before replacing it.
+            - Politely steer off-topic requests back to cooking, meals and shopping.
 
-            The "meals" and "shoppingItems" fields are a PROPOSAL shown to the user with an "Add" button.
-            Nothing is saved until they tap it.
-            - Leave both lists EMPTY while you are still suggesting options, asking questions, or chatting.
-            - Fill them only when the user has picked or explicitly asked for specific dishes or items. Then
-              say in "message" exactly what you'd add and that they can tap Add to confirm.
-            - Each meal needs an explicit ISO date (yyyy-MM-dd) on or after today, a name, a mealType
-              (exactly one of: Meat, Chicken, Fish, Vegetarian, Vegan) and its main ingredients.
-            - Put an ingredient into "shoppingItems" only if the user asked for it or agreed to buy what is
-              missing — never assume they want everything bought.
-            - A new proposal replaces any earlier one, so repeat everything that should still be added.
+            THE "action" FIELD — nothing is saved unless you return "apply"
+            - "chat": you are suggesting options, asking a question or just talking. Leave all lists empty.
+            - "propose": the user picked or asked for specific dishes/items. Fill the lists with the
+              COMPLETE set of changes (it replaces any earlier proposal) and in "message" say briefly what
+              you would do and ask them to confirm. Do this even for direct requests like "add pizza on
+              Friday" — always confirm first.
+            - "apply": ONLY when a proposal is waiting AND the user's latest message clearly agrees to it
+              ("yes", "ok", "add them", "go ahead"). Repeat that proposal's lists unchanged. If they agree
+              but change something ("yes, but without the parsley"), use "propose" with the updated set.
+            - "cancel": the user turns the waiting proposal down. Leave the lists empty.
 
-            Earlier assistant turns may end with a bracketed system note such as "[Proposal shown: ...]" or
-            "[User added this]". Those notes are written by the app, not by you — use them to know what was
-            proposed and what was already added, but never write such notes yourself.
-            Politely steer off-topic requests back to cooking, meals and shopping.
+            LIST RULES
+            - "meals": each needs an ISO date, a name, a mealType (exactly one of: Meat, Chicken, Fish,
+              Vegetarian, Vegan) and its main ingredients.
+            - "shoppingItems": items to ADD. Only things the user asked for or agreed to buy — never
+              assume they want every missing ingredient bought.
+            - "removeShoppingItems": items to take OFF the list. Copy each name exactly from the current
+              shopping list above; only include items that are on it.
+
+            CONVERSATION SO FAR (lines in [brackets] are notes from the app, never write them yourself):
+            {transcript}
             """;
+    }
+
+    private static string DescribePending(PlanChanges? pending)
+    {
+        if (pending is null || pending.IsEmpty) return "(none)";
+
+        var parts = new List<string>();
+        if (pending.Meals.Count > 0)
+            parts.Add("meals: " + string.Join("; ", pending.Meals.Select(m => $"{m.Date:yyyy-MM-dd} {m.Name} ({m.MealType})")));
+        if (pending.ShoppingItems.Count > 0)
+            parts.Add("add to shopping list: " + string.Join(", ", pending.ShoppingItems));
+        if (pending.RemoveShoppingItems.Count > 0)
+            parts.Add("remove from shopping list: " + string.Join(", ", pending.RemoveShoppingItems));
+        return string.Join("\n", parts);
     }
 
     private static List<ParsedMealEntry> ValidateMeals(List<ParsedMealDto> dtos, DateOnly today)
@@ -234,17 +192,13 @@ public class GeminiPlannerService : IGeminiPlannerService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList() ?? [];
 
-    private sealed class ModelListResponse { [JsonPropertyName("models")] public List<GeminiModel>? Models { get; set; } }
-    private sealed class GeminiModel
-    {
-        [JsonPropertyName("name")] public string? Name { get; set; }
-        [JsonPropertyName("supportedGenerationMethods")] public List<string>? SupportedGenerationMethods { get; set; }
-    }
     private sealed class ChatResultDto
     {
         [JsonPropertyName("message")] public string? Message { get; set; }
+        [JsonPropertyName("action")] public string? Action { get; set; }
         [JsonPropertyName("meals")] public List<ParsedMealDto>? Meals { get; set; } = [];
         [JsonPropertyName("shoppingItems")] public List<string>? ShoppingItems { get; set; } = [];
+        [JsonPropertyName("removeShoppingItems")] public List<string>? RemoveShoppingItems { get; set; } = [];
     }
     private sealed class ParsedMealDto
     {
@@ -253,8 +207,4 @@ public class GeminiPlannerService : IGeminiPlannerService
         [JsonPropertyName("mealType")] public string MealType { get; set; } = "";
         [JsonPropertyName("ingredients")] public List<string>? Ingredients { get; set; } = [];
     }
-    private sealed class GeminiResponse { [JsonPropertyName("candidates")] public List<Candidate>? Candidates { get; set; } }
-    private sealed class Candidate { [JsonPropertyName("content")] public Content? Content { get; set; } }
-    private sealed class Content { [JsonPropertyName("parts")] public List<Part>? Parts { get; set; } }
-    private sealed class Part { [JsonPropertyName("text")] public string? Text { get; set; } }
 }

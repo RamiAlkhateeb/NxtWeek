@@ -4,7 +4,7 @@
 
 @* Shared "what's in this dish" sheet, opened from the meal cards on both the
    Week and the Meals page so the two stay in sync. *@
-<UiBottomSheet IsOpen="IsOpen" Title="@MealName" Eyebrow="@Loc["meal_ingredients"]" OnDismiss="OnDismiss">
+<NxtBottomSheet IsOpen="IsOpen" Title="@MealName" Eyebrow="@Loc["meal_ingredients"]" OnDismiss="OnDismiss">
     <div class="ingredients-sheet" dir="@Loc.Direction">
         @if (!string.IsNullOrWhiteSpace(ImageUrl))
         {
@@ -47,7 +47,7 @@
 
         @ChildContent
     </div>
-</UiBottomSheet>
+</NxtBottomSheet>
 
 @code {
     [Parameter] public bool IsOpen { get; set; }

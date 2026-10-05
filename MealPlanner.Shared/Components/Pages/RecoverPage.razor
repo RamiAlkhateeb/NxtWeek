@@ -7,7 +7,7 @@
 @inject ILocalizationService Loc
 
 <div class="app app-content-wrapper recover-page" dir="@Loc.Direction">
-    <UiPageHeader Icon="🔁" Title="@Loc["settings_recover_title"]" Subtitle="@Loc["recover_subtitle"]" />
+    <NxtPageHeader Icon="🔁" Title="@Loc["settings_recover_title"]" Subtitle="@Loc["recover_subtitle"]" />
 
     <section class="recover-intro">
         <p>@Loc["recover_intro"]</p>
@@ -38,8 +38,8 @@
         <p class="recover-warning">⚠️ @Loc.T("recover_warning", foundProfile.Username)</p>
 
         <div class="recover-actions">
-            <UiButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? Loc["recover_busy"] : Loc["recover_now"])</UiButton>
-            <UiButton Variant="ghost" OnClick="ResetFound">@Loc["cancel"]</UiButton>
+            <NxtButton Variant="primary" OnClick="ConfirmRecovery" Disabled="@isBusy">@(isBusy ? Loc["recover_busy"] : Loc["recover_now"])</NxtButton>
+            <NxtButton Variant="ghost" OnClick="ResetFound">@Loc["cancel"]</NxtButton>
         </div>
     }
 
