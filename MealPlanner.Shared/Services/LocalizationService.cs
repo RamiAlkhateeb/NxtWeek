@@ -406,20 +406,20 @@ public class LocalizationService : ILocalizationService
         // {0} = friend's display name
         ["friends_sync_success"] = new() { ["ar"] = "تمت مزامنة أسبوعك مع خطة {0} ✨", ["en"] = "Your week now matches {0}'s plan ✨", ["de"] = "Deine Woche entspricht jetzt dem Plan von {0} ✨" },
 
-        // AI assistant (prompt -> meals + shopping list)
+        // AI assistant (a chat that discusses first, then proposes changes and saves them once the user agrees)
         ["ai_plan_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
-        ["ai_plan_subtitle"] = new() { ["ar"] = "صف أسبوعك بكلماتك", ["en"] = "Describe your week in your own words", ["de"] = "Beschreibe deine Woche mit eigenen Worten" },
-        ["ai_plan_placeholder_short"] = new() { ["ar"] = "ماذا تريد أن تضيف؟", ["en"] = "What should I add?", ["de"] = "Was soll ich hinzufügen?" },
-        ["ai_plan_placeholder"] = new() { ["ar"] = "مثال: أضف بيتزا ليوم الثلاثاء ودجاج مع أرز ليوم الجمعة، وضع حليب وبيض وخبز في قائمة التسوق", ["en"] = "e.g. add pizza for Tuesday and chicken rice for Friday, and put milk, eggs and bread on my shopping list", ["de"] = "z. B. füge Pizza für Dienstag und Hähnchen mit Reis für Freitag hinzu und setze Milch, Eier und Brot auf die Einkaufsliste" },
-        ["ai_plan_submit"] = new() { ["ar"] = "إرسال", ["en"] = "Send", ["de"] = "Senden" },
-        ["ai_plan_parsing"] = new() { ["ar"] = "جارٍ التفكير...", ["en"] = "Thinking...", ["de"] = "Denke nach …" },
-        ["ai_plan_no_key_error"] = new() { ["ar"] = "أضف مفتاح Gemini الخاص بك من الإعدادات أولاً.", ["en"] = "Add your Gemini API key in Settings first.", ["de"] = "Füge zuerst deinen Gemini-API-Schlüssel in den Einstellungen hinzu." },
-        ["ai_plan_go_to_settings"] = new() { ["ar"] = "اذهب إلى الإعدادات", ["en"] = "Go to Settings", ["de"] = "Zu den Einstellungen" },
-        ["ai_plan_empty_parse_error"] = new() { ["ar"] = "لم أجد أي وجبات أو عناصر تسوق في ذلك — حاول إعادة الصياغة.", ["en"] = "Couldn't find any meals or shopping items in that — try rephrasing.", ["de"] = "Darin wurden keine Gerichte oder Einkaufsartikel gefunden – versuch es anders zu formulieren." },
+        ["ai_plan_subtitle"] = new() { ["ar"] = "أخبرني بما في مطبخك أو بما تريد تخطيطه", ["en"] = "Tell me what's in your kitchen or what you'd like to plan", ["de"] = "Erzähl mir, was du in der Küche hast oder was du planen möchtest" },
+        ["ai_plan_chat_empty"] = new() { ["ar"] = "أخبرني بالمكونات المتوفرة لديك وسأقترح عليك أطباقاً، أو بما تريد تخطيطه لهذا الأسبوع. لن أضيف شيئاً قبل أن نتفق.", ["en"] = "Tell me which ingredients you have and I'll suggest dishes, or what you'd like to plan this week. I won't add anything until we agree.", ["de"] = "Sag mir, welche Zutaten du hast, und ich schlage dir Gerichte vor – oder was du diese Woche planen möchtest. Ich füge nichts hinzu, bevor wir uns einig sind." },
+        ["ai_plan_placeholder_short"] = new() { ["ar"] = "ماذا لديك في المطبخ؟", ["en"] = "What's in your kitchen?", ["de"] = "Was hast du in der Küche?" },
+        ["ai_chat_chip_ingredients"] = new() { ["ar"] = "لدي بيض وبطاطا وبصل، ماذا أطبخ؟", ["en"] = "I have eggs, potatoes and onions — what can I cook?", ["de"] = "Ich habe Eier, Kartoffeln und Zwiebeln – was kann ich kochen?" },
+        ["ai_chat_chip_plan"] = new() { ["ar"] = "ساعدني في تخطيط بقية الأسبوع", ["en"] = "Help me plan the rest of the week", ["de"] = "Hilf mir, den Rest der Woche zu planen" },
+        ["ai_chat_chip_shopping"] = new() { ["ar"] = "أضف حليب وبيض وخبز إلى قائمتي", ["en"] = "Add milk, eggs and bread to my list", ["de"] = "Setz Milch, Eier und Brot auf meine Liste" },
+        ["ai_chat_confirm_hint"] = new() { ["ar"] = "قل «نعم» لأنفّذ ذلك، أو أخبرني بما تريد تغييره.", ["en"] = "Say “yes” and I'll do it, or tell me what to change.", ["de"] = "Sag „ja“, dann erledige ich das – oder sag mir, was ich ändern soll." },
+        ["ai_chat_propose_intro"] = new() { ["ar"] = "هذا ما يمكنني فعله:", ["en"] = "Here's what I can do:", ["de"] = "Das kann ich für dich tun:" },
         ["ai_plan_preview_meals_heading"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
-        ["ai_plan_preview_items_heading"] = new() { ["ar"] = "عناصر قائمة التسوق", ["en"] = "Shopping list items", ["de"] = "Einkaufsartikel" },
+        ["ai_plan_proposal_add_heading"] = new() { ["ar"] = "إضافة إلى قائمة التسوق", ["en"] = "Add to shopping list", ["de"] = "Auf die Einkaufsliste" },
+        ["ai_plan_proposal_remove_heading"] = new() { ["ar"] = "حذف من قائمة التسوق", ["en"] = "Remove from shopping list", ["de"] = "Von der Einkaufsliste entfernen" },
         ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
-        ["ai_plan_chat_empty"] = new() { ["ar"] = "اكتب ما تريد إضافته وسأتولى الأمر.", ["en"] = "Tell me what to add and I'll take care of it.", ["de"] = "Sag mir, was ich hinzufügen soll – ich kümmere mich darum." },
         ["ai_plan_reply_done"] = new() { ["ar"] = "تم! هذا ما قمت به:", ["en"] = "Done! Here's what I did:", ["de"] = "Erledigt! Das habe ich gemacht:" },
         // {0} = shopping list name
         ["ai_plan_reply_removed_heading"] = new() { ["ar"] = "حُذف من {0}", ["en"] = "Removed from {0}", ["de"] = "Entfernt aus {0}" },

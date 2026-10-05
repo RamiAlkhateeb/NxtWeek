@@ -9,7 +9,8 @@
 @inject ILocalizationService Loc
 @inject NavigationManager Nav
 
-@* The family AI assistant (Nxt.UI AiChat); this page only turns a reply into meals and shopping items. *@
+@* The family AI assistant (Nxt.UI AiChat). It discusses first: concrete changes are proposed and
+   only saved after the user agrees in the chat. *@
 <div class="app app-content-wrapper ai-chat-page" dir="@Loc.Direction">
     <NxtPageHeader Icon="✨" Title="@Loc["ai_plan_title"]" Subtitle="@Loc["ai_plan_subtitle"]" />
     <AiChat OnSend="HandleSendAsync" EmptyText="@Loc["ai_plan_chat_empty"]" Placeholder="@Loc["ai_plan_placeholder_short"]"
@@ -18,13 +19,12 @@
 
 @code {
     private string uid = "";
+    private readonly List<ChatTurn> history = new();
+    private PlanChanges? pending;
+    private string planContext = "";
 
-    private IReadOnlyList<string> Suggestions => Loc.CurrentLanguage switch
-    {
-        "ar" => ["مكدوس وفطائر ليوم الجمعة", "أضف حليب وبيض وخبز", "خطط لي عشاء نباتي هذا الأسبوع"],
-        "de" => ["Pizza am Freitag", "Milch, Eier und Brot auf die Liste", "Plane vegetarische Abendessen diese Woche"],
-        _ => ["Pizza on Friday", "Add milk, eggs and bread", "Plan vegetarian dinners this week"]
-    };
+    private IReadOnlyList<string> Suggestions =>
+        [Loc["ai_chat_chip_ingredients"], Loc["ai_chat_chip_plan"], Loc["ai_chat_chip_shopping"]];
 
     protected override async Task OnInitializedAsync()
     {
@@ -36,6 +36,7 @@
         }
 
         uid = user.Uid;
+        await RefreshPlanContextAsync();
     }
 
     private async Task<AiReply> HandleSendAsync(string text)
@@ -44,29 +45,78 @@
         var shops = await ShoppingListService.GetShopsAsync(uid);
         var currentItems = shops.SelectMany(s => s.Items.Values).Select(i => i.Name).ToList();
 
-        var result = await GeminiPlanner.ParsePromptAsync(text, currentItems);
-        if (result.Meals.Count == 0 && result.ShoppingItems.Count == 0 && result.RemoveShoppingItems.Count == 0)
-            return AiReply.Error(Loc["ai_plan_empty_parse_error"]);
-
-        foreach (var meal in result.Meals)
+        history.Add(new ChatTurn(true, text));
+        AssistantReply reply;
+        try
         {
-            var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
-            {
-                Name = meal.Name,
-                MealType = meal.MealType,
-                Language = Loc.CurrentLanguage,
-                CreatedBy = uid
-            });
-            await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
+            reply = await GeminiPlanner.ChatAsync(history, pending, planContext, currentItems);
+        }
+        catch
+        {
+            // AiChat shows the error bubble; keep the transcript free of an unanswered turn.
+            history.RemoveAt(history.Count - 1);
+            throw;
         }
 
+        // "Apply" with nothing pending can't be honoured; if it carries changes, ask about them instead —
+        // with our own wording, since the model's text would claim it was already done.
+        var applyWithoutPending = reply.Action == AssistantAction.Apply && pending is null or { IsEmpty: true } && !reply.Changes.IsEmpty;
+        var action = applyWithoutPending ? AssistantAction.Propose : reply.Action;
+        var message = applyWithoutPending ? Loc["ai_chat_propose_intro"] : reply.Message;
+
+        switch (action)
+        {
+            case AssistantAction.Propose:
+                pending = reply.Changes;
+                history.Add(new ChatTurn(false, $"{message}\n[Proposed, waiting for the user to confirm]"));
+                return new AiReply
+                {
+                    Text = $"{message}\n\n{Loc["ai_chat_confirm_hint"]}",
+                    Sections = DescribeProposal(reply.Changes)
+                };
+
+            case AssistantAction.Apply when pending is { IsEmpty: false }:
+                // Save exactly what the user saw and agreed to, not whatever the model repeated.
+                var toApply = pending;
+                pending = null;
+                var applied = await ApplyAsync(toApply, shops);
+                history.Add(new ChatTurn(false, $"{message}\n[Saved the proposal]"));
+                await RefreshPlanContextAsync();
+                return applied;
+
+            case AssistantAction.Cancel:
+                pending = null;
+                history.Add(new ChatTurn(false, $"{message}\n[Proposal cancelled]"));
+                return new AiReply { Text = message };
+
+            default:
+                history.Add(new ChatTurn(false, message));
+                return new AiReply { Text = message };
+        }
+    }
+
+    private List<AiListSection> DescribeProposal(PlanChanges changes)
+    {
         var sections = new List<AiListSection>();
-        var didSomething = result.Meals.Count > 0 || result.ShoppingItems.Count > 0;
+        if (changes.Meals.Count > 0)
+            sections.Add(new(Loc["ai_plan_preview_meals_heading"],
+                changes.Meals.Select(m => new AiListItem(m.Name, Loc.FormatDayDate(m.Date))).ToList()));
+        if (changes.ShoppingItems.Count > 0)
+            sections.Add(new(Loc["ai_plan_proposal_add_heading"], changes.ShoppingItems.Select(i => new AiListItem(i)).ToList()));
+        if (changes.RemoveShoppingItems.Count > 0)
+            sections.Add(new(Loc["ai_plan_proposal_remove_heading"], changes.RemoveShoppingItems.Select(i => new AiListItem(i)).ToList()));
+        return sections;
+    }
+
+    private async Task<AiReply> ApplyAsync(PlanChanges changes, List<ShoppingShop> shops)
+    {
+        var sections = new List<AiListSection>();
+        var didSomething = changes.Meals.Count > 0 || changes.ShoppingItems.Count > 0;
 
         // Removals run before additions so "replace milk with oat milk" can't delete the new item.
-        if (result.RemoveShoppingItems.Count > 0)
+        if (changes.RemoveShoppingItems.Count > 0)
         {
-            var (removedByShop, notFound) = await RemoveItemsAsync(shops, result.RemoveShoppingItems);
+            var (removedByShop, notFound) = await RemoveItemsAsync(shops, changes.RemoveShoppingItems);
             foreach (var (shopName, names) in removedByShop)
                 sections.Add(new(Loc.T("ai_plan_reply_removed_heading", shopName), names.Select(n => new AiListItem(n)).ToList()));
             if (removedByShop.Count > 0) didSomething = true;
@@ -74,19 +124,32 @@
                 sections.Add(new(Loc["ai_plan_reply_not_found_heading"], notFound.Select(n => new AiListItem(n)).ToList()));
         }
 
-        if (result.Meals.Count > 0)
+        foreach (var meal in changes.Meals)
         {
-            sections.Add(new(Loc["ai_plan_preview_meals_heading"],
-                result.Meals.Select(m => new AiListItem(m.Name, Loc.FormatDayDate(m.Date))).ToList()));
+            var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
+            {
+                Name = meal.Name,
+                MealType = meal.MealType,
+                Ingredients = meal.Ingredients.ToList(),
+                Language = Loc.CurrentLanguage,
+                CreatedBy = uid
+            });
+            await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
         }
 
-        if (result.ShoppingItems.Count > 0)
+        if (changes.Meals.Count > 0)
+        {
+            sections.Add(new(Loc["ai_plan_preview_meals_heading"],
+                changes.Meals.Select(m => new AiListItem(m.Name, Loc.FormatDayDate(m.Date))).ToList()));
+        }
+
+        if (changes.ShoppingItems.Count > 0)
         {
             var shop = await GetOrCreateShopAsync();
-            foreach (var item in result.ShoppingItems)
+            foreach (var item in changes.ShoppingItems)
                 await ShoppingListService.AddItemAsync(uid, shop.Id, item);
             sections.Add(new(Loc.T("ai_plan_reply_items_heading", shop.Name),
-                result.ShoppingItems.Select(i => new AiListItem(i)).ToList()));
+                changes.ShoppingItems.Select(i => new AiListItem(i)).ToList()));
         }
 
         // The reply reports what was actually done.
@@ -132,5 +195,28 @@
         return shops.Count > 0
             ? shops[0]
             : await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+    }
+
+    /// <summary>Gives the assistant the next two weeks of the plan so it can prefer free days.</summary>
+    private async Task RefreshPlanContextAsync()
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var plan = await UserService.GetWeeklyPlanAsync(uid, today, today.AddDays(13));
+            var names = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id, m => m.Name);
+
+            planContext = string.Join('\n', Enumerable.Range(0, 14).Select(offset =>
+            {
+                var date = today.AddDays(offset);
+                var entry = plan.FirstOrDefault(e => e.Date == date && !string.IsNullOrWhiteSpace(e.MealId));
+                var meal = entry is null ? "FREE" : names.GetValueOrDefault(entry.MealId, "(a meal)");
+                return $"{date:yyyy-MM-dd} {date.DayOfWeek}: {meal}";
+            }));
+        }
+        catch
+        {
+            planContext = "";
+        }
     }
 }
