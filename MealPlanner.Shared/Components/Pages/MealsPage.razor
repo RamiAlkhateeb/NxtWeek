@@ -3,6 +3,7 @@
 @using MealPlanner.Shared.Models
 @inject IMealCatalogService CatalogService
 @inject IUserService UserService
+@inject IShoppingListService ShoppingListService
 @inject IAuthService Auth
 @inject IMealCacheService CacheService
 @inject IMealService MealService
@@ -21,53 +22,59 @@
         <NxtPageHeader Icon="🍽️" Title="@Loc["meals_title"]" Subtitle="@Loc["meals_subtitle"]" />
     }
 
-    <!-- Search and Filters -->
-    <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+    @{ var meals = FilteredMeals; }
+
+    <div class="meals-filters">
         <NxtTextInput CssClass="meal-search" Placeholder="@Loc["meals_search_placeholder"]" @bind-Value="searchText" />
-        <div style="display: flex; gap: 8px;">
-            <NxtButton Variant="secondary" OnClick="OpenNewMeal" Style="flex: 1;">＋ @Loc["meals_new_meal"]</NxtButton>
+        <div class="meals-filter-row">
+            <NxtButton Variant="secondary" OnClick="OpenNewMeal" CssClass="meals-new-btn">＋ @Loc["meals_new_meal"]</NxtButton>
             <NxtChip Active="@(!filterByAppLanguage)" OnClick="ToggleLanguageFilter">
                 @(filterByAppLanguage ? Loc["meals_lang_app"] : Loc["meals_lang_all"])
             </NxtChip>
         </div>
 
-        <!-- Meal Type Filter Chips -->
         <div>
-            <span style="font-size:12px; font-weight:bold; color:var(--color-text-secondary); display:block; margin-bottom:6px;">@Loc["meals_type_label"]</span>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span class="meals-filter-label">@Loc["meals_type_label"]</span>
+            <div class="meals-filter-row wrap">
                 <NxtChip Active="@(selectedMealType == null)" OnClick="() => SetMealType(null)">@Loc["meals_filter_all"]</NxtChip>
                 <NxtChip Active="@(selectedMealType == MealType.Meat)" OnClick="() => SetMealType(MealType.Meat)">🥩 @Loc["meal_meat"]</NxtChip>
                 <NxtChip Active="@(selectedMealType == MealType.Chicken)" OnClick="() => SetMealType(MealType.Chicken)">🍗 @Loc["meal_chicken"]</NxtChip>
                 <NxtChip Active="@(selectedMealType == MealType.Fish)" OnClick="() => SetMealType(MealType.Fish)">🐟 @Loc["meal_fish"]</NxtChip>
                 <NxtChip Active="@(selectedMealType == MealType.Vegetarian)" OnClick="() => SetMealType(MealType.Vegetarian)">🥦 @Loc["meal_vegetarian"]</NxtChip>
-                <NxtChip Active="@(selectedMealType == MealType.Vegan)" OnClick="() => SetMealType(MealType.Vegan)">🌱 @Loc["meal_vegan"]</NxtChip>
             </div>
         </div>
+
+        @if (!isLoading)
+        {
+            <div class="meals-result-bar" aria-live="polite">
+                <span>@(meals.Count == 1 ? Loc["meals_results_one"] : Loc.T("meals_results_count", meals.Count))</span>
+                @if (HasActiveFilters)
+                {
+                    <button type="button" class="meals-clear-filters" @onclick="ClearFilters">@Loc["meals_clear_filters"]</button>
+                }
+            </div>
+        }
     </div>
 
-    <!-- Playful Toast Confirmation -->
     @if (!string.IsNullOrEmpty(confirmMessage))
     {
-        <div style="padding: 0 16px;">
-            <div class="alert-playful" style="padding: 12px; text-align: center; margin-bottom: 12px; font-size: 14px;">
-                🎉 @confirmMessage
-            </div>
+        <div class="meals-toast-wrap">
+            <div class="alert-playful meals-toast">🎉 @confirmMessage</div>
         </div>
     }
 
-    <!-- Meals List -->
-    <div style="padding: 0 16px 20px; display: flex; flex-direction: column; gap: 14px;">
+    <div class="meals-list">
         @if (isLoading)
         {
-            <p style="text-align: center; color: var(--color-text-secondary); padding: 20px;">@Loc["loading"]</p>
+            <p class="meals-loading">@Loc["loading"]</p>
         }
-        else if (FilteredMeals.Count == 0)
+        else if (meals.Count == 0)
         {
             <NxtEmptyState Icon="🍳" Title="@Loc["meals_empty_title"]" Message="@Loc["meals_empty_desc"]" />
         }
         else
         {
-            @foreach (var meal in FilteredMeals)
+            @foreach (var meal in meals)
             {
                 <MealSelectionCard Meal="meal"
                                    IsContextMode="isContextMode"
@@ -87,6 +94,7 @@
                       MealType="ingredientsMeal?.MealType"
                       Ingredients="ingredientsMeal?.Ingredients"
                       SideDishes="ingredientsMeal?.SideDishes"
+                      OnAddToShoppingList="AddIngredientsToShoppingListAsync"
                       OnDismiss="() => ingredientsMeal = null" />
 
 <NxtBottomSheet IsOpen="@(showDayPicker && browseMeal is not null)" Eyebrow="@browseMeal?.Name" Title="@Loc["meals_add_to_day"]" OnDismiss="CloseDayPicker">
@@ -104,7 +112,6 @@
             <NxtChip Active="@(newMealType == MealType.Chicken)" OnClick='() => newMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</NxtChip>
             <NxtChip Active="@(newMealType == MealType.Fish)" OnClick='() => newMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</NxtChip>
             <NxtChip Active="@(newMealType == MealType.Vegetarian)" OnClick='() => newMealType = MealType.Vegetarian'>🥦 @Loc["meal_vegetarian"]</NxtChip>
-            <NxtChip Active="@(newMealType == MealType.Vegan)" OnClick='() => newMealType = MealType.Vegan'>🌱 @Loc["meal_vegan"]</NxtChip>
         </div>
         @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="alert-playful settings-feedback">@newMealError</div> }
         <NxtButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">@Loc["meals_save_and_select"]</NxtButton>
@@ -121,7 +128,6 @@
                 <NxtChip Active="@(editingMealType == MealType.Chicken)" OnClick='() => editingMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</NxtChip>
                 <NxtChip Active="@(editingMealType == MealType.Fish)" OnClick='() => editingMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</NxtChip>
                 <NxtChip Active="@(editingMealType == MealType.Vegetarian)" OnClick='() => editingMealType = MealType.Vegetarian'>🥦 @Loc["meal_vegetarian"]</NxtChip>
-                <NxtChip Active="@(editingMealType == MealType.Vegan)" OnClick='() => editingMealType = MealType.Vegan'>🌱 @Loc["meal_vegan"]</NxtChip>
             </div>
             @if (!string.IsNullOrWhiteSpace(mealEditorError)) { <div class="alert-playful settings-feedback">@mealEditorError</div> }
             <NxtButton Variant="primary" OnClick="SaveMealEdit" Disabled="@string.IsNullOrWhiteSpace(editingMealName)">@Loc["meals_save_changes"]</NxtButton>
@@ -237,6 +243,27 @@
     }
 
     private void SetMealType(MealType? type) => selectedMealType = type;
+
+    private async Task AddIngredientsToShoppingListAsync()
+    {
+        if (ingredientsMeal is null) return;
+        try
+        {
+            var (added, shopName) = await ShoppingListService.AddIngredientsAsync(uid, ingredientsMeal.Ingredients, Loc["ai_plan_default_shop_name"]);
+            confirmMessage = added > 0 ? Loc.T("shopping_ingredients_added", added, shopName) : Loc["shopping_ingredients_present"];
+        }
+        catch (Exception ex) { confirmMessage = ex.Message; }
+        ingredientsMeal = null;
+    }
+
+    private bool HasActiveFilters => !string.IsNullOrWhiteSpace(searchText) || selectedMealType.HasValue || !filterByAppLanguage;
+
+    private void ClearFilters()
+    {
+        searchText = "";
+        selectedMealType = null;
+        filterByAppLanguage = true;
+    }
     private void OpenIngredients(MealCatalogItem meal) => ingredientsMeal = meal;
     private void ViewMeal(MealCatalogItem meal)
     {

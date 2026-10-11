@@ -170,7 +170,6 @@ public class LocalizationService : ILocalizationService
         MealType.Chicken => this["meal_chicken"],
         MealType.Fish => this["meal_fish"],
         MealType.Vegetarian => this["meal_vegetarian"],
-        MealType.Vegan => this["meal_vegan"],
         _ => type.ToString()
     };
 
@@ -273,7 +272,10 @@ public class LocalizationService : ILocalizationService
         ["meal_chicken"] = new() { ["ar"] = "دواجن", ["en"] = "Chicken", ["de"] = "Geflügel" },
         ["meal_fish"] = new() { ["ar"] = "مأكولات بحرية", ["en"] = "Fish & Seafood", ["de"] = "Fisch & Meeresfrüchte" },
         ["meal_vegetarian"] = new() { ["ar"] = "نباتي", ["en"] = "Vegetarian", ["de"] = "Vegetarisch" },
-        ["meal_vegan"] = new() { ["ar"] = "نباتي صرف", ["en"] = "Vegan", ["de"] = "Vegan" },
+        // {0} = number of meals shown
+        ["meals_results_count"] = new() { ["ar"] = "{0} وجبة", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
+        ["meals_results_one"] = new() { ["ar"] = "وجبة واحدة", ["en"] = "1 meal", ["de"] = "1 Gericht" },
+        ["meals_clear_filters"] = new() { ["ar"] = "مسح الفلاتر", ["en"] = "Clear filters", ["de"] = "Filter zurücksetzen" },
         ["meals_empty_title"] = new() { ["ar"] = "لم يتم العثور على وجبات", ["en"] = "No meals found", ["de"] = "Keine Gerichte gefunden" },
         ["meals_empty_desc"] = new() { ["ar"] = "جرّب تغيير كلمات البحث أو الفلاتر", ["en"] = "Try changing your search terms or filters", ["de"] = "Ändere deine Suchbegriffe oder Filter" },
         ["meals_add_custom"] = new() { ["ar"] = "إضافة وجبة جديدة", ["en"] = "Add New Meal", ["de"] = "Neues Gericht anlegen" },
@@ -318,6 +320,10 @@ public class LocalizationService : ILocalizationService
         ["selectedday_add_to"] = new() { ["ar"] = "إضافة وجبة إلى", ["en"] = "Add meal to", ["de"] = "Gericht hinzufügen für" },
 
         // Shopping
+        ["shopping_add_ingredients"] = new() { ["ar"] = "أضف المكونات إلى قائمة التسوق", ["en"] = "Add ingredients to shopping list", ["de"] = "Zutaten auf die Einkaufsliste" },
+        // {0} = number of ingredients added, {1} = shopping list name
+        ["shopping_ingredients_added"] = new() { ["ar"] = "تمت إضافة {0} مكوّنات إلى {1}", ["en"] = "Added {0} ingredients to {1}", ["de"] = "{0} Zutaten zu {1} hinzugefügt" },
+        ["shopping_ingredients_present"] = new() { ["ar"] = "كل المكونات موجودة في قائمتك بالفعل", ["en"] = "All ingredients are already on your list", ["de"] = "Alle Zutaten stehen schon auf deiner Liste" },
         ["shopping_title"] = new() { ["ar"] = "المشتريات", ["en"] = "Shopping", ["de"] = "Einkauf" },
         ["shopping_subtitle"] = new() { ["ar"] = "رتّب مشترياتك حسب المتجر", ["en"] = "Organize your shopping by store", ["de"] = "Sortiere deinen Einkauf nach Geschäft" },
         ["shopping_add_store"] = new() { ["ar"] = "أضف متجرًا", ["en"] = "Add Store", ["de"] = "Geschäft hinzufügen" },
@@ -393,6 +399,32 @@ public class LocalizationService : ILocalizationService
         ["guest_name"] = new() { ["ar"] = "ضيف", ["en"] = "Guest", ["de"] = "Gast" },
         ["not_found"] = new() { ["ar"] = "عذراً، لا يوجد شيء على هذا العنوان.", ["en"] = "Sorry, there's nothing at this address.", ["de"] = "Unter dieser Adresse gibt es leider nichts." },
         ["friends_discoverable"] = new() { ["ar"] = "أشخاص على مكدوس", ["en"] = "People on Makdous", ["de"] = "Leute bei Makdous" },
+
+        // Friends page
+        ["friends_loading"] = new() { ["ar"] = "جارِ تحميل الأصدقاء...", ["en"] = "Loading friends...", ["de"] = "Freunde werden geladen …" },
+        ["friends_need_username"] = new() { ["ar"] = "اختر اسم مستخدم من الإعدادات أولاً لتتمكن من إرسال أو قبول طلبات الصداقة.", ["en"] = "Choose a username in Settings first so you can send and accept friend requests.", ["de"] = "Wähle zuerst in den Einstellungen einen Benutzernamen, damit du Freundschaftsanfragen senden und annehmen kannst." },
+        ["friends_your_username"] = new() { ["ar"] = "اسم المستخدم الخاص بك", ["en"] = "Your username", ["de"] = "Dein Benutzername" },
+        ["friends_copy_username"] = new() { ["ar"] = "نسخ اسم المستخدم", ["en"] = "Copy username", ["de"] = "Benutzernamen kopieren" },
+        ["friends_add_label"] = new() { ["ar"] = "أضف صديقاً", ["en"] = "Add a friend", ["de"] = "Freund hinzufügen" },
+        ["friends_username_placeholder"] = new() { ["ar"] = "اسم المستخدم", ["en"] = "Username", ["de"] = "Benutzername" },
+        ["friends_send_request"] = new() { ["ar"] = "إرسال طلب صداقة", ["en"] = "Send friend request", ["de"] = "Freundschaftsanfrage senden" },
+        ["friends_requests_heading"] = new() { ["ar"] = "طلبات الصداقة", ["en"] = "Friend requests", ["de"] = "Freundschaftsanfragen" },
+        ["friends_accept"] = new() { ["ar"] = "قبول طلب الصداقة", ["en"] = "Accept friend request", ["de"] = "Anfrage annehmen" },
+        ["friends_decline"] = new() { ["ar"] = "رفض طلب الصداقة", ["en"] = "Decline friend request", ["de"] = "Anfrage ablehnen" },
+        ["friends_list_heading"] = new() { ["ar"] = "أصدقاؤك", ["en"] = "Your friends", ["de"] = "Deine Freunde" },
+        ["friends_empty"] = new() { ["ar"] = "شارك اسم المستخدم أعلاه وابدأ التخطيط مع أصدقائك.", ["en"] = "Share your username above and start planning with your friends.", ["de"] = "Teile deinen Benutzernamen von oben und plane gemeinsam mit deinen Freunden." },
+        ["friends_week_of"] = new() { ["ar"] = "أسبوع {0}", ["en"] = "{0}'s week", ["de"] = "Woche von {0}" },
+        ["friends_discover_empty"] = new() { ["ar"] = "لا يوجد مستخدمون جدد حالياً. ادعُ من حولك ليبدأوا التخطيط أيضاً!", ["en"] = "No new users right now. Invite people around you to start planning too!", ["de"] = "Gerade keine neuen Nutzer. Lade Leute aus deinem Umfeld ein, auch zu planen!" },
+        ["friends_discover_hint"] = new() { ["ar"] = "أضفهم كأصدقاء وشاهد أسبوعهم مباشرة.", ["en"] = "Add them as friends and see their week right away.", ["de"] = "Füge sie als Freunde hinzu und sieh sofort ihre Woche." },
+        ["friends_add_friend"] = new() { ["ar"] = "إضافة صديق", ["en"] = "Add friend", ["de"] = "Freund hinzufügen" },
+        ["friends_add_user"] = new() { ["ar"] = "إضافة {0}", ["en"] = "Add {0}", ["de"] = "{0} hinzufügen" },
+        ["friends_need_username_first"] = new() { ["ar"] = "اختر اسم مستخدم أولاً من الإعدادات.", ["en"] = "Choose a username in Settings first.", ["de"] = "Wähle zuerst in den Einstellungen einen Benutzernamen." },
+        ["friends_request_sent"] = new() { ["ar"] = "تم إرسال طلب الصداقة ✨", ["en"] = "Friend request sent ✨", ["de"] = "Freundschaftsanfrage gesendet ✨" },
+        ["friends_request_sent_to"] = new() { ["ar"] = "تم إرسال طلب الصداقة إلى @{0} ✨", ["en"] = "Friend request sent to @{0} ✨", ["de"] = "Freundschaftsanfrage an @{0} gesendet ✨" },
+        ["friends_now_friends"] = new() { ["ar"] = "صرتما أصدقاء الآن 🎉", ["en"] = "You are friends now 🎉", ["de"] = "Ihr seid jetzt Freunde 🎉" },
+        ["friends_copied"] = new() { ["ar"] = "تم نسخ اسم المستخدم. أرسله لصديقك!", ["en"] = "Username copied. Send it to your friend!", ["de"] = "Benutzername kopiert. Schick ihn deinem Freund!" },
+        ["friends_copy_failed"] = new() { ["ar"] = "تعذر النسخ. يمكنك تحديد الاسم ونسخه.", ["en"] = "Couldn't copy. You can select the name and copy it by hand.", ["de"] = "Kopieren fehlgeschlagen. Markiere den Namen und kopiere ihn von Hand." },
+        ["friends_meal_fallback"] = new() { ["ar"] = "وجبة", ["en"] = "Meal", ["de"] = "Gericht" },
 
         // Friend week sync
         ["friends_sync_button"] = new() { ["ar"] = "مزامنة أسبوعي", ["en"] = "Sync my week", ["de"] = "Meine Woche synchronisieren" },

@@ -13,7 +13,7 @@
 
     @if (isLoading)
     {
-        <p class="loading-text">جارِ تحميل الأصدقاء...</p>
+        <p class="loading-text">@Loc["friends_loading"]</p>
     }
     else
     {
@@ -21,8 +21,8 @@
         {
             <section class="friends-empty-state">
                 <span aria-hidden="true">🔒</span>
-                <p>اختر اسم مستخدم من الإعدادات أولاً لتتمكن من إرسال أو قبول طلبات الصداقة.</p>
-                <a class="secondary-btn" href="settings">اذهب إلى الإعدادات</a>
+                <p>@Loc["friends_need_username"]</p>
+                <a class="secondary-btn" href="settings">@Loc["ai_plan_go_to_settings"]</a>
             </section>
         }
         else
@@ -30,17 +30,17 @@
         <section class="friend-share-card">
             <span class="friend-share-icon" aria-hidden="true">✨</span>
             <div>
-                <p>اسم المستخدم الخاص بك</p>
+                <p>@Loc["friends_your_username"]</p>
                 <strong dir="ltr">@uid</strong>
             </div>
-            <button class="friend-copy-button" @onclick="CopyUsername" title="نسخ اسم المستخدم" aria-label="نسخ اسم المستخدم">⧉</button>
+            <button class="friend-copy-button" @onclick="CopyUsername" title="@Loc["friends_copy_username"]" aria-label="@Loc["friends_copy_username"]">⧉</button>
         </section>
 
         <section class="friend-add-section">
-            <label for="friend-username">أضف صديقاً</label>
+            <label for="friend-username">@Loc["friends_add_label"]</label>
             <div class="friend-add-form">
-                <input id="friend-username" class="ui-text-input" dir="ltr" @bind="friendUsername" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="اسم المستخدم" disabled="@isSendingRequest" />
-                <button class="friend-add-button" @onclick="SendRequest" disabled="@(isSendingRequest || string.IsNullOrWhiteSpace(friendUsername))" aria-label="إرسال طلب صداقة">+</button>
+                <input id="friend-username" class="ui-text-input" dir="ltr" @bind="friendUsername" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="@Loc["friends_username_placeholder"]" disabled="@isSendingRequest" />
+                <button class="friend-add-button" @onclick="SendRequest" disabled="@(isSendingRequest || string.IsNullOrWhiteSpace(friendUsername))" aria-label="@Loc["friends_send_request"]">+</button>
             </div>
             @if (!string.IsNullOrWhiteSpace(feedback))
             {
@@ -51,7 +51,7 @@
         @if (incomingRequests.Count > 0)
         {
             <section class="friends-section">
-                <div class="friends-section-heading"><h2>طلبات الصداقة</h2><span>@incomingRequests.Count</span></div>
+                <div class="friends-section-heading"><h2>@Loc["friends_requests_heading"]</h2><span>@incomingRequests.Count</span></div>
                 @foreach (var request in incomingRequests)
                 {
                     <article class="friend-request-card">
@@ -61,8 +61,8 @@
                             <small dir="ltr">@request.SenderUid</small>
                         </div>
                         <div class="friend-request-actions">
-                            <button class="friend-accept" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="قبول طلب الصداقة">✓</button>
-                            <button class="friend-decline" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="رفض طلب الصداقة">×</button>
+                            <button class="friend-accept" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="@Loc["friends_accept"]">✓</button>
+                            <button class="friend-decline" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="@Loc["friends_decline"]">×</button>
                         </div>
                     </article>
                 }
@@ -70,12 +70,12 @@
         }
 
         <section class="friends-section">
-            <div class="friends-section-heading"><h2>أصدقاؤك</h2><span>@friends.Count</span></div>
+            <div class="friends-section-heading"><h2>@Loc["friends_list_heading"]</h2><span>@friends.Count</span></div>
             @if (friends.Count == 0)
             {
                 <div class="friends-empty-state">
                     <span aria-hidden="true">🫶</span>
-                    <p>شارك اسم المستخدم أعلاه وابدأ التخطيط مع أصدقائك.</p>
+                    <p>@Loc["friends_empty"]</p>
                 </div>
             }
             else
@@ -94,9 +94,9 @@
                             {
                                 <section class="friend-week-section friend-week-inline">
                                     <div class="friend-week-heading">
-                                        <div><p>أسبوع @friend.DisplayName</p><small>@WeekRangeLabel</small></div>
-                                        <button @onclick="PreviousWeek" disabled="@isLoadingFriendWeek" aria-label="الأسبوع السابق">›</button>
-                                        <button @onclick="NextWeek" disabled="@isLoadingFriendWeek" aria-label="الأسبوع القادم">‹</button>
+                                        <div><p>@Loc.T("friends_week_of", friend.DisplayName)</p><small>@WeekRangeLabel</small></div>
+                                        <button @onclick="PreviousWeek" disabled="@isLoadingFriendWeek" aria-label="@Loc["week_prev"]">›</button>
+                                        <button @onclick="NextWeek" disabled="@isLoadingFriendWeek" aria-label="@Loc["week_next"]">‹</button>
                                     </div>
                                     <div class="friend-week-grid @(isLoadingFriendWeek ? "loading" : "")">
                                         @foreach (var day in selectedFriendWeek)
@@ -125,19 +125,19 @@
             {
                 <div class="friends-empty-state">
                     <span aria-hidden="true">✨</span>
-                    <p>لا يوجد مستخدمون جدد حالياً. ادعُ من حولك ليبدأوا التخطيط أيضاً!</p>
+                    <p>@Loc["friends_discover_empty"]</p>
                 </div>
             }
             else
             {
-                <p class="discover-hint">أضفهم كأصدقاء وشاهد أسبوعهم مباشرة.</p>
+                <p class="discover-hint">@Loc["friends_discover_hint"]</p>
                 <div class="friends-list">
                     @foreach (var user in discoverable)
                     {
                         <article class="friend-person-card discover-card">
                             <span class="friend-avatar">@Initial(user.DisplayName)</span>
                             <span class="friend-person-copy"><strong>@user.DisplayName</strong><small dir="ltr">@@@user.Username</small></span>
-                            <button class="friend-add-button discover-add" @onclick="() => AddDiscovered(user)" disabled="@isSendingRequest" title="إضافة صديق" aria-label="إضافة @user.Username">+</button>
+                            <button class="friend-add-button discover-add" @onclick="() => AddDiscovered(user)" disabled="@isSendingRequest" title="@Loc["friends_add_friend"]" aria-label="@Loc.T("friends_add_user", user.Username)">+</button>
                         </article>
                     }
                 </div>
@@ -229,7 +229,7 @@
 
     private async Task SendRequest()
     {
-        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_first"]; return; }
         if (string.IsNullOrWhiteSpace(friendUsername)) return;
         isSendingRequest = true;
         feedback = "";
@@ -238,7 +238,7 @@
             await UserService.SendFriendRequestAsync(uid, friendUsername.Trim());
             friendUsername = "";
             isError = false;
-            feedback = "تم إرسال طلب الصداقة ✨";
+            feedback = Loc["friends_request_sent"];
             await LoadProfileAsync();
         }
         catch (Exception ex)
@@ -251,14 +251,14 @@
 
     private async Task AddDiscovered(UserProfile user)
     {
-        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_first"]; return; }
         isSendingRequest = true;
         feedback = "";
         try
         {
             await UserService.SendFriendRequestAsync(uid, user.Uid);
             isError = false;
-            feedback = $"تم إرسال طلب الصداقة إلى @{user.Username} ✨";
+            feedback = Loc.T("friends_request_sent_to", user.Username);
             await LoadProfileAsync();
         }
         catch (Exception ex)
@@ -271,12 +271,12 @@
 
     private async Task AcceptRequest(string senderUid)
     {
-        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_first"]; return; }
         try
         {
             await UserService.AcceptFriendRequestAsync(uid, senderUid);
             isError = false;
-            feedback = "صرتما أصدقاء الآن 🎉";
+            feedback = Loc["friends_now_friends"];
             await LoadProfileAsync();
         }
         catch (Exception ex) { isError = true; feedback = ex.Message; }
@@ -362,13 +362,13 @@
         {
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", uid);
             isError = false;
-            feedback = "تم نسخ اسم المستخدم. أرسله لصديقك!";
+            feedback = Loc["friends_copied"];
         }
-        catch { isError = true; feedback = "تعذر النسخ. يمكنك تحديد الاسم ونسخه."; }
+        catch { isError = true; feedback = Loc["friends_copy_failed"]; }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") await SendRequest(); }
-    private string MealName(string mealId) => mealNames.TryGetValue(mealId, out var name) ? name : "وجبة";
-    private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "؟" : name.Trim()[0].ToString();
+    private string MealName(string mealId) => mealNames.TryGetValue(mealId, out var name) ? name : Loc["friends_meal_fallback"];
+    private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[0].ToString();
     private static DateOnly StartOfWeek(DateOnly date) => date.AddDays(-(7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7);
 }

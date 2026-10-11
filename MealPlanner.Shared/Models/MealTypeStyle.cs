@@ -13,7 +13,6 @@ public static class MealTypeStyle
         MealType.Chicken => "chicken",
         MealType.Fish => "fish",
         MealType.Vegetarian => "vegetarian",
-        MealType.Vegan => "vegan",
         _ => "default"
     };
 

@@ -25,7 +25,7 @@ public class MealImageService : IMealImageService
     /// <summary>Illustrations that exist on disk under <see cref="BasePath"/>.</summary>
     private static readonly HashSet<string> Archetypes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "meat", "chicken", "fish", "vegetarian", "vegan",
+        "meat", "chicken", "fish", "vegetarian",
         "pasta", "soup", "rice", "bread", "salad", "burger", "pizza", "stew", "eggs", "potato"
     };
 
@@ -55,9 +55,7 @@ public class MealImageService : IMealImageService
                      "auflauf", "klopse", "geschmort"]),
         ("meat",    ["لحم", "لحمة", "كبة", "كفتة", "meat", "beef", "lamb", "steak", "mince", "fleisch", "rind",
                      "hack", "frikadelle", "wurst", "bratwurst"]),
-        ("vegan",   ["نباتي صرف", "عدس", "فول", "حمص", "vegan", "lentil", "chickpea", "linsen", "erbsen",
-                     "grünkohl", "gruenkohl", "kürbis", "kuerbis"]),
-        ("vegetarian", ["نباتي", "vegetarian", "veggie", "cheese", "vegetarisch", "käse", "kaese", "gemüse", "gemuese"])
+        ("vegetarian", ["نباتي", "vegetarian", "veggie", "cheese", "vegetarisch", "käse", "kaese", "gemüse", "gemuese", "عدس", "فول", "حمص", "vegan", "lentil", "chickpea", "linsen", "erbsen", "grünkohl", "gruenkohl", "kürbis", "kuerbis"])
     ];
 
     public string GetImageUrl(MealCatalogItem? meal) =>
@@ -93,7 +91,6 @@ public class MealImageService : IMealImageService
             MealType.Meat => "meat",
             MealType.Chicken => "chicken",
             MealType.Fish => "fish",
-            MealType.Vegan => "vegan",
             _ => "vegetarian"
         });
     }
