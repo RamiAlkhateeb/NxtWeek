@@ -1684,3 +1684,17 @@ input, textarea, select, .ui-text-input, .playful-input, .form-group input, .for
 
 /* The AI assistant (chat thread, orb, composer) is styled by Nxt.UI (nxt.css). */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+
+/* Meals page filters */
+.meals-filters { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.meals-filter-row { display: flex; gap: 8px; }
+.meals-filter-row.wrap { flex-wrap: wrap; }
+.meals-new-btn { flex: 1; }
+.meals-filter-label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; color: var(--color-text-secondary); }
+.meals-result-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; font-size: 13px; color: var(--color-text-secondary); }
+.meals-clear-filters { border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 8px; }
+.ingredients-sheet .nxt-button { width: 100%; margin-top: 12px; }
+.meals-toast-wrap { padding: 0 16px; }
+.meals-toast { padding: 12px; text-align: center; margin-bottom: 12px; font-size: 14px; }
+.meals-list { padding: 0 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.meals-loading { text-align: center; color: var(--color-text-secondary); padding: 20px; }

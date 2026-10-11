@@ -16,12 +16,12 @@
 
     @if (isLoading)
     {
-        <p style="padding: 24px; text-align: center; color: #777">@Loc["loading"]</p>
+        <p style="padding: 24px; text-align: center; color: var(--color-text-secondary)">@Loc["loading"]</p>
     }
     else if (meal is null)
     {
         <div style="padding: 24px; text-align: center;">
-            <p style="color: #777; margin-bottom: 16px;">@Loc["meal_not_found"]</p>
+            <p style="color: var(--color-text-secondary); margin-bottom: 16px;">@Loc["meal_not_found"]</p>
             <button class="primary-btn" @onclick="GoBack">@Loc["meal_back_home"]</button>
         </div>
     }

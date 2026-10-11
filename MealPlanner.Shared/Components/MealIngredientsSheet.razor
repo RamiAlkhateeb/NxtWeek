@@ -25,6 +25,10 @@
                         <li><span class="bullet">🔹</span><span class="text">@ingredient</span></li>
                     }
                 </ul>
+                @if (OnAddToShoppingList.HasDelegate)
+                {
+                    <NxtButton Variant="secondary" OnClick="OnAddToShoppingList">🛒 @Loc["shopping_add_ingredients"]</NxtButton>
+                }
             }
         </section>
 
@@ -57,5 +61,7 @@
     [Parameter] public List<string>? Ingredients { get; set; }
     [Parameter] public List<string>? SideDishes { get; set; }
     [Parameter] public EventCallback OnDismiss { get; set; }
+    /// <summary>When set, the sheet offers to put the ingredients on the shopping list.</summary>
+    [Parameter] public EventCallback OnAddToShoppingList { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

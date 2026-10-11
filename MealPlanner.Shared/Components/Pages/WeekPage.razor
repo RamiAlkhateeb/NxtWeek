@@ -7,6 +7,7 @@
 @inject ISuggestionService SuggestionService
 @inject IAuthService Auth
 @inject IUserService UserService
+@inject IShoppingListService ShoppingListService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
@@ -140,6 +141,7 @@
                       MealType="ingredientsMeal?.MealType"
                       Ingredients="ingredientsMeal?.Ingredients"
                       SideDishes="ingredientsMeal?.SideDishes"
+                      OnAddToShoppingList="AddIngredientsToShoppingListAsync"
                       OnDismiss="() => ingredientsMeal = null" />
 
 <NxtBottomSheet IsOpen="showWeekSurpriseConfirm" Title="@Loc["week_surprise_week"]" Eyebrow="@Loc["week_surprise_week_eyebrow"]" OnDismiss="() => showWeekSurpriseConfirm = false">
@@ -384,6 +386,22 @@
     // GetWeekAsync hydrates Ingredients/SideDishes from the catalog, so the sheet
     // has everything it needs without a second fetch.
     private void OpenIngredients(Meal meal) => ingredientsMeal = meal;
+
+    private async Task AddIngredientsToShoppingListAsync()
+    {
+        if (ingredientsMeal is null) return;
+        try
+        {
+            var (added, shopName) = await ShoppingListService.AddIngredientsAsync(uid, ingredientsMeal.Ingredients, Loc["ai_plan_default_shop_name"]);
+            ingredientsMeal = null;
+            Toasts.Show("✅ " + (added > 0 ? Loc.T("shopping_ingredients_added", added, shopName) : Loc["shopping_ingredients_present"]));
+        }
+        catch (Exception ex)
+        {
+            ingredientsMeal = null;
+            Toasts.Show(ex.Message, isError: true);
+        }
+    }
     private void OpenActions(Meal meal) { selectedMeal = meal; showQuickPicker = false; showMoveDays = false; }
     private async Task OpenMealPicker(DateOnly date)
     {
