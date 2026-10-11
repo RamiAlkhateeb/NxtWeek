@@ -84,7 +84,6 @@ The current importer writes valid matched entries directly. Preview, duplicate-d
 | `/meals` | Meal catalog and selection |
 | `/month` | Monthly overview route; month is also available from Week |
 | `/meal/{mealId}` | Meal details |
-| `/list` | Legacy list route still present |
 | `/settings` | Settings / profile |
 | `/settings/install` | Add-to-home-screen guide (Android + iPhone) |
 | `/settings/recover` | Recover a plan by username after cleared browser data / new device |
