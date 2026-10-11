@@ -45,7 +45,6 @@
     --type-chicken-bg: var(--nxt-inset);    --type-chicken-fg: var(--nxt-text);
     --type-fish-bg: var(--nxt-inset);       --type-fish-fg: var(--nxt-text);
     --type-vegetarian-bg: var(--nxt-inset); --type-vegetarian-fg: var(--nxt-text);
-    --type-vegan-bg: var(--nxt-inset);      --type-vegan-fg: var(--nxt-text);
     --type-default-bg: var(--nxt-inset);    --type-default-fg: var(--nxt-text);
 }
 
@@ -1340,13 +1339,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .type-tile-chicken { background: var(--type-chicken-bg); }
 .type-tile-fish { background: var(--type-fish-bg); }
 .type-tile-vegetarian { background: var(--type-vegetarian-bg); }
-.type-tile-vegan { background: var(--type-vegan-bg); }
 
 .type-badge-meat { background: var(--type-meat-bg); color: var(--type-meat-fg); }
 .type-badge-chicken { background: var(--type-chicken-bg); color: var(--type-chicken-fg); }
 .type-badge-fish { background: var(--type-fish-bg); color: var(--type-fish-fg); }
 .type-badge-vegetarian { background: var(--type-vegetarian-bg); color: var(--type-vegetarian-fg); }
-.type-badge-vegan { background: var(--type-vegan-bg); color: var(--type-vegan-fg); }
 .type-badge-default { background: var(--type-default-bg); color: var(--type-default-fg); }
 
 .week-card-thumb-tile {

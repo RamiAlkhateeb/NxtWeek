@@ -63,10 +63,6 @@
                             <span class="emoji">🥦</span>
                             <span class="label">نباتي</span>
                         </div>
-                        <div class="type-chip-card @(selectedType == MealType.Vegan ? "active" : "")" @onclick="() => SelectMealType(MealType.Vegan)">
-                            <span class="emoji">🌱</span>
-                            <span class="label">نباتي صرف</span>
-                        </div>
                     </div>
 
                     <div class="wizard-actions">
@@ -320,7 +316,6 @@
         MealType.Chicken => "الدجاج",
         MealType.Fish => "الأسماك",
         MealType.Vegetarian => "الوجبات النباتية",
-        MealType.Vegan => "الوجبات النباتية الصرفة",
         _ => type.ToString()
     };
 }

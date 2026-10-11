@@ -40,7 +40,6 @@
                 <NxtChip Active="@(selectedMealType == MealType.Chicken)" OnClick="() => SetMealType(MealType.Chicken)">🍗 @Loc["meal_chicken"]</NxtChip>
                 <NxtChip Active="@(selectedMealType == MealType.Fish)" OnClick="() => SetMealType(MealType.Fish)">🐟 @Loc["meal_fish"]</NxtChip>
                 <NxtChip Active="@(selectedMealType == MealType.Vegetarian)" OnClick="() => SetMealType(MealType.Vegetarian)">🥦 @Loc["meal_vegetarian"]</NxtChip>
-                <NxtChip Active="@(selectedMealType == MealType.Vegan)" OnClick="() => SetMealType(MealType.Vegan)">🌱 @Loc["meal_vegan"]</NxtChip>
             </div>
         </div>
     </div>
@@ -104,7 +103,6 @@
             <NxtChip Active="@(newMealType == MealType.Chicken)" OnClick='() => newMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</NxtChip>
             <NxtChip Active="@(newMealType == MealType.Fish)" OnClick='() => newMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</NxtChip>
             <NxtChip Active="@(newMealType == MealType.Vegetarian)" OnClick='() => newMealType = MealType.Vegetarian'>🥦 @Loc["meal_vegetarian"]</NxtChip>
-            <NxtChip Active="@(newMealType == MealType.Vegan)" OnClick='() => newMealType = MealType.Vegan'>🌱 @Loc["meal_vegan"]</NxtChip>
         </div>
         @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="alert-playful settings-feedback">@newMealError</div> }
         <NxtButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">@Loc["meals_save_and_select"]</NxtButton>
@@ -121,7 +119,6 @@
                 <NxtChip Active="@(editingMealType == MealType.Chicken)" OnClick='() => editingMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</NxtChip>
                 <NxtChip Active="@(editingMealType == MealType.Fish)" OnClick='() => editingMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</NxtChip>
                 <NxtChip Active="@(editingMealType == MealType.Vegetarian)" OnClick='() => editingMealType = MealType.Vegetarian'>🥦 @Loc["meal_vegetarian"]</NxtChip>
-                <NxtChip Active="@(editingMealType == MealType.Vegan)" OnClick='() => editingMealType = MealType.Vegan'>🌱 @Loc["meal_vegan"]</NxtChip>
             </div>
             @if (!string.IsNullOrWhiteSpace(mealEditorError)) { <div class="alert-playful settings-feedback">@mealEditorError</div> }
             <NxtButton Variant="primary" OnClick="SaveMealEdit" Disabled="@string.IsNullOrWhiteSpace(editingMealName)">@Loc["meals_save_changes"]</NxtButton>

@@ -170,7 +170,6 @@ public class LocalizationService : ILocalizationService
         MealType.Chicken => this["meal_chicken"],
         MealType.Fish => this["meal_fish"],
         MealType.Vegetarian => this["meal_vegetarian"],
-        MealType.Vegan => this["meal_vegan"],
         _ => type.ToString()
     };
 
@@ -273,7 +272,6 @@ public class LocalizationService : ILocalizationService
         ["meal_chicken"] = new() { ["ar"] = "دواجن", ["en"] = "Chicken", ["de"] = "Geflügel" },
         ["meal_fish"] = new() { ["ar"] = "مأكولات بحرية", ["en"] = "Fish & Seafood", ["de"] = "Fisch & Meeresfrüchte" },
         ["meal_vegetarian"] = new() { ["ar"] = "نباتي", ["en"] = "Vegetarian", ["de"] = "Vegetarisch" },
-        ["meal_vegan"] = new() { ["ar"] = "نباتي صرف", ["en"] = "Vegan", ["de"] = "Vegan" },
         ["meals_empty_title"] = new() { ["ar"] = "لم يتم العثور على وجبات", ["en"] = "No meals found", ["de"] = "Keine Gerichte gefunden" },
         ["meals_empty_desc"] = new() { ["ar"] = "جرّب تغيير كلمات البحث أو الفلاتر", ["en"] = "Try changing your search terms or filters", ["de"] = "Ändere deine Suchbegriffe oder Filter" },
         ["meals_add_custom"] = new() { ["ar"] = "إضافة وجبة جديدة", ["en"] = "Add New Meal", ["de"] = "Neues Gericht anlegen" },

@@ -34,7 +34,7 @@ new() { Id = "de_m28", Name = "Semmelknödel mit Pilzrahm", MealType = MealType.
 3. a keyword in the meal name (table in `MealImageService`, all languages),
 4. the `MealType`.
 
-Available archetypes: `meat`, `chicken`, `fish`, `vegetarian`, `vegan`, `pasta`,
+Available archetypes: `meat`, `chicken`, `fish`, `vegetarian`, `pasta`,
 `soup`, `rice`, `bread`, `salad`, `burger`, `pizza`, `stew`, `eggs`, `potato`.
 
 Wrong illustration? Add a `Tag` to the meal (best) or a distinctive stem to the

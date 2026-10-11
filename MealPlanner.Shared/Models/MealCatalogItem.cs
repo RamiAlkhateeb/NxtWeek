@@ -1,16 +1,30 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MealPlanner.Shared.Models;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(MealTypeJsonConverter))]
 public enum MealType
 {
     Meat,
     Chicken,
     Fish,
-    Vegetarian,
-    Vegan
+    Vegetarian
+}
+
+/// <summary>
+/// Reads and writes the enum as its name. "Vegan" was merged into Vegetarian, but rows
+/// already stored in Firebase (and in the local cache) still say "Vegan"; throwing on
+/// them would make the whole catalog unreadable, so they load as Vegetarian.
+/// </summary>
+public sealed class MealTypeJsonConverter : JsonConverter<MealType>
+{
+    public override MealType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        Enum.TryParse<MealType>(reader.GetString(), ignoreCase: true, out var type) ? type : MealType.Vegetarian;
+
+    public override void Write(Utf8JsonWriter writer, MealType value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.ToString());
 }
 
 public class MealCatalogItem
