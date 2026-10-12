@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
 using MealPlanner.Shared.Models;
 
 namespace MealPlanner.Shared.Services;
@@ -18,8 +21,46 @@ namespace MealPlanner.Shared.Services;
 /// The keyword table lives here, not in the pages, so adding a language means
 /// touching exactly one place.
 /// </summary>
-public class MealImageService : IMealImageService
+public class MealImageService(HttpClient http, FirebaseOptions options, IAuthService auth) : IMealImageService
 {
+    // A user's own pictures are kept under their profile (not in the shared catalog, which every page downloads
+    // in full) and read into memory once.
+    private readonly Dictionary<string, string> _photos = new();
+    private string? _loadedFor;
+    private string DbUrl(string path) => $"{options.DatabaseUrl.TrimEnd('/')}/{path}.json";
+
+    public async Task EnsureLoadedAsync()
+    {
+        var user = await auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid) || _loadedFor == user.Uid) return;
+        try
+        {
+            var stored = await http.GetFromJsonAsync<Dictionary<string, string>>(DbUrl($"users/{Uri.EscapeDataString(user.Uid)}/mealPhotos"));
+            _photos.Clear();
+            foreach (var pair in stored ?? new()) _photos[pair.Key] = pair.Value;
+            _loadedFor = user.Uid;
+        }
+        catch { /* offline: fall back to the illustrations */ }
+    }
+
+    public bool HasPhoto(string mealId) => _photos.ContainsKey(mealId);
+
+    public async Task SetPhotoAsync(string mealId, string dataUrl)
+    {
+        var user = await auth.GetCurrentUserAsync() ?? throw new InvalidOperationException("Not signed in.");
+        using var response = await http.PutAsJsonAsync(DbUrl($"users/{Uri.EscapeDataString(user.Uid)}/mealPhotos/{Uri.EscapeDataString(mealId)}"), dataUrl);
+        response.EnsureSuccessStatusCode();
+        _photos[mealId] = dataUrl;
+    }
+
+    public async Task RemovePhotoAsync(string mealId)
+    {
+        var user = await auth.GetCurrentUserAsync() ?? throw new InvalidOperationException("Not signed in.");
+        using var response = await http.DeleteAsync(DbUrl($"users/{Uri.EscapeDataString(user.Uid)}/mealPhotos/{Uri.EscapeDataString(mealId)}"));
+        response.EnsureSuccessStatusCode();
+        _photos.Remove(mealId);
+    }
+
     private const string BasePath = "img/meals/";
 
     /// <summary>Illustrations that exist on disk under <see cref="BasePath"/>.</summary>
@@ -59,10 +100,10 @@ public class MealImageService : IMealImageService
     ];
 
     public string GetImageUrl(MealCatalogItem? meal) =>
-        meal is null ? Url("vegetarian") : GetImageUrl(meal.Name, meal.MealType, meal.Tags, meal.PhotoUrl);
+        meal is null ? Url("vegetarian") : GetImageUrl(meal.Name, meal.MealType, meal.Tags, OwnPhoto(meal.Id) ?? meal.PhotoUrl);
 
     public string GetImageUrl(Meal? meal) =>
-        meal is null ? Url("vegetarian") : GetImageUrl(meal.Name, meal.MealType, tags: null, meal.PhotoUrl);
+        meal is null ? Url("vegetarian") : GetImageUrl(meal.Name, meal.MealType, tags: null, OwnPhoto(meal.MealId) ?? meal.PhotoUrl);
 
     public string GetImageUrl(string? name, MealType? mealType, IEnumerable<string>? tags = null, string? photoUrl = null)
     {
@@ -94,6 +135,8 @@ public class MealImageService : IMealImageService
             _ => "vegetarian"
         });
     }
+
+    private string? OwnPhoto(string? mealId) => !string.IsNullOrWhiteSpace(mealId) && _photos.TryGetValue(mealId, out var url) ? url : null;
 
     private static string Url(string archetype) => $"{BasePath}{archetype}.svg";
 }

@@ -2,52 +2,23 @@
 @using MealPlanner.Shared.Services
 @inject ILocalizationService Loc
 
-@* Shared "what's in this dish" sheet, opened from the meal cards on both the
-   Week and the Meals page so the two stay in sync. *@
-<NxtBottomSheet IsOpen="IsOpen" Title="@MealName" Eyebrow="@Loc["meal_ingredients"]" OnDismiss="OnDismiss">
-    <div class="ingredients-sheet" dir="@Loc.Direction">
+@* "What's in this dish": opened from the Week hero and (indirectly) the Meals grid. *@
+<NxtBottomSheet IsOpen="IsOpen" Title="@MealName" Eyebrow="@(MealType is null ? null : Loc.GetMealTypeName(MealType.Value))" OnDismiss="OnDismiss">
+    <div class="mk-sheet-body mk-ingredients-sheet" dir="@Loc.Direction">
         @if (!string.IsNullOrWhiteSpace(ImageUrl))
         {
-            <span class="ingredients-sheet-image-tile @MealTypeStyle.TileClass(MealType)"><img class="ingredients-sheet-image" src="@ImageUrl" alt="@MealName" loading="lazy" /></span>
+            <div class="mk-tile mk-sheet-tile @MealTypeStyle.T(MealType)"><img src="@ImageUrl" alt="@MealName" loading="lazy" /></div>
         }
 
-        <section class="details-section">
-            <h2>🛒 @Loc["meal_ingredients"]</h2>
-            @if (Ingredients is null || Ingredients.Count == 0)
-            {
-                <p class="empty-text">@Loc["meal_no_ingredients"]</p>
-            }
-            else
-            {
-                <ul class="ingredients-list">
-                    @foreach (var ingredient in Ingredients)
-                    {
-                        <li><span class="bullet">🔹</span><span class="text">@ingredient</span></li>
-                    }
-                </ul>
-                @if (OnAddToShoppingList.HasDelegate)
-                {
-                    <NxtButton Variant="secondary" OnClick="OnAddToShoppingList">🛒 @Loc["shopping_add_ingredients"]</NxtButton>
-                }
-            }
-        </section>
+        <MealIngredientRows Ingredients="Ingredients" MealName="@MealName" />
 
-        <section class="details-section">
-            <h2>🥗 @Loc["meal_side_dishes"]</h2>
-            @if (SideDishes is null || SideDishes.Count == 0)
-            {
-                <p class="empty-text">@Loc["meal_no_side_dishes"]</p>
-            }
-            else
-            {
-                <div class="side-dishes-chips">
-                    @foreach (var side in SideDishes)
-                    {
-                        <span class="side-dish-chip">@side</span>
-                    }
-                </div>
-            }
-        </section>
+        @if (SideDishes is { Count: > 0 })
+        {
+            <div class="mk-sides">
+                <span class="mk-label">@Loc["meal_side_dishes"]</span>
+                @foreach (var side in SideDishes) { <span class="mk-pill">@side</span> }
+            </div>
+        }
 
         @ChildContent
     </div>
@@ -61,7 +32,5 @@
     [Parameter] public List<string>? Ingredients { get; set; }
     [Parameter] public List<string>? SideDishes { get; set; }
     [Parameter] public EventCallback OnDismiss { get; set; }
-    /// <summary>When set, the sheet offers to put the ingredients on the shopping list.</summary>
-    [Parameter] public EventCallback OnAddToShoppingList { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

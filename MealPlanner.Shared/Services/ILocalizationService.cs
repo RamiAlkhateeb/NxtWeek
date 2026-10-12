@@ -35,6 +35,8 @@ public interface ILocalizationService
     string GetDayName(DayOfWeek day);
     string GetDayName(DateOnly date);
     string GetShortDayName(DayOfWeek day);
+    /// <summary>Very short weekday label for tight spots: ar "اثن" (3) / "اث" (2), en "Mon" / "Mo", de "Mo".</summary>
+    string GetDayAbbr(DayOfWeek day, int length = 3);
     string GetMonthName(int month);
     string GetMealTypeName(MealType type);
 

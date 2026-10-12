@@ -42,12 +42,34 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<ShoppingItem> AddItemAsync(string uid, string shopId, string name)
+    public async Task<ShoppingItem> AddItemAsync(string uid, string shopId, string name, ShoppingItemOptions? options = null)
     {
-        var item = new ShoppingItem { Id = Guid.NewGuid().ToString("N"), Name = RequiredName(name, "العنصر") };
+        options ??= new ShoppingItemOptions();
+        var item = new ShoppingItem
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Name = RequiredName(name, "العنصر"),
+            Quantity = Math.Max(1, options.Quantity),
+            Unit = options.Unit,
+            Aisle = options.Aisle,
+            SourceMeal = options.SourceMeal
+        };
         using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{item.Id}"), item);
         response.EnsureSuccessStatusCode();
         return item;
+    }
+
+    public async Task SetItemQuantityAsync(string uid, string shopId, string itemId, int quantity)
+    {
+        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{Key(itemId)}"), new { quantity = Math.Max(1, quantity) });
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateItemAsync(string uid, string shopId, string itemId, string name, int quantity, string? unit)
+    {
+        var update = new { name = RequiredName(name, "العنصر"), quantity = Math.Max(1, quantity), unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim() };
+        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task SetItemBoughtAsync(string uid, string shopId, string itemId, bool isBought)

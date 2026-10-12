@@ -1,0 +1,85 @@
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject IShoppingListService ShoppingList
+@inject IAisleService Aisles
+@inject ILocalizationService Loc
+@inject ToastService Toasts
+
+@* A meal's ingredients, each with a one-tap "add to shopping list" button. Used by the meal details page
+   and by the ingredients sheet, so both behave the same. *@
+<div class="mk-ingredients" dir="@Loc.Direction">
+    <div class="mk-ingredients-head">
+        <span class="mk-ingredients-title">@Loc["meal_ingredients"]</span>
+        @if (Ingredients is { Count: > 0 }) { <span class="mk-subtitle">@Loc["meal_ingredients_hint"]</span> }
+    </div>
+
+    @if (Ingredients is null || Ingredients.Count == 0)
+    {
+        <p class="mk-ingredients-empty">@Loc["meal_no_ingredients"]</p>
+    }
+    else
+    {
+        @foreach (var ingredient in Ingredients)
+        {
+            var onList = IsOnList(ingredient);
+            <div class="mk-ingredient">
+                <span class="mk-ingredient-name">@ingredient</span>
+                @if (onList)
+                {
+                    <span class="mk-ingredient-done" title="@Loc["meal_on_list"]"><svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+                }
+                else
+                {
+                    <button class="mk-icon-btn is-plain mk-ingredient-add" aria-label="@Loc.T("meal_add_ingredient_to_list", ingredient)" disabled="@busy.Contains(ingredient)" @onclick="() => AddAsync(ingredient)">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+                    </button>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public List<string>? Ingredients { get; set; }
+    [Parameter] public string MealName { get; set; } = "";
+
+    private string uid = "";
+    private readonly HashSet<string> onList = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> busy = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
+        uid = user.Uid;
+        try
+        {
+            foreach (var shop in await ShoppingList.GetShopsAsync(uid))
+                foreach (var item in shop.Items.Values.Where(i => !i.IsBought))
+                    onList.Add(item.Name.Trim());
+        }
+        catch { /* the buttons still work; they just can't show "already on the list" */ }
+    }
+
+    private bool IsOnList(string name) => onList.Contains(name.Trim());
+
+    private async Task AddAsync(string ingredient)
+    {
+        if (string.IsNullOrWhiteSpace(uid)) return;
+        busy.Add(ingredient);
+        try
+        {
+            var shops = await ShoppingList.GetShopsAsync(uid);
+            var shop = shops.FirstOrDefault() ?? await ShoppingList.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            await ShoppingList.AddItemAsync(uid, shop.Id, ingredient, new ShoppingItemOptions(Aisle: Aisles.For(ingredient).Key, SourceMeal: MealName));
+            onList.Add(ingredient.Trim());
+            Toasts.Show(Loc.T("meal_ingredient_added", ingredient, shop.Name));
+        }
+        catch (Exception ex)
+        {
+            Toasts.Show(ex.Message, isError: true);
+        }
+        finally { busy.Remove(ingredient); }
+    }
+}

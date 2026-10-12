@@ -1,92 +1,130 @@
-﻿@page "/meals"
+@page "/meals"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
 @inject IMealCatalogService CatalogService
 @inject IUserService UserService
-@inject IShoppingListService ShoppingListService
 @inject IAuthService Auth
-@inject IMealCacheService CacheService
+@inject IMealAssignService Assigner
 @inject IMealService MealService
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject IMealImageService MealImages
 @implements IDisposable
 
-<div class="app app-content-wrapper" dir="@Loc.Direction">
-    @if (isContextMode)
-    {
-        <SelectedDayHeader Date="selectedDate" />
-    }
-    else
-    {
-        <NxtPageHeader Icon="🍽️" Title="@Loc["meals_title"]" Subtitle="@Loc["meals_subtitle"]" />
-    }
-
-    @{ var meals = FilteredMeals; }
-
-    <div class="meals-filters">
-        <NxtTextInput CssClass="meal-search" Placeholder="@Loc["meals_search_placeholder"]" @bind-Value="searchText" />
-        <div class="meals-filter-row">
-            <NxtButton Variant="secondary" OnClick="OpenNewMeal" CssClass="meals-new-btn">＋ @Loc["meals_new_meal"]</NxtButton>
-            <NxtChip Active="@(!filterByAppLanguage)" OnClick="ToggleLanguageFilter">
-                @(filterByAppLanguage ? Loc["meals_lang_app"] : Loc["meals_lang_all"])
-            </NxtChip>
+<div class="mk-page mk-meals" dir="@Loc.Direction">
+    <header class="mk-header is-sticky">
+        <div class="mk-header-row">
+            <h1 class="mk-title">@Loc["meals_title"]</h1>
+            <button class="mk-icon-btn" aria-label="@Loc["meals_filter"]" @onclick="() => showFilters = true">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+                @if (!filterByAppLanguage) { <span class="mk-dot-badge" aria-hidden="true"></span> }
+            </button>
         </div>
 
-        <div>
-            <span class="meals-filter-label">@Loc["meals_type_label"]</span>
-            <div class="meals-filter-row wrap">
-                <NxtChip Active="@(selectedMealType == null)" OnClick="() => SetMealType(null)">@Loc["meals_filter_all"]</NxtChip>
-                <NxtChip Active="@(selectedMealType == MealType.Meat)" OnClick="() => SetMealType(MealType.Meat)">🥩 @Loc["meal_meat"]</NxtChip>
-                <NxtChip Active="@(selectedMealType == MealType.Chicken)" OnClick="() => SetMealType(MealType.Chicken)">🍗 @Loc["meal_chicken"]</NxtChip>
-                <NxtChip Active="@(selectedMealType == MealType.Fish)" OnClick="() => SetMealType(MealType.Fish)">🐟 @Loc["meal_fish"]</NxtChip>
-                <NxtChip Active="@(selectedMealType == MealType.Vegetarian)" OnClick="() => SetMealType(MealType.Vegetarian)">🥦 @Loc["meal_vegetarian"]</NxtChip>
-            </div>
-        </div>
-
-        @if (!isLoading)
+        @if (isContextMode)
         {
-            <div class="meals-result-bar" aria-live="polite">
-                <span>@(meals.Count == 1 ? Loc["meals_results_one"] : Loc.T("meals_results_count", meals.Count))</span>
-                @if (HasActiveFilters)
-                {
-                    <button type="button" class="meals-clear-filters" @onclick="ClearFilters">@Loc["meals_clear_filters"]</button>
-                }
+            <div class="mk-banner">
+                <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+                <span>@Loc.T("meals_pick_for_day", PickDayLabel)</span>
+                <a href="" class="mk-banner-cancel">@Loc["cancel"]</a>
             </div>
         }
-    </div>
+
+        <label class="mk-search">
+            <svg class="i" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input type="search" placeholder="@Loc["meals_search_placeholder"]" aria-label="@Loc["meals_search_placeholder"]" @bind="searchText" @bind:event="oninput" />
+        </label>
+
+        <div class="mk-chip-row" role="group" aria-label="@Loc["meals_meal_type"]">
+            <button class="mk-chip @(selectedMealType is null ? "is-active" : "")" @onclick="() => SetMealType(null)">@Loc["meals_filter_all"]</button>
+            @foreach (var type in AllTypes)
+            {
+                <button class="mk-chip @(selectedMealType == type ? "is-active" : "")" @onclick="() => SetMealType(type)">@Loc.GetMealTypeName(type)</button>
+            }
+        </div>
+    </header>
 
     @if (!string.IsNullOrEmpty(confirmMessage))
     {
-        <div class="meals-toast-wrap">
-            <div class="alert-playful meals-toast">🎉 @confirmMessage</div>
+        <div class="mk-stack"><div class="mk-notice">@confirmMessage</div></div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="mk-grid"><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (FilteredMeals.Count == 0)
+    {
+        <NxtEmptyState Icon="🍳" Title="@Loc["meals_empty_title"]" Message="@Loc["meals_empty_desc"]" />
+    }
+    else
+    {
+        <div class="mk-grid">
+            @foreach (var meal in FilteredMeals)
+            {
+                var favorite = userProfile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
+                <article class="mk-meal-card">
+                    <div class="mk-tile mk-meal-tile @MealTypeStyle.T(meal.MealType) @(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : "has-photo")">
+                        <button class="mk-meal-open" aria-label="@meal.Name" @onclick="() => OpenMeal(meal)"><img src="@MealImages.GetImageUrl(meal)" alt="" loading="lazy" /></button>
+                        <button class="mk-heart @(favorite ? "is-on" : "")" aria-pressed="@favorite" aria-label="@(favorite ? Loc["meal_remove_favorite_short"] : Loc["meal_favorite"])" @onclick="() => ToggleFavorite(meal)">
+                            <span><svg viewBox="0 0 24 24" fill="@(favorite ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-8-5-9.5-10A5 5 0 0 1 12 7a5 5 0 0 1 9.5 4C20 16 12 21 12 21z"/></svg></span>
+                        </button>
+                    </div>
+                    <div class="mk-meal-foot">
+                        <button class="mk-meal-text" @onclick="() => OpenMeal(meal)">
+                            <span class="mk-meal-name">@meal.Name</span>
+                            <span class="mk-subtitle">@Loc.GetMealTypeName(meal.MealType)</span>
+                        </button>
+                        <button class="mk-icon-btn is-ink" aria-label="@(isContextMode ? Loc.T("meals_add_to_named_day", PickDayLabel) : Loc["meals_add_to_day_short"])" @onclick="() => SelectMeal(meal)">
+                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        </button>
+                    </div>
+                </article>
+            }
         </div>
     }
 
-    <div class="meals-list">
-        @if (isLoading)
+    <button class="mk-fab is-accent is-start" @onclick="OpenNewMeal">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        @Loc["meals_new_meal"]
+    </button>
+</div>
+
+<NxtBottomSheet IsOpen="showFilters" Title="@Loc["meals_filter"]" OnDismiss="() => showFilters = false">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <span class="mk-label">@Loc["meals_language_filter"]</span>
+        <div class="mk-seg">
+            <button class="@(filterByAppLanguage ? "is-active" : "")" @onclick="() => filterByAppLanguage = true">@Loc["meals_lang_app"]</button>
+            <button class="@(!filterByAppLanguage ? "is-active" : "")" @onclick="() => filterByAppLanguage = false">@Loc["meals_lang_all"]</button>
+        </div>
+        <button class="mk-btn is-lg is-block" @onclick="() => showFilters = false">@Loc["done_action"]</button>
+    </div>
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="@(showDayPicker && browseMeal is not null)" Eyebrow="@browseMeal?.Name" Title="@Loc["meals_add_to_day"]" OnDismiss="CloseDayPicker">
+    <div class="mk-sheet-list" dir="@Loc.Direction">
+        @foreach (var day in currentWeekDays)
         {
-            <p class="meals-loading">@Loc["loading"]</p>
-        }
-        else if (meals.Count == 0)
-        {
-            <NxtEmptyState Icon="🍳" Title="@Loc["meals_empty_title"]" Message="@Loc["meals_empty_desc"]" />
-        }
-        else
-        {
-            @foreach (var meal in meals)
-            {
-                <MealSelectionCard Meal="meal"
-                                   IsContextMode="isContextMode"
-                                   IsFavorite="@(userProfile?.FavoriteMealIds?.Contains(meal.Id) ?? false)"
-                                   OnSelect="SelectMeal"
-                                   OnFavorite="ToggleFavorite"
-                                   OnView="ViewMeal"
-                                   OnViewIngredients="OpenIngredients" />
-            }
+            <button @onclick="() => ChooseBrowseDay(day)">@Loc.GetDayName(day.DayOfWeek) <span class="mk-sheet-sub">@day.Day</span></button>
         }
     </div>
-</div>
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="showNewMeal" Title="@Loc["meals_new_meal"]" Eyebrow="@Loc["meals_new_meal_eyebrow"]" OnDismiss="CloseNewMeal">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <label class="mk-search">
+            <input placeholder="@Loc["meals_meal_name"]" aria-label="@Loc["meals_meal_name"]" @bind="newMealName" @bind:event="oninput" />
+        </label>
+        <div class="mk-chip-wrap" role="group" aria-label="@Loc["meals_meal_type"]">
+            @foreach (var type in AllTypes)
+            {
+                <button class="mk-chip @(newMealType == type ? "is-active" : "")" @onclick="() => newMealType = type">@Loc.GetMealTypeName(type)</button>
+            }
+        </div>
+        @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="mk-notice is-error">@newMealError</div> }
+        <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(newMealName)" @onclick="CreateNewMeal">@Loc["meals_save_and_select"]</button>
+    </div>
+</NxtBottomSheet>
 
 <MealIngredientsSheet IsOpen="@(ingredientsMeal is not null)"
                       MealName="@(ingredientsMeal?.Name ?? "")"
@@ -94,55 +132,15 @@
                       MealType="ingredientsMeal?.MealType"
                       Ingredients="ingredientsMeal?.Ingredients"
                       SideDishes="ingredientsMeal?.SideDishes"
-                      OnAddToShoppingList="AddIngredientsToShoppingListAsync"
                       OnDismiss="() => ingredientsMeal = null" />
-
-<NxtBottomSheet IsOpen="@(showDayPicker && browseMeal is not null)" Eyebrow="@browseMeal?.Name" Title="@Loc["meals_add_to_day"]" OnDismiss="CloseDayPicker">
-    <div class="move-days" dir="@Loc.Direction">
-        @foreach (var day in currentWeekDays)
-        { <button @onclick="() => ChooseBrowseDay(day)">@Loc.GetDayName(day.DayOfWeek)</button> }
-    </div>
-</NxtBottomSheet>
-
-<NxtBottomSheet IsOpen="showNewMeal" Title="@Loc["meals_new_meal"]" Eyebrow="@Loc["meals_new_meal_eyebrow"]" OnDismiss="CloseNewMeal">
-    <div class="sheet-actions" dir="@Loc.Direction">
-        <NxtTextInput Placeholder="@Loc["meals_meal_name"]" @bind-Value="newMealName" />
-        <div class="new-meal-type-pills" aria-label="@Loc["meals_meal_type"]">
-            <NxtChip Active="@(newMealType == MealType.Meat)" OnClick='() => newMealType = MealType.Meat'>🥩 @Loc["meal_meat"]</NxtChip>
-            <NxtChip Active="@(newMealType == MealType.Chicken)" OnClick='() => newMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</NxtChip>
-            <NxtChip Active="@(newMealType == MealType.Fish)" OnClick='() => newMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</NxtChip>
-            <NxtChip Active="@(newMealType == MealType.Vegetarian)" OnClick='() => newMealType = MealType.Vegetarian'>🥦 @Loc["meal_vegetarian"]</NxtChip>
-        </div>
-        @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="alert-playful settings-feedback">@newMealError</div> }
-        <NxtButton Variant="primary" OnClick="CreateNewMeal" Disabled="@string.IsNullOrWhiteSpace(newMealName)">@Loc["meals_save_and_select"]</NxtButton>
-    </div>
-</NxtBottomSheet>
-
-<NxtBottomSheet IsOpen="@(editingMeal is not null)" Title="@Loc["meals_edit_meal"]" Eyebrow="@Loc["meals_edit_eyebrow"]" OnDismiss="CloseMealEditor">
-    @if (editingMeal is not null)
-    {
-        <div class="sheet-actions" dir="@Loc.Direction">
-            <NxtTextInput Placeholder="@Loc["meals_meal_name"]" @bind-Value="editingMealName" />
-            <div class="new-meal-type-pills" aria-label="@Loc["meals_meal_type"]">
-                <NxtChip Active="@(editingMealType == MealType.Meat)" OnClick='() => editingMealType = MealType.Meat'>🥩 @Loc["meal_meat"]</NxtChip>
-                <NxtChip Active="@(editingMealType == MealType.Chicken)" OnClick='() => editingMealType = MealType.Chicken'>🍗 @Loc["meal_chicken"]</NxtChip>
-                <NxtChip Active="@(editingMealType == MealType.Fish)" OnClick='() => editingMealType = MealType.Fish'>🐟 @Loc["meal_fish"]</NxtChip>
-                <NxtChip Active="@(editingMealType == MealType.Vegetarian)" OnClick='() => editingMealType = MealType.Vegetarian'>🥦 @Loc["meal_vegetarian"]</NxtChip>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(mealEditorError)) { <div class="alert-playful settings-feedback">@mealEditorError</div> }
-            <NxtButton Variant="primary" OnClick="SaveMealEdit" Disabled="@string.IsNullOrWhiteSpace(editingMealName)">@Loc["meals_save_changes"]</NxtButton>
-            <NxtButton Variant="secondary" OnClick="UseEditedMeal">@Loc["meals_use_meal"]</NxtButton>
-            <button class="danger" @onclick="ArchiveEditingMeal">@Loc["meals_hide_meal"]</button>
-        </div>
-    }
-</NxtBottomSheet>
 
 @code {
     [SupplyParameterFromQuery(Name = "create")]
     public bool CreateRequested { get; set; }
 
+    private static readonly MealType[] AllTypes = [MealType.Meat, MealType.Chicken, MealType.Fish, MealType.Vegetarian];
+
     private List<MealCatalogItem> allMeals = new();
-    private List<WeeklyPlanEntry> currentWeekPlan = new();
     private List<DateOnly> currentWeekDays = new();
     private UserProfile? userProfile;
 
@@ -152,6 +150,7 @@
 
     private MealType? selectedMealType;
     private bool filterByAppLanguage = true;
+    private bool showFilters;
 
     private DateOnly selectedDate;
     private bool isContextMode;
@@ -163,12 +162,10 @@
     private string newMealName = "";
     private string newMealError = "";
     private MealType newMealType = MealType.Vegetarian;
-    private MealCatalogItem? editingMeal;
-    private string editingMealName = "";
-    private string mealEditorError = "";
-    private MealType editingMealType;
     private bool pageInitialized;
     private bool openedFromNavAction;
+
+    private string PickDayLabel => $"{Loc.GetDayName(selectedDate.DayOfWeek)} {selectedDate.Day}";
 
     private List<MealCatalogItem> FilteredMeals
     {
@@ -184,7 +181,8 @@
                 if (inLanguage.Count > 0) query = inLanguage;
             }
             if (!string.IsNullOrWhiteSpace(searchText))
-                query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+                                      || m.Ingredients.Any(i => i.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
             if (selectedMealType.HasValue)
                 query = query.Where(m => m.MealType == selectedMealType.Value);
             return query.ToList();
@@ -204,8 +202,7 @@
         }
         uid = user.Uid;
 
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var startOfWeek = StartOfWeek(today);
+        var startOfWeek = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
         selectedDate = startOfWeek;
         var query = new Uri(Nav.Uri).Query;
         const string dateKey = "day=";
@@ -218,9 +215,9 @@
         currentWeekDays = Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
 
         await MealService.SeedAsync(new List<Meal>());
+        await MealImages.EnsureLoadedAsync();
         allMeals = await CatalogService.GetAllMealsAsync();
         userProfile = await UserService.GetProfileAsync(uid);
-        currentWeekPlan = await UserService.GetWeeklyPlanAsync(uid, startOfWeek, startOfWeek.AddDays(6));
 
         isLoading = false;
         pageInitialized = true;
@@ -228,7 +225,6 @@
     }
 
     private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
-    private void ToggleLanguageFilter() => filterByAppLanguage = !filterByAppLanguage;
 
     protected override void OnParametersSet()
     {
@@ -236,7 +232,7 @@
             OpenNewMealFromNavigation();
     }
 
-    private DateOnly StartOfWeek(DateOnly date)
+    private static DateOnly StartOfWeek(DateOnly date)
     {
         var diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7;
         return date.AddDays(-diff);
@@ -244,41 +240,17 @@
 
     private void SetMealType(MealType? type) => selectedMealType = type;
 
-    private async Task AddIngredientsToShoppingListAsync()
-    {
-        if (ingredientsMeal is null) return;
-        try
-        {
-            var (added, shopName) = await ShoppingListService.AddIngredientsAsync(uid, ingredientsMeal.Ingredients, Loc["ai_plan_default_shop_name"]);
-            confirmMessage = added > 0 ? Loc.T("shopping_ingredients_added", added, shopName) : Loc["shopping_ingredients_present"];
-        }
-        catch (Exception ex) { confirmMessage = ex.Message; }
-        ingredientsMeal = null;
-    }
+    // Tapping a card opens the meal; in "pick a day" mode the day travels along so its button adds to that day.
+    private void OpenMeal(MealCatalogItem meal) =>
+        Nav.NavigateTo(isContextMode ? $"/meal/{meal.Id}?day={selectedDate:yyyy-MM-dd}" : $"/meal/{meal.Id}");
 
-    private bool HasActiveFilters => !string.IsNullOrWhiteSpace(searchText) || selectedMealType.HasValue || !filterByAppLanguage;
-
-    private void ClearFilters()
-    {
-        searchText = "";
-        selectedMealType = null;
-        filterByAppLanguage = true;
-    }
-    private void OpenIngredients(MealCatalogItem meal) => ingredientsMeal = meal;
-    private void ViewMeal(MealCatalogItem meal)
-    {
-        if (isContextMode) { Nav.NavigateTo($"/meal/{meal.Id}"); return; }
-        editingMeal = meal;
-        editingMealName = meal.Name;
-        editingMealType = meal.MealType;
-        mealEditorError = "";
-    }
     private async Task ToggleFavorite(MealCatalogItem meal)
     {
         await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
         userProfile ??= new UserProfile();
         if (userProfile.FavoriteMealIds.Contains(meal.Id)) userProfile.FavoriteMealIds.Remove(meal.Id); else userProfile.FavoriteMealIds.Add(meal.Id);
     }
+
     private async Task SelectMeal(MealCatalogItem meal)
     {
         if (isContextMode) await ExecuteAssignment(meal, selectedDate);
@@ -316,54 +288,6 @@
         catch (Exception ex) { newMealError = ex.Message; }
     }
 
-    private void CloseMealEditor() { editingMeal = null; editingMealName = ""; mealEditorError = ""; }
-    private async Task SaveMealEdit()
-    {
-        if (editingMeal is null) return;
-        var name = editingMealName.Trim();
-        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = Loc["meals_name_required"]; return; }
-        try
-        {
-            editingMeal.Name = name;
-            editingMeal.MealType = editingMealType;
-            await CatalogService.UpdateMealAsync(editingMeal);
-            allMeals = await CatalogService.GetAllMealsAsync();
-            confirmMessage = Loc["meals_meal_updated"];
-            CloseMealEditor();
-        }
-        catch (Exception ex) { mealEditorError = ex.Message; }
-    }
-    private async Task UseEditedMeal()
-    {
-        if (editingMeal is null) return;
-        var meal = editingMeal;
-        var name = editingMealName.Trim();
-        if (string.IsNullOrWhiteSpace(name)) { mealEditorError = Loc["meals_name_required"]; return; }
-        try
-        {
-            meal.Name = name;
-            meal.MealType = editingMealType;
-            await CatalogService.UpdateMealAsync(meal);
-            allMeals = await CatalogService.GetAllMealsAsync();
-            CloseMealEditor();
-            await SelectMeal(meal);
-        }
-        catch (Exception ex) { mealEditorError = ex.Message; }
-    }
-    private async Task ArchiveEditingMeal()
-    {
-        if (editingMeal is null) return;
-        try
-        {
-            editingMeal.IsArchived = true;
-            await CatalogService.UpdateMealAsync(editingMeal);
-            allMeals.RemoveAll(meal => meal.Id == editingMeal.Id);
-            confirmMessage = Loc["meals_meal_hidden"];
-            CloseMealEditor();
-        }
-        catch (Exception ex) { mealEditorError = ex.Message; }
-    }
-
     private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
     {
         isLoading = true;
@@ -371,32 +295,7 @@
 
         try
         {
-            await UserService.AssignMealToDateAsync(uid, date, meal.Id);
-
-            currentWeekPlan.RemoveAll(e => e.Date == date);
-            currentWeekPlan.Add(new WeeklyPlanEntry { Date = date, MealId = meal.Id, IsFavorite = false });
-
-            var currentCache = await CacheService.GetCachedWeekAsync();
-            if (currentCache is not null)
-            {
-                currentCache.RemoveAll(m => m.Id == date.ToString("yyyy-MM-dd"));
-                var updated = new Meal
-                {
-                    Id = date.ToString("yyyy-MM-dd"),
-                    Date = date,
-                    DayName = date.DayOfWeek.ToString(),
-                    Name = meal.Name,
-                    MealId = meal.Id,
-                    IsFavorite = false,
-                    SideDishes = meal.SideDishes,
-                    Ingredients = meal.Ingredients,
-                    MealType = meal.MealType,
-                    Language = meal.Language
-                };
-                currentCache.Add(updated);
-                await CacheService.SetCachedWeekAsync(currentCache);
-            }
-
+            await Assigner.AssignAsync(uid, date, meal);
             var dayLabel = Loc.GetDayName(date.DayOfWeek);
             var message = Uri.EscapeDataString(Loc.T("meals_added_toast", meal.Name, dayLabel));
             Nav.NavigateTo($"/?updated={date:yyyy-MM-dd}&toast={message}");
