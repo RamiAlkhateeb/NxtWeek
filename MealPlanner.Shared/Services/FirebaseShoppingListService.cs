@@ -65,6 +65,13 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task UpdateItemAsync(string uid, string shopId, string itemId, string name, int quantity, string? unit)
+    {
+        var update = new { name = RequiredName(name, "العنصر"), quantity = Math.Max(1, quantity), unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim() };
+        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task SetItemBoughtAsync(string uid, string shopId, string itemId, bool isBought)
     {
         var update = new { isBought, boughtAtUtc = isBought ? DateTime.UtcNow : (DateTime?)null };

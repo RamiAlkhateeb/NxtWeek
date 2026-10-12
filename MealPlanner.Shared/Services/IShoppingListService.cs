@@ -11,6 +11,7 @@ public interface IShoppingListService
     Task DeleteShopAsync(string uid, string shopId);
     Task<ShoppingItem> AddItemAsync(string uid, string shopId, string name, ShoppingItemOptions? options = null);
     Task SetItemQuantityAsync(string uid, string shopId, string itemId, int quantity);
+    Task UpdateItemAsync(string uid, string shopId, string itemId, string name, int quantity, string? unit);
     Task SetItemBoughtAsync(string uid, string shopId, string itemId, bool isBought);
     Task DeleteItemAsync(string uid, string shopId, string itemId);
 }

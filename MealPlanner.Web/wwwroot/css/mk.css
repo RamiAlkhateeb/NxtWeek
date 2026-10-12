@@ -474,3 +474,41 @@ html, body { background: var(--nxt-page); }
 .mk-ai-composer .mk-chip-row { padding-block: 0; }
 .mk-ai-composer .nxt-composer { position: static; margin: 0; height: auto; min-height: 56px; border-radius: 28px; background: var(--nxt-card); border: 1px solid var(--nxt-border); box-shadow: 0 4px 14px rgba(0,0,0,.05); padding: 6px; }
 .mk-ai-composer .nxt-composer-input { font-size: 15px; padding-inline: 12px; }
+
+/* ---- Shopping ---- */
+.mk-store { background: var(--nxt-card); border-radius: 28px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.mk-store-head { display: flex; align-items: center; gap: 6px; }
+.mk-store-toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; background: none; border: 0; padding: 0; text-align: start; color: inherit; font: inherit; cursor: pointer; }
+.mk-store-icon { width: 40px; height: 40px; border-radius: 14px; background: var(--mk-accent-soft); color: var(--mk-accent-ink); display: grid; place-items: center; flex: none; }
+.mk-store-icon svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mk-store-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.mk-store-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.mk-store-name { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+.mk-progress { display: block; height: 6px; border-radius: 99px; background: var(--nxt-inset); overflow: hidden; }
+.mk-progress i { display: block; height: 100%; border-radius: 99px; background: var(--mk-ok, #34c759); transition: width .25s; }
+.mk-store-body { margin-top: 12px; display: flex; flex-direction: column; gap: 2px; }
+.mk-quickadd { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 42px; border-radius: 99px; background: var(--nxt-inset); color: var(--mk-muted); margin-bottom: 6px; }
+.mk-quickadd input { flex: 1; min-width: 0; border: 0; background: none; outline: 0; font: inherit; color: var(--nxt-text); }
+.mk-shop-item { display: flex; align-items: center; gap: 12px; padding: 10px 2px; }
+.mk-shop-item + .mk-shop-item { border-top: 1px solid var(--nxt-border); }
+.mk-check { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--mk-muted); background: none; flex: none; display: grid; place-items: center; cursor: pointer; padding: 0; color: #fff; }
+.mk-check.is-on { background: var(--mk-ok, #34c759); border-color: var(--mk-ok, #34c759); }
+.mk-check svg { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.mk-shop-item-name { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: start; cursor: pointer; overflow-wrap: anywhere; }
+.mk-shop-item.is-bought .mk-shop-item-name > span:first-child { text-decoration: line-through; color: var(--mk-muted); }
+.mk-bought-toggle { display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 10px 2px 4px; color: var(--mk-muted); font: inherit; font-weight: 600; cursor: pointer; }
+.mk-bought-toggle.is-loose { padding: 4px 6px; }
+.mk-aisle { background: var(--nxt-card); border-radius: 28px; padding: 14px 16px; }
+.mk-aisle-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.mk-aisle-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.mk-aisle-name { font-weight: 700; }
+.mk-aisle-item-name { font-weight: 600; }
+.mk-stepper { display: inline-flex; align-items: center; gap: 2px; background: var(--nxt-inset); border-radius: 99px; padding: 3px; flex: none; }
+.mk-stepper button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--nxt-card); color: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.mk-stepper button:disabled { opacity: .4; cursor: default; }
+.mk-stepper span { min-width: 28px; text-align: center; font-weight: 600; font-size: .9rem; padding: 0 2px; }
+.mk-stepper.is-large button { width: 38px; height: 38px; }
+.mk-stepper.is-large span { min-width: 40px; font-size: 1.05rem; }
+.mk-edit-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mk-btn.is-danger-text { color: #ff3b30; }
+.mk-btn.is-danger-fill { background: #ff3b30; color: #fff; }

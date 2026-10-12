@@ -1,111 +1,270 @@
-﻿@page "/shopping"
+@page "/shopping"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IAuthService Auth
 @inject IShoppingListService ShoppingListService
+@inject IMealService MealService
+@inject IAisleService Aisles
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
+@inject ToastService Toasts
 
-<div class="app app-content-wrapper shopping-page" dir="@Loc.Direction">
-    <header class="ui-page-header shopping-page-header">
-        <div>
-            <h1><span class="shopping-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 11H6z"/><path d="M8 8a4 4 0 0 1 8 0"/><path d="M9.5 13.5h.01M14.5 13.5h.01"/></svg></span> @Loc["shopping_title"]</h1>
-            <p>@Loc["shopping_subtitle"]</p>
+<div class="mk-page mk-shopping" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row">
+            <div class="mk-title-block">
+                <h1 class="mk-title">@Loc["shopping_title"]</h1>
+                @if (!isLoading) { <p class="mk-subtitle">@SummaryText</p> }
+            </div>
+            @if (byAisle)
+            {
+                <button class="mk-icon-btn is-ink" aria-label="@Loc["shopping_add_item"]" @onclick="OpenAddItem">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            }
+            else
+            {
+                <button class="mk-icon-btn is-ink" aria-label="@Loc["shopping_add_store"]" @onclick="OpenAddShop">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            }
+        </div>
+
+        <button class="mk-btn is-pink is-block" disabled="@isAddingWeek" @onclick="AddWeekIngredientsAsync">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+            @Loc["shopping_add_week_ingredients"]
+        </button>
+
+        <div class="mk-seg" role="tablist">
+            <button role="tab" class="@(!byAisle ? "is-active" : "")" aria-selected="@(!byAisle)" @onclick="() => byAisle = false">@Loc["shopping_by_store"]</button>
+            <button role="tab" class="@(byAisle ? "is-active" : "")" aria-selected="@byAisle" @onclick="() => byAisle = true">@Loc["shopping_by_aisle"]</button>
         </div>
     </header>
 
-    <main class="shopping-content">
-        <NxtButton Variant="primary" CssClass="shopping-add-shop" OnClick="OpenAddShop">+ @Loc["shopping_add_store"]</NxtButton>
-
-        @if (!string.IsNullOrWhiteSpace(errorMessage))
-        {
-            <div class="alert-playful shopping-feedback">@errorMessage</div>
-        }
+    <main class="mk-stack">
+        @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="mk-notice is-error">@errorMessage</div> }
 
         @if (isLoading)
         {
-            <div class="shopping-loading">@Loc["shopping_loading"]</div>
+            <NxtSkeleton /><NxtSkeleton />
         }
         else if (shops.Count == 0)
         {
             <NxtEmptyState Icon="🛒" Title="@Loc["shopping_empty_title"]" Message="@Loc["shopping_empty_desc"]">
-                <NxtButton Variant="primary" OnClick="OpenAddShop">@Loc["shopping_add_first_store"]</NxtButton>
+                <button class="mk-btn" @onclick="OpenAddShop">@Loc["shopping_add_first_store"]</button>
             </NxtEmptyState>
         }
-        else
+        else if (!byAisle)
         {
-            <div class="shopping-shops">
-                @foreach (var shop in shops)
-                {
-                    var items = shop.Items?.Values ?? Enumerable.Empty<ShoppingItem>();
-                    var orderedItems = items.OrderBy(item => item.IsBought).ThenBy(item => item.CreatedAtUtc).ToList();
-                    var deleteShopLabel = Loc.T("shopping_delete_store_named", shop.Name);
-                    var addItemLabel = Loc.T("shopping_add_item_to", shop.Name);
-                    <NxtCard CssClass="shopping-shop-card">
-                        <div class="shopping-shop-header">
-                            <div>
-                                <h2><span class="shopping-inline-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4z"/><path d="m4 10 2-6h12l2 6M8 20v-5h4v5M15 14h2"/></svg></span>@shop.Name</h2>
-                                <span class="shopping-count">@items.Count() @Loc["shopping_items"]</span>
-                            </div>
-                            <NxtButton Variant="ghost" CssClass="shopping-delete-shop shopping-svg-action" OnClick="() => RequestDeleteShop(shop)" title="@Loc["shopping_delete_store"]" aria-label="@deleteShopLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></NxtButton>
-                        </div>
-
-                        <div class="shopping-add-item">
-                            <NxtTextInput Value="@GetItemDraft(shop.Id)" ValueChanged="value => SetItemDraft(shop.Id, value)" Placeholder="@Loc["shopping_add_item"]" aria-label="@addItemLabel" />
-                            <NxtButton Variant="secondary" OnClick="() => AddItemAsync(shop.Id)">@Loc["add"]</NxtButton>
-                        </div>
-
-                        @if (orderedItems.Count == 0)
+            @foreach (var shop in shops)
+            {
+                var items = shop.Items.Values.ToList();
+                var open = items.Where(i => !i.IsBought).OrderBy(i => i.CreatedAtUtc).ToList();
+                var bought = items.Where(i => i.IsBought).OrderByDescending(i => i.BoughtAtUtc).ToList();
+                var isOpen = expanded.Contains(shop.Id);
+                var percent = items.Count == 0 ? 0 : bought.Count * 100 / items.Count;
+                <section class="mk-store">
+                    <div class="mk-store-head">
+                        <button class="mk-store-toggle" aria-expanded="@isOpen" @onclick="() => ToggleStore(shop.Id)">
+                            <span class="mk-store-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="20" height="20"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9c0 2 3.5 2 4 0 .5 2 3.5 2 4 0 .5 2 3.5 2 4 0 .5 2 4 2 4 0"/></svg></span>
+                            <span class="mk-store-info">
+                                <span class="mk-store-line"><span class="mk-store-name">@shop.Name</span><span class="mk-subtitle">@Loc.T("shopping_progress", bought.Count, items.Count)</span></span>
+                                <span class="mk-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@percent"><i style="width:@(percent)%"></i></span>
+                            </span>
+                        </button>
+                        @if (isOpen)
                         {
-                            <p class="shopping-empty-shop">@Loc["shopping_no_items"]</p>
+                            <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc["shopping_store_options"]" @onclick="() => storeMenu = shop">
+                                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                            </button>
                         }
                         else
                         {
-                            <div class="shopping-items">
-                                @foreach (var item in orderedItems)
-                                {
-                                    var toggleItemLabel = $"{(item.IsBought ? Loc["shopping_uncheck"] : Loc["shopping_bought"])}: {item.Name}";
-                                    var deleteItemLabel = $"{Loc["delete"]} {item.Name}";
-                                    <div class="shopping-item @(item.IsBought ? "is-bought" : "")">
-                                        <button class="shopping-item-toggle" @onclick="() => ToggleItemAsync(shop.Id, item)" aria-label="@toggleItemLabel"><svg viewBox="0 0 24 24" aria-hidden="true">@if (item.IsBought) { <path d="m5 12 4.2 4.2L19 6.5"/> } else { <circle cx="12" cy="12" r="8"/> }</svg></button>
-                                        <button class="shopping-item-name" @onclick="() => ToggleItemAsync(shop.Id, item)">@item.Name</button>
-                                        <button class="shopping-item-delete shopping-svg-action" @onclick="() => DeleteItemAsync(shop.Id, item.Id)" aria-label="@deleteItemLabel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg></button>
-                                    </div>
-                                }
-                            </div>
+                            <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc["shopping_expand"]" @onclick="() => ToggleStore(shop.Id)">
+                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                            </button>
                         }
-                    </NxtCard>
+                    </div>
+
+                    @if (isOpen)
+                    {
+                        <div class="mk-store-body">
+                            <label class="mk-quickadd">
+                                <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                <input placeholder="@Loc["shopping_add_item"]" aria-label="@Loc.T("shopping_add_item_to", shop.Name)" value="@GetDraft(shop.Id)"
+                                       @oninput="e => SetDraft(shop.Id, e)" @onkeydown="e => OnQuickAddKey(e, shop.Id)" />
+                            </label>
+
+                            @foreach (var item in open) { @ItemRow(shop, item) }
+
+                            @if (bought.Count > 0)
+                            {
+                                <button class="mk-bought-toggle" aria-expanded="@showBought.Contains(shop.Id)" @onclick="() => ToggleBought(shop.Id)">
+                                    <span>@Loc.T("shopping_bought_n", bought.Count)</span>
+                                    <svg class="i mk-past-chev @(showBought.Contains(shop.Id) ? "is-open" : "")" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                                </button>
+                                @if (showBought.Contains(shop.Id)) { @foreach (var item in bought) { @ItemRow(shop, item) } }
+                            }
+                        </div>
+                    }
+                </section>
+            }
+        }
+        else
+        {
+            @foreach (var aisle in Aisles.All)
+            {
+                var group = shops.SelectMany(s => s.Items.Values.Where(i => !i.IsBought).Select(i => (Shop: s, Item: i)))
+                                 .Where(x => Aisles.For(x.Item.Name, x.Item.Aisle).Key == aisle.Key)
+                                 .OrderBy(x => x.Item.CreatedAtUtc).ToList();
+                if (group.Count == 0) { continue; }
+                <section class="mk-aisle">
+                    <div class="mk-aisle-head"><span class="mk-aisle-dot" style="background:@aisle.Color"></span><span class="mk-aisle-name">@Loc[aisle.LabelKey]</span><span class="mk-subtitle">@group.Count</span></div>
+                    @foreach (var (shop, item) in group) { @AisleRow(shop, item) }
+                </section>
+            }
+
+            var allBought = shops.SelectMany(s => s.Items.Values.Where(i => i.IsBought).Select(i => (Shop: s, Item: i))).ToList();
+            @if (allBought.Count > 0)
+            {
+                <button class="mk-bought-toggle is-loose" aria-expanded="@showBought.Contains("*")" @onclick='() => ToggleBought("*")'>
+                    <span>@Loc.T("shopping_bought_n", allBought.Count)</span>
+                    <svg class="i mk-past-chev @(showBought.Contains("*") ? "is-open" : "")" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                @if (showBought.Contains("*"))
+                {
+                    <section class="mk-aisle">
+                        @foreach (var (shop, item) in allBought) { @ItemRow(shop, item) }
+                    </section>
                 }
-            </div>
+            }
+            @if (!shops.Any(s => s.Items.Count > 0))
+            {
+                <p class="mk-empty-line">@Loc["shopping_no_items"]</p>
+            }
         }
     </main>
 </div>
 
+@code {
+    private RenderFragment ItemRow(ShoppingShop shop, ShoppingItem item) => @<div class="mk-shop-item @(item.IsBought ? "is-bought" : "")">
+        <button class="mk-check @(item.IsBought ? "is-on" : "")" role="checkbox" aria-checked="@item.IsBought" aria-label="@((item.IsBought ? Loc["shopping_uncheck"] : Loc["shopping_bought"]) + ": " + item.Name)" @onclick="() => ToggleItemAsync(shop, item)">
+            @if (item.IsBought) { <svg class="i" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> }
+        </button>
+        <button class="mk-shop-item-name" @onclick="() => OpenEdit(shop, item)">
+            <span>@item.Name</span>
+            @if (QuantityText(item) is { Length: > 0 } qty) { <span class="mk-subtitle">@qty</span> }
+        </button>
+    </div>;
+
+    private RenderFragment AisleRow(ShoppingShop shop, ShoppingItem item) => @<div class="mk-shop-item is-aisle">
+        <button class="mk-check" role="checkbox" aria-checked="false" aria-label="@(Loc["shopping_bought"] + ": " + item.Name)" @onclick="() => ToggleItemAsync(shop, item)"></button>
+        <button class="mk-shop-item-name" @onclick="() => OpenEdit(shop, item)">
+            <span class="mk-aisle-item-name">@item.Name</span>
+            @if (Subtitle(shop, item) is { Length: > 0 } sub) { <span class="mk-subtitle">@sub</span> }
+        </button>
+        <div class="mk-stepper" role="group" aria-label="@item.Name">
+            <button aria-label="@Loc["shopping_increase"]" @onclick="() => ChangeQuantityAsync(shop, item, 1)">+</button>
+            <span>@(QuantityText(item, always: true))</span>
+            <button aria-label="@Loc["shopping_decrease"]" disabled="@(item.Quantity <= 1)" @onclick="() => ChangeQuantityAsync(shop, item, -1)">−</button>
+        </div>
+    </div>;
+}
+
 <NxtBottomSheet IsOpen="showAddShop" Title="@Loc["shopping_new_store"]" Eyebrow="@Loc["shopping_new_store_eyebrow"]" OnDismiss="CloseAddShop">
-    <div class="sheet-actions" dir="@Loc.Direction">
-        <NxtTextInput Placeholder="@Loc["shopping_store_placeholder"]" @bind-Value="newShopName" />
-        @if (!string.IsNullOrWhiteSpace(addShopError)) { <div class="alert-playful shopping-feedback">@addShopError</div> }
-        <NxtButton Variant="primary" OnClick="AddShopAsync" Disabled="@string.IsNullOrWhiteSpace(newShopName)">@Loc["shopping_add_store"]</NxtButton>
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <label class="mk-search"><input placeholder="@Loc["shopping_store_placeholder"]" aria-label="@Loc["shopping_store_placeholder"]" @bind="newShopName" @bind:event="oninput" /></label>
+        @if (!string.IsNullOrWhiteSpace(addShopError)) { <div class="mk-notice is-error">@addShopError</div> }
+        <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(newShopName)" @onclick="AddShopAsync">@Loc["shopping_add_store"]</button>
     </div>
 </NxtBottomSheet>
 
-<NxtBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="@Loc["shopping_delete_store_q"]" Eyebrow="@Loc["shopping_delete_store_eyebrow"]" OnDismiss="CancelDeleteShop">
-    <div class="sheet-actions" dir="@Loc.Direction">
-        <NxtButton Variant="danger" OnClick="ConfirmDeleteShopAsync">@Loc.T("shopping_delete_store_named", shopPendingDeletion?.Name ?? "")</NxtButton>
-        <NxtButton Variant="ghost" OnClick="CancelDeleteShop">@Loc["cancel"]</NxtButton>
+<NxtBottomSheet IsOpen="showAddItem" Title="@Loc["shopping_add_item"]" OnDismiss="() => showAddItem = false">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <label class="mk-search"><input placeholder="@Loc["shopping_item_placeholder"]" aria-label="@Loc["shopping_item_placeholder"]" @bind="newItemName" @bind:event="oninput" /></label>
+        @if (shops.Count > 1)
+        {
+            <span class="mk-label">@Loc["shopping_which_store"]</span>
+            <div class="mk-chip-wrap">
+                @foreach (var shop in shops)
+                {
+                    <button class="mk-chip @(newItemShopId == shop.Id ? "is-active" : "")" @onclick="() => newItemShopId = shop.Id">@shop.Name</button>
+                }
+            </div>
+        }
+        <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(newItemName)" @onclick="AddItemFromSheetAsync">@Loc["add"]</button>
+    </div>
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="@(editing is not null)" Title="@editName" Eyebrow="@(editingShop?.Name)" OnDismiss="CloseEdit">
+    @if (editing is not null)
+    {
+        <div class="mk-sheet-body" dir="@Loc.Direction">
+            <label class="mk-search"><input aria-label="@Loc["shopping_item_name"]" @bind="editName" @bind:event="oninput" /></label>
+            <div class="mk-edit-row">
+                <span class="mk-label">@Loc["shopping_quantity"]</span>
+                <div class="mk-stepper is-large" role="group">
+                    <button aria-label="@Loc["shopping_increase"]" @onclick="() => editQuantity++">+</button>
+                    <span>@editQuantity</span>
+                    <button aria-label="@Loc["shopping_decrease"]" disabled="@(editQuantity <= 1)" @onclick="() => editQuantity--">−</button>
+                </div>
+            </div>
+            <label class="mk-search"><input placeholder="@Loc["shopping_unit_placeholder"]" aria-label="@Loc["shopping_unit"]" @bind="editUnit" @bind:event="oninput" /></label>
+            <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(editName)" @onclick="SaveEditAsync">@Loc["save"]</button>
+            <button class="mk-btn is-soft is-block is-danger-text" @onclick="DeleteEditingAsync">@Loc["delete"]</button>
+        </div>
+    }
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="@(storeMenu is not null)" Title="@storeMenu?.Name" OnDismiss="() => storeMenu = null">
+    <div class="mk-sheet-list" dir="@Loc.Direction">
+        <button class="is-danger" @onclick="RequestDeleteFromMenu">🗑️ @Loc["shopping_delete_store"]</button>
+    </div>
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="@(shopPendingDeletion is not null)" Title="@Loc["shopping_delete_store_q"]" Eyebrow="@Loc["shopping_delete_store_eyebrow"]" OnDismiss="() => shopPendingDeletion = null">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <button class="mk-btn is-lg is-block is-danger-fill" @onclick="ConfirmDeleteShopAsync">@Loc.T("shopping_delete_store_named", shopPendingDeletion?.Name ?? "")</button>
+        <button class="mk-btn is-soft is-block" @onclick="() => shopPendingDeletion = null">@Loc["cancel"]</button>
     </div>
 </NxtBottomSheet>
 
 @code {
     private readonly Dictionary<string, string> itemDrafts = new();
+    private readonly HashSet<string> expanded = new();
+    private readonly HashSet<string> showBought = new();
     private List<ShoppingShop> shops = new();
     private string uid = "";
     private bool isLoading = true;
+    private bool byAisle;
+    private bool isAddingWeek;
+    private string errorMessage = "";
+
     private bool showAddShop;
     private string newShopName = "";
     private string addShopError = "";
-    private string errorMessage = "";
     private ShoppingShop? shopPendingDeletion;
+    private ShoppingShop? storeMenu;
+
+    private bool showAddItem;
+    private string newItemName = "";
+    private string? newItemShopId;
+
+    private ShoppingItem? editing;
+    private ShoppingShop? editingShop;
+    private string editName = "";
+    private int editQuantity = 1;
+    private string editUnit = "";
+
+    private string SummaryText
+    {
+        get
+        {
+            var left = shops.Sum(s => s.Items.Values.Count(i => !i.IsBought));
+            if (left == 0) return Loc["shopping_summary_empty"];
+            return shops.Count > 1 ? Loc.T("shopping_summary", left, shops.Count) : Loc.T("shopping_summary_one", left);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,16 +276,18 @@
         }
 
         uid = user.Uid;
-        await LoadShopsAsync();
+        await LoadShopsAsync(first: true);
     }
 
-    private async Task LoadShopsAsync()
+    // `first` shows the skeleton and opens the first store; later refreshes are silent so toggling an item doesn't flash.
+    private async Task LoadShopsAsync(bool first = false)
     {
-        isLoading = true;
+        if (first) isLoading = true;
         errorMessage = "";
         try
         {
             shops = await ShoppingListService.GetShopsAsync(uid);
+            if (first && shops.Count > 0) expanded.Add(shops[0].Id);
         }
         catch (Exception ex)
         {
@@ -138,19 +299,26 @@
         }
     }
 
-    private void OpenAddShop()
+    private void ToggleStore(string id) { if (!expanded.Remove(id)) expanded.Add(id); }
+    private void ToggleBought(string id) { if (!showBought.Remove(id)) showBought.Add(id); }
+
+    private static string QuantityText(ShoppingItem item, bool always = false)
     {
-        newShopName = "";
-        addShopError = "";
-        showAddShop = true;
+        var unit = string.IsNullOrWhiteSpace(item.Unit) ? "" : " " + item.Unit;
+        if (item.Quantity <= 1 && unit.Length == 0) return always ? "1" : "";
+        return $"{Math.Max(1, item.Quantity)}{unit}";
     }
 
-    private void CloseAddShop()
+    private string Subtitle(ShoppingShop shop, ShoppingItem item)
     {
-        showAddShop = false;
-        newShopName = "";
-        addShopError = "";
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(item.SourceMeal)) parts.Add(Loc.T("shopping_for_meal", item.SourceMeal));
+        if (shops.Count > 1) parts.Add(shop.Name);
+        return string.Join(" · ", parts);
     }
+
+    private void OpenAddShop() { newShopName = ""; addShopError = ""; showAddShop = true; }
+    private void CloseAddShop() { showAddShop = false; newShopName = ""; addShopError = ""; }
 
     private async Task AddShopAsync()
     {
@@ -158,45 +326,157 @@
         addShopError = "";
         try
         {
-            await ShoppingListService.AddShopAsync(uid, newShopName);
+            var shop = await ShoppingListService.AddShopAsync(uid, newShopName);
+            expanded.Add(shop.Id);
             CloseAddShop();
             await LoadShopsAsync();
         }
         catch (Exception ex) { addShopError = ex.Message; }
     }
 
-    private string GetItemDraft(string shopId) => itemDrafts.TryGetValue(shopId, out var value) ? value : "";
-    private void SetItemDraft(string shopId, string value) => itemDrafts[shopId] = value;
+    private string GetDraft(string shopId) => itemDrafts.TryGetValue(shopId, out var value) ? value : "";
+    private void SetDraft(string shopId, ChangeEventArgs e) => itemDrafts[shopId] = e.Value?.ToString() ?? "";
 
-    private async Task AddItemAsync(string shopId)
+    private async Task OnQuickAddKey(KeyboardEventArgs e, string shopId)
     {
+        if (e.Key == "Enter") await QuickAddAsync(shopId);
+    }
+
+    private async Task QuickAddAsync(string shopId)
+    {
+        var name = GetDraft(shopId).Trim();
+        if (name.Length == 0) return;
         try
         {
-            await ShoppingListService.AddItemAsync(uid, shopId, GetItemDraft(shopId));
+            await ShoppingListService.AddItemAsync(uid, shopId, name, new ShoppingItemOptions(Aisle: Aisles.For(name).Key));
             itemDrafts[shopId] = "";
             await LoadShopsAsync();
         }
         catch (Exception ex) { errorMessage = ex.Message; }
     }
 
-    private async Task ToggleItemAsync(string shopId, ShoppingItem item)
+    private void OpenAddItem()
     {
-        try { await ShoppingListService.SetItemBoughtAsync(uid, shopId, item.Id, !item.IsBought); await LoadShopsAsync(); }
+        newItemName = "";
+        newItemShopId = shops.FirstOrDefault()?.Id;
+        showAddItem = true;
+    }
+
+    private async Task AddItemFromSheetAsync()
+    {
+        var name = newItemName.Trim();
+        if (name.Length == 0) return;
+        try
+        {
+            var shopId = newItemShopId ?? shops.FirstOrDefault()?.Id
+                         ?? (await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"])).Id;
+            await ShoppingListService.AddItemAsync(uid, shopId, name, new ShoppingItemOptions(Aisle: Aisles.For(name).Key));
+            showAddItem = false;
+            await LoadShopsAsync();
+        }
         catch (Exception ex) { errorMessage = ex.Message; }
     }
 
-    private async Task DeleteItemAsync(string shopId, string itemId)
+    private async Task ToggleItemAsync(ShoppingShop shop, ShoppingItem item)
     {
-        try { await ShoppingListService.DeleteItemAsync(uid, shopId, itemId); await LoadShopsAsync(); }
-        catch (Exception ex) { errorMessage = ex.Message; }
+        try
+        {
+            item.IsBought = !item.IsBought;                       // optimistic: the list reacts immediately
+            item.BoughtAtUtc = item.IsBought ? DateTime.UtcNow : null;
+            await ShoppingListService.SetItemBoughtAsync(uid, shop.Id, item.Id, item.IsBought);
+        }
+        catch (Exception ex) { errorMessage = ex.Message; await LoadShopsAsync(); }
     }
 
-    private void RequestDeleteShop(ShoppingShop shop) => shopPendingDeletion = shop;
-    private void CancelDeleteShop() => shopPendingDeletion = null;
+    private async Task ChangeQuantityAsync(ShoppingShop shop, ShoppingItem item, int delta)
+    {
+        var next = Math.Max(1, item.Quantity + delta);
+        if (next == item.Quantity) return;
+        item.Quantity = next;
+        try { await ShoppingListService.SetItemQuantityAsync(uid, shop.Id, item.Id, next); }
+        catch (Exception ex) { errorMessage = ex.Message; await LoadShopsAsync(); }
+    }
+
+    private void OpenEdit(ShoppingShop shop, ShoppingItem item)
+    {
+        editing = item;
+        editingShop = shop;
+        editName = item.Name;
+        editQuantity = Math.Max(1, item.Quantity);
+        editUnit = item.Unit ?? "";
+    }
+
+    private void CloseEdit() { editing = null; editingShop = null; }
+
+    private async Task SaveEditAsync()
+    {
+        if (editing is null || editingShop is null) return;
+        try
+        {
+            await ShoppingListService.UpdateItemAsync(uid, editingShop.Id, editing.Id, editName, editQuantity, editUnit);
+            CloseEdit();
+            await LoadShopsAsync();
+        }
+        catch (Exception ex) { errorMessage = ex.Message; CloseEdit(); }
+    }
+
+    private async Task DeleteEditingAsync()
+    {
+        if (editing is null || editingShop is null) return;
+        try
+        {
+            await ShoppingListService.DeleteItemAsync(uid, editingShop.Id, editing.Id);
+            CloseEdit();
+            await LoadShopsAsync();
+        }
+        catch (Exception ex) { errorMessage = ex.Message; CloseEdit(); }
+    }
+
+    private void RequestDeleteFromMenu() { shopPendingDeletion = storeMenu; storeMenu = null; }
+
     private async Task ConfirmDeleteShopAsync()
     {
         if (shopPendingDeletion is null) return;
-        try { await ShoppingListService.DeleteShopAsync(uid, shopPendingDeletion.Id); shopPendingDeletion = null; await LoadShopsAsync(); }
+        try
+        {
+            await ShoppingListService.DeleteShopAsync(uid, shopPendingDeletion.Id);
+            expanded.Remove(shopPendingDeletion.Id);
+            shopPendingDeletion = null;
+            await LoadShopsAsync();
+        }
         catch (Exception ex) { errorMessage = ex.Message; }
+    }
+
+    // The missing link between Week and Shopping: every ingredient of this week's remaining meals that isn't on a list yet.
+    private async Task AddWeekIngredientsAsync()
+    {
+        isAddingWeek = true;
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var monday = today.AddDays(-(7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7);
+            var week = await MealService.GetWeekAsync(monday, monday.AddDays(6));
+            var meals = week.Where(m => m.Date >= today && !string.IsNullOrWhiteSpace(m.MealId)).ToList();
+            if (meals.Count == 0) { Toasts.Show(Loc["shopping_week_no_meals"]); return; }
+
+            var known = shops.SelectMany(s => s.Items.Values).Select(i => i.Name.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            var added = 0;
+            foreach (var meal in meals)
+            {
+                foreach (var ingredient in meal.Ingredients.Select(i => i.Trim()).Where(i => i.Length > 0))
+                {
+                    if (!known.Add(ingredient)) continue;
+                    await ShoppingListService.AddItemAsync(uid, shop.Id, ingredient, new ShoppingItemOptions(Aisle: Aisles.For(ingredient).Key, SourceMeal: meal.Name));
+                    added++;
+                }
+            }
+
+            expanded.Add(shop.Id);
+            await LoadShopsAsync();
+            Toasts.Show(added == 0 ? Loc["shopping_week_nothing_new"] : Loc.T("shopping_week_added", added, shop.Name));
+        }
+        catch (Exception ex) { Toasts.Show(ex.Message, isError: true); }
+        finally { isAddingWeek = false; }
     }
 }

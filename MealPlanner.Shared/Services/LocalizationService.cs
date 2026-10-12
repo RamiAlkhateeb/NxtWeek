@@ -389,6 +389,39 @@ public class LocalizationService : ILocalizationService
         ["shopping_store_placeholder"] = new() { ["ar"] = "اسم المتجر، مثل كارفور أو بنده", ["en"] = "Store name, e.g. Walmart", ["de"] = "Name des Geschäfts, z. B. REWE" },
         ["shopping_delete_store_q"] = new() { ["ar"] = "حذف المتجر؟", ["en"] = "Delete Store?", ["de"] = "Geschäft löschen?" },
         ["shopping_delete_store_eyebrow"] = new() { ["ar"] = "سيُحذف المتجر وكل العناصر الموجودة فيه.", ["en"] = "The store and all its items will be deleted.", ["de"] = "Das Geschäft und alle Artikel darin werden gelöscht." },
+        // {0} = items left to buy, {1} = number of stores
+        ["shopping_summary"] = new() { ["ar"] = "{0} متبقية في {1} متاجر", ["en"] = "{0} left to buy in {1} stores", ["de"] = "{0} offen in {1} Geschäften" },
+        ["shopping_summary_one"] = new() { ["ar"] = "{0} متبقية للشراء", ["en"] = "{0} left to buy", ["de"] = "{0} noch zu kaufen" },
+        ["shopping_summary_empty"] = new() { ["ar"] = "لا شيء للشراء", ["en"] = "Nothing left to buy", ["de"] = "Nichts mehr zu kaufen" },
+        ["shopping_add_week_ingredients"] = new() { ["ar"] = "أضف مكونات وجبات هذا الأسبوع", ["en"] = "Add this week's ingredients", ["de"] = "Zutaten dieser Woche hinzufügen" },
+        ["shopping_by_store"] = new() { ["ar"] = "حسب المتجر", ["en"] = "By store", ["de"] = "Nach Geschäft" },
+        ["shopping_by_aisle"] = new() { ["ar"] = "حسب القسم", ["en"] = "By aisle", ["de"] = "Nach Abteilung" },
+        // {0} = bought count, {1} = total
+        ["shopping_progress"] = new() { ["ar"] = "{0} من {1}", ["en"] = "{0} of {1}", ["de"] = "{0} von {1}" },
+        // {0} = bought count
+        ["shopping_bought_n"] = new() { ["ar"] = "تم شراؤها ({0})", ["en"] = "Bought ({0})", ["de"] = "Gekauft ({0})" },
+        ["shopping_store_options"] = new() { ["ar"] = "خيارات المتجر", ["en"] = "Store options", ["de"] = "Geschäftsoptionen" },
+        ["shopping_expand"] = new() { ["ar"] = "توسيع", ["en"] = "Expand", ["de"] = "Aufklappen" },
+        ["shopping_item_placeholder"] = new() { ["ar"] = "اسم العنصر", ["en"] = "Item name", ["de"] = "Artikelname" },
+        ["shopping_which_store"] = new() { ["ar"] = "أي متجر؟", ["en"] = "Which store?", ["de"] = "Welches Geschäft?" },
+        ["shopping_item_name"] = new() { ["ar"] = "اسم العنصر", ["en"] = "Item name", ["de"] = "Artikelname" },
+        ["shopping_quantity"] = new() { ["ar"] = "الكمية", ["en"] = "Quantity", ["de"] = "Menge" },
+        ["shopping_unit"] = new() { ["ar"] = "الوحدة", ["en"] = "Unit", ["de"] = "Einheit" },
+        ["shopping_unit_placeholder"] = new() { ["ar"] = "الوحدة (كغ، لتر، حزمة…)", ["en"] = "Unit (kg, l, bunch…)", ["de"] = "Einheit (kg, l, Bund …)" },
+        ["shopping_increase"] = new() { ["ar"] = "زيادة", ["en"] = "Increase", ["de"] = "Mehr" },
+        ["shopping_decrease"] = new() { ["ar"] = "إنقاص", ["en"] = "Decrease", ["de"] = "Weniger" },
+        // {0} = meal name
+        ["shopping_for_meal"] = new() { ["ar"] = "لـ{0}", ["en"] = "for {0}", ["de"] = "für {0}" },
+        ["shopping_week_no_meals"] = new() { ["ar"] = "لا توجد وجبات مخططة لبقية هذا الأسبوع.", ["en"] = "No meals planned for the rest of this week.", ["de"] = "Für den Rest der Woche sind keine Gerichte geplant." },
+        ["shopping_week_nothing_new"] = new() { ["ar"] = "كل المكونات موجودة في قوائمك بالفعل.", ["en"] = "Every ingredient is already on your lists.", ["de"] = "Alle Zutaten stehen schon auf deinen Listen." },
+        // {0} = number added, {1} = store name
+        ["shopping_week_added"] = new() { ["ar"] = "أُضيفت {0} مكونات إلى {1}", ["en"] = "Added {0} ingredients to {1}", ["de"] = "{0} Zutaten zu {1} hinzugefügt" },
+        ["aisle_produce"] = new() { ["ar"] = "خضار وفواكه", ["en"] = "Produce", ["de"] = "Obst & Gemüse" },
+        ["aisle_bakery"] = new() { ["ar"] = "مخبوزات", ["en"] = "Bakery", ["de"] = "Backwaren" },
+        ["aisle_dairy"] = new() { ["ar"] = "ألبان وبيض", ["en"] = "Dairy & eggs", ["de"] = "Milch & Eier" },
+        ["aisle_meat"] = new() { ["ar"] = "لحوم ودواجن وأسماك", ["en"] = "Meat & fish", ["de"] = "Fleisch & Fisch" },
+        ["aisle_pantry"] = new() { ["ar"] = "مواد جافة", ["en"] = "Pantry", ["de"] = "Vorrat" },
+        ["aisle_other"] = new() { ["ar"] = "أخرى", ["en"] = "Other", ["de"] = "Sonstiges" },
 
         // Friends
         ["friends_title"] = new() { ["ar"] = "الأصدقاء", ["en"] = "Friends", ["de"] = "Freunde" },
