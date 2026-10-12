@@ -79,7 +79,10 @@ archetype `Tag`, then a name keyword (matched in all three languages), then the
 
 ## Look and feel
 
-Styled to match the sibling `../Syrian-Radio` *player* (its light theme, not its
+The 2.0 redesign (see `docs/REDESIGN.md`) lives in `MealPlanner.Web/wwwroot/css/mk.css` (`mk-*` classes, loaded after `app.css`); new UI should use those
+classes. `app.css` only keeps what the remaining legacy pages (recover, install) still use.
+
+Originally styled to match the sibling `../Syrian-Radio` *player* (its light theme, not its
 dark Ninar page): light grey page (`#f7f7f9`), white cards with ~28px radius,
 near-black text (`#1c1c1e`), pink-red accent (`#ff2d55`), black round/pill primary
 buttons, grey pill chips. Colours live in the `:root` tokens at the top of

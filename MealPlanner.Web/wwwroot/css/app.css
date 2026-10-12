@@ -1,19 +1,11 @@
-/* Cairo is imported by Nxt.UI (nxt.css). */
-
-/* ==========================================================================
-   Theme tokens — radio theme (black / white / red). (--space-*, --color-accent and friends are appended further down
-   in the same :root — this used to be two separate blocks from different
-   iterations of the app; kept as one now.)
-   ========================================================================== */
 :root {
-    /* Colours come from the shared family tokens in Nxt.UI (nxt.css), which also
-       carry the dark theme. These aliases keep the existing selectors working. */
+    
     --color-primary: var(--nxt-accent);
     --color-primary-light: var(--nxt-accent-soft);
     --color-primary-hover: var(--nxt-accent-hover);
     --color-primary-deep: var(--nxt-accent-hover);
     --color-ink: var(--nxt-ink);
-    --color-bg-light: var(--nxt-inset);      /* inset / pill surface */
+    --color-bg-light: var(--nxt-inset);      
     --color-page: var(--nxt-page);
     --color-card-bg: var(--nxt-card);
     --color-text-main: var(--nxt-text);
@@ -36,11 +28,10 @@
     --radius-xl: var(--nxt-radius-xl);
     --radius-pill: var(--nxt-radius-pill);
 
-    /* The fixed bottom nav; Nxt.UI lifts the AI composer and toasts above it. */
+    
     --nxt-bottom-nav-h: 76px;
 
-    /* Meal-type tokens kept (MealTypeStyle still emits the classes) but the
-       palette is neutral so the app stays black / white / red. */
+    
     --type-meat-bg: var(--nxt-inset);       --type-meat-fg: var(--nxt-text);
     --type-chicken-bg: var(--nxt-inset);    --type-chicken-fg: var(--nxt-text);
     --type-fish-bg: var(--nxt-inset);       --type-fish-fg: var(--nxt-text);
@@ -48,22 +39,13 @@
     --type-vegan-bg: var(--nxt-inset);      --type-vegan-fg: var(--nxt-text);
     --type-default-bg: var(--nxt-inset);    --type-default-fg: var(--nxt-text);
 }
-
-/* ==========================================================================
-   Reset & base
-   ========================================================================== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
+html,body {
     font-family: 'Cairo', sans-serif;
     background: var(--color-bg-light);
     min-height: 100vh;
     color: var(--color-text-main);
 }
-
-/* Blazor adds this element to index.html for genuine fatal errors.  It must
-   remain hidden during normal operation; the runtime makes it visible only
-   when an unhandled error occurs. */
 #blazor-error-ui {
     display: none;
     background: #fff0f3;
@@ -75,14 +57,12 @@ html, body {
     width: 100%;
     z-index: 2000;
 }
-
 #blazor-error-ui .dismiss {
     cursor: pointer;
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
 }
-
 .app {
     width: 100%;
     max-width: 600px;
@@ -94,400 +74,35 @@ html, body {
     flex-direction: column;
 }
 
+
 @media (min-width: 641px) {
     .app {
         border-radius: var(--radius-lg);
         min-height: calc(100vh - 64px);
         border: 1px solid var(--color-border);
-    }
-}
-
+    }}
 .app-content-wrapper { padding-bottom: 90px; flex: 1; }
-
-/* ==========================================================================
-   Buttons
-   ========================================================================== */
-.primary-btn,
-.btn-playful {
-    width: 100%;
-    display: block;
-    background: var(--color-primary);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    padding: 14px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-
-.primary-btn:hover:not(:disabled),
-.btn-playful:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-    box-shadow: var(--shadow-md);
-}
-
-.primary-btn:active:not(:disabled),
-.btn-playful:active:not(:disabled) { transform: scale(0.98); }
-
-.primary-btn:disabled,
-.btn-playful:disabled {
-    background: var(--color-border);
-    box-shadow: none;
-    color: var(--color-text-secondary);
-    cursor: not-allowed;
-}
-
-.secondary-btn {
-    width: 100%;
-    background: var(--color-bg-light);
-    color: var(--color-text-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: 14px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.secondary-btn:hover { background: var(--color-border); }
-
-/* ==========================================================================
-   Cards (generic container)
-   ========================================================================== */
-.card-playful {
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
-    background: var(--color-card-bg);
-    transition: box-shadow 0.2s ease;
-}
-
-/* ==========================================================================
-   Header / dashboard bar
-   ========================================================================== */
 .header { padding: 20px 16px 12px; border-bottom: 1px solid var(--color-border); }
-
-.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-
 .header h1 { font-size: 20px; font-weight: 700; color: var(--color-text-main); }
-
 .header p { font-size: 13px; color: var(--color-text-secondary); }
-
-.dashboard-header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 16px 8px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.user-greeting {
-    display: flex;
-    flex-direction: column;
-    font-size: 13px;
-    color: var(--color-text-secondary);
-}
-
-.logout-btn {
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    font-size: 11px;
-    cursor: pointer;
-    text-align: start;
-    padding: 2px 0 0;
-    text-decoration: underline;
-}
-
-.add-meal-floating-btn {
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    border: none;
-    padding: 6px 12px;
-    border-radius: var(--radius-pill);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.add-meal-floating-btn:hover { background: var(--color-primary); color: #fff; }
-
-.add-meal-btn-sm {
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    border: none;
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    border-radius: 50%;
-    font-size: 16px;
-    line-height: 1;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.add-meal-btn-sm:hover { background: var(--color-primary); color: #fff; }
-
-/* ==========================================================================
-   Empty state
-   ========================================================================== */
 .empty-state {
     margin: 16px;
     padding: 32px 24px;
     text-align: center;
 }
-
 .empty-state-icon { font-size: 40px; margin-bottom: 10px; }
-
-.empty-state-title { font-size: 15px; font-weight: 700; color: var(--color-text-main); }
-
-.empty-state-text { font-size: 13px; color: var(--color-text-secondary); margin-top: 6px; line-height: 1.5; }
-
-.loading-text { padding: 32px 16px; color: var(--color-text-secondary); text-align: center; font-size: 14px; }
-
-/* Secondary (non-selected) meal card in the week list */
 .meal-card.secondary { box-shadow: none; cursor: pointer; }
 
-.meal-card-badge-row { display: flex; gap: 4px; }
-
-.side-dish-chip-sm {
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    background: var(--color-bg-light);
-    color: var(--color-text-secondary);
-    margin-inline-end: 4px;
-}
-
-/* ==========================================================================
-   Onboarding
-   ========================================================================== */
-.onboarding-container {
-    padding: 32px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100%;
-    flex: 1;
-}
-
-.onboarding-card { width: 100%; text-align: center; }
-
-.onboarding-card .logo { font-size: 56px; margin-bottom: 16px; }
-
-.playful-title { font-size: 24px; font-weight: 700; color: var(--color-text-main); margin-bottom: 12px; }
-
-.onboarding-card .subtitle {
-    font-size: 14px;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-    margin-bottom: 32px;
-}
-
-.step-indicator {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--color-primary);
-    background: var(--color-primary-light);
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: var(--radius-pill);
-    margin-bottom: 16px;
-}
-
-/* Logo + soft floating accents (subtle, not bouncy) */
-.logo-container { position: relative; display: inline-block; margin-bottom: 24px; width: 100px; height: 100px; }
-
-.emoji-bounce { font-size: 56px; display: inline-block; animation: emoji-float-anim 4s infinite ease-in-out; }
-
-.emoji-float { position: absolute; font-size: 22px; animation: emoji-float-anim 5s infinite ease-in-out; opacity: 0.7; }
-
-.emoji-delay-1 { top: -10px; left: -10px; animation-delay: 0.5s; }
-.emoji-delay-2 { top: -15px; right: -10px; animation-delay: 1.5s; }
-.emoji-delay-3 { bottom: -5px; right: -15px; animation-delay: 1s; }
 
 @keyframes emoji-float-anim {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
 }
-
-/* ==========================================================================
-   Form fields
-   ========================================================================== */
-.form-group { margin-bottom: 24px; text-align: start; }
-
-.playful-label,
-.form-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    margin-bottom: 8px;
-}
-
-.playful-input,
-.form-group input,
-.form-group textarea,
-.meal-name-input,
-.ingredients-textarea {
-    width: 100%;
-    padding: 14px 18px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    font-size: 15px;
-    font-weight: 500;
-    font-family: inherit;
-    outline: none;
-    background: var(--color-bg-light);
-    transition: border-color 0.2s;
-}
-
-.ingredients-textarea { resize: vertical; text-align: start; }
-
-.playful-input:focus,
-.form-group input:focus,
-.form-group textarea:focus,
-.meal-name-input:focus { border-color: var(--color-primary); background: var(--color-card-bg); }
-
 .error-msg { display: block; color: var(--color-danger); font-size: 12px; margin-top: 6px; text-align: start; }
-
-/* ==========================================================================
-   Cuisine selection grid
-   ========================================================================== */
-.cuisines-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-
-.cuisine-card {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-card-bg);
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-    text-align: start;
-}
-
-.cuisine-card.active,
-.playful-card-selected {
-    border-color: var(--color-primary);
-    background: var(--color-primary-light);
-}
-
-.cuisine-card .flag { font-size: 22px; margin-bottom: 4px; }
-
-.cuisine-card .name { font-size: 15px; font-weight: 700; color: var(--color-text-main); }
-
-.cuisine-card .description { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
-
-/* ==========================================================================
-   Meal selection (onboarding)
-   ========================================================================== */
-.counter-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    border-radius: var(--radius-pill);
-    font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 16px;
-}
-
-.meals-selection-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    max-height: 380px;
-    overflow-y: auto;
-    padding: 4px;
-    margin-bottom: 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-}
-
-.meal-selection-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-card-bg);
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-}
-
-.meal-selection-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
-
-.meal-selection-card.disabled { opacity: 0.5; cursor: not-allowed; }
-
-.meal-selection-card .meal-details { display: flex; flex-direction: column; text-align: start; }
-
-.meal-selection-card .meal-name { font-size: 14px; font-weight: 600; color: var(--color-text-main); }
-
-.selection-checkbox {
-    width: 20px;
-    height: 20px;
-    border: 1.5px solid var(--color-border);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: var(--color-primary);
-}
-
-.meal-selection-card.active .selection-checkbox { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-
-/* ==========================================================================
-   Badges
-   ========================================================================== */
-.badges-row { display: flex; gap: 6px; margin-top: 4px; }
-
 .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-
-.cuisine-badge { background: var(--color-bg-light); color: #fff; }
 .type-badge { background: var(--color-bg-light); color: #fff; }
-.favorite-badge,
-.meal-card-badge.favorite { background: var(--color-primary-light); color: #fff; font-weight: 600; }
-
-.playful-badge {
-    background: var(--color-primary-light);
-    color: var(--color-favorite);
-    border: none;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 11px;
-}
-
-/* ==========================================================================
-   Wizard steps (EditPage)
-   ========================================================================== */
-.wizard-steps {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    background: var(--color-bg-light);
-    border-bottom: 1px solid var(--color-border);
-}
-
 .step { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; }
-
 .step.active { opacity: 1; }
-
 .step-num {
     width: 28px;
     height: 28px;
@@ -500,205 +115,15 @@ html, body {
     font-weight: 600;
     color: var(--color-text-secondary);
 }
-
 .step.active .step-num { border-color: var(--color-primary); color: var(--color-primary); }
-
 .step.current .step-num {
     background: var(--color-primary);
     color: #fff;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 4px var(--color-primary-light);
 }
-
-.step-label { font-size: 11px; font-weight: 600; color: var(--color-text-secondary); }
-
-.step.current .step-label { color: var(--color-primary); }
-
-.step-divider { flex: 1; height: 2px; background: var(--color-border); margin: 0 12px; }
-
-.wizard-content { padding: 24px 16px; flex: 1; }
-
-.wizard-step-panel h2 { font-size: 18px; font-weight: 700; color: var(--color-text-main); margin-bottom: 4px; text-align: start; }
-
-.step-desc { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 24px; text-align: start; }
-
-.wizard-actions { display: flex; gap: 12px; margin-top: 32px; }
-
-/* Meal type chip cards */
-.meal-types-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-
-.type-chip-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-    background: var(--color-card-bg);
-}
-
-.type-chip-card.active { border-color: var(--color-primary); background: var(--color-primary-light); }
-
-.type-chip-card .emoji { font-size: 26px; margin-bottom: 6px; }
-
-.type-chip-card .label { font-size: 13px; font-weight: 600; color: var(--color-text-main); }
-
-/* Suggestion chips */
-.suggestions-section { margin-top: 20px; text-align: start; }
-
-.suggestions-section .section-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    display: block;
-    margin-bottom: 8px;
-}
-
-.suggestions-grid,
-.side-dishes-selection,
-.side-dishes-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.suggestion-chip,
-.side-dish-toggle-chip {
-    padding: 8px 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    font-size: 13px;
-    background: var(--color-card-bg);
-    cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-}
-
-.suggestion-chip:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-light); }
-
-.side-dish-toggle-chip { padding: 6px 14px; font-size: 12px; }
-
-.side-dish-toggle-chip.active { background: var(--color-primary-light); border-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
-
-.side-dish-chip {
-    background: var(--color-bg-light);
-    color: var(--color-primary);
-    padding: 6px 12px;
-    border-radius: var(--radius-pill);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-/* Favorite toggle card */
-.favorite-toggle-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    background: var(--color-card-bg);
-    margin-bottom: 20px;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
-}
-
-.favorite-toggle-card.favorite { background: var(--color-bg-light); border-color: var(--color-favorite); }
-
-.favorite-toggle-card .star-icon { font-size: 26px; }
-
-.favorite-toggle-card .toggle-text { text-align: start; display: flex; flex-direction: column; }
-
-.favorite-toggle-card .title { font-size: 14px; font-weight: 600; color: var(--color-text-main); }
-
-.favorite-toggle-card .desc { font-size: 11px; color: var(--color-text-secondary); }
-
-.favorite-toggle-btn {
-    width: 100%;
-    background: var(--color-card-bg);
-    color: var(--color-favorite);
-    border: 1px solid var(--color-favorite);
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.favorite-toggle-btn.active { background: var(--color-favorite); color: #fff; }
-
-/* ==========================================================================
-   Meal details view
-   ========================================================================== */
-.meal-details-hero {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-    padding: 32px 24px;
-    color: #fff;
-    text-align: center;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-}
-
-.meal-details-hero .meal-type-icon { font-size: 44px; margin-bottom: 8px; }
-
-.meal-details-hero .meal-title { font-size: 21px; font-weight: 700; margin-bottom: 12px; }
-
-.meal-details-hero .badges-row { justify-content: center; }
-
-.meal-details-hero .badge {
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: var(--radius-pill);
-}
-
 .details-body { padding: 24px 16px; }
-
-.details-section { margin-bottom: 24px; text-align: start; }
-
-.details-section h2 {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--color-text-main);
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-}
-
-.ingredients-list { list-style: none; }
-
-.ingredients-list li { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
-
-.ingredients-list .bullet { font-size: 10px; color: var(--color-primary); }
-
-.action-buttons { margin-top: 32px; }
-
-.back-nav { padding: 12px 16px 0; text-align: left; }
-
-.back-btn { background: none; border: none; color: var(--color-text-secondary); font-size: 14px; cursor: pointer; }
-
-.highlight-card { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
-
-.edit-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.edit-header h1 { font-size: 18px; font-weight: 700; }
-
-.close-btn { background: none; border: none; font-size: 20px; color: var(--color-text-secondary); cursor: pointer; }
-
-/* ==========================================================================
-   Week view
-   ========================================================================== */
-.week-header { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
-
-.week-label { font-size: 14px; font-weight: 700; color: var(--color-text-main); }
-
 .week-nav { display: flex; gap: 4px; }
-
 .week-nav button {
     background: var(--color-card-bg);
     border: 1px solid var(--color-border);
@@ -708,9 +133,6 @@ html, body {
     color: var(--color-text-secondary);
     cursor: pointer;
 }
-
-.day-strip { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; }
-
 .day-pill {
     display: flex;
     flex-direction: column;
@@ -723,14 +145,10 @@ html, body {
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
-
 .day-pill.active { background: var(--color-primary); border-color: var(--color-primary); }
-
 .day-pill .day-name { font-size: 11px; color: var(--color-text-secondary); }
 .day-pill .day-num { font-size: 15px; font-weight: 700; color: var(--color-text-main); }
-.day-pill.active .day-name,
-.day-pill.active .day-num { color: #fff; }
-
+.day-pill.active .day-name,.day-pill.active .day-num { color: #fff; }
 .meal-card {
     margin: 0 16px 10px;
     background: var(--color-card-bg);
@@ -740,181 +158,21 @@ html, body {
     box-shadow: var(--shadow-sm);
 }
 
-.meal-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-
-.meal-card-day { font-size: 12px; color: var(--color-text-secondary); }
-
-.meal-card-badge {
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: var(--radius-pill);
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    font-weight: 600;
-}
-
-.meal-card-name { font-size: 16px; font-weight: 700; color: var(--color-text-main); text-align: start; line-height: 1.4; }
-
-.meal-card-actions { display: flex; gap: 8px; margin-top: 14px; }
-
-.meal-card-actions button {
-    flex: 1;
-    padding: 10px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-weight: 600;
-    background: var(--color-card-bg);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-}
-
-.meal-card-actions button.primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
-
-.meal-card-actions button:hover { opacity: 0.85; }
-
-.section-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    padding: 4px 16px 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    text-align: start;
-}
-
-/* ==========================================================================
-   Alerts / banners / modals
-   ========================================================================== */
-.alert-playful {
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-primary);
-    box-shadow: var(--shadow-sm);
-    background: var(--color-primary-light);
-    color: var(--color-primary-hover);
-    font-weight: 600;
-}
-
-.link-request-banner {
-    background: var(--color-bg-light);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    margin: 16px;
-    padding: 16px;
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    text-align: start;
-    font-weight: 600;
-}
-
-.link-request-actions { display: flex; gap: 8px; }
-
-.link-request-actions button {
-    flex: 1;
-    padding: 8px;
-    border-radius: var(--radius-sm);
-    font-weight: 700;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-}
-
-.link-request-actions button:active { opacity: 0.85; }
-
-.btn-accept { background: var(--color-success); color: #fff; }
-.btn-reject { background: var(--color-danger); color: #fff; }
-
-/* ===========================================================================
-   Week and month planner views
-   ========================================================================== */
-.week-page-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--color-border); text-align: start; }
-.week-page-header h1 { font-size: 21px; margin-bottom: 5px; }
-.week-page-header p { color: var(--color-text-secondary); font-size: 14px; font-weight: 600; }
-.week-header-action { float: inline-end; min-height: 44px; border: 1px solid var(--color-border); color: var(--color-primary); background: var(--color-card-bg); border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font: inherit; font-size: 12px; }
-.week-profile-link, .week-share-link { width: 46px; height: 46px; min-height: 46px; padding: 0; margin-inline-start: var(--space-2); display: grid; place-items: center; border: 0; border-radius: 16px; color: var(--color-text-secondary); background: transparent; }
-.week-profile-link svg, .week-share-link svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }.week-profile-link:hover, .week-share-link:hover { background: var(--color-primary-light); color: var(--color-primary); }.week-profile-link:active, .week-share-link:active { transform: scale(.94); }.week-share-link:disabled { opacity: .55; cursor: wait; }
-/* Red nudge on the profile icon until the visitor chooses a username. */
-.week-profile-link { position: relative; }
-.profile-nudge-dot { position: absolute; top: 3px; inset-inline-start: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--color-danger); box-shadow: 0 0 0 3px var(--color-card-bg); animation: profile-nudge-pulse 1.6s ease-in-out infinite; pointer-events: none; }
 @keyframes profile-nudge-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.22); opacity: .8; } }
-.week-nav-wide { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
-.week-nav-wide button { flex: 1; background: var(--color-primary-light); color: var(--color-primary); border: 0; border-radius: var(--radius-sm); padding: 9px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.week-surprise { width: 100%; min-height: 44px; margin-top: var(--space-2); border: 1px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-card-bg); color: var(--color-primary); font: inherit; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
-.week-surprise svg, .compact-actions svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
-.compact-actions button.liked svg { fill: currentColor; }
-.week-empty-copy svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
-.compact-actions button.liked { color: var(--color-primary); }
-.week-cards { padding: 10px 16px; display: flex; flex-direction: column; gap: 7px; perspective: 900px; }
-.week-meal-card { width: 100%; background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 12px; box-shadow: 0 3px 10px rgba(89, 54, 42, .07); text-align: start; font: inherit; color: var(--color-text-main); transition: transform .2s ease, background-color .2s ease; }
-.week-meal-card-clickable { cursor: pointer; }
-.week-card-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.week-card-date { font-size: 14px; font-weight: 800; line-height: 1.3; }
-.week-card-name { font-size: 16px; font-weight: 700; margin-top: 3px; }
-.week-empty-card { border: 1px solid var(--color-border); background: var(--color-primary-light); cursor: pointer; min-height: 56px; }
-.week-empty-copy { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--color-text-secondary); font-size: 13px; margin-top: 3px; }
-.week-meal-card .meal-card-actions { margin: 5px 0 0; }
-.compact-actions { justify-content: flex-end; }
-.compact-actions button { flex: 0 0 44px; min-height: 44px; padding: 0; font-size: 18px; border-radius: 50%; }
-.compact-actions button:nth-child(2) { color: var(--color-primary); }
 .meal-changed { animation: mealFlip .6s ease-in-out; transform-style: preserve-3d; }
+
 @keyframes mealFlip { 0% { transform: rotateY(0); } 48% { transform: rotateY(90deg); } 52% { transform: rotateY(90deg); background: var(--color-primary-light); } 100% { transform: rotateY(0); } }
-
 .sheet-backdrop { position: fixed; inset: 0; z-index: 1200; background: rgba(48, 34, 28, .32); display: flex; align-items: flex-end; justify-content: center; }
-.bottom-sheet, .month-sheet { width: min(600px, 100%); background: var(--color-card-bg); border-radius: 24px 24px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); box-shadow: 0 -12px 35px rgba(48, 34, 28, .18); }
 .sheet-handle { width: 42px; height: 4px; border-radius: 9px; background: #d1d1d6; margin: 0 auto 12px; }
-.sheet-date { color: var(--color-text-secondary); font-size: 13px; margin: 0; }.bottom-sheet h2 { font-size: 19px; margin: 3px 0 14px; }
-.sheet-actions, .quick-picker, .move-days { display: grid; gap: 8px; }.sheet-actions button, .quick-picker button, .move-days button { min-height: 48px; border: 0; border-radius: 14px; background: var(--color-card-bg); box-shadow: 0 2px 8px rgba(89,54,42,.08); text-align: start; padding: 10px 14px; font: inherit; font-weight: 700; color: var(--color-text-main); }.sheet-actions .danger { color: var(--color-danger); }.quick-picker button { display: flex; justify-content: space-between; align-items: center; }.quick-picker small { color: var(--color-text-secondary); }
-.month-sheet { max-height: 92vh; overflow: auto; }.month-sheet .month-header { padding: 6px 0 12px; }.month-sheet .month-grid { padding-bottom: 0; }.month-sheet .month-cell { min-height: 56px; }
 
-/* Meal-selection flow */
-.selected-day-header { padding: var(--space-6) var(--space-4) var(--space-4); background: var(--color-primary-light); border-bottom: 1px solid var(--color-border); }
-.selected-day-header .caption { display: block; color: var(--color-text-secondary); }
-.selected-day-header strong { display: block; color: var(--color-primary-hover); font-size: 20px; margin-top: var(--space-1); }
-.selected-day-header h1 { font-size: 28px; line-height: 1.3; margin-top: var(--space-1); }
-.meal-selection-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
-.meal-selection-main { min-height: 44px; padding: 0; border: 0; background: transparent; text-align: start; color: var(--color-text-main); }
-.meal-selection-main h2 { font-size: 20px; line-height: 1.4; font-weight: 600; margin: 0 0 var(--space-1); }
-.meal-selection-actions { display: flex; align-items: center; gap: var(--space-2); }
-.meal-select-button { flex: 1; }.icon-action { min-width: 44px; width: 44px; padding: 0; border: 0; background: var(--color-primary-light); color: var(--color-primary); border-radius: 50%; font-size: 20px; }
-.day-selected { outline: 2px solid var(--color-primary); box-shadow: 0 0 0 4px rgba(228,111,90,.16), var(--shadow-md); transform: scale(1.01); }
-.toast-message { position: fixed; z-index: 1300; right: 50%; bottom: 92px; transform: translateX(50%); width: min(calc(100% - 32px), 480px); background: var(--color-text-main); color: #fff; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); box-shadow: var(--shadow-lg); text-align: center; font-size: 14px; animation: toastIn .2s ease; }
 @keyframes toastIn { from { opacity: 0; transform: translate(50%, 8px); } to { opacity: 1; transform: translate(50%, 0); } }
-
-.week-card-past {
-    opacity: 0.55;
-    filter: grayscale(40%);
-}
-
-.week-card-past .week-card-name,
-.week-card-past .week-card-date {
-    color: var(--color-text-secondary);
-}
-
-.week-card-past .meal-card-badge.favorite {
-    opacity: 0.7;
-}
-
-.month-page { padding-bottom: 90px; }
-.month-settings-back { display: inline-flex; align-items: center; min-height: 44px; margin: var(--space-3) var(--space-4) 0; color: var(--color-primary); font-size: 14px; font-weight: 700; text-decoration: none; }
-.month-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px; border-bottom: 1px solid var(--color-border); }
-.month-header h1 { font-size: 21px; }
-.month-header button { width: 36px; height: 36px; border: 0; background: var(--color-primary-light); color: var(--color-primary); border-radius: 50%; font: inherit; font-size: 25px; cursor: pointer; line-height: 1; }
-.month-weekdays, .month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.month-weekdays,.month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .month-weekdays { padding: 12px 10px 7px; color: var(--color-text-secondary); font-size: 10px; font-weight: 700; text-align: center; }
 .month-grid { padding: 0 10px 16px; border-top: 1px solid var(--color-border); border-right: 1px solid var(--color-border); }
 .month-cell { min-width: 0; min-height: 78px; padding: 6px 4px; border: 0; border-left: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); background: var(--color-card-bg); text-align: start; vertical-align: top; font: inherit; position: relative; color: var(--color-text-main); }
 button.month-cell:not(:disabled) { cursor: pointer; }
 .month-cell:disabled { opacity: 1; }
 .month-cell.today { background: var(--color-primary-light); box-shadow: inset 0 0 0 2px var(--color-primary); }
-.month-outside { background: var(--color-bg-light); }
-.month-day-number { display: block; font-size: 13px; font-weight: 800; }
-.month-meal-name { display: block; margin-top: 5px; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-primary-hover); font-weight: 700; }
-.month-favorite { position: absolute; left: 3px; bottom: 3px; font-size: 10px; }
-
-
 .custom-splash {
     display: flex;
     flex-direction: column;
@@ -927,14 +185,11 @@ button.month-cell:not(:disabled) { cursor: pointer; }
     width: 100px;
     animation: pulse 2s infinite;
 }
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
-
-/* ===========================================================================
-   NxtWeek design system — tokens and shared primitives
-   =========================================================================== */
 :root {
     --color-accent: #22a85a;
     --color-accent-light: rgba(34,168,90,.12);
@@ -947,112 +202,24 @@ button.month-cell:not(:disabled) { cursor: pointer; }
     --space-8: 32px;
     --space-12: 48px;
 }
-
-html, body { font-size: 16px; line-height: 1.5; }
-button, input, select, textarea { font: inherit; }
+html,body { font-size: 16px; line-height: 1.5; }
+button,input,select,textarea { font: inherit; }
 button { min-height: 44px; touch-action: manipulation; }
-button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(228, 111, 90, .35); outline-offset: 2px; }
-
-/* Typography hierarchy */
-.page-title, .header h1, .week-page-header h1 { font-size: 28px; line-height: 1.3; font-weight: 700; }
-.section-title, .details-section h2, .month-header h1 { font-size: 22px; line-height: 1.35; font-weight: 600; }
-.card-title, .week-card-name, .meal-card-name { font-size: 20px; line-height: 1.4; font-weight: 600; }
-.caption, .header p, .week-page-header p { font-size: 14px; line-height: 1.45; }
-
-/* Reusable button component and legacy button compatibility */
-.ui-button { min-height: 44px; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); border: 1px solid transparent; font-weight: 700; cursor: pointer; transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease; }
-.ui-button:active:not(:disabled), .primary-btn:active:not(:disabled), .secondary-btn:active:not(:disabled) { transform: scale(.98); }
-.ui-button:disabled { opacity: .55; cursor: not-allowed; }
-.ui-button-primary { color: #fff; background: var(--color-primary); box-shadow: var(--shadow-sm); }
-.ui-button-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
-.ui-button-secondary { color: var(--color-primary); background: var(--color-card-bg); border-color: var(--color-primary); }
-.ui-button-ghost { color: var(--color-primary); background: transparent; }
-.ui-button-danger, .danger-btn { color: var(--color-danger); background: var(--color-danger-light); border: 0; border-radius: var(--radius-md); min-height: 44px; padding: var(--space-3) var(--space-4); font-weight: 700; cursor: pointer; }
-.ghost-btn { color: var(--color-primary); background: transparent; border: 0; padding: var(--space-2); }
-
-/* Reusable card component and legacy card compatibility */
-.ui-card, .card-playful { background: var(--color-card-bg); border: 0; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
-.ui-card { padding: var(--space-4); }
-
-/* Inputs, chips and compact page rhythm */
-.playful-input { min-height: 48px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card-bg); color: var(--color-text-main); padding: var(--space-3) var(--space-4); box-shadow: inset 0 1px 2px rgba(75, 50, 39, .03); }
-.playful-input:focus { border-color: var(--color-primary); background: var(--color-card-bg); }
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline: 3px solid rgba(228, 111, 90, .35); outline-offset: 2px; }
+.header h1 { font-size: 28px; line-height: 1.3; font-weight: 700; }
+.caption,.header p { font-size: 14px; line-height: 1.45; }
 .ui-text-input { width: 100%; min-height: 48px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card-bg); color: var(--color-text-main); padding: var(--space-3) var(--space-4); box-shadow: inset 0 1px 2px rgba(75,50,39,.03); }
 .ui-text-input:focus { border-color: var(--color-primary); outline: 0; }
-.ui-filter-chip { min-height: 44px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-card-bg); color: var(--color-text-secondary); padding: var(--space-2) var(--space-3); cursor: pointer; }
-.ui-filter-chip.active { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary-hover); font-weight: 700; }
-.ui-page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); padding: var(--space-6) var(--space-4) var(--space-3); border-bottom: 1px solid var(--color-border); }
-.ui-page-header h1 { font-size: 28px; line-height: 1.3; font-weight: 700; margin: 0; }.ui-page-header p { color: var(--color-text-secondary); font-size: 14px; margin: var(--space-1) 0 0; }
-.ui-empty-state { text-align: center; padding: var(--space-8) var(--space-4); }.ui-empty-state-icon { font-size: 48px; margin-bottom: var(--space-3); }.ui-empty-state h2 { font-size: 22px; font-weight: 600; }.ui-empty-state p { color: var(--color-text-secondary); font-size: 14px; margin-top: var(--space-2); }
-
-.settings-sections { padding: var(--space-4); display: grid; gap: var(--space-3); }.settings-card { display: grid; gap: var(--space-3); }.settings-card h2 { font-size: 20px; font-weight: 600; margin: 0; }.settings-card p { color: var(--color-text-secondary); font-size: 14px; margin: 0; }.settings-card label { font-size: 14px; font-weight: 600; }.setting-id { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); background: var(--color-bg-light); border-radius: var(--radius-md); padding: var(--space-3); font-size: 14px; }.setting-id code { direction: ltr; color: var(--color-primary-hover); font-weight: 700; }.settings-choice, .settings-links { display: flex; flex-wrap: wrap; gap: var(--space-2); }.settings-feedback { padding: var(--space-3); text-align: center; font-size: 14px; }
-.settings-item-disabled { opacity: .58; background: var(--color-bg-light); filter: grayscale(.35); pointer-events: none; }.settings-item-disabled .caption { display: inline-block; margin-inline-start: 8px; font-size: 12px; }
-.new-meal-type-pills { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.meal-photo-card { background-position: center; background-size: cover; color: #fff; }.meal-photo-card h2, .meal-photo-card .badge, .meal-photo-card .meal-selection-main { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.75); }.meal-photo-card .badge { background: rgba(0,0,0,.36); border-color: rgba(255,255,255,.45); }
+.settings-sections { padding: var(--space-4); display: grid; gap: var(--space-3); }
+.settings-card { display: grid; gap: var(--space-3); }
+.settings-card h2 { font-size: 20px; font-weight: 600; margin: 0; }
+.settings-card p { color: var(--color-text-secondary); font-size: 14px; margin: 0; }
+.settings-card label { font-size: 14px; font-weight: 600; }
 #week-share-capture { padding: 22px; background: transparent; }
-
-.side-dish-toggle-chip { min-height: 44px; border-radius: var(--radius-pill); padding: var(--space-2) var(--space-3); }
 .header { padding: var(--space-6) var(--space-4) var(--space-3); }
 .header h1 { color: var(--color-text-main); }
-.dashboard-header-container, .week-page-header, .month-header, .details-body { padding-left: var(--space-4); padding-right: var(--space-4); }
-.link-request-banner, .alert-playful { border: 0; box-shadow: var(--shadow-sm); }
-.btn-accept { background: var(--color-accent); }.btn-reject { background: var(--color-danger); }
-
-/* ==========================================================================
-   Shopping list
-   ========================================================================== */
-.shopping-page { padding-bottom: 100px; }
-.shopping-page-header h1 { display: flex; align-items: center; gap: 9px; }
-.shopping-nav-icon, .shopping-inline-icon { display: grid; place-items: center; color: var(--color-primary); }
-.shopping-nav-icon { width: 38px; height: 38px; border-radius: 13px; background: var(--color-primary-light); }
-.shopping-nav-icon svg { width: 22px; height: 22px; }
-.shopping-inline-icon { width: 28px; height: 28px; margin-inline-end: 7px; border-radius: 9px; background: var(--color-primary-light); vertical-align: middle; }
-.shopping-inline-icon svg { width: 17px; height: 17px; }
-.shopping-nav-icon svg, .shopping-inline-icon svg, .shopping-svg-action svg, .shopping-item-toggle svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.shopping-content { padding: var(--space-4); display: grid; gap: var(--space-3); }
-.shopping-add-shop { width: 100%; }
-.shopping-shops { display: grid; gap: var(--space-3); }
-.shopping-shop-card { display: grid; gap: var(--space-3); }
-.shopping-shop-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
-.shopping-shop-header h2 { margin: 0; display: flex; align-items: center; font-size: 20px; font-weight: 600; }
-.shopping-count { color: var(--color-text-secondary); font-size: 14px; }
-.shopping-delete-shop { min-width: 44px; padding: var(--space-2); color: var(--color-danger); }
-.shopping-svg-action { display: grid; place-items: center; border-radius: 14px; }.shopping-svg-action svg { width: 21px; height: 21px; }.shopping-svg-action:hover { background: var(--color-danger-light); }
-.shopping-add-item { display: flex; align-items: center; gap: var(--space-2); }
-.shopping-add-item .ui-text-input { min-width: 0; flex: 1; }
-.shopping-add-item .ui-button { flex: 0 0 auto; }
-.shopping-items { display: grid; gap: var(--space-2); }
-.shopping-item { min-height: 48px; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); background: var(--color-bg-light); border-radius: var(--radius-md); }
-.shopping-item-toggle, .shopping-item-delete, .shopping-item-name { border: 0; background: transparent; font: inherit; }
-.shopping-item-toggle, .shopping-item-delete { width: 44px; min-width: 44px; min-height: 44px; cursor: pointer; border-radius: 50%; }
-.shopping-item-toggle { display: grid; place-items: center; color: var(--color-primary); }.shopping-item-toggle svg { width: 22px; height: 22px; }.shopping-item-toggle:hover { background: var(--color-primary-light); }
-.shopping-item-name { flex: 1; min-width: 0; color: var(--color-text-main); text-align: start; cursor: pointer; padding: var(--space-2) 0; }
-.shopping-item-delete { color: var(--color-text-secondary); }.shopping-item-delete:hover { color: var(--color-danger); }
-.shopping-item.is-bought { opacity: .62; }
-.shopping-item.is-bought .shopping-item-name { text-decoration: line-through; }
-.shopping-empty-shop, .shopping-loading { margin: 0; color: var(--color-text-secondary); font-size: 14px; text-align: center; padding: var(--space-3); }
-.shopping-feedback { padding: var(--space-3); text-align: center; font-size: 14px; }
-.settings-developer-link, .settings-action-link { color: var(--color-primary); font-size: 14px; font-weight: 700; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
-
-/* ==========================================================================
-   Friends
-   ========================================================================== */
-.friends-page { padding-bottom: 98px; }
-.friend-share-card {
-    margin: 16px;
-    padding: 17px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: linear-gradient(135deg, rgba(255,45,85,.12), var(--color-card-bg));
-    border: 1px solid var(--color-border);
-    border-radius: 20px;
-}
-.friend-share-icon { font-size: 27px; }
-.friend-share-card div { min-width: 0; flex: 1; }
-.friend-share-card p { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 3px; }
-.friend-share-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-primary-hover); font-size: 14px; }
-.friend-copy-button, .friend-add-button, .friend-accept, .friend-decline {
+.details-body { padding-left: var(--space-4); padding-right: var(--space-4); }
+.friend-add-button {
     border: 0;
     display: grid;
     place-items: center;
@@ -1060,64 +227,31 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     font-family: inherit;
     font-weight: 800;
 }
-.friend-copy-button { width: 40px; height: 40px; border-radius: 13px; background: var(--color-card-bg); color: var(--color-primary); font-size: 23px; box-shadow: var(--shadow-sm); }
-.friend-add-section { padding: 4px 16px 18px; }
-.friend-add-section label { display: block; font-size: 14px; font-weight: 800; margin-bottom: 8px; }
 .friend-add-form { display: flex; direction: ltr; gap: 8px; }
 .friend-add-form .ui-text-input { min-width: 0; flex: 1; }
 .friend-add-button { width: 48px; height: 48px; border-radius: 15px; background: var(--color-primary); color: #fff; font-size: 28px; box-shadow: 0 4px 0 var(--color-primary-hover); }
 .friend-add-button:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
-.friend-feedback { margin: 9px 2px 0; color: var(--color-success); font-size: 13px; font-weight: 700; }.friend-feedback.error { color: var(--color-danger); }
-.friends-section { margin: 0 16px 18px; }
-.friends-section-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 9px; }.friends-section-heading h2 { font-size: 16px; margin: 0; font-weight: 800; }.friends-section-heading span { min-width: 24px; padding: 1px 7px; border-radius: 20px; color: var(--color-primary); background: var(--color-primary-light); font-size: 12px; font-weight: 800; text-align: center; }
-.friend-request-card, .friend-person-card { display: flex; align-items: center; width: 100%; padding: 12px; gap: 11px; background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: 17px; text-align: start; }
-.friend-request-card + .friend-request-card, .friend-person-card + .friend-person-card { margin-top: 8px; }
+.friend-feedback { margin: 9px 2px 0; color: var(--color-success); font-size: 13px; font-weight: 700; }
+.friend-feedback.error { color: var(--color-danger); }
 .friend-avatar { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; background: var(--color-primary-light); color: var(--color-primary-hover); border-radius: 14px; font-size: 17px; font-weight: 800; }
-.friend-request-copy, .friend-person-copy { display: grid; gap: 1px; flex: 1; min-width: 0; }.friend-request-copy strong, .friend-person-copy strong { font-size: 14px; }.friend-request-copy small, .friend-person-copy small { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
-.friend-request-actions { display: flex; gap: 6px; direction: ltr; }.friend-accept, .friend-decline { width: 34px; height: 34px; border-radius: 11px; font-size: 19px; }.friend-accept { background: rgba(34,168,90,.14); color: var(--color-success); }.friend-decline { background: var(--color-danger-light); color: var(--color-danger); }
-.friends-empty-state { padding: 24px 18px; background: var(--color-card-bg); border: 1px dashed var(--color-border); border-radius: 18px; text-align: center; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }.friends-empty-state span { display: block; font-size: 31px; margin-bottom: 6px; }
-.friend-person-card { border: 0; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; }.friend-person-card:hover, .friend-person-card.selected { border: 1px solid var(--color-border); background: var(--color-card-bg); box-shadow: var(--shadow-md); transform: translateY(-1px); }.friend-view-icon { color: var(--color-text-secondary); font-size: 22px; transition: transform .2s ease, color .2s ease; display: inline-block; }
-/* Friends list rows: each friend card is an expandable unit with its own week panel */
-.friend-list-item + .friend-list-item { margin-top: 8px; }
-.friend-person-card { width: 100%; }
-.friend-view-icon.open { transform: rotate(180deg); color: var(--color-primary); }
-.friend-week-inline { margin: 6px 0 0; border-radius: 0 0 17px 17px; }
-.discover-hint { margin: 0 2px 9px; color: var(--color-text-secondary); font-size: 12px; }
-.discover-card { cursor: default; }
-.discover-add { width: 40px; height: 40px; font-size: 24px; box-shadow: 0 3px 0 var(--color-primary-hover); }
-.friend-week-section { margin: 0 16px 18px; padding: 16px; background: var(--color-card-bg); border-radius: 22px; color: #fff; }.friend-week-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }.friend-week-heading div { flex: 1; }.friend-week-heading p { margin: 0; font-size: 16px; font-weight: 800; }.friend-week-heading small { opacity: .68; font-size: 11px; }.friend-week-heading button { width: 33px; height: 33px; border: 1px solid rgba(255,255,255,.25); border-radius: 11px; background: var(--color-bg-light); color: #fff; font-size: 19px; cursor: pointer; }.friend-week-heading button:disabled { opacity: .4; cursor: not-allowed; }.friend-week-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; transition: opacity .15s ease; }.friend-week-grid.loading { opacity: .5; pointer-events: none; }.friend-week-day { min-height: 72px; display: flex; flex-direction: column; justify-content: space-between; gap: 4px; padding: 10px; border-radius: 13px; background: var(--color-border); }.friend-week-day span { color: var(--color-text-secondary); font-size: 11px; font-weight: 700; }.friend-week-day strong { font-size: 12px; line-height: 1.35; }.friend-week-day.empty strong { color: rgba(255,255,255,.45); }
+
 
 @media (max-width: 640px) {
-    .app { box-shadow: none; }
-}
-
-/* Account-link confirmation shown after an email sign-in link opens on another device. */
+    .app { box-shadow: none; }}
 .ios-install-backdrop { position: fixed; inset: 0; z-index: 2200; display: grid; place-items: center; padding: 20px; background: rgba(58,42,56,.45); }
 .ios-install-guide { width: min(100%, 390px); padding: 26px 22px; border-radius: 24px; background: var(--color-card-bg); text-align: center; box-shadow: var(--shadow-lg); }
-.ios-install-guide .ios-install-icon { display: block; font-size: 42px; margin-bottom: 10px; }.ios-install-guide h2 { font-size: 20px; margin-bottom: 8px; }.ios-install-guide p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 16px; }.ios-install-guide input { margin-bottom: 10px; text-align: left; direction: ltr; }.ios-install-guide button { width: 100%; border: 0; border-radius: 14px; padding: 13px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.ios-install-guide .ios-install-icon { display: block; font-size: 42px; margin-bottom: 10px; }
+.ios-install-guide h2 { font-size: 20px; margin-bottom: 8px; }
+.ios-install-guide p { color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; margin-bottom: 16px; }
+.ios-install-guide input { margin-bottom: 10px; text-align: left; direction: ltr; }
+.ios-install-guide button { width: 100%; border: 0; border-radius: 14px; padding: 13px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 .ios-home-guide-backdrop { position: fixed; inset: 0; z-index: 2150; display: grid; place-items: center; padding: var(--space-4); background: rgba(58,42,56,.45); }
 .ios-home-guide { width: min(100%, 390px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: var(--space-5) var(--space-4); border-radius: var(--radius-lg); background: var(--color-card-bg); text-align: center; box-shadow: var(--shadow-lg); }
-.ios-home-guide-icon { display: block; font-size: 42px; margin-bottom: var(--space-2); }.ios-home-guide h2 { margin: 0 0 var(--space-2); font-size: 20px; }.ios-home-guide p { margin: 0 0 var(--space-3); color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; }
-.ios-home-guide-gif { display: block; width: 100%; min-height: 160px; object-fit: contain; border-radius: var(--radius-md); background: var(--color-bg-light); }.ios-home-guide-actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }.ios-home-guide-actions button { flex: 1; min-height: 44px; border-radius: var(--radius-md); padding: var(--space-3); font: inherit; font-weight: 700; cursor: pointer; }.ios-home-guide-replay { color: var(--color-primary); border: 1px solid var(--color-primary); background: var(--color-card-bg); }.ios-home-guide-got-it { color: #fff; border: 1px solid var(--color-primary); background: var(--color-primary); }
-
-/* ==========================================================================
-   Install-to-home-screen help page
-   ========================================================================== */
+.ios-home-guide-icon { display: block; font-size: 42px; margin-bottom: var(--space-2); }
+.ios-home-guide h2 { margin: 0 0 var(--space-2); font-size: 20px; }
+.ios-home-guide p { margin: 0 0 var(--space-3); color: var(--color-text-secondary); font-size: 14px; line-height: 1.7; }
 .install-help-page { padding-bottom: 110px; }
-/* Shared add-to-home carousel component */
-.addhome-carousel { display: flex; flex-direction: column; min-height: 0; }
-.addhome-progress { margin: 0 0 8px; text-align: center; color: var(--color-text-secondary); font-size: 12px; font-weight: 700; }
-/* In the wizard modal the carousel should fill remaining height. */
-.welcome-wizard .addhome-carousel { flex: 1 1 auto; min-height: 0; }
-.welcome-wizard .welcome-carousel { flex: 1 1 auto; min-height: 0; }
-.welcome-wizard .welcome-carousel-img { max-height: none; }
-/* In the standalone install page, give the image a bounded height so flex sizing
-   inside the carousel resolves correctly. */
 .install-carousel-wrap { padding: 0 16px; margin-bottom: 6px; }
-.install-carousel-wrap .addhome-carousel .welcome-carousel { height: 58vh; max-height: 430px; flex: 0 0 auto; }
-.install-segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 16px 16px; padding: 5px; background: var(--color-bg-light); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.install-segmented button { border: 0; border-radius: 11px; padding: 10px; font: inherit; font-size: 13px; font-weight: 800; color: var(--color-text-secondary); background: transparent; cursor: pointer; }
-.install-segmented button.active { color: var(--color-primary); background: var(--color-card-bg); box-shadow: var(--shadow-sm); }
 .install-section { display: grid; gap: 12px; padding: 0 16px; }
 .install-step { display: flex; gap: 12px; align-items: flex-start; padding: 14px; background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: 17px; }
 .install-step-num { flex: 0 0 30px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; background: var(--color-primary-light); color: var(--color-primary); font-weight: 800; }
@@ -1125,565 +259,73 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .install-step p { margin: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.7; }
 .install-tip { display: flex; gap: 10px; margin: 16px; padding: 14px; border-radius: 16px; background: rgba(34,168,90,.1); border: 1px solid var(--color-border); color: #1f7a45; font-size: 13px; line-height: 1.7; align-items: flex-start; }
 .install-tip span { font-size: 20px; }
-
-/* ==========================================================================
-   Recover-my-plan page
-   ========================================================================== */
 .recover-page { padding-bottom: 40px; }
 .recover-intro { margin: 4px 16px 16px; padding: 15px; background: var(--color-primary-light); border: 1px solid var(--color-border); border-radius: 17px; color: var(--color-text-main); font-size: 14px; line-height: 1.7; }
 .recover-form-section { padding: 4px 16px 16px; }
 .recover-form-section label { display: block; font-size: 14px; font-weight: 800; margin-bottom: 8px; }
 .recover-found { margin: 0 16px 14px; padding: 14px; display: flex; align-items: center; gap: 12px; background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: 17px; }
-.recover-found-copy { display: grid; gap: 1px; min-width: 0; }.recover-found-copy strong { font-size: 15px; }.recover-found-copy small { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.recover-found-copy { display: grid; gap: 1px; min-width: 0; }
+.recover-found-copy strong { font-size: 15px; }
+.recover-found-copy small { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .recover-warning { margin: 0 16px 14px; padding: 13px; border-radius: 14px; background: rgba(242,181,68,.12); border: 1px solid var(--color-border); color: #7a5c14; font-size: 13px; line-height: 1.7; }
 .recover-actions { display: grid; gap: 10px; margin: 0 16px 18px; }
 .recover-back-button { display: block; width: calc(100% - 32px); margin: 4px 16px 0; border: 1px solid var(--color-border); border-radius: 14px; padding: 13px; background: var(--color-card-bg); color: var(--color-text-secondary); font: inherit; font-weight: 800; cursor: pointer; }
-
-/* ==========================================================================
-   First-launch welcome wizard (carousel of add-to-home screenshots)
-   ========================================================================== */
 .welcome-wizard-backdrop { position: fixed; inset: 0; z-index: 2300; display: grid; place-items: center; padding: var(--space-4); background: rgba(58,42,56,.5); }
 .welcome-wizard { position: relative; width: min(100%, 420px); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 20px 18px 16px; border-radius: var(--radius-lg); background: var(--color-card-bg); box-shadow: var(--shadow-lg); }
 .welcome-wizard-close { position: absolute; top: 12px; left: 12px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: var(--color-bg-light); color: var(--color-text-secondary); font-size: 15px; cursor: pointer; z-index: 2; }
 .welcome-wizard-head { text-align: center; padding: 0 22px 12px; }
-.welcome-wizard-icon { display: block; font-size: 34px; margin-bottom: 6px; }
 .welcome-wizard-head h2 { font-size: 19px; margin: 0 0 6px; color: var(--color-text-main); }
 .welcome-wizard-head p { margin: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; }
-.welcome-carousel { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: var(--radius-md); background: var(--color-bg-light); }
-.welcome-carousel-track { display: flex; direction: ltr; height: 100%; transition: transform .35s ease; }
-.welcome-carousel-slide { flex: 0 0 100%; min-width: 100%; height: 100%; display: flex; flex-direction: column; }
-.welcome-slide-copy { direction: rtl; text-align: center; padding: 10px 14px 12px; }
-.welcome-step-badge { display: inline-block; margin-bottom: 5px; padding: 2px 10px; border-radius: 12px; background: var(--color-primary-light); color: var(--color-primary); font-size: 11px; font-weight: 800; }
-.welcome-slide-copy h3 { margin: 0; font-size: 16px; color: var(--color-text-main); }
-.welcome-carousel-img { display: block; width: 100%; flex: 1 1 auto; min-height: 0; max-height: none; object-fit: contain; border-radius: 0 0 var(--radius-md) var(--radius-md); background: var(--color-card-bg); }
-.welcome-wizard-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
-.welcome-wizard-actions button { flex: 1; min-height: 46px; border: 0; border-radius: var(--radius-md); font: inherit; font-weight: 800; cursor: pointer; }
-.welcome-wizard-actions .welcome-wizard-back { color: var(--color-primary); background: var(--color-primary-light); }
-.welcome-wizard-actions .welcome-wizard-next, .welcome-wizard-actions .welcome-wizard-start { color: #fff; background: var(--color-primary); }
-.welcome-wizard-actions span { flex: 1; }
 .welcome-wizard-skip { align-self: center; margin-top: 6px; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; padding: 8px; }
-
-/* ==========================================================================
-   Language switcher & LTR adaptations
-   ========================================================================== */
-.lang-switch {
-    display: inline-grid;
-    grid-auto-flow: column;
-    gap: 2px;
-    margin-top: 10px;
-    padding: 3px;
-    background: var(--color-bg-light);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-}
-
-.lang-switch button {
-    border: 0;
-    border-radius: var(--radius-pill);
-    padding: 6px 14px;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    background: transparent;
-    cursor: pointer;
-    transition: background .15s ease, color .15s ease;
-}
-
-.lang-switch button.active {
-    color: #fff;
-    background: var(--color-primary);
-    box-shadow: var(--shadow-sm);
-}
-
 [dir="ltr"] {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
-
-[dir="ltr"] .settings-action-link,
-[dir="ltr"] .month-settings-back,
 [dir="ltr"] .recover-back-button {
     text-align: left;
 }
-
-
-/* ==========================================================================
-   Meal illustrations & the ingredients sheet
-   ========================================================================== */
-
-/* Week card: illustration on the leading edge, the three text/action rows
-   beside it. Works in both directions because the grid follows `dir`. */
-.week-meal-card.has-illustration {
-    display: grid;
-    grid-template-columns: 62px minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    column-gap: 12px;
-    align-items: center;
-    cursor: pointer;
-}
-
-.week-card-thumb {
-    grid-row: 1 / span 3;
-    width: 62px;
-    height: 62px;
-    border-radius: 14px;
-    object-fit: cover;
-    background: var(--color-bg-light);
-    border: 1px solid var(--color-border);
-}
-
-.week-card-past .week-card-thumb { opacity: .6; }
-
-/* Meals list card: same idea, a little larger. */
-.meal-selection-card {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: var(--space-3);
-    row-gap: var(--space-2);
-    align-items: center;
-}
-
-.meal-selection-thumb {
-    grid-row: 1 / span 2;
-    width: 72px;
-    height: 72px;
-    border-radius: var(--radius-sm);
-    object-fit: cover;
-    background: var(--color-bg-light);
-    border: 1px solid var(--color-border);
-}
-
-.meal-selection-card .meal-selection-main { align-self: end; }
-.meal-selection-card .meal-selection-actions { align-self: start; }
-
-/* Detail hero: the illustration replaces the old emoji, on the warm gradient. */
-.meal-details-hero .meal-details-image {
-    width: 104px;
-    height: 104px;
-    border-radius: 26px;
-    object-fit: cover;
-    margin: 0 auto 12px;
-    display: block;
-    box-shadow: var(--shadow-md);
-    background: var(--color-card-bg);
-}
-
 .ingredients-sheet { display: flex; flex-direction: column; gap: var(--space-3); }
-
-.ingredients-sheet-image {
-    width: 112px;
-    height: 112px;
-    border-radius: 24px;
-    object-fit: cover;
-    align-self: center;
-    background: var(--color-bg-light);
-    border: 1px solid var(--color-border);
-}
-
-.ingredients-sheet .details-section { padding: 0; }
-.ingredients-sheet .details-section h2 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-.ingredients-sheet .empty-text { font-size: 13px; color: var(--color-text-secondary); }
-
-/* Three languages no longer fit on one row on a narrow phone. */
-.lang-switch {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-}
-
-.lang-switch button { padding: 6px 12px; white-space: nowrap; }
-
-/* Card text was hard-coded to right-align from the Arabic-only days; logical
-   alignment keeps it correct in Arabic, English and German alike. */
-.week-meal-card,
-.meal-selection-main,
-.meal-selection-card .meal-details { text-align: start; }
-
-/* The ingredients button reuses .icon-action, which was written for emoji. */
-.icon-action svg {
-    width: 20px;
-    height: 20px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-/* The list icon's bullets are filled discs, not outlines. */
-.icon-action svg circle,
-.compact-actions svg circle { fill: currentColor; stroke: none; }
-
-/* ==========================================================================
-   Picnic-style pass: meal-type colour tiles, flatter cards, pill buttons,
-   a flat bottom nav, and the Week day-strip.
-   ========================================================================== */
-
-/* --- Meal-type colour tiles: a soft, category-tinted mat behind every dish
-   illustration instead of a plain bordered square. The illustration itself
-   keeps its own cream card baked in, so this reads as a coloured frame. --- */
-.week-card-thumb-tile,
-.meal-selection-thumb-tile,
-.meal-details-image-tile,
-.ingredients-sheet-image-tile {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--type-default-bg);
-    border-radius: var(--radius-md);
-    padding: 6px;
-    box-sizing: border-box;
-}
-
-.type-tile-meat { background: var(--type-meat-bg); }
-.type-tile-chicken { background: var(--type-chicken-bg); }
-.type-tile-fish { background: var(--type-fish-bg); }
-.type-tile-vegetarian { background: var(--type-vegetarian-bg); }
-.type-tile-vegan { background: var(--type-vegan-bg); }
-
-.type-badge-meat { background: var(--type-meat-bg); color: var(--type-meat-fg); }
-.type-badge-chicken { background: var(--type-chicken-bg); color: var(--type-chicken-fg); }
-.type-badge-fish { background: var(--type-fish-bg); color: var(--type-fish-fg); }
-.type-badge-vegetarian { background: var(--type-vegetarian-bg); color: var(--type-vegetarian-fg); }
-.type-badge-vegan { background: var(--type-vegan-bg); color: var(--type-vegan-fg); }
-.type-badge-default { background: var(--type-default-bg); color: var(--type-default-fg); }
-
-.week-card-thumb-tile {
-    grid-row: 1 / span 3;
-    width: 62px;
-    height: 62px;
-    border-radius: 18px;
-}
-.week-card-thumb-tile .week-card-thumb { width: 100%; height: 100%; border: 0; border-radius: 12px; }
-.week-card-past .week-card-thumb-tile { opacity: .6; }
-
-.meal-selection-thumb-tile {
-    grid-row: 1 / span 2;
-    width: 72px;
-    height: 72px;
-    border-radius: var(--radius-sm);
-}
-.meal-selection-thumb-tile .meal-selection-thumb { width: 100%; height: 100%; border: 0; border-radius: 10px; }
-
-.meal-details-hero .meal-details-image-tile {
-    width: 128px;
-    height: 128px;
-    border-radius: var(--radius-lg);
-    margin: 0 auto 12px;
-    box-shadow: var(--shadow-md);
-}
-.meal-details-hero .meal-details-image { width: 100%; height: 100%; border: 0; border-radius: calc(var(--radius-lg) - 8px); box-shadow: none; background: transparent; }
-
-.ingredients-sheet-image-tile {
-    width: 128px;
-    height: 128px;
-    border-radius: var(--radius-lg);
-    align-self: center;
-}
-.ingredients-sheet-image-tile .ingredients-sheet-image { width: 100%; height: 100%; border: 0; border-radius: calc(var(--radius-lg) - 8px); }
-
-/* --- Flatter cards: colour and whitespace carry separation, not borders. --- */
-.week-meal-card { border: 0; box-shadow: var(--shadow-sm); }
-.week-empty-card { border: 1.5px dashed rgba(255,45,85,.45); background: var(--color-primary-light); }
-.ui-card, .card-playful { box-shadow: var(--shadow-sm); }
-.friend-request-card, .friend-person-card { border: 0; box-shadow: var(--shadow-sm); }
-.recover-found, .install-step { border: 0; box-shadow: var(--shadow-sm); }
-
-/* --- Pill buttons: capsules, not rounded rectangles. --- */
-.ui-button,
-.primary-btn,
-.btn-playful,
-.secondary-btn,
-.ui-button-danger,
-.danger-btn,
-.favorite-toggle-btn,
-.week-surprise,
-.friend-add-button,
-.month-header button {
+.recover-found,.install-step { border: 0; box-shadow: var(--shadow-sm); }
+.friend-add-button {
     border-radius: var(--radius-pill);
 }
-
-/* --- Week day-strip: a Picnic-style horizontal day picker, replacing the
-   plain prev/next text row. Purely a quick-jump + visual index — week
-   pagination is still the prev/next arrows at each end. --- */
-.day-strip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-}
-
-.day-strip-arrow {
-    flex: 0 0 auto;
-    width: 36px;
-    height: 36px;
-    min-height: 0;
-    display: grid;
-    place-items: center;
-    border: 0;
-    border-radius: 50%;
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    cursor: pointer;
-}
-.day-strip-arrow svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-/* The chevrons are drawn pointing left/right in absolute terms; direction:rtl
-   reverses which side of the strip each button sits on but not the glyph
-   itself, so mirror it explicitly to keep "back" pointing outward. */
-[dir="rtl"] .day-strip-arrow svg { transform: scaleX(-1); }
-.day-strip-arrow:active { transform: scale(.94); }
-
-.day-strip-scroller {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    padding: 2px;
-    scrollbar-width: none;
-}
-.day-strip-scroller::-webkit-scrollbar { display: none; }
-
-.day-strip-pill {
-    flex: 1 1 0;
-    min-width: 38px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 7px 4px;
-    border: 0;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-light);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    min-height: 0;
-}
-.day-strip-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
-.day-strip-num { font-size: 15px; font-weight: 800; color: var(--color-text-main); }
-.day-strip-pill.is-today { background: var(--color-primary); color: #fff; }
-.day-strip-pill.is-today .day-strip-num { color: #fff; }
-
-/* --- Softer hero block behind the week header. --- */
-.week-page-header {
-    background: linear-gradient(180deg, var(--color-primary-light) 0%, var(--color-card-bg) 78%);
-    border-bottom: 0;
-}
-
-/* ==========================================================================
-   Radio player theme overrides — mirrors the Syrian Radio player card:
-   white rounded cards on a light page, pink-red accent, black round
-   primary control, grey pill chips.
-   ========================================================================== */
-html, body { background-color: var(--color-page); color: var(--color-text-main); }
+html,body { background-color: var(--color-page); color: var(--color-text-main); }
 body { background-image: none; }
 .app { background: transparent; box-shadow: none; border: 0; }
-@media (min-width: 641px) { .app { background: transparent; } }
 
-/* Cards */
-.ui-card, .card-playful, .week-meal-card, .friend-request-card, .friend-person-card,
-.recover-found, .install-step, .friends-empty-state, .settings-card {
+@media (min-width: 641px) { .app { background: transparent; }}
+.recover-found,.install-step,.settings-card {
     background: var(--color-card-bg);
     border: 1px solid var(--color-border);
     box-shadow: var(--shadow-md);
     border-radius: var(--radius-lg);
 }
-.week-meal-card:hover, .meal-selection-card:hover, .friend-person-card:hover { border-color: rgba(255,45,85,.45); }
-.week-empty-card { border: 1.5px dashed rgba(255,45,85,.45); background: var(--color-primary-light); }
-.friend-person-card:hover, .friend-person-card.selected { background: var(--color-bg-light); }
-
-/* Headers: small pink eyebrow, big dark title */
 .eyebrow { color: var(--color-primary); font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 4px; }
-.week-page-header, .ui-page-header, .selected-day-header, .header, .month-header {
+.header {
     background: var(--color-card-bg);
     border-bottom: 1px solid var(--color-border);
 }
-.week-page-header { position: relative; border-radius: 0 0 var(--radius-lg) var(--radius-lg); box-shadow: var(--shadow-sm); }
-.week-page-header::before { display: none; }
-.selected-day-header { background: var(--color-primary-light); }
-.selected-day-header strong { color: var(--color-primary); }
-
-/* Buttons: black round/pill primary like the play button; pink outlined secondary */
-.ui-button-primary, .primary-btn, .btn-playful, .friend-add-button,
-.welcome-wizard-actions .welcome-wizard-next, .welcome-wizard-actions .welcome-wizard-start,
-.ios-home-guide-got-it, .ios-install-guide button {
+.friend-add-button,.ios-install-guide button {
     background: var(--color-ink);
     border-color: transparent;
     color: #fff;
     box-shadow: 0 6px 16px rgba(0,0,0,.22);
 }
-.ui-button-primary:hover:not(:disabled), .primary-btn:hover:not(:disabled) { filter: brightness(1.15); }
-.ui-button-secondary, .secondary-btn { background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); }
-.ui-button-ghost { color: var(--color-primary); }
-.primary-btn:disabled, .btn-playful:disabled { background: var(--color-bg-light); color: var(--color-text-secondary); box-shadow: none; }
-.discover-add { box-shadow: none; }
-
-/* Inputs */
-input, textarea, select, .ui-text-input, .playful-input, .form-group input, .form-group textarea {
+input,textarea,select,.ui-text-input {
     background: var(--color-bg-light); color: var(--color-text-main); border-color: transparent;
 }
 ::placeholder { color: var(--color-text-secondary); opacity: 1; }
-.ui-text-input:focus, .playful-input:focus { border-color: var(--color-primary); background: var(--color-card-bg); }
-
-/* Chips, badges: grey pills, active = black (like the "ready" pill / play button) */
-.ui-filter-chip { background: var(--color-bg-light); color: var(--color-text-secondary); border-color: transparent; }
-.ui-filter-chip.active { background: var(--color-ink); color: #fff; border-color: var(--color-ink); }
-.badge, .type-badge, [class*="type-badge-"] { background: var(--color-bg-light); color: var(--color-text-secondary); }
-.side-dish-chip { background: var(--color-bg-light); color: var(--color-text-main); }
-.meal-card-badge, .meal-card-badge.favorite, .favorite-badge { background: var(--color-primary-light); color: var(--color-primary); }
-.lang-switch { background: var(--color-bg-light); border-color: transparent; }
-.lang-switch button.active { background: var(--color-ink); color: #fff; }
-
-/* Day strip = the tuner ruler: grey strip, today marked by the pink needle */
-.day-strip-pill { background: var(--color-bg-light); border: 0; }
-.day-strip-pill.is-today { background: var(--color-ink); box-shadow: none; position: relative; }
-.day-strip-pill.is-today::after { content: ""; position: absolute; bottom: 0; left: 50%; width: 3px; height: 14px; background: var(--color-primary); transform: translateX(-50%); border-radius: 2px; }
-.day-strip-arrow { background: var(--color-bg-light); color: var(--color-primary); }
-
-/* Illustrations: keep the cream art on a light panel */
-.week-card-thumb-tile, .meal-selection-thumb-tile, .meal-details-image-tile, .ingredients-sheet-image-tile,
+.ui-text-input:focus { border-color: var(--color-primary); background: var(--color-card-bg); }
+.badge,.type-badge,[class*="type-badge-"] { background: var(--color-bg-light); color: var(--color-text-secondary); }
 [class*="type-tile-"] { background: var(--color-bg-light); }
-
-/* Meal details hero: white card, big rounded, pink accent */
-.meal-details-hero { background: var(--color-card-bg); color: var(--color-text-main); border-bottom: 1px solid var(--color-border); border-radius: 0 0 var(--radius-xl) var(--radius-xl); position: relative; overflow: hidden; }
-.meal-details-hero::before { display: none; }
-.meal-details-hero .badge { background: var(--color-bg-light); border: 0; color: var(--color-text-secondary); }
-.icon-action { background: var(--color-primary-light); color: var(--color-primary); }
-.compact-actions button { background: var(--color-bg-light); color: var(--color-text-main); border: 0; }
-.compact-actions button:nth-child(2), .compact-actions button.liked { color: var(--color-primary); }
-
-/* Sheets, toast, modals */
-.sheet-backdrop, .ios-install-backdrop, .ios-home-guide-backdrop, .welcome-wizard-backdrop { background: rgba(0,0,0,.4); }
-.bottom-sheet, .month-sheet { background: var(--color-card-bg); border-top: 0; box-shadow: 0 -12px 40px rgba(0,0,0,.18); border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+.sheet-backdrop,.ios-install-backdrop,.ios-home-guide-backdrop,.welcome-wizard-backdrop { background: rgba(0,0,0,.4); }
 .sheet-handle { background: #d1d1d6; }
-.sheet-actions button, .quick-picker button, .move-days button { background: var(--color-bg-light); color: var(--color-text-main); box-shadow: none; border: 0; }
-.sheet-actions .danger { color: var(--color-danger); }
-.toast-message { background: var(--color-ink); color: #fff; border: 0; }
-.ios-install-guide, .ios-home-guide, .welcome-wizard { background: var(--color-card-bg); border: 0; }
-.welcome-carousel, .welcome-carousel-img { background: var(--color-bg-light); }
+.ios-install-guide,.ios-home-guide,.welcome-wizard { background: var(--color-card-bg); border: 0; }
 .welcome-wizard-close { background: var(--color-bg-light); color: var(--color-text-main); }
-.welcome-wizard-actions .welcome-wizard-back, .ios-home-guide-replay { background: transparent; color: var(--color-text-main); border: 1px solid var(--color-border); }
-.alert-playful { background: var(--color-primary-light); color: var(--color-primary-hover); }
-.link-request-banner { background: var(--color-bg-light); }
-
-/* Lists */
 .month-cell { background: var(--color-card-bg); }
-.month-outside { background: var(--color-bg-light); }
 .month-cell.today { background: var(--color-primary-light); box-shadow: inset 0 0 0 2px var(--color-primary); }
-.month-meal-name { color: var(--color-primary-hover); }
-.shopping-item { background: var(--color-bg-light); }
 .friend-avatar { background: var(--color-bg-light); color: var(--color-text-main); }
-.friend-share-card strong { color: var(--color-primary-hover); }
 .install-tip { color: #1f7a45; }
-.friend-week-section { background: var(--color-ink); }
 .custom-splash { background-color: var(--color-page); }
 #week-share-capture { background: var(--color-page); }
-.friend-week-day { background: rgba(255,255,255,.12); }
-.friend-week-day span { color: #ffb3c1; }
-.friend-week-heading button { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.25); }
-.week-card-past { opacity: .72; filter: grayscale(20%); }
-
-/* ==========================================================================
-   Bottom navigation — single consolidated definition. (Previously spread
-   across four separate rule blocks added over three redesigns, each
-   partially overriding the last; that fragile cascade is exactly the kind of
-   thing that produces an inconsistent "highlight" bug, so it's collapsed to
-   one place.)
-   ========================================================================== */
-.bottom-nav-container {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 600px;
-    height: 76px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
-    background: var(--color-card-bg);
-    border-top: 1px solid var(--color-border);
-    border-radius: 22px 22px 0 0;
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, .06);
-    z-index: 1000;
-}
-
-.bottom-nav-item {
-    flex: 1 1 0;
-    min-width: 0;
-    height: 100%;
-    min-height: 48px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    border-radius: 18px;
-    transition: color .2s ease;
-}
-.bottom-nav-item:hover { color: var(--color-primary); text-decoration: none; }
-
-.bottom-nav-icon {
-    width: 46px;
-    height: 46px;
-    display: grid;
-    place-items: center;
-    border-radius: 16px;
-    color: inherit;
-    transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
-}
-.bottom-nav-icon svg {
-    width: 24px;
-    height: 24px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.bottom-nav-item:hover .bottom-nav-icon { background: var(--color-bg-light); }
-.bottom-nav-item.active .bottom-nav-icon {
-    background: var(--color-ink);
-    color: #fff;
-    box-shadow: 0 6px 14px rgba(0, 0, 0, .2);
-}
-
-/* The centre "+" is always accent-coloured; it opens the new-meal sheet and
-   is never a "current page" the way the other four tabs are. */
-.bottom-nav-add .bottom-nav-icon { color: var(--color-primary); }
-.bottom-nav-add:hover .bottom-nav-icon { background: var(--color-primary-light); }
-.bottom-nav-add:active .bottom-nav-icon { transform: scale(.94); }
-
-/* ==========================================================================
-   Friend week sync button
-   ========================================================================== */
-.friend-sync-button {
-    width: 100%;
-    min-height: 44px;
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: 0;
-    border-radius: var(--radius-pill);
-    background: var(--color-primary);
-    color: #fff;
-    font: inherit;
-    font-weight: 800;
-    cursor: pointer;
-    transition: opacity .15s ease;
-}
-.friend-sync-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.friend-sync-button:hover { opacity: .9; }
-.friend-sync-button:active { transform: scale(.98); }
-.friend-sync-button:disabled { opacity: .55; cursor: not-allowed; }
-
-/* The AI assistant (chat thread, orb, composer) is styled by Nxt.UI (nxt.css). */
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+
