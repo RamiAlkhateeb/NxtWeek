@@ -1,164 +1,163 @@
 @page "/friends"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
+@implements IDisposable
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
+@inject ToastService Toasts
 
-<div class="app app-content-wrapper friends-page" dir="@Loc.Direction">
-    <NxtPageHeader Icon="👋" Title="@Loc["friends_title"]" Subtitle="@Loc["friends_subtitle"]" />
+<div class="mk-page mk-friends" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-title-block">
+            <h1 class="mk-title">@Loc["friends_title"]</h1>
+            <p class="mk-subtitle">@Loc["friends_subtitle"]</p>
+        </div>
 
-    @if (isLoading)
-    {
-        <p class="loading-text">جارِ تحميل الأصدقاء...</p>
-    }
-    else
-    {
-        @if (!hasUsername)
+        @if (!isLoading && hasUsername)
         {
-            <section class="friends-empty-state">
-                <span aria-hidden="true">🔒</span>
-                <p>اختر اسم مستخدم من الإعدادات أولاً لتتمكن من إرسال أو قبول طلبات الصداقة.</p>
-                <a class="secondary-btn" href="settings">اذهب إلى الإعدادات</a>
-            </section>
+            <div class="mk-add-friend">
+                <label class="mk-search">
+                    <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+                    <input dir="ltr" @bind="friendUsername" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="@Loc["friends_add_placeholder"]" aria-label="@Loc["friends_add_placeholder"]" disabled="@isSendingRequest" />
+                </label>
+                <button class="mk-icon-btn is-ink is-lg" @onclick="SendRequest" disabled="@(isSendingRequest || string.IsNullOrWhiteSpace(friendUsername))" aria-label="@Loc["friends_send_request"]">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(feedback)) { <div class="mk-notice @(isError ? "is-error" : "")">@feedback</div> }
+
+            <div class="mk-username-card">
+                <div class="mk-username-text">
+                    <span class="mk-subtitle">@Loc["friends_your_username"]</span>
+                    <strong dir="ltr">@uid</strong>
+                </div>
+                <button class="mk-btn is-outline is-sm" @onclick="CopyUsername">
+                    <svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>
+                    @Loc["copy"]
+                </button>
+            </div>
+        }
+    </header>
+
+    <main class="mk-stack">
+        @if (isLoading)
+        {
+            <NxtSkeleton /><NxtSkeleton />
+        }
+        else if (!hasUsername)
+        {
+            <NxtEmptyState Icon="🔒" Title="@Loc["friends_need_username"]" Message="">
+                <a class="mk-btn" href="settings">@Loc["friends_go_settings"]</a>
+            </NxtEmptyState>
         }
         else
         {
-        <section class="friend-share-card">
-            <span class="friend-share-icon" aria-hidden="true">✨</span>
-            <div>
-                <p>اسم المستخدم الخاص بك</p>
-                <strong dir="ltr">@uid</strong>
-            </div>
-            <button class="friend-copy-button" @onclick="CopyUsername" title="نسخ اسم المستخدم" aria-label="نسخ اسم المستخدم">⧉</button>
-        </section>
-
-        <section class="friend-add-section">
-            <label for="friend-username">أضف صديقاً</label>
-            <div class="friend-add-form">
-                <input id="friend-username" class="ui-text-input" dir="ltr" @bind="friendUsername" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="اسم المستخدم" disabled="@isSendingRequest" />
-                <button class="friend-add-button" @onclick="SendRequest" disabled="@(isSendingRequest || string.IsNullOrWhiteSpace(friendUsername))" aria-label="إرسال طلب صداقة">+</button>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(feedback))
+            @foreach (var request in incomingRequests)
             {
-                <p class="friend-feedback @(isError ? "error" : "")">@feedback</p>
+                <article class="mk-request">
+                    <span class="mk-avatar is-pink" aria-hidden="true">@Initial(request.SenderDisplayName)</span>
+                    <div class="mk-person-copy">
+                        <strong>@request.SenderDisplayName</strong>
+                        <span class="mk-subtitle">@Loc["friends_wants_to_add"]</span>
+                    </div>
+                    <button class="mk-icon-btn is-ink is-lg" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="@Loc["friends_accept"]">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+                    </button>
+                    <button class="mk-icon-btn is-outline is-lg" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="@Loc["friends_decline"]">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </article>
             }
-        </section>
 
-        @if (incomingRequests.Count > 0)
-        {
-            <section class="friends-section">
-                <div class="friends-section-heading"><h2>طلبات الصداقة</h2><span>@incomingRequests.Count</span></div>
-                @foreach (var request in incomingRequests)
-                {
-                    <article class="friend-request-card">
-                        <div class="friend-avatar">@Initial(request.SenderDisplayName)</div>
-                        <div class="friend-request-copy">
-                            <strong>@request.SenderDisplayName</strong>
-                            <small dir="ltr">@request.SenderUid</small>
-                        </div>
-                        <div class="friend-request-actions">
-                            <button class="friend-accept" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="قبول طلب الصداقة">✓</button>
-                            <button class="friend-decline" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="رفض طلب الصداقة">×</button>
-                        </div>
-                    </article>
-                }
-            </section>
-        }
-
-        <section class="friends-section">
-            <div class="friends-section-heading"><h2>أصدقاؤك</h2><span>@friends.Count</span></div>
             @if (friends.Count == 0)
             {
-                <div class="friends-empty-state">
-                    <span aria-hidden="true">🫶</span>
-                    <p>شارك اسم المستخدم أعلاه وابدأ التخطيط مع أصدقائك.</p>
-                </div>
+                <p class="mk-empty-line">@Loc["friends_empty"]</p>
             }
-            else
-            {
-                <div class="friends-list">
-                    @foreach (var friend in friends)
-                    {
-                        <div class="friend-list-item">
-                            <button class="friend-person-card @(selectedFriend?.Uid == friend.Uid ? "selected" : "")" @onclick="() => SelectFriend(friend)" aria-expanded="@(selectedFriend?.Uid == friend.Uid)">
-                                <span class="friend-avatar">@Initial(friend.DisplayName)</span>
-                                <span class="friend-person-copy"><strong>@friend.DisplayName</strong><small dir="ltr">@friend.Uid</small></span>
-                                <span class="friend-view-icon @(selectedFriend?.Uid == friend.Uid ? "open" : "")" aria-hidden="true">⌄</span>
-                            </button>
 
-                            @if (selectedFriend?.Uid == friend.Uid)
-                            {
-                                <section class="friend-week-section friend-week-inline">
-                                    <div class="friend-week-heading">
-                                        <div><p>أسبوع @friend.DisplayName</p><small>@WeekRangeLabel</small></div>
-                                        <button @onclick="PreviousWeek" disabled="@isLoadingFriendWeek" aria-label="الأسبوع السابق">›</button>
-                                        <button @onclick="NextWeek" disabled="@isLoadingFriendWeek" aria-label="الأسبوع القادم">‹</button>
-                                    </div>
-                                    <div class="friend-week-grid @(isLoadingFriendWeek ? "loading" : "")">
-                                        @foreach (var day in selectedFriendWeek)
+            @for (var index = 0; index < friends.Count; index++)
+            {
+                var friend = friends[index];
+                var open = selectedFriend?.Uid == friend.Uid;
+                var tone = index % 4;
+                <section class="mk-friend @(open ? "is-open" : "")">
+                    <button class="mk-friend-head" @onclick="() => SelectFriend(friend)" aria-expanded="@open">
+                        <span class="mk-avatar tone-@tone @(open ? "is-ink" : "")" aria-hidden="true">@Initial(friend.DisplayName)</span>
+                        <span class="mk-person-copy">
+                            <strong>@friend.DisplayName</strong>
+                            @if (open && !isLoadingFriendWeek) { <span class="mk-subtitle">@Loc.T("friends_planned_days", PlannedDays)</span> }
+                            else { <span class="mk-subtitle" dir="ltr">@friend.Uid</span> }
+                        </span>
+                        <svg class="i mk-past-chev @(open ? "is-open" : "")" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+
+                    @if (open)
+                    {
+                        <div class="mk-friend-body">
+                            <div class="mk-weeknav">
+                                <button class="mk-icon-btn is-plain" @onclick="PreviousWeek" disabled="@isLoadingFriendWeek" aria-label="@Loc["friends_prev_week"]">
+                                    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                                </button>
+                                <span class="mk-weeknav-label">@WeekRangeLabel</span>
+                                <button class="mk-icon-btn is-plain" @onclick="NextWeek" disabled="@isLoadingFriendWeek" aria-label="@Loc["friends_next_week"]">
+                                    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="mk-friend-days @(isLoadingFriendWeek ? "is-loading" : "")">
+                                @foreach (var day in selectedFriendWeek)
+                                {
+                                    var meal = MealFor(day.MealId);
+                                    var mine = MyMealFor(day.Date);
+                                    <div class="mk-friend-day @(meal is null ? "is-empty" : "")">
+                                        <span class="mk-friend-dayname">@Loc.GetShortDayName(day.Date.DayOfWeek)</span>
+                                        @if (meal is null)
                                         {
-                                            <article class="friend-week-day @(string.IsNullOrEmpty(day.MealId) ? "empty" : "")">
-                                                <span>@Loc.GetShortDayName(day.Date.DayOfWeek)</span>
-                                                <strong>@(string.IsNullOrEmpty(day.MealId) ? "—" : MealName(day.MealId))</strong>
-                                            </article>
+                                            <span class="mk-friend-meal is-none">—</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="mk-dot @MealTypeStyle.T(meal.MealType)" aria-hidden="true"></span>
+                                            <span class="mk-friend-meal">@meal.Name</span>
+                                            @if (mine is null) { <span class="mk-diff is-ok">@Loc["friends_empty_day"]</span> }
+                                            else if (mine.Id != meal.Id) { <span class="mk-diff">@Loc.T("friends_replaces", mine.Name)</span> }
                                         }
                                     </div>
-                                    <button class="friend-sync-button" disabled="@isLoadingFriendWeek" @onclick="() => showSyncConfirm = true">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
-                                        @Loc["friends_sync_button"]
-                                    </button>
-                                </section>
-                            }
+                                }
+                            </div>
+
+                            <div class="mk-friend-actions">
+                                <button class="mk-btn is-pink" disabled="@(isLoadingFriendWeek || isSyncing)" @onclick="ReplaceWeek">@Loc["friends_replace_week"]</button>
+                                <button class="mk-btn" disabled="@(isLoadingFriendWeek || isSyncing)" @onclick="CopyEmptyDays">@Loc["friends_copy_empty"]</button>
+                            </div>
                         </div>
                     }
-                </div>
+                </section>
             }
-        </section>
 
-        <section class="friends-section">
-            <div class="friends-section-heading"><h2>@Loc["friends_discoverable"]</h2><span>@discoverable.Count</span></div>
-            @if (discoverable.Count == 0)
+            @if (discoverable.Count > 0)
             {
-                <div class="friends-empty-state">
-                    <span aria-hidden="true">✨</span>
-                    <p>لا يوجد مستخدمون جدد حالياً. ادعُ من حولك ليبدأوا التخطيط أيضاً!</p>
-                </div>
+                <div class="mk-section-head"><h2>@Loc["friends_discoverable"]</h2><span class="mk-subtitle">@Loc["friends_discover_hint"]</span></div>
+                @foreach (var user in discoverable)
+                {
+                    <article class="mk-request is-plain">
+                        <span class="mk-avatar" aria-hidden="true">@Initial(user.DisplayName)</span>
+                        <div class="mk-person-copy">
+                            <strong>@user.DisplayName</strong>
+                            <span class="mk-subtitle" dir="ltr">@@@user.Username</span>
+                        </div>
+                        <button class="mk-icon-btn is-ink is-lg" @onclick="() => AddDiscovered(user)" disabled="@isSendingRequest" aria-label="@Loc.T("friends_add_named", user.Username)">
+                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        </button>
+                    </article>
+                }
             }
-            else
-            {
-                <p class="discover-hint">أضفهم كأصدقاء وشاهد أسبوعهم مباشرة.</p>
-                <div class="friends-list">
-                    @foreach (var user in discoverable)
-                    {
-                        <article class="friend-person-card discover-card">
-                            <span class="friend-avatar">@Initial(user.DisplayName)</span>
-                            <span class="friend-person-copy"><strong>@user.DisplayName</strong><small dir="ltr">@@@user.Username</small></span>
-                            <button class="friend-add-button discover-add" @onclick="() => AddDiscovered(user)" disabled="@isSendingRequest" title="إضافة صديق" aria-label="إضافة @user.Username">+</button>
-                        </article>
-                    }
-                </div>
-            }
-        </section>
         }
-    }
+    </main>
 </div>
-
-<NxtBottomSheet IsOpen="showSyncConfirm"
-               Title="@Loc["friends_sync_confirm_title"]"
-               Eyebrow="@(selectedFriend is null ? null : Loc.T("friends_sync_confirm_eyebrow", selectedFriend.DisplayName, WeekRangeLabel))"
-               OnDismiss="() => showSyncConfirm = false">
-    <div class="sheet-actions" dir="@Loc.Direction">
-        <p>@Loc["friends_sync_confirm_note"]</p>
-        <NxtButton Variant="primary" OnClick="SyncFriendWeek" Disabled="@isSyncing">
-            @(isSyncing ? Loc["friends_sync_syncing"] : (selectedFriend is null ? Loc["friends_sync_button"] : Loc.T("friends_sync_confirm_action", selectedFriend.DisplayName)))
-        </NxtButton>
-        <NxtButton Variant="ghost" OnClick="() => showSyncConfirm = false" Disabled="@isSyncing">@Loc["cancel"]</NxtButton>
-    </div>
-</NxtBottomSheet>
 
 @code {
     private string uid = "";
@@ -173,17 +172,20 @@
     private HashSet<string> alreadyConnected = new(StringComparer.OrdinalIgnoreCase);
     private UserProfile? selectedFriend;
     private List<WeeklyPlanEntry> selectedFriendWeek = new();
-    private Dictionary<string, string> mealNames = new();
+    private Dictionary<string, MealCatalogItem> catalog = new();
+    private Dictionary<DateOnly, string> myWeek = new();
     private DateOnly displayedWeekStart;
-    private bool showSyncConfirm;
     private bool isSyncing;
     private bool isLoadingFriendWeek;
     private int friendWeekRequestId;
     private bool hasUsername;
     private string WeekRangeLabel => $"{displayedWeekStart.Day} {Loc.GetMonthName(displayedWeekStart.Month)} – {displayedWeekStart.AddDays(6).Day} {Loc.GetMonthName(displayedWeekStart.AddDays(6).Month)}";
 
+    private int PlannedDays => selectedFriendWeek.Count(d => !string.IsNullOrEmpty(d.MealId));
+
     protected override async Task OnInitializedAsync()
     {
+        Loc.OnLanguageChanged += OnLanguage;
         var user = await Auth.GetCurrentUserAsync();
         if (user is null || string.IsNullOrWhiteSpace(user.Uid))
         {
@@ -193,7 +195,7 @@
 
         uid = user.Uid;
         displayedWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
-        mealNames = (await CatalogService.GetAllMealsAsync()).ToDictionary(meal => meal.Id, meal => meal.Name);
+        catalog = (await CatalogService.GetAllMealsAsync()).GroupBy(meal => meal.Id).ToDictionary(g => g.Key, g => g.First());
         await LoadProfileAsync();
         isLoading = false;
     }
@@ -229,7 +231,7 @@
 
     private async Task SendRequest()
     {
-        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_short"]; return; }
         if (string.IsNullOrWhiteSpace(friendUsername)) return;
         isSendingRequest = true;
         feedback = "";
@@ -238,7 +240,7 @@
             await UserService.SendFriendRequestAsync(uid, friendUsername.Trim());
             friendUsername = "";
             isError = false;
-            feedback = "تم إرسال طلب الصداقة ✨";
+            feedback = Loc["friends_request_sent"];
             await LoadProfileAsync();
         }
         catch (Exception ex)
@@ -251,14 +253,14 @@
 
     private async Task AddDiscovered(UserProfile user)
     {
-        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_short"]; return; }
         isSendingRequest = true;
         feedback = "";
         try
         {
             await UserService.SendFriendRequestAsync(uid, user.Uid);
             isError = false;
-            feedback = $"تم إرسال طلب الصداقة إلى @{user.Username} ✨";
+            feedback = Loc.T("friends_request_sent_to", user.Username);
             await LoadProfileAsync();
         }
         catch (Exception ex)
@@ -271,12 +273,12 @@
 
     private async Task AcceptRequest(string senderUid)
     {
-        if (!hasUsername) { isError = true; feedback = "اختر اسم مستخدم أولاً من الإعدادات."; return; }
+        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_short"]; return; }
         try
         {
             await UserService.AcceptFriendRequestAsync(uid, senderUid);
             isError = false;
-            feedback = "صرتما أصدقاء الآن 🎉";
+            feedback = Loc["friends_now_friends"];
             await LoadProfileAsync();
         }
         catch (Exception ex) { isError = true; feedback = ex.Message; }
@@ -321,8 +323,13 @@
         isLoadingFriendWeek = true;
         try
         {
-            var fetched = await UserService.GetWeeklyPlanAsync(requestedFriendUid, requestedWeekStart, requestedWeekStart.AddDays(6));
+            var fetchedTask = UserService.GetWeeklyPlanAsync(requestedFriendUid, requestedWeekStart, requestedWeekStart.AddDays(6));
+            var mineTask = UserService.GetWeeklyPlanAsync(uid, requestedWeekStart, requestedWeekStart.AddDays(6));
+            var fetched = await fetchedTask;
+            var mine = await mineTask;
             if (requestId != friendWeekRequestId) return;
+
+            myWeek = mine.Where(entry => !string.IsNullOrEmpty(entry.MealId)).GroupBy(entry => entry.Date).ToDictionary(g => g.Key, g => g.First().MealId);
 
             selectedFriendWeek = Enumerable.Range(0, 7).Select(offset =>
             {
@@ -333,26 +340,28 @@
         finally { if (requestId == friendWeekRequestId) isLoadingFriendWeek = false; }
     }
 
-    private async Task SyncFriendWeek()
+    private Task ReplaceWeek() => ApplyWeekAsync(selectedFriendWeek, "friends_sync_success");
+
+    // Fills only the days I left empty and the friend has planned; the rest of my week is untouched.
+    private async Task CopyEmptyDays()
+    {
+        var entries = selectedFriendWeek.Where(day => !string.IsNullOrEmpty(day.MealId) && !myWeek.ContainsKey(day.Date)).ToList();
+        if (entries.Count == 0) { Toasts.Show(Loc["friends_nothing_to_copy"]); return; }
+        await ApplyWeekAsync(entries, "friends_copy_empty_success");
+    }
+
+    private async Task ApplyWeekAsync(List<WeeklyPlanEntry> entries, string successKey)
     {
         if (selectedFriend is null || isLoadingFriendWeek) return;
         isSyncing = true;
         try
         {
-            // selectedFriendWeek is already hydrated to all 7 dates of the displayed
-            // week (empty days included), so writing it back verbatim makes this
-            // week a full copy of the friend's plan — a day the friend left empty
-            // clears the matching day in mine too.
-            await UserService.SaveWeeklyPlanEntriesAsync(uid, selectedFriendWeek);
-            isError = false;
-            feedback = Loc.T("friends_sync_success", selectedFriend.DisplayName);
-            showSyncConfirm = false;
+            // For a full replace the list is hydrated to all 7 dates, so a day the friend left empty clears mine too.
+            await UserService.SaveWeeklyPlanEntriesAsync(uid, entries);
+            Toasts.Show(Loc.T(successKey, selectedFriend.DisplayName));
+            await LoadSelectedFriendWeekAsync();
         }
-        catch (Exception ex)
-        {
-            isError = true;
-            feedback = ex.Message;
-        }
+        catch (Exception ex) { isError = true; feedback = ex.Message; }
         finally { isSyncing = false; }
     }
 
@@ -361,14 +370,17 @@
         try
         {
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", uid);
-            isError = false;
-            feedback = "تم نسخ اسم المستخدم. أرسله لصديقك!";
+            Toasts.Show(Loc["friends_username_copied"]);
         }
-        catch { isError = true; feedback = "تعذر النسخ. يمكنك تحديد الاسم ونسخه."; }
+        catch { isError = true; feedback = Loc["friends_copy_failed"]; }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") await SendRequest(); }
-    private string MealName(string mealId) => mealNames.TryGetValue(mealId, out var name) ? name : "وجبة";
-    private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "؟" : name.Trim()[0].ToString();
+    private MealCatalogItem? MealFor(string? mealId) => !string.IsNullOrEmpty(mealId) && catalog.TryGetValue(mealId, out var meal) ? meal : null;
+    private MealCatalogItem? MyMealFor(DateOnly date) => myWeek.TryGetValue(date, out var id) ? MealFor(id) : null;
+    private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[0].ToString().ToUpperInvariant();
+
+    private void OnLanguage() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguage;
     private static DateOnly StartOfWeek(DateOnly date) => date.AddDays(-(7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7);
 }
