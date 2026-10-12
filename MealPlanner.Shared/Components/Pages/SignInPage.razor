@@ -1,58 +1,53 @@
 @page "/signin"
 @using MealPlanner.Shared.Services
 @using MealPlanner.Shared.Models
+@implements IDisposable
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 
-<div class="app onboarding-container" dir="@Loc.Direction">
-    <NxtCard CssClass="onboarding-card">
-        <div class="logo-container">
-            <span class="emoji-bounce">🍳</span>
-            <span class="emoji-float emoji-delay-1">🥑</span>
-            <span class="emoji-float emoji-delay-2">🍕</span>
-            <span class="emoji-float emoji-delay-3">🍓</span>
-        </div>
-        <h1 class="playful-title">تسجيل الدخول السريع</h1>
-        <p class="subtitle">أدخل بريدك الإلكتروني للبدء فوراً دون الحاجة لكلمة مرور.</p>
+<div class="mk-page mk-signin" dir="@Loc.Direction">
+    <div class="mk-signin-head">
+        <h1 class="mk-welcome-title">@Loc["app_title"]</h1>
+        <p class="mk-signin-lead">@Loc["signin_lead"]</p>
+        <p class="mk-subtitle">@Loc["signin_sub"]</p>
+    </div>
 
-        <div class="form-group">
-            <NxtTextInput CssClass="sign-in-input" Type="email" @bind-Value="email" @onkeydown="HandleKeyDown" Placeholder="name@example.com" Disabled="@isProcessing" />
-            @if (!string.IsNullOrEmpty(error))
-            {
-                <span class="error-msg text-danger mt-2 d-block">⚠️ @error</span>
-            }
-        </div>
+    <div class="mk-signin-card">
+        <label class="mk-field">
+            <span class="mk-label">@Loc["signin_email"]</span>
+            <input class="mk-input" type="email" dir="ltr" placeholder="name@example.com" @bind="email" @bind:event="oninput" @onkeydown="HandleKeyDown" disabled="@isProcessing" />
+        </label>
+        @if (!string.IsNullOrEmpty(error)) { <div class="mk-notice is-error">@error</div> }
+        <button class="mk-btn is-lg is-block" @onclick="Submit" disabled="@(string.IsNullOrWhiteSpace(email) || isProcessing)">
+            @(isProcessing ? Loc["loading"] : Loc["signin_continue"])
+        </button>
+    </div>
 
-        <NxtButton Variant="primary" CssClass="sign-in-submit" OnClick="Submit" Disabled="@(string.IsNullOrWhiteSpace(email) || isProcessing)">
-            @if (isProcessing)
-            {
-                <span>جاري التحميل... ⏳</span>
-            }
-            else
-            {
-                <span>متابعة 🚀</span>
-            }
-        </NxtButton>
-    </NxtCard>
+    <div class="mk-signin-guest">
+        <button class="mk-link-btn" @onclick="ContinueAsGuest">@Loc["signin_guest"]</button>
+        <span class="mk-subtitle">@Loc["signin_guest_note"]</span>
+    </div>
 </div>
 
 @code {
     private string email = "";
     private string error = "";
-    private bool isProcessing = false;
+    private bool isProcessing;
+
+    protected override void OnInitialized() => Loc.OnLanguageChanged += OnLanguage;
+    private void OnLanguage() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguage;
+
+    private void ContinueAsGuest() => Nav.NavigateTo("/", replace: true);
 
     private async Task Submit()
     {
         if (string.IsNullOrWhiteSpace(email)) return;
         email = email.Trim();
 
-        if (!IsValidEmail(email))
-        {
-            error = "الرجاء إدخال بريد إلكتروني صحيح.";
-            return;
-        }
+        if (!IsValidEmail(email)) { error = Loc["signin_invalid_email"]; return; }
 
         isProcessing = true;
         error = "";
@@ -60,30 +55,14 @@
 
         try
         {
-            // Sign in locally to get current user credentials
-            var user = await Auth.SignInAsync(email);
-            var sanitized = user.Uid;
-
-            // Check database for existing profile
-            var profile = await UserService.GetProfileAsync(sanitized);
-            if (profile is not null && !string.IsNullOrWhiteSpace(profile.DisplayName))
-            {
-                // Returning user with a setup profile: go to dashboard
-                Nav.NavigateTo("/");
-            }
-            else
-            {
-                Nav.NavigateTo("/");
-            }
+            await Auth.SignInAsync(email);
+            Nav.NavigateTo("/", replace: true);
         }
         catch (Exception ex)
         {
-            error = $"حدث خطأ أثناء تسجيل الدخول: {ex.Message}";
+            error = Loc.T("signin_failed", ex.Message);
         }
-        finally
-        {
-            isProcessing = false;
-        }
+        finally { isProcessing = false; }
     }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
@@ -91,16 +70,13 @@
         if (e.Key == "Enter") await Submit();
     }
 
-    private bool IsValidEmail(string emailStr)
+    private static bool IsValidEmail(string emailStr)
     {
         try
         {
             var addr = new System.Net.Mail.MailAddress(emailStr);
-            return addr.Address == emailStr && emailStr.Contains(".");
+            return addr.Address == emailStr && emailStr.Contains('.');
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
 }
