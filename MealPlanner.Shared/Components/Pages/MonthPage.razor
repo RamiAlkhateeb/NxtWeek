@@ -1,60 +1,101 @@
-﻿@page "/month"
+@page "/month"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
+@inject IMealImageService MealImages
 @inject IAuthService Auth
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 
-<div class="app app-content-wrapper month-page" dir="@Loc.Direction">
-    <a class="month-settings-back" href="settings">@Loc["month_back_settings"]</a>
-    <div class="month-header">
-        <button aria-label="@Loc["month_prev"]" @onclick="PreviousMonth">‹</button>
-        <h1>@MonthLabel</h1>
-        <button aria-label="@Loc["month_next"]" @onclick="NextMonth">›</button>
-    </div>
-
-    @if (isLoading)
-    {
-        <p class="loading-text">@Loc["loading"]</p>
-    }
-    else
-    {
-        <div class="month-weekdays">
-            @foreach (var day in WeekdayLabels) { <span>@day</span> }
+<div class="mk-page mk-month" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row">
+            <h1 class="mk-title">@Loc["app_title"]</h1>
+            <div class="mk-seg is-inline" role="tablist">
+                <a href="" role="tab">@Loc["month_seg_week"]</a>
+                <a href="month" role="tab" class="is-active" aria-selected="true">@Loc["month_seg_month"]</a>
+            </div>
         </div>
-        <div class="month-grid">
-            @foreach (var day in calendarDays)
-            {
-                @if (day is null)
+        <div class="mk-week-nav">
+            <button class="mk-icon-btn is-plain" aria-label="@Loc["month_prev"]" @onclick="PreviousMonth">
+                <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+            <span class="mk-month-label">@MonthLabel</span>
+            <button class="mk-icon-btn is-plain" aria-label="@Loc["month_next"]" @onclick="NextMonth">
+                <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="mk-month-body">
+        <div class="mk-month-weekdays">
+            @foreach (var day in WeekdayOrder) { <span>@Loc.GetDayAbbr(day, 2)</span> }
+        </div>
+        @if (isLoading)
+        {
+            <NxtSkeleton />
+        }
+        else
+        {
+            <div class="mk-month-grid">
+                @foreach (var cell in cells)
                 {
-                    <div class="month-cell month-outside"></div>
-                }
-                else
-                {
-                    var entry = entries.TryGetValue(day.Value, out var found) ? found : null;
-                    <button class="month-cell @(day.Value == today ? "today" : "")" disabled="@(entry is null)" @onclick="() => OpenMeal(entry)">
-                        <span class="month-day-number">@day.Value.Day</span>
-                        @if (entry is not null)
-                        {
-                            <span class="month-meal-name" title="@entry.Name">@entry.Name</span>
-                            @if (entry.IsFavorite) { <span class="month-favorite">⭐</span> }
-                        }
+                    entries.TryGetValue(cell.Date, out var entry);
+                    var isToday = cell.Date == today;
+                    var cellLabel = entry is null ? Loc.FormatDayDate(cell.Date) : $"{Loc.FormatDayDate(cell.Date)} · {entry.Meal.Name}";
+                    <button class="mk-month-cell @(cell.InMonth ? "" : "is-outside") @(isToday ? "is-today" : "") @(cell.Date == selected ? "is-selected" : "")"
+                            aria-label="@cellLabel"
+                            @onclick="() => Select(cell.Date)">
+                        <span class="mk-month-day">@cell.Date.Day</span>
+                        <span class="mk-dot @(entry is null ? "is-none" : MealTypeStyle.T(entry.Meal.MealType))"></span>
+                        <span class="mk-month-name">@entry?.Meal.Name</span>
                     </button>
                 }
+            </div>
+        }
+    </div>
+
+    @if (selected is not null && !isLoading)
+    {
+        entries.TryGetValue(selected.Value, out var chosen);
+        <div class="mk-month-preview">
+            @if (chosen is not null)
+            {
+                <div class="mk-tile mk-preview-tile @MealTypeStyle.T(chosen.Meal.MealType)"><img src="@MealImages.GetImageUrl(chosen.Meal)" alt="" /></div>
+                <div class="mk-preview-text">
+                    <span class="mk-row-date">@PreviewDate(selected.Value)</span>
+                    <span class="mk-preview-name">@chosen.Meal.Name</span>
+                </div>
+                <a class="mk-icon-btn is-ink" href="meal/@chosen.Meal.Id?day=@selected.Value.ToString("yyyy-MM-dd")" aria-label="@Loc["month_open_details"]">
+                    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                </a>
+            }
+            else
+            {
+                <div class="mk-row-tile is-add mk-preview-tile" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14"/></svg></div>
+                <div class="mk-preview-text">
+                    <span class="mk-row-date">@PreviewDate(selected.Value)</span>
+                    <span class="mk-preview-name is-add">@Loc["week_add_meal"]</span>
+                </div>
+                <a class="mk-icon-btn is-accent" href="meals?day=@selected.Value.ToString("yyyy-MM-dd")" aria-label="@Loc["week_add_meal"]">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                </a>
             }
         </div>
     }
 </div>
 
 @code {
-    private readonly Dictionary<DateOnly, MonthMeal> entries = new();
-    private List<DateOnly?> calendarDays = new();
+    private sealed record Entry(MealCatalogItem Meal, bool IsFavorite);
+    private sealed record Cell(DateOnly Date, bool InMonth);
+
+    private readonly Dictionary<DateOnly, Entry> entries = new();
+    private List<Cell> cells = new();
     private readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
     private static readonly DayOfWeek[] WeekdayOrder = [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday];
-    private IEnumerable<string> WeekdayLabels => WeekdayOrder.Select(Loc.GetShortDayName);
     private DateOnly currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateOnly? selected = DateOnly.FromDateTime(DateTime.Today);
     private bool isLoading = true;
     private string uid = "";
     private string MonthLabel => Loc.FormatMonthYear(currentMonth);
@@ -68,6 +109,7 @@
             return;
         }
         uid = user.Uid;
+        await MealImages.EnsureLoadedAsync();
         await LoadMonthAsync();
     }
 
@@ -75,21 +117,28 @@
     {
         isLoading = true;
         entries.Clear();
-        var plan = await UserService.GetMonthPlanAsync(uid, currentMonth.Year, currentMonth.Month);
-        var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id, m => m.Name);
-        foreach (var item in plan)
-            if (catalog.TryGetValue(item.MealId, out var name)) entries[item.Date] = new(name, item.MealId, item.IsFavorite);
 
+        // The grid is whole weeks, so it also shows the tail of the previous month and the head of the next.
         var firstOffset = ((int)currentMonth.DayOfWeek + 6) % 7;
         var daysInMonth = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
         var cellCount = firstOffset + daysInMonth;
         cellCount += (7 - cellCount % 7) % 7;
-        calendarDays = Enumerable.Range(0, cellCount).Select(i => i < firstOffset || i >= firstOffset + daysInMonth ? (DateOnly?)null : currentMonth.AddDays(i - firstOffset)).ToList();
+        var gridStart = currentMonth.AddDays(-firstOffset);
+        cells = Enumerable.Range(0, cellCount)
+            .Select(i => gridStart.AddDays(i))
+            .Select(d => new Cell(d, d.Month == currentMonth.Month && d.Year == currentMonth.Year))
+            .ToList();
+
+        var plan = await UserService.GetWeeklyPlanAsync(uid, gridStart, gridStart.AddDays(cellCount - 1));
+        var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id);
+        foreach (var item in plan)
+            if (catalog.TryGetValue(item.MealId, out var meal)) entries[item.Date] = new(meal, item.IsFavorite);
+
         isLoading = false;
     }
 
-    private async Task PreviousMonth() { currentMonth = currentMonth.AddMonths(-1); await LoadMonthAsync(); }
-    private async Task NextMonth() { currentMonth = currentMonth.AddMonths(1); await LoadMonthAsync(); }
-    private void OpenMeal(MonthMeal? meal) { if (meal is not null) Nav.NavigateTo($"/meal/{meal.MealId}"); }
-    private sealed record MonthMeal(string Name, string MealId, bool IsFavorite);
+    private async Task PreviousMonth() { currentMonth = currentMonth.AddMonths(-1); selected = null; await LoadMonthAsync(); }
+    private async Task NextMonth() { currentMonth = currentMonth.AddMonths(1); selected = null; await LoadMonthAsync(); }
+    private void Select(DateOnly date) => selected = selected == date ? null : date;
+    private string PreviewDate(DateOnly date) => date == today ? $"{Loc.FormatDayDate(date)} · {Loc["month_today"]}" : Loc.FormatDayDate(date);
 }

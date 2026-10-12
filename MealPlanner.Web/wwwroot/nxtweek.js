@@ -34,6 +34,37 @@ window.nxtweek = {
   markFirstLaunchWizardSeen() {
     localStorage.setItem('nxtweek.firstLaunchWizardSeen', 'true');
   },
+  goBack(fallback) {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = fallback || '/';
+  },
+  // Opens the camera/gallery picker and resolves with a downscaled JPEG data URL (or null if cancelled).
+  pickPhoto(maxSize) {
+    return new Promise(resolve => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => {
+        const file = input.files && input.files[0];
+        if (!file) { resolve(null); return; }
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL('image/jpeg', 0.78));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+      };
+      input.addEventListener('cancel', () => resolve(null));
+      input.click();
+    });
+  },
   scrollToId(elementId, block = 'center') {
     const element = document.getElementById(elementId);
     if (element) element.scrollIntoView({ behavior: 'smooth', block, inline: 'nearest' });

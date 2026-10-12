@@ -27,6 +27,8 @@ builder.Services.AddScoped<IMealService>(sp => sp.GetRequiredService<FirebaseMea
 builder.Services.AddScoped<IShoppingListService, FirebaseShoppingListService>();
 builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();
 builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
+builder.Services.AddScoped<IWeekFillService, WeekFillService>();
+builder.Services.AddScoped<IMealAssignService, MealAssignService>();
 builder.Services.AddScoped<IGeminiPlannerService, GeminiPlannerService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();
 builder.Services.AddScoped<IDataExportService, LocalDataExportService>();
@@ -51,6 +53,7 @@ builder.Services.AddNxtUi(o =>
         [ThemeService.StorageKey] = "nxtweek.theme"
     };
 });
-builder.Services.AddSingleton<IMealImageService, MealImageService>();
+builder.Services.AddScoped<IMealImageService, MealImageService>();
+builder.Services.AddSingleton<IAisleService, AisleService>();
 
 await builder.Build().RunAsync();
