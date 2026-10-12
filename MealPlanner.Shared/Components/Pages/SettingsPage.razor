@@ -5,38 +5,100 @@
 @inject IUserService UserService
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
+@inject ThemeService Theme
 @inject ToastService Toasts
 @implements IDisposable
 
-@* The family settings shell (language, appearance, AI, install, about) with Makdous' own account sections first. *@
-<div class="app app-content-wrapper">
-  <NxtSettingsPage InstallHref="settings/install">
-    <AppSections>
-      <NxtSettingsSection Icon="👤" Title="@Loc["settings_username_title"]" Description="@(hasUsername ? null : Loc["settings_username_prompt"])">
-        @if (hasUsername)
-        {
-          <div class="nxt-input-row">
-            <code class="nxt-input setting-id-code" dir="ltr">@currentUsername</code>
-            <NxtIconButton Label="@Loc["copy"]" OnClick="CopyUsername">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-            </NxtIconButton>
-          </div>
-        }
-        <label class="nxt-label" for="settings-username">@(hasUsername ? Loc["settings_username_change"] : Loc["settings_username_choose"])</label>
-        <div class="nxt-input-row">
-          <input id="settings-username" class="nxt-input" dir="ltr" autocomplete="off" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="@Loc["settings_username_placeholder"]" />
-          <NxtIconButton Label="@Loc["save"]" Accent="true" OnClick="SaveUsername" Disabled="isSavingUsername">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-          </NxtIconButton>
+@* Everyday options first; the Gemini key, model and About live under "Advanced". *@
+<div class="mk-page mk-settings" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row">
+            <div class="mk-title-block"><h1 class="mk-title">@Loc["settings_title"]</h1></div>
+            <button class="mk-icon-btn" aria-label="@Loc["back"]" @onclick="Close">
+                <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
         </div>
-        @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="friend-feedback @(usernameError ? "error" : "")">@usernameFeedback</p> }
-      </NxtSettingsSection>
+    </header>
 
-      <NxtSettingsSection Icon="🔁" Title="@Loc["settings_recover_title"]" Description="@Loc["settings_recover_desc"]">
-        <a class="nxt-link" href="settings/recover">@Loc["settings_recover_link"]</a>
-      </NxtSettingsSection>
-    </AppSections>
-  </NxtSettingsPage>
+    <main class="mk-stack">
+        <section class="mk-set-card">
+            <h2>@Loc["settings_lang_title"]</h2>
+            <div class="mk-seg is-inset" role="radiogroup" aria-label="@Loc["settings_lang_title"]">
+                @foreach (var language in Loc.AvailableLanguages)
+                {
+                    var code = language.Code;
+                    <button role="radio" aria-checked="@(Loc.CurrentLanguage == code)" class="@(Loc.CurrentLanguage == code ? "is-active" : "")" @onclick="() => Loc.SetLanguageAsync(code)">@language.NativeName</button>
+                }
+            </div>
+        </section>
+
+        <section class="mk-set-card">
+            <h2>@Loc["settings_theme_title"]</h2>
+            <div class="mk-seg is-inset" role="radiogroup" aria-label="@Loc["settings_theme_title"]">
+                @foreach (var mode in new[] { "system", "light", "dark" })
+                {
+                    var value = mode;
+                    <button role="radio" aria-checked="@(themeMode == value)" class="@(themeMode == value ? "is-active" : "")" @onclick="() => SetThemeAsync(value)">@Loc["settings_theme_" + value]</button>
+                }
+            </div>
+        </section>
+
+        <section class="mk-set-card">
+            <h2>@Loc["settings_username_title"]</h2>
+            @if (hasUsername)
+            {
+                <div class="mk-set-row">
+                    <code class="mk-set-code" dir="ltr">@currentUsername</code>
+                    <button class="mk-square-btn" aria-label="@Loc["copy"]" @onclick="CopyUsername">
+                        <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>
+                    </button>
+                </div>
+                @if (!editingUsername)
+                {
+                    <button class="mk-link-btn is-block-start" @onclick="() => editingUsername = true">@Loc["settings_username_change"]</button>
+                }
+            }
+            else
+            {
+                <p class="mk-subtitle">@Loc["settings_username_prompt"]</p>
+            }
+            @if (!hasUsername || editingUsername)
+            {
+                <div class="mk-set-row">
+                    <input class="mk-input" dir="ltr" autocomplete="off" aria-label="@(hasUsername ? Loc["settings_username_change"] : Loc["settings_username_choose"])" @bind="usernameInput" @bind:event="oninput" @onblur="CheckUsername" placeholder="@Loc["settings_username_placeholder"]" />
+                    <button class="mk-square-btn is-ink" aria-label="@Loc["save"]" @onclick="SaveUsername" disabled="@isSavingUsername">
+                        <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                    </button>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(usernameFeedback)) { <p class="mk-notice @(usernameError ? "is-error" : "")">@usernameFeedback</p> }
+        </section>
+
+        <a class="mk-set-link" href="settings/recover">
+            <span class="mk-set-link-copy"><strong>@Loc["settings_recover_title"]</strong><span>@Loc["settings_recover_desc"]</span></span>
+            <svg class="i mk-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </a>
+
+        <a class="mk-set-link" href="settings/install">
+            <span class="mk-set-link-copy"><strong>@Loc["settings_install_title"]</strong><span>@Loc["settings_install_desc"]</span></span>
+            <svg class="i mk-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </a>
+
+        <section class="mk-set-card is-flush">
+            <button class="mk-set-toggle" aria-expanded="@showAdvanced" @onclick="() => showAdvanced = !showAdvanced">
+                <span>@Loc["settings_advanced"]</span>
+                <svg class="i mk-past-chev @(showAdvanced ? "is-open" : "")" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            @if (showAdvanced)
+            {
+                <div class="mk-set-advanced"><AiSection /><AboutSection /></div>
+            }
+            else
+            {
+                <p class="mk-set-hint">@Loc["settings_advanced_hint"]</p>
+            }
+        </section>
+    </main>
 </div>
 
 @code {
@@ -46,6 +108,9 @@
   private string usernameFeedback = "";
   private bool usernameError;
   private bool isSavingUsername;
+  private bool editingUsername;
+  private bool showAdvanced;
+  private string themeMode = "system";
   private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
 
   protected override async Task OnInitializedAsync() {
@@ -56,7 +121,15 @@
     uid = user.Uid;
     var profile = await UserService.GetProfileAsync(uid);
     currentUsername = profile?.Username ?? "";
+    themeMode = await Theme.GetAsync();
   }
+
+  private async Task SetThemeAsync(string value) {
+    themeMode = value;
+    await Theme.SetAsync(value);
+  }
+
+  private async Task Close() => await JS.InvokeVoidAsync("nxtweek.goBack", "/");
 
   private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
 
@@ -82,6 +155,7 @@
       currentUsername = username;
       uid = username;
       usernameInput = "";
+      editingUsername = false;
       usernameError = false;
       Toasts.Show(Loc["settings_username_saved"]);
     } catch (Exception ex) {

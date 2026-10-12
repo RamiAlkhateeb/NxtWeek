@@ -583,3 +583,24 @@ html, body { background: var(--nxt-page); }
 .mk-input { height: 52px; border-radius: 16px; border: 1px solid var(--nxt-border); background: var(--nxt-inset); padding: 0 14px; font: inherit; font-size: 16px; outline: none; color: var(--nxt-text); text-align: start; }
 .mk-signin-guest { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .mk-signin-guest .mk-link-btn { height: 48px; padding: 0 20px; font-size: 15px; font-weight: 700; }
+
+/* ---- Settings ---- */
+.mk-set-card { background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: 24px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mk-set-card.is-flush { padding: 0; gap: 0; overflow: hidden; }
+.mk-set-card h2 { margin: 0; font-size: 16px; font-weight: 800; }
+.mk-seg.is-inset { background: var(--nxt-inset); }
+.mk-set-row { display: flex; align-items: center; gap: 8px; }
+.mk-set-code { flex: 1; min-width: 0; height: 48px; border-radius: 16px; background: var(--nxt-inset); display: flex; align-items: center; padding: 0 14px; font: inherit; font-size: 15px; color: var(--nxt-text); overflow-wrap: anywhere; }
+.mk-set-row .mk-input { flex: 1; min-width: 0; height: 48px; }
+.mk-square-btn { width: 48px; height: 48px; border-radius: 16px; border: 0; background: var(--nxt-inset); color: var(--nxt-text); display: grid; place-items: center; flex: none; cursor: pointer; }
+.mk-square-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mk-square-btn.is-ink { background: var(--nxt-ink); color: var(--nxt-on-ink); }
+.mk-link-btn.is-block-start { align-self: flex-start; min-height: 32px; }
+.mk-set-link { background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: 24px; padding: 14px; display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--nxt-text); min-height: 64px; box-sizing: border-box; }
+.mk-set-link-copy { flex: 1; display: flex; flex-direction: column; line-height: 1.4; min-width: 0; }
+.mk-set-link-copy strong { font-size: 16px; font-weight: 800; }
+.mk-set-link-copy span { font-size: 12px; color: var(--mk-muted); }
+.mk-set-link svg { color: var(--mk-muted); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mk-set-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 0 14px; border: 0; background: transparent; color: var(--nxt-text); font: inherit; font-size: 16px; font-weight: 800; cursor: pointer; }
+.mk-set-hint { margin: 0; padding: 0 14px 14px; font-size: 13px; line-height: 1.6; color: var(--mk-muted); }
+.mk-set-advanced { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 10px; }
