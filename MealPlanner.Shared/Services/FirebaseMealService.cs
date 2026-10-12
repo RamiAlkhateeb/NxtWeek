@@ -140,11 +140,11 @@ public class FirebaseMealService : IMealService
 
     new() { Id = "m3", Name = "يخنة بطاطا باللحمة", MealType = MealType.Meat, Ingredients = new() { "بطاطا", "لحم", "طماطم", "بصل", "ثوم" }, SideDishes = new() { "أرز", "سلطة" } },
 
-    new() { Id = "m5", Name = "مجدرة", MealType = MealType.Vegan, Ingredients = new() { "عدس", "برغل", "بصل", "زيت زيتون" }, SideDishes = new() { "لبن", "مخلل", "سلطة" } },
+    new() { Id = "m5", Name = "مجدرة", MealType = MealType.Vegetarian, Ingredients = new() { "عدس", "برغل", "بصل", "زيت زيتون" }, SideDishes = new() { "لبن", "مخلل", "سلطة" } },
 
     new() { Id = "m6", Name = "مفركة بطاطا", MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "بيض", "بصل", "زيت زيتون" }, SideDishes = new() { "سلطة", "خبز" } },
 
-    new() { Id = "m7", Name = "شوربة عدس", MealType = MealType.Vegan, Ingredients = new() { "عدس أحمر", "بصل", "كمون", "ليمون" }, SideDishes = new() { "خبز محمص" } },
+    new() { Id = "m7", Name = "شوربة عدس", MealType = MealType.Vegetarian, Ingredients = new() { "عدس أحمر", "بصل", "كمون", "ليمون" }, SideDishes = new() { "خبز محمص" } },
 
     new() { Id = "m8", Name = "فتة حمص", MealType = MealType.Vegetarian, Ingredients = new() { "حمص", "لبن", "طحينة", "خبز", "ثوم" }, SideDishes = new() { "مخلل" } },
 
@@ -164,7 +164,7 @@ public class FirebaseMealService : IMealService
 
     new() { Id = "m18", Name = "شاورما دجاج", MealType = MealType.Chicken, Ingredients = new() { "دجاج", "ثوم", "بهارات شاورما", "ليمون" }, SideDishes = new() { "بطاطا", "ثومية", "مخلل" } },
 
-    new() { Id = "m19", Name = "ورق عنب", MealType = MealType.Vegan, Ingredients = new() { "ورق عنب", "أرز", "بقدونس", "طماطم", "زيت زيتون" }, SideDishes = new() { "سلطة" } },
+    new() { Id = "m19", Name = "ورق عنب", MealType = MealType.Vegetarian, Ingredients = new() { "ورق عنب", "أرز", "بقدونس", "طماطم", "زيت زيتون" }, SideDishes = new() { "سلطة" } },
 
 new() { Id = "m20", Name = "أرضي شوكي مع اللحمة والرز", MealType = MealType.Meat, Ingredients = new() { "أرضي شوكي", "لحم", "أرز", "بصل", "ثوم" }, SideDishes = new() { "لبن" } },
 
@@ -176,9 +176,9 @@ new() { Id = "m23", Name = "برغر دجاج", MealType = MealType.Chicken, Ing
 
 new() { Id = "m24", Name = "برغل مع حمص", MealType = MealType.Vegetarian, Ingredients = new() { "برغل", "حمص", "زيت زيتون", "ليمون" }, SideDishes = new() { "سلطة" } },
 
-new() { Id = "m25", Name = "بطاطا بالبندورة", MealType = MealType.Vegan, Ingredients = new() { "بطاطا", "طماطم", "بصل", "ثوم" }, SideDishes = new() { "أرز" } },
+new() { Id = "m25", Name = "بطاطا بالبندورة", MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "طماطم", "بصل", "ثوم" }, SideDishes = new() { "أرز" } },
 
-new() { Id = "m26", Name = "بطاطا مسلوقة", MealType = MealType.Vegan, Ingredients = new() { "بطاطا", "ملح", "زيت زيتون" }, SideDishes = new() { "لبن" } },
+new() { Id = "m26", Name = "بطاطا مسلوقة", MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "ملح", "زيت زيتون" }, SideDishes = new() { "لبن" } },
 
 new() { Id = "m27", Name = "بطاطا وبيض", MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "بيض", "بصل" }, SideDishes = new() { "خبز" } },
 
@@ -192,7 +192,7 @@ new() { Id = "m31", Name = "رز وبازيلا مع اللحمة", MealType = M
 
 new() { Id = "m32", Name = "رز وفاصولية حب مع لحمة", MealType = MealType.Meat, Ingredients = new() { "فاصولية بيضاء", "لحم", "أرز", "ثوم" }, SideDishes = new() { "مخلل" } },
 
-new() { Id = "m33", Name = "فاصولية بالبندورة مع أرز", MealType = MealType.Vegan, Ingredients = new() { "فاصولية خضراء", "طماطم", "ثوم", "أرز" }, SideDishes = new() { "سلطة" } },
+new() { Id = "m33", Name = "فاصولية بالبندورة مع أرز", MealType = MealType.Vegetarian, Ingredients = new() { "فاصولية خضراء", "طماطم", "ثوم", "أرز" }, SideDishes = new() { "سلطة" } },
 
 new() { Id = "m34", Name = "رز مع القريدس", MealType = MealType.Fish, Ingredients = new() { "قريدس", "أرز", "ثوم", "ذرة" }, SideDishes = new() { "سلطة" } },
 
@@ -204,9 +204,9 @@ new() { Id = "m37", Name = "سمك ورز", MealType = MealType.Fish, Ingredient
 
 new() { Id = "m38", Name = "شرمبس مع معكرونة", MealType = MealType.Fish, Ingredients = new() { "شرمبس", "معكرونة", "ثوم", "زيت زيتون" }, SideDishes = new() { "خبز" } },
 
-new() { Id = "m39", Name = "شوربة عدس مع بطاطا بالفرن", MealType = MealType.Vegan, Ingredients = new() { "عدس أحمر", "بطاطا", "بصل", "كمون" }, SideDishes = new() { "خبز" } },
+new() { Id = "m39", Name = "شوربة عدس مع بطاطا بالفرن", MealType = MealType.Vegetarian, Ingredients = new() { "عدس أحمر", "بطاطا", "بصل", "كمون" }, SideDishes = new() { "خبز" } },
 
-new() { Id = "m40", Name = "شوربة بطاطا", MealType = MealType.Vegan, Ingredients = new() { "بطاطا", "بصل", "ثوم", "كريمة نباتية" }, SideDishes = new() { "خبز محمص" } },
+new() { Id = "m40", Name = "شوربة بطاطا", MealType = MealType.Vegetarian, Ingredients = new() { "بطاطا", "بصل", "ثوم", "كريمة نباتية" }, SideDishes = new() { "خبز محمص" } },
 
 new() { Id = "m41", Name = "تونة مع حمص", MealType = MealType.Fish, Ingredients = new() { "تونة", "حمص", "ليمون", "زيت زيتون" }, SideDishes = new() { "خبز" } },
 
@@ -216,7 +216,7 @@ new() { Id = "m43", Name = "فخاد دجاج مع برغل", MealType = MealTyp
 
 new() { Id = "m44", Name = "فخاد دجاج مع أرز", MealType = MealType.Chicken, Ingredients = new() { "فخاد دجاج", "أرز", "بصل", "بهارات" }, SideDishes = new() { "سلطة" } },
 
-new() { Id = "m45", Name = "فول وحمص", MealType = MealType.Vegan, Ingredients = new() { "فول", "حمص", "ليمون", "زيت زيتون", "ثوم" }, SideDishes = new() { "خبز" } },
+new() { Id = "m45", Name = "فول وحمص", MealType = MealType.Vegetarian, Ingredients = new() { "فول", "حمص", "ليمون", "زيت زيتون", "ثوم" }, SideDishes = new() { "خبز" } },
 
 new() { Id = "m46", Name = "قريدس مع معكرونة", MealType = MealType.Fish, Ingredients = new() { "قريدس", "معكرونة", "ثوم", "زيت زيتون" }, SideDishes = new() { "سلطة" } },
 
@@ -230,12 +230,12 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "en_m1", Name = "Grilled Chicken Breast with Rice", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken breast", "Rice", "Garlic", "Lemon", "Olive oil" }, SideDishes = new() { "Green salad", "Yogurt" } },
     new() { Id = "en_m2", Name = "Spaghetti Bolognese", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Spaghetti", "Minced beef", "Tomato sauce", "Onion", "Parmesan" }, SideDishes = new() { "Garlic bread", "Side salad" } },
     new() { Id = "en_m3", Name = "Beef Burger with Fries", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Burger bun", "Beef patty", "Lettuce", "Tomato", "Cheddar" }, SideDishes = new() { "French fries", "Coleslaw" } },
-    new() { Id = "en_m4", Name = "Red Lentil Soup", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Red lentils", "Onion", "Cumin", "Lemon", "Carrot" }, SideDishes = new() { "Toasted pita bread" } },
+    new() { Id = "en_m4", Name = "Red Lentil Soup", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Red lentils", "Onion", "Cumin", "Lemon", "Carrot" }, SideDishes = new() { "Toasted pita bread" } },
     new() { Id = "en_m5", Name = "Grilled Salmon with Vegetables", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Salmon fillet", "Lemon", "Dill", "Asparagus", "Olive oil" }, SideDishes = new() { "Mashed potatoes", "Salad" } },
     new() { Id = "en_m6", Name = "Chicken Fajitas", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken strips", "Bell peppers", "Onion", "Tortilla wraps", "Fajita spices" }, SideDishes = new() { "Guacamole", "Sour cream" } },
     new() { Id = "en_m7", Name = "Margherita Pizza", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Pizza dough", "Tomato sauce", "Mozzarella", "Fresh basil" }, SideDishes = new() { "Caesar salad" } },
     new() { Id = "en_m8", Name = "Crispy Fish and Chips", MealType = MealType.Fish, Language = "en", Ingredients = new() { "White fish fillet", "Batter", "Potatoes", "Lemon" }, SideDishes = new() { "Tartar sauce", "Peas" } },
-    new() { Id = "en_m9", Name = "Vegetable Stir Fry with Noodles", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Noodles", "Broccoli", "Carrots", "Soy sauce", "Sesame oil" }, SideDishes = new() { "Spring rolls" } },
+    new() { Id = "en_m9", Name = "Vegetable Stir Fry with Noodles", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Noodles", "Broccoli", "Carrots", "Soy sauce", "Sesame oil" }, SideDishes = new() { "Spring rolls" } },
     new() { Id = "en_m10", Name = "Beef Steak with Mashed Potatoes", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Beef steak", "Potatoes", "Butter", "Black pepper", "Garlic" }, SideDishes = new() { "Steamed vegetables" } },
     new() { Id = "en_m11", Name = "Chicken Shawarma Wrap", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken", "Pita bread", "Garlic sauce", "Pickles", "Spices" }, SideDishes = new() { "French fries" } },
     new() { Id = "en_m12", Name = "Creamy Mushroom Pasta", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Penne pasta", "Mushrooms", "Cream", "Garlic", "Parmesan" }, SideDishes = new() { "Garlic bread" } },
@@ -243,7 +243,7 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "en_m14", Name = "Shepherd's Pie", MealType = MealType.Meat, Language = "en", Ingredients = new() { "Minced lamb or beef", "Mashed potatoes", "Peas", "Carrots", "Gravy" }, SideDishes = new() { "Green salad" } },
     new() { Id = "en_m15", Name = "Shakshuka with Warm Bread", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Eggs", "Tomatoes", "Bell peppers", "Onion", "Cumin" }, SideDishes = new() { "Pita bread" } },
     new() { Id = "en_m16", Name = "Baked Chicken Thighs with Potatoes", MealType = MealType.Chicken, Language = "en", Ingredients = new() { "Chicken thighs", "Potatoes", "Rosemary", "Garlic", "Olive oil" }, SideDishes = new() { "Cucumber yogurt salad" } },
-    new() { Id = "en_m17", Name = "Chickpea and Spinach Stew", MealType = MealType.Vegan, Language = "en", Ingredients = new() { "Chickpeas", "Spinach", "Tomato puree", "Garlic", "Coriander" }, SideDishes = new() { "Rice" } },
+    new() { Id = "en_m17", Name = "Chickpea and Spinach Stew", MealType = MealType.Vegetarian, Language = "en", Ingredients = new() { "Chickpeas", "Spinach", "Tomato puree", "Garlic", "Coriander" }, SideDishes = new() { "Rice" } },
     new() { Id = "en_m18", Name = "Shrimp Scampi with Pasta", MealType = MealType.Fish, Language = "en", Ingredients = new() { "Shrimp", "Linguine", "Garlic", "Butter", "Lemon juice", "Parsley" }, SideDishes = new() { "Crusty bread" } },
 
     // German meals. Tags drive the dish illustration picked by IMealImageService,
@@ -268,11 +268,11 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "de_m18", Name = "Maultaschen in der Brühe", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Maultaschen", "Gemüsebrühe", "Zwiebeln", "Schnittlauch" }, SideDishes = new() { "Kartoffelsalat" } },
     new() { Id = "de_m19", Name = "Spinat mit Spiegelei und Kartoffeln", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "eggs" }, Ingredients = new() { "Blattspinat", "Eier", "Kartoffeln", "Knoblauch", "Muskat" }, SideDishes = new() { "Salzkartoffeln" } },
     new() { Id = "de_m20", Name = "Pfannkuchen mit Apfelmus", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "eggs" }, Ingredients = new() { "Mehl", "Milch", "Eier", "Zucker", "Butter" }, SideDishes = new() { "Apfelmus", "Zimtzucker" } },
-    new() { Id = "de_m21", Name = "Linsensuppe", MealType = MealType.Vegan, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Tellerlinsen", "Möhren", "Sellerie", "Lauch", "Lorbeer" }, SideDishes = new() { "Bauernbrot" } },
-    new() { Id = "de_m22", Name = "Erbsensuppe", MealType = MealType.Vegan, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Trockenerbsen", "Möhren", "Kartoffeln", "Majoran", "Zwiebeln" }, SideDishes = new() { "Roggenbrot" } },
-    new() { Id = "de_m23", Name = "Grünkohleintopf", MealType = MealType.Vegan, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Grünkohl", "Kartoffeln", "Zwiebeln", "Senf", "Gemüsebrühe" }, SideDishes = new() { "Senf", "Brot" } },
-    new() { Id = "de_m24", Name = "Kürbissuppe mit Ingwer", MealType = MealType.Vegan, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Hokkaidokürbis", "Ingwer", "Kokosmilch", "Zwiebeln", "Gemüsebrühe" }, SideDishes = new() { "Kürbiskerne", "Brot" } },
-    new() { Id = "de_m25", Name = "Gemüsepfanne mit Reis", MealType = MealType.Vegan, Language = "de", Tags = new() { "rice" }, Ingredients = new() { "Paprika", "Zucchini", "Möhren", "Sojasoße", "Reis" }, SideDishes = new() { "Sesam" } },
+    new() { Id = "de_m21", Name = "Linsensuppe", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Tellerlinsen", "Möhren", "Sellerie", "Lauch", "Lorbeer" }, SideDishes = new() { "Bauernbrot" } },
+    new() { Id = "de_m22", Name = "Erbsensuppe", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Trockenerbsen", "Möhren", "Kartoffeln", "Majoran", "Zwiebeln" }, SideDishes = new() { "Roggenbrot" } },
+    new() { Id = "de_m23", Name = "Grünkohleintopf", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "stew" }, Ingredients = new() { "Grünkohl", "Kartoffeln", "Zwiebeln", "Senf", "Gemüsebrühe" }, SideDishes = new() { "Senf", "Brot" } },
+    new() { Id = "de_m24", Name = "Kürbissuppe mit Ingwer", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "soup" }, Ingredients = new() { "Hokkaidokürbis", "Ingwer", "Kokosmilch", "Zwiebeln", "Gemüsebrühe" }, SideDishes = new() { "Kürbiskerne", "Brot" } },
+    new() { Id = "de_m25", Name = "Gemüsepfanne mit Reis", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "rice" }, Ingredients = new() { "Paprika", "Zucchini", "Möhren", "Sojasoße", "Reis" }, SideDishes = new() { "Sesam" } },
     new() { Id = "de_m26", Name = "Brotzeit mit Obatzda", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "bread" }, Ingredients = new() { "Camembert", "Butter", "Zwiebeln", "Paprikapulver", "Brezn" }, SideDishes = new() { "Radieschen", "Gewürzgurken" } },
     new() { Id = "de_m27", Name = "Bunter Sommersalat mit Feta", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "salad" }, Ingredients = new() { "Blattsalat", "Tomaten", "Gurke", "Feta", "Olivenöl" }, SideDishes = new() { "Baguette" } }
 };

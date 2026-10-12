@@ -50,7 +50,7 @@ public class GeminiPlannerService : IGeminiPlannerService
                         {
                             date = new { type = "STRING" },
                             name = new { type = "STRING" },
-                            mealType = new { type = "STRING", @enum = new[] { "Meat", "Chicken", "Fish", "Vegetarian", "Vegan" } },
+                            mealType = new { type = "STRING", @enum = new[] { "Meat", "Chicken", "Fish", "Vegetarian" } },
                             ingredients = new { type = "ARRAY", items = new { type = "STRING" } }
                         },
                         required = new[] { "date", "name", "mealType" }
@@ -140,7 +140,7 @@ public class GeminiPlannerService : IGeminiPlannerService
 
             LIST RULES
             - "meals": each needs an ISO date, a name, a mealType (exactly one of: Meat, Chicken, Fish,
-              Vegetarian, Vegan) and its main ingredients.
+              Vegetarian) and its main ingredients.
             - "shoppingItems": items to ADD. Only things the user asked for or agreed to buy — never
               assume they want every missing ingredient bought.
             - "removeShoppingItems": items to take OFF the list. Copy each name exactly from the current

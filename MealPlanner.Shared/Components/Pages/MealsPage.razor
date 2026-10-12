@@ -138,7 +138,7 @@
     [SupplyParameterFromQuery(Name = "create")]
     public bool CreateRequested { get; set; }
 
-    private static readonly MealType[] AllTypes = [MealType.Meat, MealType.Chicken, MealType.Fish, MealType.Vegetarian, MealType.Vegan];
+    private static readonly MealType[] AllTypes = [MealType.Meat, MealType.Chicken, MealType.Fish, MealType.Vegetarian];
 
     private List<MealCatalogItem> allMeals = new();
     private List<DateOnly> currentWeekDays = new();
