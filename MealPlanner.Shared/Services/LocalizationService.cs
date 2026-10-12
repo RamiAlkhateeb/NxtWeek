@@ -469,6 +469,28 @@ public class LocalizationService : ILocalizationService
         ["ai_plan_proposal_add_heading"] = new() { ["ar"] = "إضافة إلى قائمة التسوق", ["en"] = "Add to shopping list", ["de"] = "Auf die Einkaufsliste" },
         ["ai_plan_proposal_remove_heading"] = new() { ["ar"] = "حذف من قائمة التسوق", ["en"] = "Remove from shopping list", ["de"] = "Von der Einkaufsliste entfernen" },
         ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
+        ["ai_new_chat"] = new() { ["ar"] = "محادثة جديدة", ["en"] = "New chat", ["de"] = "Neuer Chat" },
+        ["ai_thinking_label"] = new() { ["ar"] = "جارٍ التفكير…", ["en"] = "Thinking…", ["de"] = "Denke nach …" },
+        ["ai_proposal_badge"] = new() { ["ar"] = "اقتراح — لم يُحفظ بعد", ["en"] = "Proposal — not saved yet", ["de"] = "Vorschlag – noch nicht gespeichert" },
+        // {0} = number of changes
+        ["ai_proposal_changes"] = new() { ["ar"] = "{0} تغييرات", ["en"] = "{0} changes", ["de"] = "{0} Änderungen" },
+        ["ai_proposal_add_heading"] = new() { ["ar"] = "أضف إلى المشتريات", ["en"] = "Add to shopping", ["de"] = "Zum Einkauf hinzufügen" },
+        ["ai_proposal_remove_heading"] = new() { ["ar"] = "احذف من المشتريات", ["en"] = "Remove from shopping", ["de"] = "Vom Einkauf entfernen" },
+        ["ai_proposal_apply"] = new() { ["ar"] = "تطبيق التغييرات", ["en"] = "Apply changes", ["de"] = "Änderungen übernehmen" },
+        ["ai_proposal_cancelled"] = new() { ["ar"] = "أُلغي الاقتراح", ["en"] = "Proposal cancelled", ["de"] = "Vorschlag verworfen" },
+        ["ai_proposal_replaced"] = new() { ["ar"] = "استُبدل باقتراح جديد", ["en"] = "Replaced by a newer proposal", ["de"] = "Durch einen neuen Vorschlag ersetzt" },
+        // {0} = meal or item name
+        ["ai_remove_named"] = new() { ["ar"] = "إزالة {0}", ["en"] = "Remove {0}", ["de"] = "{0} entfernen" },
+        ["ai_applied_title"] = new() { ["ar"] = "تم التطبيق", ["en"] = "Applied", ["de"] = "Übernommen" },
+        ["ai_applied_sep"] = new() { ["ar"] = "، ", ["en"] = ". ", ["de"] = ". " },
+        // {0} = meals with their days
+        ["ai_applied_meals"] = new() { ["ar"] = "أُضيف {0}", ["en"] = "Added {0}", ["de"] = "{0} hinzugefügt" },
+        // {0} = meal, {1} = weekday
+        ["ai_applied_meal_on"] = new() { ["ar"] = "{0} ليوم {1}", ["en"] = "{0} on {1}", ["de"] = "{0} am {1}" },
+        // {0} = items
+        ["ai_applied_items"] = new() { ["ar"] = "أُضيف {0} إلى المشتريات", ["en"] = "Added {0} to shopping", ["de"] = "{0} zum Einkauf hinzugefügt" },
+        ["ai_applied_removed"] = new() { ["ar"] = "حُذف {0} من المشتريات", ["en"] = "Removed {0} from shopping", ["de"] = "{0} vom Einkauf entfernt" },
+        ["ai_applied_not_found"] = new() { ["ar"] = "لم أجد {0} في قائمتك", ["en"] = "Couldn't find {0} on your list", ["de"] = "{0} nicht auf deiner Liste gefunden" },
         ["ai_plan_reply_done"] = new() { ["ar"] = "تم! هذا ما قمت به:", ["en"] = "Done! Here's what I did:", ["de"] = "Erledigt! Das habe ich gemacht:" },
         // {0} = shopping list name
         ["ai_plan_reply_removed_heading"] = new() { ["ar"] = "حُذف من {0}", ["en"] = "Removed from {0}", ["de"] = "Entfernt aus {0}" },

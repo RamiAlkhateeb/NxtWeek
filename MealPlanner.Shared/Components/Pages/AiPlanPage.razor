@@ -1,30 +1,194 @@
 @page "/ai-plan"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
+@using Nxt.UI.Ai
 @inject IAuthService Auth
 @inject IGeminiPlannerService GeminiPlanner
+@inject GeminiClient Gemini
 @inject IMealCatalogService CatalogService
 @inject IUserService UserService
 @inject IShoppingListService ShoppingListService
+@inject IAisleService Aisles
+@inject IMealImageService MealImages
 @inject ILocalizationService Loc
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
-@* The family AI assistant (Nxt.UI AiChat). It discusses first: concrete changes are proposed and
-   only saved after the user agrees in the chat. *@
-<div class="app app-content-wrapper ai-chat-page" dir="@Loc.Direction">
-    <NxtPageHeader Icon="✨" Title="@Loc["ai_plan_title"]" Subtitle="@Loc["ai_plan_subtitle"]" />
-    <AiChat OnSend="HandleSendAsync" EmptyText="@Loc["ai_plan_chat_empty"]" Placeholder="@Loc["ai_plan_placeholder_short"]"
-            Suggestions="@Suggestions" ShowMic="true" />
+@* The family AI assistant. It discusses first: concrete changes arrive as an editable proposal card and are only
+   saved when the user taps "Apply". *@
+<div class="mk-page mk-ai" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row">
+            <div class="mk-ai-heading">
+                <span class="mk-ai-badge" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></span>
+                <h1 class="mk-title is-md">@Loc["ai_plan_title"]</h1>
+            </div>
+            <button class="mk-icon-btn" aria-label="@Loc["ai_new_chat"]" disabled="@(entries.Count == 0 || isBusy)" @onclick="NewChat">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="mk-ai-thread" aria-live="polite">
+        @if (entries.Count == 0 && !isBusy)
+        {
+            <div class="mk-ai-empty">
+                <div class="nxt-orb" aria-hidden="true">
+                    <span class="nxt-orb-ring ring-1"></span>
+                    <span class="nxt-orb-ring ring-2"></span>
+                    <span class="nxt-orb-orbit"><i></i></span>
+                    <span class="nxt-orb-core"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+                    <svg class="nxt-spark spark-1" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                    <svg class="nxt-spark spark-2" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                    <svg class="nxt-spark spark-3" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
+                </div>
+                <p>@Loc["ai_plan_chat_empty"]</p>
+            </div>
+        }
+
+        @foreach (var entry in entries)
+        {
+            @switch (entry.Kind)
+            {
+                case EntryKind.User:
+                    <div class="mk-bubble is-user">@entry.Text</div>
+                    break;
+
+                case EntryKind.Assistant:
+                    <div class="mk-bubble is-ai @(entry.IsError ? "is-error" : "")">
+                        @entry.Text
+                        @if (entry.ShowSettingsLink) { <a class="mk-bubble-link" href="settings">@Loc["ai_plan_go_to_settings"]</a> }
+                    </div>
+                    break;
+
+                case EntryKind.Proposal when entry.State == ProposalState.Open:
+                    <section class="mk-proposal" aria-label="@Loc["ai_proposal_badge"]">
+                        <div class="mk-proposal-head">
+                            <span class="mk-proposal-badge"><i></i>@Loc["ai_proposal_badge"]</span>
+                            <span class="mk-subtitle">@Loc.T("ai_proposal_changes", entry.ChangeCount)</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(entry.Text)) { <p class="mk-proposal-text">@entry.Text</p> }
+
+                        <div class="mk-proposal-body">
+                            @if (entry.Meals.Count > 0)
+                            {
+                                <div class="mk-proposal-label">@Loc["ai_plan_preview_meals_heading"]</div>
+                                @foreach (var meal in entry.Meals.ToList())
+                                {
+                                    <div class="mk-proposal-row">
+                                        <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(meal.MealType)"><img src="@MealImages.GetImageUrl(meal.Name, meal.MealType)" alt="" /></div>
+                                        <div class="mk-proposal-text-col">
+                                            <span class="mk-proposal-name">@meal.Name</span>
+                                            <span class="mk-row-date">@Loc.FormatDayDate(meal.Date)</span>
+                                        </div>
+                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("ai_remove_named", meal.Name)" @onclick="() => { entry.Meals.Remove(meal); AfterEdit(entry); }">
+                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            @if (entry.AddItems.Count > 0)
+                            {
+                                <div class="mk-proposal-label">@Loc["ai_proposal_add_heading"]</div>
+                                @foreach (var item in entry.AddItems.ToList())
+                                {
+                                    <div class="mk-proposal-row">
+                                        <span class="mk-proposal-sign is-add" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg></span>
+                                        <span class="mk-proposal-name is-item">@item</span>
+                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("ai_remove_named", item)" @onclick="() => { entry.AddItems.Remove(item); AfterEdit(entry); }">
+                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            @if (entry.RemoveItems.Count > 0)
+                            {
+                                <div class="mk-proposal-label">@Loc["ai_proposal_remove_heading"]</div>
+                                @foreach (var item in entry.RemoveItems.ToList())
+                                {
+                                    <div class="mk-proposal-row">
+                                        <span class="mk-proposal-sign is-remove" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12h14"/></svg></span>
+                                        <span class="mk-proposal-name is-item">@item</span>
+                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("ai_remove_named", item)" @onclick="() => { entry.RemoveItems.Remove(item); AfterEdit(entry); }">
+                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <div class="mk-proposal-actions">
+                            <button class="mk-btn" disabled="@(isBusy || entry.ChangeCount == 0)" @onclick="() => ApplyAsync(entry)">
+                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["ai_proposal_apply"]
+                            </button>
+                            <button class="mk-btn is-soft" disabled="@isBusy" @onclick="() => CancelProposal(entry)">@Loc["cancel"]</button>
+                        </div>
+                    </section>
+                    break;
+
+                case EntryKind.Proposal when entry.State == ProposalState.Applied:
+                    <div class="mk-applied" role="status">
+                        <span class="mk-applied-check" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12l5 5 9-10"/></svg></span>
+                        <span><b>@Loc["ai_applied_title"]</b> — @entry.Summary</span>
+                    </div>
+                    break;
+
+                case EntryKind.Proposal:
+                    <div class="mk-bubble is-muted">@(entry.State == ProposalState.Cancelled ? Loc["ai_proposal_cancelled"] : Loc["ai_proposal_replaced"])</div>
+                    break;
+            }
+        }
+
+        @if (isBusy)
+        {
+            <div class="mk-bubble is-ai is-typing"><span class="nxt-dots"><i></i><i></i><i></i></span> @Loc["ai_thinking_label"]</div>
+        }
+
+        <div id="mk-ai-end" class="mk-ai-end"></div>
+    </div>
+</div>
+
+<div class="mk-ai-composer" dir="@Loc.Direction">
+    <div class="mk-chip-row">
+        @foreach (var suggestion in Suggestions)
+        {
+            <button class="mk-chip is-outline" disabled="@isBusy" @onclick="() => SendAsync(suggestion)">@suggestion</button>
+        }
+    </div>
+    <NxtComposer @bind-Value="promptText" OnSubmit="SendAsync" Disabled="isBusy" Placeholder="@Loc["ai_plan_placeholder_short"]" ShowMic="true" CssClass="mk-composer" />
 </div>
 
 @code {
-    private string uid = "";
+    private enum EntryKind { User, Assistant, Proposal }
+    private enum ProposalState { Open, Applied, Cancelled, Replaced }
+
+    private sealed class Entry
+    {
+        public EntryKind Kind { get; init; }
+        public string Text { get; set; } = "";
+        public bool IsError { get; init; }
+        public bool ShowSettingsLink { get; init; }
+        public ProposalState State { get; set; } = ProposalState.Open;
+        public string Summary { get; set; } = "";
+        public List<ParsedMealEntry> Meals { get; init; } = new();
+        public List<string> AddItems { get; init; } = new();
+        public List<string> RemoveItems { get; init; } = new();
+        public int ChangeCount => Meals.Count + AddItems.Count + RemoveItems.Count;
+        public PlanChanges ToChanges() => new(Meals, AddItems, RemoveItems);
+    }
+
+    private readonly List<Entry> entries = new();
     private readonly List<ChatTurn> history = new();
-    private PlanChanges? pending;
+    private string uid = "";
+    private string promptText = "";
+    private bool isBusy;
+    private bool scrollPending;
     private string planContext = "";
 
     private IReadOnlyList<string> Suggestions =>
-        [Loc["ai_chat_chip_ingredients"], Loc["ai_chat_chip_plan"], Loc["ai_chat_chip_shopping"]];
+        [Loc["ai_chat_chip_plan"], Loc["ai_chat_chip_ingredients"], Loc["ai_chat_chip_shopping"]];
+
+    private Entry? OpenProposal => entries.LastOrDefault(e => e.Kind == EntryKind.Proposal && e.State == ProposalState.Open);
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,92 +203,151 @@
         await RefreshPlanContextAsync();
     }
 
-    private async Task<AiReply> HandleSendAsync(string text)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // The model needs the current list to resolve "remove the milk" to the exact stored item.
-        var shops = await ShoppingListService.GetShopsAsync(uid);
-        var currentItems = shops.SelectMany(s => s.Items.Values).Select(i => i.Name).ToList();
+        if (!scrollPending) return;
+        scrollPending = false;
+        try { await JS.InvokeVoidAsync("nxtweek.scrollToId", "mk-ai-end", "end"); }
+        catch (JSException) { /* purely cosmetic */ }
+    }
 
-        history.Add(new ChatTurn(true, text));
-        AssistantReply reply;
+    private void Add(Entry entry) { entries.Add(entry); scrollPending = true; }
+
+    private void NewChat()
+    {
+        entries.Clear();
+        history.Clear();
+        promptText = "";
+    }
+
+    private void AfterEdit(Entry entry)
+    {
+        // Removing the last change leaves nothing to apply; treat it as cancelled.
+        if (entry.ChangeCount == 0) { entry.State = ProposalState.Cancelled; history.Add(new ChatTurn(false, "[The user removed every change from the proposal]")); }
+    }
+
+    private void CancelProposal(Entry entry)
+    {
+        entry.State = ProposalState.Cancelled;
+        history.Add(new ChatTurn(false, "[The user cancelled the proposal]"));
+    }
+
+    private async Task SendAsync(string input)
+    {
+        var text = (input ?? "").Trim();
+        if (text.Length == 0 || isBusy) return;
+
+        Add(new Entry { Kind = EntryKind.User, Text = text });
+        promptText = "";
+        isBusy = true;
+        StateHasChanged();
+
         try
         {
-            reply = await GeminiPlanner.ChatAsync(history, pending, planContext, currentItems);
+            if (!await Gemini.HasKeyAsync())
+            {
+                Add(new Entry { Kind = EntryKind.Assistant, Text = Loc["ai_plan_no_key_error"], IsError = true, ShowSettingsLink = true });
+                return;
+            }
+
+            // The model needs the current list to resolve "remove the milk" to the exact stored item.
+            var shops = await ShoppingListService.GetShopsAsync(uid);
+            var currentItems = shops.SelectMany(s => s.Items.Values).Select(i => i.Name).ToList();
+
+            history.Add(new ChatTurn(true, text));
+            AssistantReply reply;
+            try
+            {
+                reply = await GeminiPlanner.ChatAsync(history, OpenProposal?.ToChanges(), planContext, currentItems);
+            }
+            catch
+            {
+                history.RemoveAt(history.Count - 1);   // keep the transcript free of an unanswered turn
+                throw;
+            }
+
+            var open = OpenProposal;
+            // "Apply" with nothing pending can't be honoured; if it carries changes, show them as a proposal instead,
+            // with our own wording since the model's text would claim it was already done.
+            var applyWithoutPending = reply.Action == AssistantAction.Apply && open is null && !reply.Changes.IsEmpty;
+            var action = applyWithoutPending ? AssistantAction.Propose : reply.Action;
+            var message = applyWithoutPending ? Loc["ai_chat_propose_intro"] : reply.Message;
+
+            switch (action)
+            {
+                case AssistantAction.Propose:
+                    if (open is not null) open.State = ProposalState.Replaced;
+                    Add(new Entry
+                    {
+                        Kind = EntryKind.Proposal,
+                        Text = message,
+                        Meals = reply.Changes.Meals.ToList(),
+                        AddItems = reply.Changes.ShoppingItems.ToList(),
+                        RemoveItems = reply.Changes.RemoveShoppingItems.ToList()
+                    });
+                    history.Add(new ChatTurn(false, $"{message}\n[Proposed, waiting for the user to confirm]"));
+                    break;
+
+                case AssistantAction.Apply when open is not null && open.ChangeCount > 0:
+                    history.Add(new ChatTurn(false, message));
+                    await ApplyCoreAsync(open, shops);
+                    break;
+
+                case AssistantAction.Cancel:
+                    if (open is not null) open.State = ProposalState.Cancelled;
+                    history.Add(new ChatTurn(false, $"{message}\n[Proposal cancelled]"));
+                    Add(new Entry { Kind = EntryKind.Assistant, Text = message });
+                    break;
+
+                default:
+                    history.Add(new ChatTurn(false, message));
+                    Add(new Entry { Kind = EntryKind.Assistant, Text = message });
+                    break;
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // AiChat shows the error bubble; keep the transcript free of an unanswered turn.
-            history.RemoveAt(history.Count - 1);
-            throw;
+            Add(new Entry { Kind = EntryKind.Assistant, Text = ex.Message, IsError = true });
         }
-
-        // "Apply" with nothing pending can't be honoured; if it carries changes, ask about them instead —
-        // with our own wording, since the model's text would claim it was already done.
-        var applyWithoutPending = reply.Action == AssistantAction.Apply && pending is null or { IsEmpty: true } && !reply.Changes.IsEmpty;
-        var action = applyWithoutPending ? AssistantAction.Propose : reply.Action;
-        var message = applyWithoutPending ? Loc["ai_chat_propose_intro"] : reply.Message;
-
-        switch (action)
+        finally
         {
-            case AssistantAction.Propose:
-                pending = reply.Changes;
-                history.Add(new ChatTurn(false, $"{message}\n[Proposed, waiting for the user to confirm]"));
-                return new AiReply
-                {
-                    Text = $"{message}\n\n{Loc["ai_chat_confirm_hint"]}",
-                    Sections = DescribeProposal(reply.Changes)
-                };
-
-            case AssistantAction.Apply when pending is { IsEmpty: false }:
-                // Save exactly what the user saw and agreed to, not whatever the model repeated.
-                var toApply = pending;
-                pending = null;
-                var applied = await ApplyAsync(toApply, shops);
-                history.Add(new ChatTurn(false, $"{message}\n[Saved the proposal]"));
-                await RefreshPlanContextAsync();
-                return applied;
-
-            case AssistantAction.Cancel:
-                pending = null;
-                history.Add(new ChatTurn(false, $"{message}\n[Proposal cancelled]"));
-                return new AiReply { Text = message };
-
-            default:
-                history.Add(new ChatTurn(false, message));
-                return new AiReply { Text = message };
+            isBusy = false;
+            scrollPending = true;
         }
     }
 
-    private List<AiListSection> DescribeProposal(PlanChanges changes)
+    private async Task ApplyAsync(Entry entry)
     {
-        var sections = new List<AiListSection>();
-        if (changes.Meals.Count > 0)
-            sections.Add(new(Loc["ai_plan_preview_meals_heading"],
-                changes.Meals.Select(m => new AiListItem(m.Name, Loc.FormatDayDate(m.Date))).ToList()));
-        if (changes.ShoppingItems.Count > 0)
-            sections.Add(new(Loc["ai_plan_proposal_add_heading"], changes.ShoppingItems.Select(i => new AiListItem(i)).ToList()));
-        if (changes.RemoveShoppingItems.Count > 0)
-            sections.Add(new(Loc["ai_plan_proposal_remove_heading"], changes.RemoveShoppingItems.Select(i => new AiListItem(i)).ToList()));
-        return sections;
+        if (isBusy || entry.State != ProposalState.Open) return;
+        isBusy = true;
+        try
+        {
+            var shops = await ShoppingListService.GetShopsAsync(uid);
+            await ApplyCoreAsync(entry, shops);
+        }
+        catch (Exception ex)
+        {
+            Add(new Entry { Kind = EntryKind.Assistant, Text = ex.Message, IsError = true });
+        }
+        finally { isBusy = false; scrollPending = true; }
     }
 
-    private async Task<AiReply> ApplyAsync(PlanChanges changes, List<ShoppingShop> shops)
+    // Saves exactly what the user saw (and trimmed) on the card, not whatever the model repeated.
+    private async Task ApplyCoreAsync(Entry entry, List<ShoppingShop> shops)
     {
-        var sections = new List<AiListSection>();
-        var didSomething = changes.Meals.Count > 0 || changes.ShoppingItems.Count > 0;
+        var parts = new List<string>();
 
         // Removals run before additions so "replace milk with oat milk" can't delete the new item.
-        if (changes.RemoveShoppingItems.Count > 0)
+        var notFound = new List<string>();
+        if (entry.RemoveItems.Count > 0)
         {
-            var (removedByShop, notFound) = await RemoveItemsAsync(shops, changes.RemoveShoppingItems);
-            foreach (var (shopName, names) in removedByShop)
-                sections.Add(new(Loc.T("ai_plan_reply_removed_heading", shopName), names.Select(n => new AiListItem(n)).ToList()));
-            if (removedByShop.Count > 0) didSomething = true;
-            if (notFound.Count > 0)
-                sections.Add(new(Loc["ai_plan_reply_not_found_heading"], notFound.Select(n => new AiListItem(n)).ToList()));
+            var (removed, missing) = await RemoveItemsAsync(shops, entry.RemoveItems);
+            notFound = missing;
+            var names = removed.SelectMany(r => r.Names).ToList();
+            if (names.Count > 0) parts.Add(Loc.T("ai_applied_removed", string.Join(Loc["list_and"], names)));
         }
 
-        foreach (var meal in changes.Meals)
+        foreach (var meal in entry.Meals)
         {
             var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
             {
@@ -136,26 +359,23 @@
             });
             await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
         }
+        if (entry.Meals.Count > 0)
+            parts.Insert(0, Loc.T("ai_applied_meals", string.Join(Loc["list_and"], entry.Meals.Select(m => Loc.T("ai_applied_meal_on", m.Name, Loc.GetDayName(m.Date.DayOfWeek))))));
 
-        if (changes.Meals.Count > 0)
+        if (entry.AddItems.Count > 0)
         {
-            sections.Add(new(Loc["ai_plan_preview_meals_heading"],
-                changes.Meals.Select(m => new AiListItem(m.Name, Loc.FormatDayDate(m.Date))).ToList()));
+            var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            foreach (var item in entry.AddItems)
+                await ShoppingListService.AddItemAsync(uid, shop.Id, item, new ShoppingItemOptions(Aisle: Aisles.For(item).Key));
+            parts.Add(Loc.T("ai_applied_items", string.Join(Loc["list_and"], entry.AddItems)));
         }
 
-        if (changes.ShoppingItems.Count > 0)
-        {
-            var shop = await GetOrCreateShopAsync();
-            foreach (var item in changes.ShoppingItems)
-                await ShoppingListService.AddItemAsync(uid, shop.Id, item);
-            sections.Add(new(Loc.T("ai_plan_reply_items_heading", shop.Name),
-                changes.ShoppingItems.Select(i => new AiListItem(i)).ToList()));
-        }
+        if (notFound.Count > 0) parts.Add(Loc.T("ai_applied_not_found", string.Join(Loc["list_and"], notFound)));
 
-        // The reply reports what was actually done.
-        return didSomething
-            ? new AiReply { Text = Loc["ai_plan_reply_done"], Sections = sections }
-            : AiReply.Error(Loc["ai_plan_reply_nothing_found"]);
+        entry.State = ProposalState.Applied;
+        entry.Summary = string.Join(Loc["ai_applied_sep"], parts);
+        history.Add(new ChatTurn(false, "[Saved the proposal]"));
+        await RefreshPlanContextAsync();
     }
 
     /// <summary>Deletes list items matching the requested names (case-insensitive; exact match first,
@@ -187,14 +407,6 @@
         }
 
         return (removed.Select(kv => (kv.Key, kv.Value)).ToList(), notFound);
-    }
-
-    private async Task<ShoppingShop> GetOrCreateShopAsync()
-    {
-        var shops = await ShoppingListService.GetShopsAsync(uid);
-        return shops.Count > 0
-            ? shops[0]
-            : await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
     }
 
     /// <summary>Gives the assistant the next two weeks of the plan so it can prefer free days.</summary>
