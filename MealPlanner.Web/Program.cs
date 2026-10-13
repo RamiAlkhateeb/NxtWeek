@@ -39,7 +39,7 @@ builder.Services.AddScoped<INxtLocale, MakdousLocale>();
 builder.Services.AddNxtUi(o =>
 {
     o.App = NxtAppId.Makdous;
-    o.LogoUrl = "logo.svg";
+    o.LogoUrl = "logo.png";
     o.Description = new()
     {
         ["ar"] = "خطّط وجبات أسبوعك وقائمة مشترياتك مع العائلة والأصدقاء.",
