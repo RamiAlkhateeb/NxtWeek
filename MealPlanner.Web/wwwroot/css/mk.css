@@ -489,6 +489,8 @@ html, body { background: var(--nxt-page); }
 .mk-store-body { margin-top: 12px; display: flex; flex-direction: column; gap: 2px; }
 .mk-quickadd { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 42px; border-radius: 99px; background: var(--nxt-inset); color: var(--mk-muted); margin-bottom: 6px; }
 .mk-quickadd input { flex: 1; min-width: 0; border: 0; background: none; outline: 0; font: inherit; color: var(--nxt-text); }
+.mk-quickadd-add { flex: none; border: 0; border-radius: 99px; padding: 6px 14px; background: var(--nxt-text); color: var(--nxt-card); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.mk-quickadd-add:disabled { opacity: .35; cursor: default; }
 .mk-shop-item { display: flex; align-items: center; gap: 12px; padding: 10px 2px; }
 .mk-shop-item + .mk-shop-item { border-top: 1px solid var(--nxt-border); }
 .mk-check { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--mk-muted); background: none; flex: none; display: grid; place-items: center; cursor: pointer; padding: 0; color: #fff; }
