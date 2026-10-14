@@ -94,7 +94,7 @@
                                 <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                                 <input placeholder="@Loc["shopping_add_item"]" aria-label="@Loc.T("shopping_add_item_to", shop.Name)" value="@GetDraft(shop.Id)"
                                        enterkeyhint="done" autocomplete="off" @oninput="e => SetDraft(shop.Id, e)" />
-                                <button type="submit" class="mk-quickadd-add" aria-label="@Loc["add"]" disabled="@string.IsNullOrWhiteSpace(GetDraft(shop.Id))">@Loc["add"]</button>
+                                <button type="submit" class="mk-quickadd-add" aria-label="@Loc["add"]" disabled="@string.IsNullOrWhiteSpace(GetDraft(shop.Id))"><svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["add"]</button>
                             </form>
 
                             @foreach (var item in open) { @ItemRow(shop, item) }
@@ -157,6 +157,7 @@
             <span>@item.Name</span>
             @if (QuantityText(item) is { Length: > 0 } qty) { <span class="mk-subtitle">@qty</span> }
         </button>
+        <button class="mk-item-remove" aria-label="@(Loc["delete"] + ": " + item.Name)" title="@Loc["delete"]" @onclick="() => RemoveItemAsync(shop, item)"><svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 12h12"/></svg></button>
     </div>;
 
     private RenderFragment AisleRow(ShoppingShop shop, ShoppingItem item) => @<div class="mk-shop-item is-aisle">
@@ -170,6 +171,7 @@
             <span>@(QuantityText(item, always: true))</span>
             <button aria-label="@Loc["shopping_decrease"]" disabled="@(item.Quantity <= 1)" @onclick="() => ChangeQuantityAsync(shop, item, -1)">−</button>
         </div>
+        <button class="mk-item-remove" aria-label="@(Loc["delete"] + ": " + item.Name)" title="@Loc["delete"]" @onclick="() => RemoveItemAsync(shop, item)"><svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 12h12"/></svg></button>
     </div>;
 }
 
@@ -415,6 +417,14 @@
             await LoadShopsAsync();
         }
         catch (Exception ex) { errorMessage = ex.Message; CloseEdit(); }
+    }
+
+    // Removes at once (the row disappears first); if the write fails the list is reloaded so it shows the truth.
+    private async Task RemoveItemAsync(ShoppingShop shop, ShoppingItem item)
+    {
+        shop.Items.Remove(item.Id);
+        try { await ShoppingListService.DeleteItemAsync(uid, shop.Id, item.Id); }
+        catch (Exception ex) { errorMessage = ex.Message; await LoadShopsAsync(); }
     }
 
     private async Task DeleteEditingAsync()
