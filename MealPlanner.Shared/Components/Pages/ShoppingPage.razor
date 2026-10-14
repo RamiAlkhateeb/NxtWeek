@@ -89,11 +89,13 @@
                     @if (isOpen)
                     {
                         <div class="mk-store-body">
-                            <label class="mk-quickadd">
+                            @* A real form: Enter on mobile keyboards (which report key "Unidentified" on keydown) submits it too. *@
+                            <form class="mk-quickadd" @onsubmit="() => QuickAddAsync(shop.Id)" @onsubmit:preventDefault>
                                 <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                                 <input placeholder="@Loc["shopping_add_item"]" aria-label="@Loc.T("shopping_add_item_to", shop.Name)" value="@GetDraft(shop.Id)"
-                                       @oninput="e => SetDraft(shop.Id, e)" @onkeydown="e => OnQuickAddKey(e, shop.Id)" />
-                            </label>
+                                       enterkeyhint="done" autocomplete="off" @oninput="e => SetDraft(shop.Id, e)" />
+                                <button type="submit" class="mk-quickadd-add" aria-label="@Loc["add"]" disabled="@string.IsNullOrWhiteSpace(GetDraft(shop.Id))">@Loc["add"]</button>
+                            </form>
 
                             @foreach (var item in open) { @ItemRow(shop, item) }
 
@@ -336,11 +338,6 @@
 
     private string GetDraft(string shopId) => itemDrafts.TryGetValue(shopId, out var value) ? value : "";
     private void SetDraft(string shopId, ChangeEventArgs e) => itemDrafts[shopId] = e.Value?.ToString() ?? "";
-
-    private async Task OnQuickAddKey(KeyboardEventArgs e, string shopId)
-    {
-        if (e.Key == "Enter") await QuickAddAsync(shopId);
-    }
 
     private async Task QuickAddAsync(string shopId)
     {
