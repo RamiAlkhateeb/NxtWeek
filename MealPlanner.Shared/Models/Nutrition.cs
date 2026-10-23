@@ -20,6 +20,7 @@ public class NutritionInfo
     public double Fibre { get; set; }
     public string Source { get; set; } = NutritionSource.Manual;
 
+    [JsonIgnore]
     public bool IsEstimate => Source == NutritionSource.Estimate;
 
     public NutritionInfo Scale(double factor) => new()
@@ -43,7 +44,10 @@ public static class IngredientUnit
 /// <summary>A measured ingredient, per eaten serving. Feeds the shopping list.</summary>
 public class IngredientLine
 {
+    // Stable across languages ("chickenBreast"), so the shopping list can merge the same item.
     public string Id { get; set; } = string.Empty;
+    // In the meal's own language, like the meal name.
+    public string Name { get; set; } = string.Empty;
     public double QtyPerServing { get; set; }
     public string Unit { get; set; } = IngredientUnit.Grams;
     public string Aisle { get; set; } = "other";
@@ -87,6 +91,7 @@ public class SlotEntry
     // Cook this many batches for the shopping list; does not change what is eaten.
     public int PrepBatches { get; set; } = 1;
 
+    [JsonIgnore]
     public bool IsQuick => Quick is not null;
 }
 

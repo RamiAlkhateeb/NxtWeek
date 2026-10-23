@@ -1,0 +1,45 @@
+@inject ILocalizationService Loc
+
+@* Calories, macros and fibre, plus the recipe yield (or the servings when scaled), and a
+   bar showing how the calories split between protein, carbs and fat. *@
+<div class="mk-nut-grid">
+    @Cell("var(--mk-kc)", Loc["nut_calories"], Nutrition.Kcal * Servings, Loc["nut_kcal"])
+    @Cell("var(--mk-pro)", Loc["nut_protein"], Nutrition.Protein * Servings, Loc["nut_g"])
+    @Cell("var(--mk-carb)", Loc["nut_carbs"], Nutrition.Carbs * Servings, Loc["nut_g"])
+    @Cell("var(--mk-fat)", Loc["nut_fat"], Nutrition.Fat * Servings, Loc["nut_g"])
+    @Cell("var(--mk-fib)", Loc["nut_fibre"], Nutrition.Fibre * Servings, Loc["nut_g"])
+    <div class="mk-nut-cell">
+        <span class="mk-nut-cell-label"><i style="background:var(--mk-muted)"></i>@(Yield is null ? Loc["nut_servings"] : Loc["nut_yield"])</span>
+        <span class="mk-nut-cell-value">@(Yield is null ? Loc.Servings(Servings) : Loc.Num(Yield.Value))</span>
+    </div>
+</div>
+@{
+    var protein = 4 * Nutrition.Protein;
+    var carbs = 4 * Nutrition.Carbs;
+    var fat = 9 * Nutrition.Fat;
+    var total = protein + carbs + fat;
+}
+@if (total > 0)
+{
+    <div class="mk-nut-split" aria-hidden="true">
+        <i style="width:@Pct(protein, total);background:var(--mk-pro)"></i>
+        <i style="width:@Pct(carbs, total);background:var(--mk-carb)"></i>
+        <i style="width:@Pct(fat, total);background:var(--mk-fat)"></i>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public NutritionInfo Nutrition { get; set; } = default!;
+    [Parameter] public double Servings { get; set; } = 1;
+    /// <summary>Servings the recipe makes; shown instead of the servings count when set.</summary>
+    [Parameter] public int? Yield { get; set; }
+
+    private RenderFragment Cell(string colour, string label, double value, string unit) =>
+        @<div class="mk-nut-cell">
+            <span class="mk-nut-cell-label"><i style="background:@colour"></i>@label</span>
+            <span class="mk-nut-cell-value">@Loc.Num(value)<small>@unit</small></span>
+        </div>;
+
+    private static string Pct(double part, double total) =>
+        (part / total * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+}

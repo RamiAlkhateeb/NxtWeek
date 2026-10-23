@@ -142,7 +142,8 @@
                       MealType="ingredientsMeal?.MealType"
                       Ingredients="ingredientsMeal?.Ingredients"
                       SideDishes="ingredientsMeal?.SideDishes"
-                      OnDismiss="() => ingredientsMeal = null" />
+                      CatalogMeal="ingredientsCatalogMeal"
+                      OnDismiss="() => { ingredientsMeal = null; ingredientsCatalogMeal = null; }" />
 
 <NxtBottomSheet IsOpen="showWeekSurpriseConfirm" Title="@Loc["week_surprise_week"]" Eyebrow="@Loc["week_surprise_week_eyebrow"]" OnDismiss="() => showWeekSurpriseConfirm = false">
     <div class="mk-sheet-body" dir="@Loc.Direction">
@@ -222,6 +223,7 @@
     private DateOnly? navigatingDate;
     private bool showWeekSurpriseConfirm;
     private Meal? ingredientsMeal;
+    private MealCatalogItem? ingredientsCatalogMeal;
     private bool isSharing;
     private bool showProfileNudge;
     private bool userHasUsername;
@@ -403,8 +405,16 @@
 
     // GetWeekAsync hydrates Ingredients/SideDishes from the catalog, so the sheet
     // has everything it needs without a second fetch.
-    private void OpenIngredients(Meal meal) => ingredientsMeal = meal;
-    private void OpenIngredientsFromSheet() { var meal = selectedMeal; CloseActions(); ingredientsMeal = meal; }
+    private async Task OpenIngredients(Meal? meal)
+    {
+        ingredientsMeal = meal;
+        ingredientsCatalogMeal = null;
+        if (meal is null || string.IsNullOrWhiteSpace(meal.MealId)) return;
+        // The sheet opens straight away; nutrition fills in once the catalog row arrives.
+        try { ingredientsCatalogMeal = await CatalogService.GetMealByIdAsync(meal.MealId); }
+        catch { /* offline: the sheet still shows the ingredients */ }
+    }
+    private Task OpenIngredientsFromSheet() { var meal = selectedMeal; CloseActions(); return OpenIngredients(meal); }
     private void OpenMeal(Meal meal) { if (!string.IsNullOrWhiteSpace(meal.MealId)) Nav.NavigateTo($"/meal/{meal.MealId}?day={meal.Date:yyyy-MM-dd}"); }
     private void OpenActions(Meal meal) { selectedMeal = meal; showMoveDays = false; }
     private async Task OpenMealPicker(DateOnly date)

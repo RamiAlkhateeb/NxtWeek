@@ -48,4 +48,6 @@ public class MealCatalogItem
     public int ServingsYield { get; set; } = 1;
     // Measured ingredients per serving, for the shopping list. Ingredients (free text) stays for older rows.
     public List<IngredientLine> IngredientLines { get; set; } = new();
+    // Slots this meal suits (a shake fits post-workout, not dinner). Empty means any slot.
+    public List<MealSlot> SuitableSlots { get; set; } = new();
 }

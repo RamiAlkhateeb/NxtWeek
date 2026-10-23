@@ -1,0 +1,19 @@
+@inject ILocalizationService Loc
+
+@if (Source == NutritionSource.Estimate)
+{
+    <span class="mk-src-badge is-est"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_estimate"]</span>
+}
+else if (Source == NutritionSource.Manual)
+{
+    <span class="mk-src-badge"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>@Loc["nut_manual"]</span>
+}
+else
+{
+    <span class="mk-src-badge">@Loc["nut_none"]</span>
+}
+
+@code {
+    /// <summary>"est", "man", or null for a meal without nutrition.</summary>
+    [Parameter] public string? Source { get; set; }
+}

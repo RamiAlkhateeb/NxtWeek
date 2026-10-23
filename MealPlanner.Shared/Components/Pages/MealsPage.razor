@@ -73,12 +73,13 @@
                     <div class="mk-meal-foot">
                         <button class="mk-meal-text" @onclick="() => OpenMeal(meal)">
                             <span class="mk-meal-name">@meal.Name</span>
-                            <span class="mk-subtitle">@Loc.GetMealTypeName(meal.MealType)</span>
+                            <span class="mk-subtitle">@Loc.GetMealTypeName(meal.MealType)@if (meal.PreparationMinutes is > 0) { <text> · @Loc.T("nut_minutes", Loc.Num(meal.PreparationMinutes.Value))</text> }</span>
                         </button>
                         <button class="mk-icon-btn is-ink" aria-label="@(isContextMode ? Loc.T("meals_add_to_named_day", PickDayLabel) : Loc["meals_add_to_day_short"])" @onclick="() => SelectMeal(meal)">
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
                     </div>
+                    <div class="mk-meal-nut"><NutritionChips Nutrition="meal.Nutrition" /></div>
                 </article>
             }
         </div>

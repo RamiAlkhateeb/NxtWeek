@@ -1,0 +1,21 @@
+@inject ILocalizationService Loc
+
+@* Calories and protein for a card. An estimate always says so ("est."). *@
+<span class="mk-nchips">
+    @if (Nutrition is null)
+    {
+        <span class="mk-nchip is-none">@Loc["nut_none"]</span>
+    }
+    else
+    {
+        <span class="mk-nchip"><span class="mk-nowrap">@Loc.Num(Nutrition.Kcal * Servings)&nbsp;@Loc["nut_kcal"]</span>@if (Nutrition.IsEstimate) { <span class="mk-est">&nbsp;@Loc["nut_est_short"]</span> }</span>
+        <span class="mk-nchip is-protein"><span class="mk-nowrap">@Loc.Num(Nutrition.Protein * Servings)&nbsp;@Loc["nut_g"]</span> @Loc["nut_protein"]</span>
+    }
+    @ChildContent
+</span>
+
+@code {
+    [Parameter] public NutritionInfo? Nutrition { get; set; }
+    [Parameter] public double Servings { get; set; } = 1;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

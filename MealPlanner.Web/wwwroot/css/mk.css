@@ -42,6 +42,18 @@
     --mk-radius-hero: 28px;
     --mk-radius-row: 20px;
     --mk-shadow-hero: 0 1px 2px rgba(0,0,0,.04), 0 6px 18px rgba(0,0,0,.05);
+
+    /* nutrition (3.0): one colour per macro, used by chips, grids, bars and charts */
+    --mk-kc: #ff2d55;
+    --mk-pro: #2f6fed;
+    --mk-pro-ink: #1f56c9;
+    --mk-pro-soft: #e8efff;
+    --mk-carb: #d98a00;
+    --mk-fat: #8a5cf6;
+    --mk-fib: #22a85a;
+    --mk-warn: #b7791f;
+    --mk-warn-ink: #8a5a00;
+    --mk-warn-soft: #fff4dc;
 }
 
 :root[data-theme="dark"] {
@@ -70,6 +82,17 @@
     --mk-tile-default: #2c2c2e;
 
     --mk-shadow-hero: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+
+    --mk-kc: #ff375f;
+    --mk-pro: #6ea2ff;
+    --mk-pro-ink: #8db6ff;
+    --mk-pro-soft: #14233f;
+    --mk-carb: #ffb340;
+    --mk-fat: #b799ff;
+    --mk-fib: #30d158;
+    --mk-warn: #ffd60a;
+    --mk-warn-ink: #ffd60a;
+    --mk-warn-soft: #3a3008;
 }
 
 /* ----- page frame ------------------------------------------------------- */
@@ -610,3 +633,59 @@ html, body { background: var(--nxt-page); }
 .mk-set-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 0 14px; border: 0; background: transparent; color: var(--nxt-text); font: inherit; font-size: 16px; font-weight: 800; cursor: pointer; }
 .mk-set-hint { margin: 0; padding: 0 14px 14px; font-size: 13px; line-height: 1.6; color: var(--mk-muted); }
 .mk-set-advanced { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ----- nutrition (3.0) -------------------------------------------------- */
+.mk-nchips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.mk-nchip { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 4px; min-height: 24px; padding: 0 9px; border-radius: 999px; background: var(--nxt-inset); color: var(--nxt-text); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mk-nchip.is-protein { background: var(--mk-pro-soft); color: var(--mk-pro-ink); }
+.mk-nchip.is-none { background: transparent; border: 1.5px dashed var(--nxt-border); color: var(--mk-muted); font-weight: 600; padding-block: 2px; line-height: 1.3; }
+.mk-nowrap { white-space: nowrap; }
+.mk-nchip .mk-est { font-weight: 600; font-size: 11px; opacity: .85; }
+
+.mk-src-badge { display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 0 8px; border-radius: 999px; background: var(--nxt-inset); color: var(--mk-muted); font-size: 11.5px; font-weight: 700; }
+.mk-src-badge.is-est { background: var(--mk-warn-soft); color: var(--mk-warn-ink); }
+.mk-src-badge svg { width: 12px; height: 12px; }
+
+.mk-nut { display: flex; flex-direction: column; gap: 10px; }
+.mk-nut-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.mk-nut-head-title { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+.mk-nut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.mk-nut-cell { background: var(--nxt-inset); border-radius: 16px; padding: 10px 10px 9px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mk-nut-cell-label { font-size: 12px; color: var(--mk-muted); font-weight: 700; display: flex; gap: 5px; align-items: center; overflow-wrap: anywhere; }
+.mk-nut-cell-label i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.mk-nut-cell-value { font-size: 20px; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.mk-nut-cell-value small { font-size: 12px; font-weight: 700; color: var(--mk-muted); margin-inline-start: 2px; }
+.mk-nut-split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; }
+.mk-nut-split i { display: block; height: 100%; }
+.mk-nut-empty { border: 1.5px dashed var(--nxt-border); border-radius: var(--mk-radius-row); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mk-nut-empty-title { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.mk-nut-empty p { margin: 0; font-size: 14px; color: var(--mk-muted); line-height: 1.45; }
+.mk-btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mk-btn-row .mk-btn { flex: 1 1 auto; height: auto; min-height: 44px; white-space: normal; line-height: 1.25; padding: 8px 14px; }
+
+.mk-note { display: flex; gap: 10px; align-items: flex-start; border-radius: 16px; padding: 10px 12px; font-size: 13.5px; line-height: 1.45; background: var(--nxt-inset); color: var(--nxt-text); }
+.mk-note svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.mk-note.is-warn { background: var(--mk-warn-soft); color: var(--mk-warn-ink); }
+.mk-note.is-ok { background: var(--mk-ok-soft); color: var(--mk-ok-ink); }
+
+.mk-nut-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.mk-nut-form .mk-label { overflow-wrap: anywhere; }
+.mk-input-unit { display: flex; align-items: center; height: 52px; border-radius: 16px; border: 1px solid var(--nxt-border); background: var(--nxt-inset); padding-inline: 14px; gap: 6px; }
+.mk-input-unit:focus-within { outline: 2px solid var(--nxt-accent); outline-offset: 1px; }
+.mk-input-unit input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 16px; color: var(--nxt-text); outline: none; text-align: start; font-variant-numeric: tabular-nums; }
+.mk-input-unit span { color: var(--mk-muted); font-size: 13px; font-weight: 700; }
+.mk-input-unit.is-estimate { border-color: var(--mk-warn); }
+
+.mk-busy-dots { display: inline-flex; gap: 4px; }
+.mk-busy-dots span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: mk-dot 1s infinite ease-in-out; }
+.mk-busy-dots span:nth-child(2) { animation-delay: .15s; }
+.mk-busy-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes mk-dot { 0%, 80%, 100% { opacity: .3; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .mk-busy-dots span { animation: none; opacity: .7; } }
+
+
+/* A clear focus ring for keyboard users on every control (the legacy one in app.css is faint). */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid var(--nxt-accent); outline-offset: 2px; }
+.mk-details-card .mk-nut { padding-block: 12px; }
+.mk-meal-nut { padding: 6px 4px 2px; }
+.mk-ingredients-sheet .mk-nut { margin-bottom: 4px; }

@@ -277,6 +277,7 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "de_m27", Name = "Bunter Sommersalat mit Feta", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "salad" }, Ingredients = new() { "Blattsalat", "Tomaten", "Gurke", "Feta", "Olivenöl" }, SideDishes = new() { "Baguette" } }
 };
 
+        catalogMeals.AddRange(NutritionSeedMeals.All());
         foreach (var catalogMeal in catalogMeals)
         {
             if (string.IsNullOrWhiteSpace(catalogMeal.Language))

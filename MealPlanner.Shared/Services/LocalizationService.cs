@@ -621,6 +621,34 @@ public class LocalizationService : ILocalizationService
         ["settings_ai_key_hint_link"] = new() { ["ar"] = "احصل على مفتاح API مجاني من Google AI Studio", ["en"] = "Get a free API key from Google AI Studio", ["de"] = "Hol dir einen kostenlosen API-Schlüssel von Google AI Studio" },
         ["settings_ai_model_label"] = new() { ["ar"] = "النموذج", ["en"] = "Model", ["de"] = "Modell" },
         ["settings_ai_refresh_models"] = new() { ["ar"] = "تحديث قائمة النماذج", ["en"] = "Refresh model list", ["de"] = "Modellliste aktualisieren" },
-        ["settings_ai_saved"] = new() { ["ar"] = "تم حفظ إعدادات الذكاء الاصطناعي.", ["en"] = "AI settings saved.", ["de"] = "KI-Einstellungen gespeichert." }
+        ["settings_ai_saved"] = new() { ["ar"] = "تم حفظ إعدادات الذكاء الاصطناعي.", ["en"] = "AI settings saved.", ["de"] = "KI-Einstellungen gespeichert." },
+
+        // Nutrition on meals (3.0): values are per serving; estimates always show their badge
+        ["nut_kcal"] = new() { ["ar"] = "سعرة", ["en"] = "kcal", ["de"] = "kcal" },
+        ["nut_g"] = new() { ["ar"] = "غ", ["en"] = "g", ["de"] = "g" },
+        ["nut_calories"] = new() { ["ar"] = "السعرات", ["en"] = "Calories", ["de"] = "Kalorien" },
+        ["nut_protein"] = new() { ["ar"] = "بروتين", ["en"] = "Protein", ["de"] = "Eiweiß" },
+        ["nut_carbs"] = new() { ["ar"] = "كربوهيدرات", ["en"] = "Carbs", ["de"] = "Kohlenhydrate" },
+        ["nut_fat"] = new() { ["ar"] = "دهون", ["en"] = "Fat", ["de"] = "Fett" },
+        ["nut_fibre"] = new() { ["ar"] = "ألياف", ["en"] = "Fibre", ["de"] = "Ballaststoffe" },
+        ["nut_servings"] = new() { ["ar"] = "الحصص", ["en"] = "Servings", ["de"] = "Portionen" },
+        ["nut_per_serving"] = new() { ["ar"] = "للحصة", ["en"] = "per serving", ["de"] = "pro Portion" },
+        ["nut_none"] = new() { ["ar"] = "لا توجد قيم غذائية", ["en"] = "No nutrition yet", ["de"] = "Noch keine Nährwerte" },
+        ["nut_none_body"] = new() { ["ar"] = "هذه الوجبة بلا قيم غذائية. قدّرها من المكوّنات أو أدخلها بنفسك.", ["en"] = "This meal has no nutrition values. Estimate them from the ingredients or enter them yourself.", ["de"] = "Dieses Gericht hat keine Nährwerte. Schätze sie aus den Zutaten oder trage sie selbst ein." },
+        ["nut_estimate"] = new() { ["ar"] = "تقدير", ["en"] = "Estimate", ["de"] = "Schätzung" },
+        ["nut_est_short"] = new() { ["ar"] = "تقديري", ["en"] = "est.", ["de"] = "gesch." },
+        ["nut_manual"] = new() { ["ar"] = "أدخلتها بنفسك", ["en"] = "Entered by you", ["de"] = "Von dir eingegeben" },
+        ["nut_edit"] = new() { ["ar"] = "تعديل", ["en"] = "Edit", ["de"] = "Bearbeiten" },
+        ["nut_estimate_from"] = new() { ["ar"] = "قدّر من المكوّنات", ["en"] = "Estimate from ingredients", ["de"] = "Aus Zutaten schätzen" },
+        ["nut_enter_manual"] = new() { ["ar"] = "أدخل يدوياً", ["en"] = "Enter manually", ["de"] = "Manuell eingeben" },
+        ["nut_estimating"] = new() { ["ar"] = "جارٍ التقدير…", ["en"] = "Estimating…", ["de"] = "Schätze …" },
+        // {0} = number of ingredients
+        ["nut_estimate_note"] = new() { ["ar"] = "تقدير بالذكاء الاصطناعي من {0} مكوّنات. راجع القيم وعدّلها.", ["en"] = "AI estimate from {0} ingredients. Check the values and adjust them.", ["de"] = "KI-Schätzung aus {0} Zutaten. Prüfe die Werte und passe sie an." },
+        // {0} = kcal from 4·protein + 4·carbs + 9·fat
+        ["nut_macros_sum"] = new() { ["ar"] = "مجموع الماكروز {0} سعرة", ["en"] = "Macros add up to {0} kcal", ["de"] = "Makros ergeben {0} kcal" },
+        ["nut_yield"] = new() { ["ar"] = "الوصفة تكفي", ["en"] = "Recipe makes", ["de"] = "Rezept ergibt" },
+        // {0} = preparation minutes
+        ["nut_minutes"] = new() { ["ar"] = "{0} د", ["en"] = "{0} min", ["de"] = "{0} Min." },
+        ["nut_saved"] = new() { ["ar"] = "تم الحفظ", ["en"] = "Saved", ["de"] = "Gespeichert" }
     };
 }

@@ -75,6 +75,10 @@
             </div>
 
             <div class="mk-card mk-details-card">
+                <MealNutritionPanel Meal="meal" OnSaved="_ => StateHasChanged()" />
+            </div>
+
+            <div class="mk-card mk-details-card">
                 <MealIngredientRows Ingredients="meal.Ingredients" MealName="@meal.Name" />
             </div>
 

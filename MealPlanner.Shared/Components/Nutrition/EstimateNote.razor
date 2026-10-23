@@ -1,0 +1,10 @@
+@inject ILocalizationService Loc
+
+<div class="mk-note is-warn">
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+    <span>@Loc.T("nut_estimate_note", Loc.Num(Count))</span>
+</div>
+
+@code {
+    [Parameter] public int Count { get; set; }
+}
