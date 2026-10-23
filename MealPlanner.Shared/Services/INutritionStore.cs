@@ -8,7 +8,7 @@ namespace MealPlanner.Shared.Services;
 /// </summary>
 public interface INutritionStore
 {
-    /// <summary>Days in [start, end], keyed by date. Days saved before slots existed come back with their meal as dinner.</summary>
+    /// <summary>Days in [start, end], keyed by date. Days saved before slots existed come back with their meal as Meal 1.</summary>
     Task<Dictionary<DateOnly, PlanDay>> GetDaysAsync(string uid, DateOnly start, DateOnly end);
     Task SaveDayAsync(string uid, PlanDay day);
 

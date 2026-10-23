@@ -69,7 +69,7 @@ nxtweek.theme
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
 | Shopping list | `users/{key}/shopping` |
-| Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as dinner) |
+| Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Nutrition profile and targets | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 

@@ -83,13 +83,13 @@ public static class DayMath
 
     /// <summary>
     /// Days saved before slots existed held one meal at users/{key}/weeklyPlan/{date}. Until the
-    /// day is saved in the new shape, that meal shows as the day's dinner.
+    /// day is saved in the new shape, that meal shows as the day's first meal (lunch).
     /// </summary>
     public static PlanDay FromLegacy(WeeklyPlanEntry legacy) => new()
     {
         Date = legacy.Date,
         Slots = string.IsNullOrWhiteSpace(legacy.MealId)
             ? new()
-            : new() { [MealSlot.Dinner] = new SlotEntry { MealId = legacy.MealId } }
+            : new() { [MealSlot.Meal1] = new SlotEntry { MealId = legacy.MealId } }
     };
 }

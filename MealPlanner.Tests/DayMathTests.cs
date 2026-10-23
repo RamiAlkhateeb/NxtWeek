@@ -104,13 +104,13 @@ public class DayMathTests
     }
 
     [Fact]
-    public void Legacy_single_meal_becomes_dinner()
+    public void Legacy_single_meal_becomes_the_first_meal()
     {
         var day = DayMath.FromLegacy(new WeeklyPlanEntry { Date = Monday, MealId = "chicken" });
 
         Assert.Equal(Monday, day.Date);
         Assert.Equal("chicken", Assert.Single(day.Slots).Value.MealId);
-        Assert.Equal(MealSlot.Dinner, day.Slots.Keys.Single());
+        Assert.Equal(MealSlot.Meal1, day.Slots.Keys.Single());
         Assert.Null(day.Type);
     }
 }
