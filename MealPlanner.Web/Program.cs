@@ -29,6 +29,7 @@ builder.Services.AddScoped<IMealCacheService, LocalStorageMealCacheService>();
 builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
 builder.Services.AddScoped<IWeekFillService, WeekFillService>();
 builder.Services.AddScoped<IMealAssignService, MealAssignService>();
+builder.Services.AddScoped<INutritionStore, FirebaseNutritionStore>();
 builder.Services.AddScoped<IGeminiPlannerService, GeminiPlannerService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();
 builder.Services.AddScoped<IDataExportService, LocalDataExportService>();

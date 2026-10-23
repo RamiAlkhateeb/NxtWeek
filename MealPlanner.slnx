@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="MealPlanner.Shared/MealPlanner.Shared.csproj" />
   <Project Path="MealPlanner.Web/MealPlanner.Web.csproj" />
+  <Project Path="MealPlanner.Tests/MealPlanner.Tests.csproj" />
 </Solution>

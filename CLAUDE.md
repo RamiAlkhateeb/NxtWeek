@@ -9,14 +9,17 @@ There is no mascot; do not add one.
 | Project | What lives there |
 |---|---|
 | `MealPlanner.Shared` | **All** pages, components, models and service interfaces. A Razor class library — this is where nearly every change goes. |
+| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals). |
 | `MealPlanner.Web` | The WASM host: `Program.cs` (DI), `App.razor`, `MainLayout`, `wwwroot` (CSS, icons, illustrations, service worker), and the browser-specific service implementations. |
 
 ```bash
 dotnet build MealPlanner.slnx
 dotnet run --project MealPlanner.Web      # http://localhost:5186
+dotnet test MealPlanner.Tests
 ```
 
-There is no npm, no bundler and no test project. Bootstrap is vendored under
+There is no npm and no bundler. Nutrition maths (targets, totals, and later suggestions and
+shopping quantities) lives in `MealPlanner.Shared/Nutrition` as pure static code with tests. Bootstrap is vendored under
 `wwwroot/lib` but the app is styled almost entirely by
 `MealPlanner.Web/wwwroot/css/app.css`.
 
@@ -66,6 +69,9 @@ nxtweek.theme
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
 | Shopping list | `users/{key}/shopping` |
+| Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as dinner) |
+| Nutrition profile and targets | `users/{key}/nutritionProfile` |
+| Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.
