@@ -1,0 +1,245 @@
+@inject ILocalizationService Loc
+@inject IMealCatalogService CatalogService
+@inject INutritionEstimator Estimator
+@inject ToastService Toasts
+@implements IDisposable
+
+@* Nutrition per serving for one catalog meal: the grid with its source badge, the
+   "No nutrition yet" state, and the editor (with "Estimate from ingredients").
+   An estimate is never shown without its badge. *@
+<section class="mk-nut" dir="@Loc.Direction">
+    @if (editing)
+    {
+        <div class="mk-nut-head">
+            <span class="mk-nut-head-title">@Loc["nut_per_serving"] <SourceBadge Source="@editSource" /></span>
+        </div>
+
+        <button class="mk-btn is-accent is-block" disabled="@estimating" @onclick="EstimateIntoForm">
+            @if (estimating)
+            {
+                <span class="mk-busy-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span role="status">@Loc["nut_estimating"]</span>
+            }
+            else
+            {
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                @Loc["nut_estimate_from"]
+            }
+        </button>
+        @if (editSource == NutritionSource.Estimate) { <EstimateNote Count="IngredientCount" /> }
+
+        <div class="mk-nut-form">
+            @Field("kcal", Loc["nut_calories"], Loc["nut_kcal"])
+            @Field("protein", Loc["nut_protein"], Loc["nut_g"])
+            @Field("carbs", Loc["nut_carbs"], Loc["nut_g"])
+            @Field("fat", Loc["nut_fat"], Loc["nut_g"])
+            @Field("fibre", Loc["nut_fibre"], Loc["nut_g"])
+            @Field("yield", Loc["nut_yield"], Loc["nut_servings"])
+        </div>
+
+        @MacroHint()
+        @if (!string.IsNullOrEmpty(error)) { <div class="mk-notice is-error" role="alert">@error</div> }
+
+        <div class="mk-btn-row">
+            <button class="mk-btn is-soft" @onclick="CancelEdit">@Loc["cancel"]</button>
+            <button class="mk-btn" style="flex:2 1 auto" disabled="@(saving || NutFormat.Parse(form["kcal"]) is not > 0)" @onclick="SaveAsync">@Loc["save"]</button>
+        </div>
+    }
+    else if (Meal.Nutrition is null)
+    {
+        <div class="mk-nut-empty">
+            <span class="mk-nut-empty-title">
+                <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                @Loc["nut_none"]
+            </span>
+            <p>@Loc["nut_none_body"]</p>
+            <div class="mk-btn-row">
+                <button class="mk-btn is-accent is-sm" disabled="@estimating" @onclick="EstimateAndSaveAsync">
+                    @if (estimating)
+                    {
+                        <span class="mk-busy-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                        <span role="status">@Loc["nut_estimating"]</span>
+                    }
+                    else
+                    {
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                        @Loc["nut_estimate_from"]
+                    }
+                </button>
+                <button class="mk-btn is-soft is-sm" @onclick="() => StartEdit()">@Loc["nut_enter_manual"]</button>
+            </div>
+            @if (!string.IsNullOrEmpty(error)) { <div class="mk-notice is-error" role="alert">@error</div> }
+        </div>
+    }
+    else
+    {
+        <div class="mk-nut-head">
+            <span class="mk-nut-head-title">@Loc["nut_per_serving"] <SourceBadge Source="@Meal.Nutrition.Source" /></span>
+            <button class="mk-btn is-outline is-sm" @onclick="() => StartEdit()">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/></svg>
+                @Loc["nut_edit"]
+            </button>
+        </div>
+        <NutritionGrid Nutrition="Meal.Nutrition" Yield="Meal.ServingsYield" />
+        @if (Meal.Nutrition.IsEstimate) { <EstimateNote Count="IngredientCount" /> }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public MealCatalogItem Meal { get; set; } = default!;
+    /// <summary>Raised after nutrition was saved to the catalog, with the updated meal.</summary>
+    [Parameter] public EventCallback<MealCatalogItem> OnSaved { get; set; }
+
+    private static readonly string[] Fields = ["kcal", "protein", "carbs", "fat", "fibre", "yield"];
+    private readonly Dictionary<string, string> form = Fields.ToDictionary(f => f, _ => "");
+    private string? editSource;
+    private bool editing, estimating, saving;
+    private string error = "";
+    private string? lastMealId;
+    private CancellationTokenSource? estimateCts;
+
+    private int IngredientCount => Meal.IngredientLines.Count > 0 ? Meal.IngredientLines.Count : Meal.Ingredients.Count;
+
+    protected override void OnInitialized() => Loc.OnLanguageChanged += OnLanguageChanged;
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+
+    protected override void OnParametersSet()
+    {
+        // A different meal in the same sheet starts from its own view, not a half-done edit.
+        if (lastMealId == Meal.Id) return;
+        lastMealId = Meal.Id;
+        editing = false;
+        error = "";
+        estimateCts?.Cancel();
+        estimating = false;
+    }
+
+    private void StartEdit(NutritionInfo? values = null)
+    {
+        var n = values ?? Meal.Nutrition;
+        form["kcal"] = Text(n?.Kcal);
+        form["protein"] = Text(n?.Protein);
+        form["carbs"] = Text(n?.Carbs);
+        form["fat"] = Text(n?.Fat);
+        form["fibre"] = Text(n?.Fibre);
+        form["yield"] = Loc.Input(Math.Max(1, Meal.ServingsYield));
+        editSource = n?.Source;
+        error = "";
+        editing = true;
+    }
+
+    private string Text(double? v) => v is null ? "" : Loc.Input(v.Value);
+
+    private void CancelEdit() { estimateCts?.Cancel(); estimating = false; editing = false; error = ""; }
+
+    private void OnInput(string field, string? value)
+    {
+        form[field] = value ?? "";
+        // Changing a value turns an estimate into the user's own numbers.
+        if (field != "yield" && editSource == NutritionSource.Estimate) editSource = NutritionSource.Manual;
+        else if (field != "yield" && editSource is null) editSource = NutritionSource.Manual;
+    }
+
+    private async Task<NutritionInfo?> EstimateAsync()
+    {
+        estimateCts?.Cancel();
+        estimateCts = new CancellationTokenSource();
+        estimating = true;
+        error = "";
+        try { return await Estimator.EstimateAsync(Meal, estimateCts.Token); }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception ex) { error = ex.Message; return null; }
+        finally { estimating = false; }
+    }
+
+    private async Task EstimateIntoForm()
+    {
+        var estimate = await EstimateAsync();
+        if (estimate is null || !editing) return;
+        var yieldText = form["yield"];
+        StartEdit(estimate);
+        form["yield"] = yieldText;
+    }
+
+    private async Task EstimateAndSaveAsync()
+    {
+        var estimate = await EstimateAsync();
+        if (estimate is null) return;
+        await PersistAsync(estimate, Meal.ServingsYield);
+    }
+
+    private async Task SaveAsync()
+    {
+        var kcal = NutFormat.Parse(form["kcal"]);
+        if (kcal is not > 0) return;
+        var nutrition = new NutritionInfo
+        {
+            Kcal = kcal.Value,
+            Protein = NutFormat.Parse(form["protein"]) ?? 0,
+            Carbs = NutFormat.Parse(form["carbs"]) ?? 0,
+            Fat = NutFormat.Parse(form["fat"]) ?? 0,
+            Fibre = NutFormat.Parse(form["fibre"]) ?? 0,
+            Source = editSource == NutritionSource.Estimate ? NutritionSource.Estimate : NutritionSource.Manual
+        };
+        var servingsYield = (int)Math.Max(1, Math.Round(NutFormat.Parse(form["yield"]) ?? Meal.ServingsYield));
+        if (await PersistAsync(nutrition, servingsYield)) editing = false;
+    }
+
+    private async Task<bool> PersistAsync(NutritionInfo nutrition, int servingsYield)
+    {
+        saving = true;
+        error = "";
+        var previous = (Meal.Nutrition, Meal.ServingsYield);
+        try
+        {
+            Meal.Nutrition = nutrition;
+            Meal.ServingsYield = servingsYield;
+            await CatalogService.UpdateMealAsync(Meal);
+            Toasts.Show(Loc["nut_saved"]);
+            await OnSaved.InvokeAsync(Meal);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            (Meal.Nutrition, Meal.ServingsYield) = previous;
+            error = ex.Message;
+            return false;
+        }
+        finally { saving = false; }
+    }
+
+    private RenderFragment Field(string key, string label, string unit) =>
+        @<label class="mk-field">
+            <span class="mk-label">@label</span>
+            <span class="mk-input-unit @(key != "yield" && editSource == NutritionSource.Estimate ? "is-estimate" : "")">
+                <input inputmode="decimal" autocomplete="off" value="@form[key]" @oninput="e => OnInput(key, e.Value?.ToString())" />
+                <span>@unit</span>
+            </span>
+        </label>;
+
+    private RenderFragment MacroHint() => __builder =>
+    {
+        var kcal = NutFormat.Parse(form["kcal"]) ?? 0;
+        var sum = MacroCheck.MacroKcal(NutFormat.Parse(form["protein"]) ?? 0, NutFormat.Parse(form["carbs"]) ?? 0, NutFormat.Parse(form["fat"]) ?? 0);
+        if (kcal <= 0 || sum <= 0) return;
+        var off = MacroCheck.IsOff(kcal, NutFormat.Parse(form["protein"]) ?? 0, NutFormat.Parse(form["carbs"]) ?? 0, NutFormat.Parse(form["fat"]) ?? 0);
+        <div class="mk-note @(off ? "is-warn" : "is-ok")" role="status">
+            @if (off)
+            {
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+                <span>@Loc.T("nut_macros_sum", Loc.Num(sum)) (@Loc["nut_calories"]: @Loc.Num(kcal))</span>
+            }
+            else
+            {
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+                <span>@Loc.T("nut_macros_sum", Loc.Num(sum))</span>
+            }
+        </div>
+    };
+
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= OnLanguageChanged;
+        estimateCts?.Cancel();
+    }
+}

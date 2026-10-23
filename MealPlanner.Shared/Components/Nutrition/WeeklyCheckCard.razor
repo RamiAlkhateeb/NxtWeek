@@ -1,0 +1,68 @@
+@inject ILocalizationService Loc
+
+@* The weekly check: is the 7-day average moving as planned? Only the Lose goal gets a verdict. *@
+@switch (Check.State)
+{
+    case WeeklyCheckState.Empty:
+        <div class="mk-wcard is-nd is-empty">
+            <span class="mk-wcard-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 9a5 5 0 0 1 8 0M12 12l2-2"/></svg></span>
+            <b>@Loc["nut_empty_title"]</b>
+            <span class="mk-subtitle">@Loc["nut_empty_body"]</span>
+            <a class="mk-btn" href="progress/log"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["nut_first_entry"]</a>
+        </div>
+        break;
+    case WeeklyCheckState.First:
+        <div class="mk-wcard is-nd">
+            <div class="mk-wcard-title">@Info()@Loc["nut_not_enough_title"]</div>
+            <p>@Loc.T("nut_not_enough_body", Loc.Num(Check.Entries), Loc.Num(Math.Max(0, WeightTrend.EntriesForCheck - Check.Entries)))</p>
+            <div class="mk-ddots" aria-hidden="true">
+                @for (var i = 0; i < WeightTrend.EntriesForCheck; i++)
+                {
+                    <div class="mk-ddot"><i class="@(i < Check.Entries ? "is-within" : "is-nodata")">@if (i < Check.Entries) { <svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg> }</i></div>
+                }
+            </div>
+        </div>
+        break;
+    case WeeklyCheckState.Keep:
+        <div class="mk-wcard is-nd"><div class="mk-wcard-title">@Info()@Loc["nut_not_enough_title"]</div><p>@Loc["nut_check_starts"]</p></div>
+        break;
+    case WeeklyCheckState.OnTrack:
+        <div class="mk-wcard is-on">
+            <div class="mk-wcard-title"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["nut_check_on_title"]</div>
+            <p>@Loc.T("nut_check_on_body", Loss)</p>
+        </div>
+        break;
+    case WeeklyCheckState.Slower:
+        <div class="mk-wcard is-slow">
+            <div class="mk-wcard-title">@Trend()@Loc["nut_check_slow_title"]</div>
+            <p>@Loc.T("nut_check_slow_body", Loss)</p>
+            <button class="mk-btn is-sm mk-self-start" disabled="@Busy" @onclick="() => OnAdjust.InvokeAsync(-WeightTrend.AdjustKcal)">@Loc["nut_reduce_150"]</button>
+        </div>
+        break;
+    case WeeklyCheckState.Faster:
+        <div class="mk-wcard is-fast">
+            <div class="mk-wcard-title">@Trend()@Loc["nut_check_fast_title"]</div>
+            <p>@Loc.T("nut_check_fast_body", Loss)</p>
+            <button class="mk-btn is-sm mk-self-start" disabled="@Busy" @onclick="() => OnAdjust.InvokeAsync(WeightTrend.AdjustKcal)">@Loc["nut_add_150"]</button>
+        </div>
+        break;
+    default:
+        <div class="mk-wcard is-nd">
+            <div class="mk-wcard-title">@Trend()@Loc["nut_trend_title"]</div>
+            <p>@Loc.T("nut_trend_body", Signed(Check.Change ?? 0))</p>
+        </div>
+        break;
+}
+
+@code {
+    [Parameter, EditorRequired] public WeeklyCheck Check { get; set; } = default!;
+    /// <summary>Raised with −150 or +150: change the daily target by that much.</summary>
+    [Parameter] public EventCallback<int> OnAdjust { get; set; }
+    [Parameter] public bool Busy { get; set; }
+
+    private string Loss => Loc.Dec1(Math.Max(0, -(Check.Change ?? 0)));
+    private string Signed(double v) => NutFormat.Isolate((v > 0 ? "+" : v < 0 ? "−" : "") + Loc.Dec1(Math.Abs(v)));
+
+    private static RenderFragment Info() => @<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>;
+    private static RenderFragment Trend() => @<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>;
+}

@@ -19,24 +19,12 @@
             </span>
             <span class="mk-nav-label">@Loc["nav_meals"]</span>
         </a>
-        <a href="ai-plan" class="mk-nav-item is-center" aria-current="@(IsActive("ai-plan") ? "page" : null)">
+        <a href="settings" class="mk-nav-item @(IsActive("settings") ? "is-active" : "")" aria-current="@(IsActive("settings") ? "page" : null)">
             <span class="mk-nav-icon" aria-hidden="true">
-                <svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
-            </span>
-            <span class="mk-nav-label">@Loc["nav_assistant"]</span>
-        </a>
-        <a href="shopping" class="mk-nav-item @(IsActive("shopping") ? "is-active" : "")" aria-current="@(IsActive("shopping") ? "page" : null)">
-            <span class="mk-nav-icon" aria-hidden="true">
-                <svg class="i" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
-            </span>
-            <span class="mk-nav-label">@Loc["nav_shopping"]</span>
-        </a>
-        <a href="friends" class="mk-nav-item @(IsActive("friends") ? "is-active" : "")" aria-current="@(IsActive("friends") ? "page" : null)">
-            <span class="mk-nav-icon" aria-hidden="true">
-                <svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .7 3.5 2.6 3.5 5.5"/></svg>
+                <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
                 @if (pendingRequests > 0) { <span class="mk-nav-badge" aria-label="@Loc.T("nav_friends_requests", pendingRequests)">@pendingRequests</span> }
             </span>
-            <span class="mk-nav-label">@Loc["nav_friends"]</span>
+            <span class="mk-nav-label">@Loc["nav_settings"]</span>
         </a>
     </nav>
 }
@@ -95,9 +83,22 @@
             || path.Equals("signin", StringComparison.OrdinalIgnoreCase);
     }
 
-    private bool IsActive(string path) => RelativePath().Equals(path.Trim('/'), StringComparison.OrdinalIgnoreCase)
-        // The month calendar is the second half of the Week tab.
-        || (path.Length == 0 && RelativePath().Equals("month", StringComparison.OrdinalIgnoreCase));
+    // Month, Shopping and the Assistant open from Week; Profile and Friends from Settings.
+    private static readonly Dictionary<string, string[]> TabChildren = new()
+    {
+        [""] = ["month", "shopping", "ai-plan", "progress"],
+        ["meals"] = ["meal"],
+        ["settings"] = ["friends"]
+    };
+
+    private bool IsActive(string path)
+    {
+        var current = RelativePath();
+        if (current.Equals(path, StringComparison.OrdinalIgnoreCase)) return true;
+        if (path.Length > 0 && current.StartsWith(path + "/", StringComparison.OrdinalIgnoreCase)) return true;
+        return TabChildren.TryGetValue(path, out var children)
+            && children.Any(c => current.Equals(c, StringComparison.OrdinalIgnoreCase) || current.StartsWith(c + "/", StringComparison.OrdinalIgnoreCase));
+    }
 
     public void Dispose()
     {

@@ -1,0 +1,23 @@
+@inject ILocalizationService Loc
+
+<div class="mk-dstrip" role="group">
+    @foreach (var date in Dates)
+    {
+        var d = date;
+        var on = d == Selected;
+        var dot = Dots.GetValueOrDefault(d);
+        <button type="button" class="mk-dchip @(on ? "is-on" : "") @(d == Today ? "is-today" : "")" aria-pressed="@(on ? "true" : "false")" aria-label="@Loc.FormatDayDate(d)" @onclick="() => OnSelect.InvokeAsync(d)">
+            <span class="mk-dchip-name">@Loc.GetDayAbbr(d.DayOfWeek)</span>
+            <span class="mk-dchip-num">@d.Day</span>
+            <span class="mk-dchip-dot is-@dot.ToString().ToLowerInvariant()"></span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DateOnly> Dates { get; set; } = [];
+    [Parameter] public DateOnly Selected { get; set; }
+    [Parameter] public DateOnly Today { get; set; }
+    [Parameter] public IReadOnlyDictionary<DateOnly, DayDot> Dots { get; set; } = new Dictionary<DateOnly, DayDot>();
+    [Parameter] public EventCallback<DateOnly> OnSelect { get; set; }
+}

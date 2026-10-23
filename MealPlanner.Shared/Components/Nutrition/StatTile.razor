@@ -1,0 +1,14 @@
+@* A big number with a label above and an optional line and bar below. *@
+<div class="mk-stat">
+    <span class="mk-stat-label">@Label</span>
+    <span class="mk-stat-value" style="@(Colour is null ? null : $"color:{Colour}")">@Value@if (!string.IsNullOrEmpty(Unit)) { <small>&nbsp;@Unit</small> }</span>
+    @ChildContent
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public string Value { get; set; } = "";
+    [Parameter] public string? Unit { get; set; }
+    [Parameter] public string? Colour { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

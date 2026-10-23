@@ -69,37 +69,24 @@ window.nxtweek = {
     const element = document.getElementById(elementId);
     if (element) element.scrollIntoView({ behavior: 'smooth', block, inline: 'nearest' });
   },
-  async captureAndShare(elementId) {
+  // Calls dotnetRef.SetCompact(true) once the element has mostly scrolled away, false when it is back.
+  // Returns an id for unobserveCompact, so a page being disposed never disconnects its successor.
+  observeCompact(elementId, dotnetRef) {
     const element = document.getElementById(elementId);
-    if (!element || typeof window.html2canvas !== 'function') {
-      throw new Error('The week preview could not be created.');
-    }
-
-    const canvas = await window.html2canvas(element, { backgroundColor: '#f7f7f9', scale: 2 });
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error('The week image could not be created.');
-
-    const file = new File([blob], 'my-week.png', { type: 'image/png' });
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'مكدوس — خطتي الأسبوعية', text: 'https://meal-planner-af799.web.app/' });
-        return 'shared';
-      } catch (error) {
-        if (error?.name === 'AbortError') return 'cancelled';
-        throw error;
-      }
-    }
-
-    const url = URL.createObjectURL(blob);
-    try {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'طبخات-الأسبوع.png';
-      link.click();
-      return 'downloaded';
-    } finally {
-      setTimeout(() => URL.revokeObjectURL(url), 0);
-    }
+    if (!element || !('IntersectionObserver' in window)) return 0;
+    // Compact once less than half of the panel is left on screen above the fold.
+    const observer = new IntersectionObserver(([entry]) => {
+      dotnetRef.invokeMethodAsync('SetCompact', entry.intersectionRatio < 0.5 && entry.boundingClientRect.top < 0);
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+    observer.observe(element);
+    this._compactObservers ??= new Map();
+    const id = (this._compactId = (this._compactId || 0) + 1);
+    this._compactObservers.set(id, observer);
+    return id;
+  },
+  unobserveCompact(id) {
+    this._compactObservers?.get(id)?.disconnect();
+    this._compactObservers?.delete(id);
   }
 };
 
@@ -163,3 +150,22 @@ async function updateServiceWorker() {
     // A regular reload is still safe if the service worker cannot update.
   }
 }
+
+// Bottom sheets (Nxt.UI NxtBottomSheet): Esc closes the top one and focus moves into a sheet when it
+// opens, so keyboard and screen-reader users land on its content. Belongs in Nxt.UI; kept here until then.
+(function sheetKeyboardSupport() {
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const backdrops = document.querySelectorAll('.nxt-sheet-backdrop');
+    const top = backdrops[backdrops.length - 1];
+    if (top) { e.preventDefault(); top.click(); }
+  });
+  const focusNewSheets = () => {
+    document.querySelectorAll('.nxt-sheet:not([data-focused])').forEach(sheet => {
+      sheet.setAttribute('data-focused', '');
+      if (!sheet.hasAttribute('tabindex')) sheet.setAttribute('tabindex', '-1');
+      sheet.focus({ preventScroll: true });
+    });
+  };
+  new MutationObserver(focusNewSheets).observe(document.documentElement, { childList: true, subtree: true });
+})();

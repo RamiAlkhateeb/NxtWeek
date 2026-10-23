@@ -9,14 +9,17 @@ There is no mascot; do not add one.
 | Project | What lives there |
 |---|---|
 | `MealPlanner.Shared` | **All** pages, components, models and service interfaces. A Razor class library — this is where nearly every change goes. |
+| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, weight trend, weekly summary, suggestions, shopping amounts). |
 | `MealPlanner.Web` | The WASM host: `Program.cs` (DI), `App.razor`, `MainLayout`, `wwwroot` (CSS, icons, illustrations, service worker), and the browser-specific service implementations. |
 
 ```bash
 dotnet build MealPlanner.slnx
 dotnet run --project MealPlanner.Web      # http://localhost:5186
+dotnet test MealPlanner.Tests
 ```
 
-There is no npm, no bundler and no test project. Bootstrap is vendored under
+There is no npm and no bundler. Nutrition maths (targets, totals, and later suggestions and
+shopping quantities) lives in `MealPlanner.Shared/Nutrition` as pure static code with tests. Bootstrap is vendored under
 `wwwroot/lib` but the app is styled almost entirely by
 `MealPlanner.Web/wwwroot/css/app.css`.
 
@@ -66,6 +69,19 @@ nxtweek.theme
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
 | Shopping list | `users/{key}/shopping` |
+| Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
+| Nutrition profile and targets | `users/{key}/nutritionProfile` |
+| Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
+| Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
+
+Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
+it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
+Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.
+
+Another user's data is read narrowly: `GetProfileAsync` does a `?shallow=true` read plus the profile's own
+lists, so `days`, `body`, `nutritionProfile` and `shopping` never travel with a profile, and people are
+discovered from the `usernames` node, never by reading `users`. Friends see your meals; calories and
+protein only when `users/{key}/shareNutrition` is on; weight never.
 
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.

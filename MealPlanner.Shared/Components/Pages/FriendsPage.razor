@@ -5,6 +5,7 @@
 @inject IAuthService Auth
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
+@inject IDayPlanService DayPlan
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
@@ -12,9 +13,12 @@
 
 <div class="mk-page mk-friends" dir="@Loc.Direction">
     <header class="mk-header">
-        <div class="mk-title-block">
-            <h1 class="mk-title">@Loc["friends_title"]</h1>
-            <p class="mk-subtitle">@Loc["friends_subtitle"]</p>
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/settings" />
+            <div class="mk-title-block">
+                <h1 class="mk-title">@Loc["friends_title"]</h1>
+                <p class="mk-subtitle">@Loc["friends_subtitle"]</p>
+            </div>
         </div>
 
         @if (!isLoading && hasUsername)
@@ -56,6 +60,16 @@
         }
         else
         {
+            <section class="mk-set-card">
+                <div class="mk-sheet-row">
+                    <span class="mk-sheet-row-copy">
+                        <span class="mk-sheet-row-title">@Loc["nut_share_title"]</span>
+                        <span class="mk-sheet-row-hint">@Loc["nut_share_body"]</span>
+                    </span>
+                    <ToggleSwitch Checked="shareNutrition" CheckedChanged="SetShareAsync" Label="@Loc["nut_share_title"]" />
+                </div>
+            </section>
+
             @foreach (var request in incomingRequests)
             {
                 <article class="mk-request">
@@ -108,23 +122,46 @@
                             </div>
 
                             <div class="mk-friend-days @(isLoadingFriendWeek ? "is-loading" : "")">
-                                @foreach (var day in selectedFriendWeek)
+                                @foreach (var date in WeekDates)
                                 {
-                                    var meal = MealFor(day.MealId);
-                                    var mine = MyMealFor(day.Date);
-                                    <div class="mk-friend-day @(meal is null ? "is-empty" : "")">
-                                        <span class="mk-friend-dayname">@Loc.GetShortDayName(day.Date.DayOfWeek)</span>
-                                        @if (meal is null)
+                                    var theirs = FriendShare.MealIds(friendDays.GetValueOrDefault(date)).Select(MealFor).OfType<MealCatalogItem>().ToList();
+                                    var mine = FriendShare.MealIds(myDays.GetValueOrDefault(date)).Select(MealFor).OfType<MealCatalogItem>().ToList();
+                                    <div class="mk-friend-day @(theirs.Count == 0 ? "is-empty" : "")">
+                                        <span class="mk-friend-dayname">@Loc.GetShortDayName(date.DayOfWeek)</span>
+                                        @if (theirs.Count == 0)
                                         {
                                             <span class="mk-friend-meal is-none">—</span>
                                         }
                                         else
                                         {
-                                            <span class="mk-dot @MealTypeStyle.T(meal.MealType)" aria-hidden="true"></span>
-                                            <span class="mk-friend-meal">@meal.Name</span>
-                                            @if (mine is null) { <span class="mk-diff is-ok">@Loc["friends_empty_day"]</span> }
-                                            else if (mine.Id != meal.Id) { <span class="mk-diff">@Loc.T("friends_replaces", mine.Name)</span> }
+                                            <span class="mk-dot @MealTypeStyle.T(theirs[0].MealType)" aria-hidden="true"></span>
+                                            <span class="mk-friend-meal">@string.Join(" · ", theirs.Select(m => m.Name))</span>
+                                            @if (mine.Count == 0) { <span class="mk-diff is-ok">@Loc["friends_empty_day"]</span> }
+                                            else if (!mine.Select(m => m.Id).SequenceEqual(theirs.Select(m => m.Id))) { <span class="mk-diff">@Loc.T("friends_replaces", string.Join(" · ", mine.Select(m => m.Name)))</span> }
                                         }
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="mk-friend-share">
+                                <span class="mk-proposal-label">@Loc["nut_friend_week"]</span>
+                                @if (selectedFriend.ShareNutrition)
+                                {
+                                    @foreach (var date in WeekDates)
+                                    {
+                                        var eaten = FriendShare.EatenOn(friendDays.GetValueOrDefault(date), id => MealFor(id)?.Nutrition);
+                                        <div class="mk-friend-share-row">
+                                            <b>@Loc.GetShortDayName(date.DayOfWeek)</b>
+                                            <span class="mk-num">@(eaten is { } e1 ? $"{Loc.Num(e1.Kcal)} {Loc["nut_kcal"]}" : "–")</span>
+                                            <span class="mk-num mk-friend-share-p">@(eaten is { } e2 ? $"{Loc.Num(e2.Protein)} {Loc["nut_g"]}" : "")</span>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="mk-note">
+                                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                                        <span>@Loc["nut_not_shared"]</span>
                                     </div>
                                 }
                             </div>
@@ -171,9 +208,10 @@
     private List<UserProfile> discoverable = new();
     private HashSet<string> alreadyConnected = new(StringComparer.OrdinalIgnoreCase);
     private UserProfile? selectedFriend;
-    private List<WeeklyPlanEntry> selectedFriendWeek = new();
+    private Dictionary<DateOnly, PlanDay> friendDays = new();
+    private Dictionary<DateOnly, PlanDay> myDays = new();
+    private bool shareNutrition;
     private Dictionary<string, MealCatalogItem> catalog = new();
-    private Dictionary<DateOnly, string> myWeek = new();
     private DateOnly displayedWeekStart;
     private bool isSyncing;
     private bool isLoadingFriendWeek;
@@ -181,7 +219,8 @@
     private bool hasUsername;
     private string WeekRangeLabel => $"{displayedWeekStart.Day} {Loc.GetMonthName(displayedWeekStart.Month)} – {displayedWeekStart.AddDays(6).Day} {Loc.GetMonthName(displayedWeekStart.AddDays(6).Month)}";
 
-    private int PlannedDays => selectedFriendWeek.Count(d => !string.IsNullOrEmpty(d.MealId));
+    private int PlannedDays => WeekDates.Count(d => FriendShare.MealIds(friendDays.GetValueOrDefault(d)).Count > 0);
+    private IReadOnlyList<DateOnly> WeekDates => Enumerable.Range(0, 7).Select(i => displayedWeekStart.AddDays(i)).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -204,6 +243,7 @@
     {
         var profile = await UserService.GetProfileAsync(uid);
         hasUsername = !string.IsNullOrWhiteSpace(profile?.Username);
+        shareNutrition = profile?.ShareNutrition ?? false;
         incomingRequests = profile?.IncomingFriendRequests?.Values.OrderByDescending(request => request.SentAtUtc).ToList() ?? new();
         var friendIds = profile?.FriendIds?.Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new();
         var profiles = await Task.WhenAll(friendIds.Select(UserService.GetProfileAsync));
@@ -295,7 +335,7 @@
         if (string.Equals(selectedFriend?.Uid, friend.Uid, StringComparison.OrdinalIgnoreCase))
         {
             selectedFriend = null;
-            selectedFriendWeek.Clear();
+            friendDays.Clear();
             friendWeekRequestId++;
             isLoadingFriendWeek = false;
             return;
@@ -323,46 +363,53 @@
         isLoadingFriendWeek = true;
         try
         {
-            var fetchedTask = UserService.GetWeeklyPlanAsync(requestedFriendUid, requestedWeekStart, requestedWeekStart.AddDays(6));
-            var mineTask = UserService.GetWeeklyPlanAsync(uid, requestedWeekStart, requestedWeekStart.AddDays(6));
+            var fetchedTask = DayPlan.GetDaysAsync(requestedFriendUid, requestedWeekStart, requestedWeekStart.AddDays(6));
+            var mineTask = DayPlan.GetDaysAsync(uid, requestedWeekStart, requestedWeekStart.AddDays(6));
             var fetched = await fetchedTask;
             var mine = await mineTask;
             if (requestId != friendWeekRequestId) return;
-
-            myWeek = mine.Where(entry => !string.IsNullOrEmpty(entry.MealId)).GroupBy(entry => entry.Date).ToDictionary(g => g.Key, g => g.First().MealId);
-
-            selectedFriendWeek = Enumerable.Range(0, 7).Select(offset =>
-            {
-                var date = requestedWeekStart.AddDays(offset);
-                return fetched.FirstOrDefault(entry => entry.Date == date) ?? new WeeklyPlanEntry { Date = date };
-            }).ToList();
+            friendDays = fetched;
+            myDays = mine;
         }
         finally { if (requestId == friendWeekRequestId) isLoadingFriendWeek = false; }
     }
 
-    private Task ReplaceWeek() => ApplyWeekAsync(selectedFriendWeek, "friends_sync_success");
+    // Every day of the week becomes the friend's meals; a day they left empty clears mine too.
+    private Task ReplaceWeek() => ApplyWeekAsync(WeekDates, "friends_sync_success");
 
     // Fills only the days I left empty and the friend has planned; the rest of my week is untouched.
     private async Task CopyEmptyDays()
     {
-        var entries = selectedFriendWeek.Where(day => !string.IsNullOrEmpty(day.MealId) && !myWeek.ContainsKey(day.Date)).ToList();
-        if (entries.Count == 0) { Toasts.Show(Loc["friends_nothing_to_copy"]); return; }
-        await ApplyWeekAsync(entries, "friends_copy_empty_success");
+        var dates = WeekDates.Where(d => FriendShare.CopyableSlots(friendDays.GetValueOrDefault(d)).Count > 0
+                                      && (myDays.GetValueOrDefault(d)?.Slots.Count ?? 0) == 0).ToList();
+        if (dates.Count == 0) { Toasts.Show(Loc["friends_nothing_to_copy"]); return; }
+        await ApplyWeekAsync(dates, "friends_copy_empty_success");
     }
 
-    private async Task ApplyWeekAsync(List<WeeklyPlanEntry> entries, string successKey)
+    private async Task ApplyWeekAsync(IReadOnlyList<DateOnly> dates, string successKey)
     {
         if (selectedFriend is null || isLoadingFriendWeek) return;
         isSyncing = true;
         try
         {
-            // For a full replace the list is hydrated to all 7 dates, so a day the friend left empty clears mine too.
-            await UserService.SaveWeeklyPlanEntriesAsync(uid, entries);
+            foreach (var date in dates)
+                await DayPlan.ReplaceSlotsAsync(uid, date, FriendShare.CopyableSlots(friendDays.GetValueOrDefault(date)));
             Toasts.Show(Loc.T(successKey, selectedFriend.DisplayName));
             await LoadSelectedFriendWeekAsync();
         }
         catch (Exception ex) { isError = true; feedback = ex.Message; }
         finally { isSyncing = false; }
+    }
+
+    private async Task SetShareAsync(bool share)
+    {
+        shareNutrition = share;
+        try
+        {
+            await UserService.SetShareNutritionAsync(uid, share);
+            Toasts.Show(share ? Loc["nut_shared_on"] : Loc["nut_not_shared"]);
+        }
+        catch (Exception ex) { shareNutrition = !share; isError = true; feedback = ex.Message; }
     }
 
     private async Task CopyUsername()
@@ -377,7 +424,6 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") await SendRequest(); }
     private MealCatalogItem? MealFor(string? mealId) => !string.IsNullOrEmpty(mealId) && catalog.TryGetValue(mealId, out var meal) ? meal : null;
-    private MealCatalogItem? MyMealFor(DateOnly date) => myWeek.TryGetValue(date, out var id) ? MealFor(id) : null;
     private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[0].ToString().ToUpperInvariant();
 
     private void OnLanguage() => InvokeAsync(StateHasChanged);

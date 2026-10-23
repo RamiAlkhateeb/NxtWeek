@@ -1,0 +1,91 @@
+@inject ILocalizationService Loc
+@inject IMealImageService MealImages
+
+@* What is in one slot: nutrition for the servings eaten, servings, meal prep, leftover,
+   remove, mark as eaten and change meal. *@
+<NxtBottomSheet IsOpen="IsOpen && Entry is not null" Eyebrow="@SlotLabel" Title="@Name" OnDismiss="OnDismiss">
+    @if (Entry is not null)
+    {
+        var baseNutrition = Entry.Quick is { } q
+            ? new NutritionInfo { Kcal = q.Kcal, Protein = q.Protein, Carbs = q.Carbs, Fat = q.Fat, Source = NutritionSource.Manual }
+            : Meal?.Nutrition;
+        <div class="mk-sheet-body mk-slot-sheet" dir="@Loc.Direction">
+            @if (baseNutrition is not null)
+            {
+                <section class="mk-nut">
+                    <div class="mk-nut-head">
+                        <span class="mk-nut-head-title">@Loc["nut_per_serving"] × @Loc.Servings(Entry.Servings) <SourceBadge Source="@baseNutrition.Source" /></span>
+                    </div>
+                    <NutritionGrid Nutrition="baseNutrition" Servings="Entry.Servings" />
+                    <div class="mk-gauge-row"><ProteinGauge Protein="baseNutrition.Protein" /><span>@Loc["nut_aim"]</span></div>
+                </section>
+            }
+            else if (Meal is not null)
+            {
+                <MealNutritionPanel Meal="Meal" OnSaved="_ => OnMealSaved.InvokeAsync()" />
+            }
+
+            <div class="mk-sheet-row">
+                <span class="mk-sheet-row-title">@Loc["nut_servings_label"]</span>
+                <ServingsStepper Value="Entry.Servings" ValueChanged="OnServings" />
+            </div>
+
+            @if (!Entry.IsQuick)
+            {
+                <div class="mk-sheet-row">
+                    <span class="mk-sheet-row-copy"><span class="mk-sheet-row-title">@Loc["nut_eat_leftover"]</span><span class="mk-sheet-row-hint">@Loc["nut_eat_leftover_hint"]</span></span>
+                    <ToggleSwitch Checked="Entry.Leftover" CheckedChanged="OnLeftover" Label="@Loc["nut_eat_leftover"]" />
+                </div>
+            }
+
+            @if (!Entry.IsQuick && !Entry.Leftover && ShowPrep)
+            {
+                <div class="mk-sheet-group">
+                    <span class="mk-sheet-row-copy"><span class="mk-sheet-row-title">@Loc["nut_prep"]</span><span class="mk-sheet-row-hint">@Loc["nut_prep_hint"]</span></span>
+                    <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_prep"]">
+                        @foreach (var k in new[] { 1, 2, 3 })
+                        {
+                            var batches = k;
+                            <button type="button" class="@(Entry.PrepBatches == batches ? "is-active" : "")" aria-pressed="@(Entry.PrepBatches == batches ? "true" : "false")" @onclick="() => OnPrep.InvokeAsync(batches)">@(batches == 1 ? Loc["nut_off"] : NutFormat.Times(batches.ToString()))</button>
+                        }
+                    </div>
+                </div>
+            }
+
+            <button type="button" class="mk-btn is-sm is-danger-text mk-self-start" @onclick="OnRemove">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>@Loc["nut_remove"]
+            </button>
+
+            <div class="mk-btn-row">
+                <button type="button" class="mk-btn @(Entry.Eaten ? "is-soft" : "")" style="flex:2 1 auto" @onclick="OnToggleEaten">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@(Entry.Eaten ? Loc["nut_undo"] : Loc["nut_mark_eaten"])
+                </button>
+                @if (!Entry.IsQuick)
+                {
+                    <button type="button" class="mk-btn is-soft" @onclick="OnChangeMeal">@Loc["nut_replace"]</button>
+                }
+            </div>
+        </div>
+    }
+</NxtBottomSheet>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public MealSlot Slot { get; set; }
+    [Parameter] public string Time { get; set; } = "";
+    [Parameter] public SlotEntry? Entry { get; set; }
+    [Parameter] public MealCatalogItem? Meal { get; set; }
+    /// <summary>Meal prep only applies to this week's shopping.</summary>
+    [Parameter] public bool ShowPrep { get; set; }
+    [Parameter] public EventCallback<double> OnServings { get; set; }
+    [Parameter] public EventCallback<int> OnPrep { get; set; }
+    [Parameter] public EventCallback<bool> OnLeftover { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+    [Parameter] public EventCallback OnToggleEaten { get; set; }
+    [Parameter] public EventCallback OnChangeMeal { get; set; }
+    [Parameter] public EventCallback OnMealSaved { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private string Name => Entry?.Quick?.Name ?? Meal?.Name ?? "";
+    private string SlotLabel => string.IsNullOrEmpty(Time) ? Loc["nut_slot_" + Slot] : $"{Loc["nut_slot_" + Slot]} · {Time}";
+}

@@ -40,7 +40,18 @@
     private void OnLanguage() => InvokeAsync(StateHasChanged);
     public void Dispose() => Loc.OnLanguageChanged -= OnLanguage;
 
-    private void ContinueAsGuest() => Nav.NavigateTo("/", replace: true);
+    private void ContinueAsGuest() => Nav.NavigateTo(ReturnPath(), replace: true);
+
+    // ?return=/settings/profile brings the user back to where sign-in was asked for. Only app paths.
+    private string ReturnPath()
+    {
+        var query = new Uri(Nav.Uri).Query;
+        const string key = "return=";
+        var i = query.IndexOf(key, StringComparison.OrdinalIgnoreCase);
+        if (i < 0) return "/";
+        var value = Uri.UnescapeDataString(query[(i + key.Length)..].Split('&')[0]);
+        return value.StartsWith('/') && !value.StartsWith("//") ? value : "/";
+    }
 
     private async Task Submit()
     {
@@ -55,8 +66,12 @@
 
         try
         {
+            // Keep the data key the guest already plans under, so their week and lists stay theirs.
+            var before = await Auth.GetCurrentUserAsync();
             await Auth.SignInAsync(email);
-            Nav.NavigateTo("/", replace: true);
+            if (before is { IsGuest: true } && !string.IsNullOrWhiteSpace(before.Uid))
+                await Auth.SetActiveDataKeyAsync(before.Uid);
+            Nav.NavigateTo(ReturnPath(), replace: true);
         }
         catch (Exception ex)
         {

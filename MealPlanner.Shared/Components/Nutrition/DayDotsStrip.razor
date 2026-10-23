@@ -1,0 +1,29 @@
+@inject ILocalizationService Loc
+
+@* Seven days, Monday first: ✓ within 10% of target, ✗ outside, empty for not logged or still to come. *@
+<div class="mk-ddots">
+    @for (var i = 0; i < Days.Count; i++)
+    {
+        var state = Days[i];
+        var date = Monday.AddDays(i);
+        <div class="mk-ddot" title="@Loc.FormatDayDate(date)">
+            <i class="is-@state.ToString().ToLowerInvariant()" role="img" aria-label="@($"{Loc.FormatDayDate(date)}: {Label(state)}")">
+                @if (state == SummaryDay.Within) { <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> }
+                else if (state == SummaryDay.Off) { <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg> }
+            </i>
+            <span aria-hidden="true">@Loc.GetDayAbbr(date.DayOfWeek, 2)</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<SummaryDay> Days { get; set; } = [];
+    [Parameter] public DateOnly Monday { get; set; }
+
+    private string Label(SummaryDay s) => s switch
+    {
+        SummaryDay.Within => Loc["nut_on_target"],
+        SummaryDay.Off => $"{Loc["nut_over"]} / {Loc["nut_under"]}",
+        _ => Loc["nut_no_data"]
+    };
+}

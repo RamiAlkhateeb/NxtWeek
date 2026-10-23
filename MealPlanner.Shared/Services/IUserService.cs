@@ -27,5 +27,7 @@ public interface IUserService
     Task SendFriendRequestAsync(string senderUid, string recipientUid);
     Task AcceptFriendRequestAsync(string uid, string senderUid);
     Task DeclineFriendRequestAsync(string uid, string senderUid);
+    /// <summary>Opt in or out of showing friends daily calories and protein.</summary>
+    Task SetShareNutritionAsync(string uid, bool share);
 
 }

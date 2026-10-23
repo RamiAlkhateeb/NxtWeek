@@ -1,0 +1,27 @@
+@inject ILocalizationService Loc
+@inject NavigationManager Nav
+
+@* Health data (profile, weight, waist) is only saved to an account. Explains why before
+   handing over to the e-mail sign-in page, which brings the user back afterwards. *@
+<NxtBottomSheet IsOpen="IsOpen" Title="@Loc["nut_sign_title"]" OnDismiss="OnDismiss">
+    <div class="mk-sheet-body mk-sign-sheet" dir="@Loc.Direction">
+        <span class="mk-sign-lock" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <p class="mk-subtitle">@Loc["nut_sign_body"]</p>
+        <ul class="mk-checklist">
+            <li>@Loc["nut_sign_point_1"]</li>
+            <li>@Loc["nut_sign_point_2"]</li>
+            <li>@Loc["nut_sign_point_3"]</li>
+        </ul>
+        <button class="mk-btn is-lg is-block" @onclick="SignIn">@Loc["nut_sign_in"]</button>
+        <button class="mk-btn is-soft is-block" @onclick="OnDismiss">@Loc["nut_not_now"]</button>
+    </div>
+</NxtBottomSheet>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    /// <summary>App path to come back to after signing in.</summary>
+    [Parameter] public string ReturnPath { get; set; } = "/";
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private void SignIn() => Nav.NavigateTo($"/signin?return={Uri.EscapeDataString(ReturnPath)}");
+}

@@ -4,8 +4,6 @@
 @implements IDisposable
 @inject IAuthService Auth
 @inject IUserService UserService
-@inject IMealService MealService
-@inject IWeekFillService WeekFill
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 
@@ -24,11 +22,7 @@
     </div>
 
     <div class="mk-start-list">
-        <button class="mk-start is-primary" disabled="@busy" @onclick="Surprise">
-            <span class="mk-start-icon is-pink"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg></span>
-            <span class="mk-start-copy"><strong>@Loc["welcome_surprise"]</strong><span>@Loc["welcome_surprise_desc"]</span></span>
-        </button>
-        <button class="mk-start" disabled="@busy" @onclick="StartEmpty">
+        <button class="mk-start is-primary" disabled="@busy" @onclick="StartEmpty">
             <span class="mk-start-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
             <span class="mk-start-copy"><strong>@Loc["welcome_empty"]</strong><span>@Loc["welcome_empty_desc"]</span></span>
         </button>
@@ -53,19 +47,6 @@
         uid = user.Uid;
     }
 
-    private async Task Surprise()
-    {
-        busy = true;
-        try
-        {
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            var monday = today.AddDays(-(7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7);
-            var week = await MealService.GetWeekAsync(monday, monday.AddDays(6));
-            await WeekFill.FillEmptyDaysAsync(uid, week.Where(m => m.Date >= today).ToList());
-        }
-        catch { /* the user still lands on a usable (empty) week */ }
-        await FinishAsync("/");
-    }
 
     private Task StartEmpty() => FinishAsync("/");
     private Task AskAssistant() => FinishAsync("/ai-plan");

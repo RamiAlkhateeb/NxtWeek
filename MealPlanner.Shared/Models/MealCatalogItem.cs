@@ -42,4 +42,12 @@ public class MealCatalogItem
     public int? PreparationMinutes { get; set; }
     public bool IsArchived { get; set; }
     public string Language { get; set; } = "ar";
+    // Per serving. Null means "No nutrition yet": the meal is left out of suggestions and totals.
+    public NutritionInfo? Nutrition { get; set; }
+    // How many servings one cooked batch makes.
+    public int ServingsYield { get; set; } = 1;
+    // Measured ingredients per serving, for the shopping list. Ingredients (free text) stays for older rows.
+    public List<IngredientLine> IngredientLines { get; set; } = new();
+    // Slots this meal suits (a shake fits post-workout, not dinner). Empty means any slot.
+    public List<MealSlot> SuitableSlots { get; set; } = new();
 }

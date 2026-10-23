@@ -52,7 +52,9 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
             Quantity = Math.Max(1, options.Quantity),
             Unit = options.Unit,
             Aisle = options.Aisle,
-            SourceMeal = options.SourceMeal
+            SourceMeal = options.SourceMeal,
+            IngredientKey = options.IngredientKey,
+            UsedIn = options.UsedIn
         };
         using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{item.Id}"), item);
         response.EnsureSuccessStatusCode();
@@ -75,6 +77,13 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
     public async Task SetItemBoughtAsync(string uid, string shopId, string itemId, bool isBought)
     {
         var update = new { isBought, boughtAtUtc = isBought ? DateTime.UtcNow : (DateTime?)null };
+        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task UpdateAutoItemAsync(string uid, string shopId, string itemId, int quantity, int usedIn, string? sourceMeal)
+    {
+        var update = new { quantity = Math.Max(1, quantity), usedIn, sourceMeal };
         using var response = await http.PatchAsJsonAsync(Url($"users/{Key(uid)}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
         response.EnsureSuccessStatusCode();
     }

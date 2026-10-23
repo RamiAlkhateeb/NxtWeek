@@ -25,6 +25,16 @@ new() { Id = "de_m28", Name = "Semmelknödel mit Pilzrahm", MealType = MealType.
   are data, not UI strings, so they do not go through `ILocalizationService`.
 - **Tags** should carry an archetype so the dish gets the right picture.
 
+## Meals with nutrition
+
+`NutritionSeedMeals.All()` (`MealPlanner.Shared/Services/NutritionSeedMeals.cs`) holds the
+high-protein meals with `Nutrition` per serving, `ServingsYield`, measured `IngredientLines`
+(stable ingredient `Id`, name in the meal's language, qty per serving, unit `g`/`ml`/`pc`,
+aisle key from `AisleService`) and `SuitableSlots`. Every dish exists once per language
+(`n1`, `en_n1`, `de_n1`). Mark values with `Source = NutritionSource.Estimate` unless they were
+measured; the UI always shows the badge. When a seed row already exists (same id, or an older
+seed with the same name), seeding only fills nutrition, ingredient lines and slots it is missing.
+
 ## Pictures
 
 `MealImageService` picks an SVG from `MealPlanner.Web/wwwroot/img/meals/`:

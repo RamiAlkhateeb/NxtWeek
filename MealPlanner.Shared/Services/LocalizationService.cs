@@ -427,7 +427,6 @@ public class LocalizationService : ILocalizationService
         ["shopping_week_no_meals"] = new() { ["ar"] = "لا توجد وجبات مخططة لبقية هذا الأسبوع.", ["en"] = "No meals planned for the rest of this week.", ["de"] = "Für den Rest der Woche sind keine Gerichte geplant." },
         ["shopping_week_nothing_new"] = new() { ["ar"] = "كل المكونات موجودة في قوائمك بالفعل.", ["en"] = "Every ingredient is already on your lists.", ["de"] = "Alle Zutaten stehen schon auf deinen Listen." },
         // {0} = number added, {1} = store name
-        ["shopping_week_added"] = new() { ["ar"] = "أُضيفت {0} مكونات إلى {1}", ["en"] = "Added {0} ingredients to {1}", ["de"] = "{0} Zutaten zu {1} hinzugefügt" },
         ["aisle_produce"] = new() { ["ar"] = "خضار وفواكه", ["en"] = "Produce", ["de"] = "Obst & Gemüse" },
         ["aisle_bakery"] = new() { ["ar"] = "مخبوزات", ["en"] = "Bakery", ["de"] = "Backwaren" },
         ["aisle_dairy"] = new() { ["ar"] = "ألبان وبيض", ["en"] = "Dairy & eggs", ["de"] = "Milch & Eier" },
@@ -553,8 +552,6 @@ public class LocalizationService : ILocalizationService
         ["friends_copy_empty_success"] = new() { ["ar"] = "تم نسخ الأيام الفارغة من خطة {0} ✨", ["en"] = "Filled your empty days from {0}'s plan ✨", ["de"] = "Leere Tage mit dem Plan von {0} gefüllt ✨" },
         ["welcome_eyebrow"] = new() { ["ar"] = "أهلاً بك", ["en"] = "Welcome", ["de"] = "Willkommen" },
         ["welcome_lead"] = new() { ["ar"] = "خطّة أسبوعك لوجبات العائلة، في مكان واحد. كيف تحب أن نبدأ؟", ["en"] = "Your family's weekly meal plan, in one place. How would you like to start?", ["de"] = "Der Wochenplan für euer Familienessen, an einem Ort. Wie möchtest du starten?" },
-        ["welcome_surprise"] = new() { ["ar"] = "فاجئني بأسبوع", ["en"] = "Surprise me", ["de"] = "Überrasch mich" },
-        ["welcome_surprise_desc"] = new() { ["ar"] = "نقترح عليك وجبات لهذا الأسبوع", ["en"] = "We'll suggest meals for this week", ["de"] = "Wir schlagen dir Gerichte für diese Woche vor" },
         ["welcome_empty"] = new() { ["ar"] = "ابدأ فارغاً", ["en"] = "Start empty", ["de"] = "Leer starten" },
         ["welcome_empty_desc"] = new() { ["ar"] = "أختار وجباتي بنفسي", ["en"] = "I'll pick my own meals", ["de"] = "Ich wähle meine Gerichte selbst" },
         ["welcome_assistant"] = new() { ["ar"] = "اسأل المساعد", ["en"] = "Ask the assistant", ["de"] = "Assistent fragen" },
@@ -621,6 +618,286 @@ public class LocalizationService : ILocalizationService
         ["settings_ai_key_hint_link"] = new() { ["ar"] = "احصل على مفتاح API مجاني من Google AI Studio", ["en"] = "Get a free API key from Google AI Studio", ["de"] = "Hol dir einen kostenlosen API-Schlüssel von Google AI Studio" },
         ["settings_ai_model_label"] = new() { ["ar"] = "النموذج", ["en"] = "Model", ["de"] = "Modell" },
         ["settings_ai_refresh_models"] = new() { ["ar"] = "تحديث قائمة النماذج", ["en"] = "Refresh model list", ["de"] = "Modellliste aktualisieren" },
-        ["settings_ai_saved"] = new() { ["ar"] = "تم حفظ إعدادات الذكاء الاصطناعي.", ["en"] = "AI settings saved.", ["de"] = "KI-Einstellungen gespeichert." }
+        ["settings_ai_saved"] = new() { ["ar"] = "تم حفظ إعدادات الذكاء الاصطناعي.", ["en"] = "AI settings saved.", ["de"] = "KI-Einstellungen gespeichert." },
+
+        // Nutrition on meals (3.0): values are per serving; estimates always show their badge
+        ["nut_kcal"] = new() { ["ar"] = "سعرة", ["en"] = "kcal", ["de"] = "kcal" },
+        ["nut_g"] = new() { ["ar"] = "غ", ["en"] = "g", ["de"] = "g" },
+        ["nut_calories"] = new() { ["ar"] = "السعرات", ["en"] = "Calories", ["de"] = "Kalorien" },
+        ["nut_protein"] = new() { ["ar"] = "بروتين", ["en"] = "Protein", ["de"] = "Eiweiß" },
+        ["nut_carbs"] = new() { ["ar"] = "كربوهيدرات", ["en"] = "Carbs", ["de"] = "Kohlenhydrate" },
+        ["nut_fat"] = new() { ["ar"] = "دهون", ["en"] = "Fat", ["de"] = "Fett" },
+        ["nut_fibre"] = new() { ["ar"] = "ألياف", ["en"] = "Fibre", ["de"] = "Ballaststoffe" },
+        ["nut_servings"] = new() { ["ar"] = "الحصص", ["en"] = "Servings", ["de"] = "Portionen" },
+        ["nut_per_serving"] = new() { ["ar"] = "للحصة", ["en"] = "per serving", ["de"] = "pro Portion" },
+        ["nut_none"] = new() { ["ar"] = "لا توجد قيم غذائية", ["en"] = "No nutrition yet", ["de"] = "Noch keine Nährwerte" },
+        ["nut_none_body"] = new() { ["ar"] = "هذه الوجبة بلا قيم غذائية. قدّرها من المكوّنات أو أدخلها بنفسك.", ["en"] = "This meal has no nutrition values. Estimate them from the ingredients or enter them yourself.", ["de"] = "Dieses Gericht hat keine Nährwerte. Schätze sie aus den Zutaten oder trage sie selbst ein." },
+        ["nut_estimate"] = new() { ["ar"] = "تقدير", ["en"] = "Estimate", ["de"] = "Schätzung" },
+        ["nut_est_short"] = new() { ["ar"] = "تقديري", ["en"] = "est.", ["de"] = "gesch." },
+        ["nut_manual"] = new() { ["ar"] = "أدخلتها بنفسك", ["en"] = "Entered by you", ["de"] = "Von dir eingegeben" },
+        ["nut_edit"] = new() { ["ar"] = "تعديل", ["en"] = "Edit", ["de"] = "Bearbeiten" },
+        ["nut_estimate_from"] = new() { ["ar"] = "قدّر من المكوّنات", ["en"] = "Estimate from ingredients", ["de"] = "Aus Zutaten schätzen" },
+        ["nut_enter_manual"] = new() { ["ar"] = "أدخل يدوياً", ["en"] = "Enter manually", ["de"] = "Manuell eingeben" },
+        ["nut_estimating"] = new() { ["ar"] = "جارٍ التقدير…", ["en"] = "Estimating…", ["de"] = "Schätze …" },
+        // {0} = number of ingredients
+        ["nut_estimate_note"] = new() { ["ar"] = "تقدير بالذكاء الاصطناعي من {0} مكوّنات. راجع القيم وعدّلها.", ["en"] = "AI estimate from {0} ingredients. Check the values and adjust them.", ["de"] = "KI-Schätzung aus {0} Zutaten. Prüfe die Werte und passe sie an." },
+        // {0} = kcal from 4·protein + 4·carbs + 9·fat
+        ["nut_macros_sum"] = new() { ["ar"] = "مجموع الماكروز {0} سعرة", ["en"] = "Macros add up to {0} kcal", ["de"] = "Makros ergeben {0} kcal" },
+        ["nut_yield"] = new() { ["ar"] = "الوصفة تكفي", ["en"] = "Recipe makes", ["de"] = "Rezept ergibt" },
+        // {0} = preparation minutes
+        ["nut_minutes"] = new() { ["ar"] = "{0} د", ["en"] = "{0} min", ["de"] = "{0} Min." },
+        ["nut_saved"] = new() { ["ar"] = "تم الحفظ", ["en"] = "Saved", ["de"] = "Gespeichert" },
+
+        // Slots, targets panel, slot and quick-add sheets, profile and account (3.0)
+        ["nut_slot_Meal1"] = new() { ["ar"] = "الوجبة 1", ["en"] = "Meal 1", ["de"] = "Mahlzeit 1" },
+        ["nut_slot_PostWorkout"] = new() { ["ar"] = "بعد التمرين", ["en"] = "Post-workout", ["de"] = "Nach dem Training" },
+        ["nut_slot_Dinner"] = new() { ["ar"] = "العشاء", ["en"] = "Dinner", ["de"] = "Abendessen" },
+        ["nut_slot_Snack"] = new() { ["ar"] = "سناك المساء", ["en"] = "Evening snack", ["de"] = "Abendsnack" },
+        ["nut_today"] = new() { ["ar"] = "اليوم", ["en"] = "Today", ["de"] = "Heute" },
+        ["nut_day_training"] = new() { ["ar"] = "يوم تمرين", ["en"] = "Training day", ["de"] = "Trainingstag" },
+        ["nut_day_rest"] = new() { ["ar"] = "يوم راحة", ["en"] = "Rest day", ["de"] = "Ruhetag" },
+        ["nut_left"] = new() { ["ar"] = "متبقي", ["en"] = "left", ["de"] = "übrig" },
+        ["nut_left_today"] = new() { ["ar"] = "المتبقي اليوم", ["en"] = "left today", ["de"] = "heute übrig" },
+        ["nut_eaten"] = new() { ["ar"] = "تم تناوله", ["en"] = "eaten", ["de"] = "gegessen" },
+        ["nut_planned"] = new() { ["ar"] = "مخطط", ["en"] = "planned", ["de"] = "geplant" },
+        ["nut_open"] = new() { ["ar"] = "غير مخطط", ["en"] = "open", ["de"] = "offen" },
+        ["nut_over"] = new() { ["ar"] = "فوق", ["en"] = "Over", ["de"] = "Darüber" },
+        ["nut_add_meal"] = new() { ["ar"] = "أضف وجبة", ["en"] = "Add a meal", ["de"] = "Gericht hinzufügen" },
+        ["nut_quick_add"] = new() { ["ar"] = "إضافة سريعة", ["en"] = "Quick add", ["de"] = "Schnell erfassen" },
+        ["nut_mark_eaten"] = new() { ["ar"] = "تم تناولها", ["en"] = "Mark as eaten", ["de"] = "Als gegessen markieren" },
+        ["nut_undo"] = new() { ["ar"] = "تراجع", ["en"] = "Undo", ["de"] = "Rückgängig" },
+        ["nut_leftover"] = new() { ["ar"] = "بقايا", ["en"] = "Leftover", ["de"] = "Reste" },
+        ["nut_quick_tag"] = new() { ["ar"] = "إضافة سريعة", ["en"] = "Quick add", ["de"] = "Schnell erfasst" },
+        // {0} = kcal still open, {1} = grams of protein still open
+        ["nut_open_line"] = new() { ["ar"] = "غير مخطط بعد: {0} سعرة و{1} غ بروتين", ["en"] = "Still open: {0} kcal and {1} g protein", ["de"] = "Noch offen: {0} kcal und {1} g Eiweiß" },
+        ["nut_aim"] = new() { ["ar"] = "الهدف: 30–40 غ بروتين لكل وجبة", ["en"] = "Aim for 30–40 g protein per meal", ["de"] = "Ziel: 30–40 g Eiweiß pro Mahlzeit" },
+        ["nut_no_post"] = new() { ["ar"] = "يوم راحة: لا توجد خانة بعد التمرين", ["en"] = "Rest day: no post-workout slot", ["de"] = "Ruhetag: kein Slot nach dem Training" },
+        ["nut_empty_day"] = new() { ["ar"] = "لا شيء مخطط بعد", ["en"] = "Nothing planned yet", ["de"] = "Noch nichts geplant" },
+        ["nut_week_empty"] = new() { ["ar"] = "ابدأ باقتراح غني بالبروتين أو أضف عنصراً سريعاً.", ["en"] = "Start with a high-protein suggestion or add a quick item.", ["de"] = "Starte mit einem eiweißreichen Vorschlag oder einem schnellen Eintrag." },
+        ["nut_next_week"] = new() { ["ar"] = "الأسبوع القادم", ["en"] = "Next week", ["de"] = "Nächste Woche" },
+        ["nut_carbs_short"] = new() { ["ar"] = "كربو", ["en"] = "Carbs", ["de"] = "KH" },
+        ["nut_fat_short"] = new() { ["ar"] = "دهون", ["en"] = "Fat", ["de"] = "Fett" },
+        ["nut_quick_title"] = new() { ["ar"] = "إضافة سريعة", ["en"] = "Quick add", ["de"] = "Schnell erfassen" },
+        ["nut_what_is"] = new() { ["ar"] = "ما هو؟", ["en"] = "What is it?", ["de"] = "Was ist es?" },
+        ["nut_amount"] = new() { ["ar"] = "الكمية", ["en"] = "Amount", ["de"] = "Menge" },
+        ["nut_recent"] = new() { ["ar"] = "الأخيرة", ["en"] = "Recent", ["de"] = "Zuletzt" },
+        ["nut_quick_hint"] = new() { ["ar"] = "بدون وصفة. أضف السعرات والبروتين إن عرفتها.", ["en"] = "No recipe needed. Add calories and protein if you know them.", ["de"] = "Kein Rezept nötig. Trage Kalorien und Eiweiß ein, wenn du sie kennst." },
+        ["nut_also_eaten"] = new() { ["ar"] = "سجّلها كمأكولة الآن", ["en"] = "Mark as eaten now", ["de"] = "Gleich als gegessen markieren" },
+        // {0} = slot name
+        ["nut_add_to"] = new() { ["ar"] = "أضف إلى {0}", ["en"] = "Add to {0}", ["de"] = "Zu {0} hinzufügen" },
+        ["nut_servings_label"] = new() { ["ar"] = "الحصص", ["en"] = "Servings", ["de"] = "Portionen" },
+        ["nut_prep"] = new() { ["ar"] = "تحضير مسبق", ["en"] = "Meal prep", ["de"] = "Meal Prep" },
+        ["nut_prep_hint"] = new() { ["ar"] = "اطبخ مرة وكُل 2–3 مرات", ["en"] = "Cook once, eat 2–3 times", ["de"] = "Einmal kochen, 2–3 Mal essen" },
+        ["nut_off"] = new() { ["ar"] = "إيقاف", ["en"] = "Off", ["de"] = "Aus" },
+        ["nut_replace"] = new() { ["ar"] = "غيّر الوجبة", ["en"] = "Change meal", ["de"] = "Gericht ändern" },
+        ["nut_remove"] = new() { ["ar"] = "إزالة", ["en"] = "Remove", ["de"] = "Entfernen" },
+        ["nut_eaten_toast"] = new() { ["ar"] = "تم تسجيلها كمأكولة", ["en"] = "Marked as eaten", ["de"] = "Als gegessen markiert" },
+        // {0} = slot name
+        ["nut_added_toast"] = new() { ["ar"] = "تمت الإضافة إلى {0}", ["en"] = "Added to {0}", ["de"] = "Zu {0} hinzugefügt" },
+        ["nut_removed_toast"] = new() { ["ar"] = "تمت الإزالة", ["en"] = "Removed", ["de"] = "Entfernt" },
+        ["nut_close"] = new() { ["ar"] = "إغلاق", ["en"] = "Close", ["de"] = "Schließen" },
+        // {0} = slot name
+        ["nut_time_for"] = new() { ["ar"] = "وقت {0}", ["en"] = "Time for {0}", ["de"] = "Zeit für {0}" },
+        // {0} = slot name
+        ["nut_pick_for"] = new() { ["ar"] = "اختر وجبة: {0}", ["en"] = "Choose for {0}", ["de"] = "Auswahl für {0}" },
+        // {0} = kcal open, {1} = grams of protein open
+        ["nut_budget"] = new() { ["ar"] = "غير مخطط: {0} سعرة و{1} غ بروتين", ["en"] = "{0} kcal and {1} g protein open", ["de"] = "Noch offen: {0} kcal und {1} g Eiweiß" },
+        ["nut_profile"] = new() { ["ar"] = "الملف والأهداف", ["en"] = "Profile & targets", ["de"] = "Profil & Ziele" },
+        ["nut_sex"] = new() { ["ar"] = "الجنس", ["en"] = "Sex", ["de"] = "Geschlecht" },
+        ["nut_male"] = new() { ["ar"] = "ذكر", ["en"] = "Male", ["de"] = "Männlich" },
+        ["nut_female"] = new() { ["ar"] = "أنثى", ["en"] = "Female", ["de"] = "Weiblich" },
+        ["nut_age"] = new() { ["ar"] = "العمر", ["en"] = "Age", ["de"] = "Alter" },
+        ["nut_height"] = new() { ["ar"] = "الطول", ["en"] = "Height", ["de"] = "Größe" },
+        ["nut_weight"] = new() { ["ar"] = "الوزن", ["en"] = "Weight", ["de"] = "Gewicht" },
+        ["nut_activity"] = new() { ["ar"] = "مستوى النشاط", ["en"] = "Activity level", ["de"] = "Aktivitätslevel" },
+        ["nut_activity_0"] = new() { ["ar"] = "قليل الحركة", ["en"] = "Sedentary", ["de"] = "Kaum aktiv" },
+        ["nut_activity_1"] = new() { ["ar"] = "خفيف: 1–3 تمارين أسبوعياً", ["en"] = "Light: 1–3 workouts a week", ["de"] = "Leicht: 1–3 Trainings pro Woche" },
+        ["nut_activity_2"] = new() { ["ar"] = "متوسط: 3–5 تمارين", ["en"] = "Moderate: 3–5 workouts", ["de"] = "Mäßig: 3–5 Trainings" },
+        ["nut_activity_3"] = new() { ["ar"] = "نشيط جداً: 6–7 تمارين", ["en"] = "Very active: 6–7 workouts", ["de"] = "Sehr aktiv: 6–7 Trainings" },
+        ["nut_goal"] = new() { ["ar"] = "الهدف", ["en"] = "Goal", ["de"] = "Ziel" },
+        ["nut_goal_Lose"] = new() { ["ar"] = "خسارة الدهون", ["en"] = "Lose fat", ["de"] = "Fett verlieren" },
+        ["nut_goal_Keep"] = new() { ["ar"] = "الحفاظ", ["en"] = "Maintain", ["de"] = "Halten" },
+        ["nut_goal_Gain"] = new() { ["ar"] = "زيادة", ["en"] = "Gain", ["de"] = "Zunehmen" },
+        ["nut_calc"] = new() { ["ar"] = "الأهداف المحسوبة", ["en"] = "Calculated targets", ["de"] = "Berechnete Ziele" },
+        ["nut_bmr"] = new() { ["ar"] = "معدل الأيض الأساسي", ["en"] = "Resting energy (BMR)", ["de"] = "Grundumsatz (BMR)" },
+        ["nut_tdee"] = new() { ["ar"] = "إجمالي الحرق اليومي", ["en"] = "Daily energy use (TDEE)", ["de"] = "Tagesumsatz (TDEE)" },
+        ["nut_adjust"] = new() { ["ar"] = "تعديل الهدف", ["en"] = "Goal adjustment", ["de"] = "Zielanpassung" },
+        ["nut_adjust_check"] = new() { ["ar"] = "تعديل الفحص الأسبوعي", ["en"] = "Weekly check adjustment", ["de"] = "Anpassung aus dem Wochencheck" },
+        ["nut_custom"] = new() { ["ar"] = "مخصص", ["en"] = "Custom", ["de"] = "Eigener Wert" },
+        ["nut_calculated"] = new() { ["ar"] = "محسوب", ["en"] = "Calculated", ["de"] = "Berechnet" },
+        ["nut_reset"] = new() { ["ar"] = "استرجاع المحسوب", ["en"] = "Reset to calculated", ["de"] = "Auf berechnet zurücksetzen" },
+        ["nut_rest_note"] = new() { ["ar"] = "يوم الراحة: أقل بـ200 سعرة من الكربوهيدرات. البروتين والدهون كما هي.", ["en"] = "Rest day: 200 kcal less, taken from carbs. Protein and fat stay the same.", ["de"] = "Ruhetag: 200 kcal weniger, aus Kohlenhydraten. Eiweiß und Fett bleiben gleich." },
+        // {0} = grams of protein per kg
+        ["nut_per_kg"] = new() { ["ar"] = "{0} غ لكل كغ من وزن الجسم", ["en"] = "{0} g per kg body weight", ["de"] = "{0} g pro kg Körpergewicht" },
+        ["nut_training_days"] = new() { ["ar"] = "أيام التمرين", ["en"] = "Training days", ["de"] = "Trainingstage" },
+        ["nut_meal_times"] = new() { ["ar"] = "أوقات الوجبات", ["en"] = "Meal times", ["de"] = "Mahlzeiten-Zeiten" },
+        ["nut_meal_times_hint"] = new() { ["ar"] = "أوقاتك المعتادة. تُرتَّب الوجبات حسب الوقت ويظهر الوقت على البطاقة.", ["en"] = "Your usual times. Slots are sorted by time and show it on the card.", ["de"] = "Deine üblichen Zeiten. Die Slots werden nach Zeit sortiert und zeigen sie auf der Karte." },
+        ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
+        // {0} = age, {1} = height in cm, {2} = weight in kg
+        ["nut_profile_meta"] = new() { ["ar"] = "{0} سنة · {1} سم · {2} كغ", ["en"] = "{0} y · {1} cm · {2} kg", ["de"] = "{0} J. · {1} cm · {2} kg" },
+        ["nut_kg"] = new() { ["ar"] = "كغ", ["en"] = "kg", ["de"] = "kg" },
+        ["nut_cm"] = new() { ["ar"] = "سم", ["en"] = "cm", ["de"] = "cm" },
+        ["nut_account"] = new() { ["ar"] = "الحساب", ["en"] = "Account", ["de"] = "Konto" },
+        // {0} = email
+        ["nut_signed_as"] = new() { ["ar"] = "مسجّل باسم {0}", ["en"] = "Signed in as {0}", ["de"] = "Angemeldet als {0}" },
+        ["nut_signed_out"] = new() { ["ar"] = "غير مسجّل", ["en"] = "Not signed in", ["de"] = "Nicht angemeldet" },
+        ["nut_sign_out"] = new() { ["ar"] = "تسجيل الخروج", ["en"] = "Sign out", ["de"] = "Abmelden" },
+        ["nut_sign_in"] = new() { ["ar"] = "تسجيل الدخول", ["en"] = "Sign in", ["de"] = "Anmelden" },
+        ["nut_privacy"] = new() { ["ar"] = "تبقى بياناتك الصحية في حسابك.", ["en"] = "Health data stays in your account.", ["de"] = "Gesundheitsdaten bleiben in deinem Konto." },
+        ["nut_friends"] = new() { ["ar"] = "الأصدقاء", ["en"] = "Friends", ["de"] = "Freunde" },
+        ["nut_friends_sub"] = new() { ["ar"] = "خططوا أسبوعكم معاً", ["en"] = "Plan your week together", ["de"] = "Plant eure Woche zusammen" },
+        // {0} = number of friend requests
+        ["nut_request_count"] = new() { ["ar"] = "{0} طلب", ["en"] = "{0} request", ["de"] = "{0} Anfrage" },
+        ["nut_sign_title"] = new() { ["ar"] = "البيانات الصحية تحتاج إلى حساب", ["en"] = "Health data needs an account", ["de"] = "Gesundheitsdaten brauchen ein Konto" },
+        ["nut_sign_body"] = new() { ["ar"] = "أنشئ حساباً مجانياً لحفظ وزنك وخصرك. تبقى قياساتك خاصة وتتبعك على كل أجهزتك.", ["en"] = "Create a free account to save your weight and waist. Your measurements stay private and follow you to every device.", ["de"] = "Erstelle ein kostenloses Konto, um Gewicht und Taille zu speichern. Deine Messwerte bleiben privat und sind auf jedem Gerät verfügbar." },
+        ["nut_sign_point_1"] = new() { ["ar"] = "خاصة بك فقط", ["en"] = "Private to you", ["de"] = "Nur für dich sichtbar" },
+        ["nut_sign_point_2"] = new() { ["ar"] = "متزامنة بين أجهزتك", ["en"] = "Synced across your devices", ["de"] = "Auf allen Geräten synchron" },
+        ["nut_sign_point_3"] = new() { ["ar"] = "يبقى تخطيط الوجبات مجانياً بدون حساب", ["en"] = "Meal planning stays free without an account", ["de"] = "Planen bleibt auch ohne Konto kostenlos" },
+        ["nut_not_now"] = new() { ["ar"] = "ليس الآن", ["en"] = "Not now", ["de"] = "Jetzt nicht" },
+        ["nut_assistant"] = new() { ["ar"] = "المساعد", ["en"] = "Assistant", ["de"] = "Assistent" },
+        ["nut_shopping"] = new() { ["ar"] = "المشتريات", ["en"] = "Shopping", ["de"] = "Einkauf" },
+        ["nut_eat_leftover"] = new() { ["ar"] = "تُؤكل كبقايا", ["en"] = "Eat as leftover", ["de"] = "Als Reste essen" },
+        ["nut_eat_leftover_hint"] = new() { ["ar"] = "من طبخة سابقة، فلا تُضاف إلى قائمة التسوق.", ["en"] = "From an earlier cook, so it stays off the shopping list.", ["de"] = "Von einem früheren Kochen, kommt also nicht auf die Einkaufsliste." },
+        ["nut_retry"] = new() { ["ar"] = "إعادة المحاولة", ["en"] = "Try again", ["de"] = "Erneut versuchen" },
+        ["nut_load_error"] = new() { ["ar"] = "تعذّر تحميل خطتك.", ["en"] = "Couldn't load your plan.", ["de"] = "Dein Plan konnte nicht geladen werden." },
+        ["nut_servings_less"] = new() { ["ar"] = "حصص أقل", ["en"] = "Fewer servings", ["de"] = "Weniger Portionen" },
+        ["nut_servings_more"] = new() { ["ar"] = "حصص أكثر", ["en"] = "More servings", ["de"] = "Mehr Portionen" },
+        // {0} = slot name, {1} = meal name
+        ["nut_slot_entry"] = new() { ["ar"] = "{0}: {1}", ["en"] = "{0}: {1}", ["de"] = "{0}: {1}" },
+        // {0} = day type ("Training day"), {1} = that day's calorie target
+        ["nut_day_type_button"] = new() { ["ar"] = "{0} · {1}", ["en"] = "{0} · {1}", ["de"] = "{0} · {1}" },
+        ["nut_day_type_switch"] = new() { ["ar"] = "بدّل بين يوم تمرين ويوم راحة", ["en"] = "Switch between training and rest day", ["de"] = "Zwischen Trainings- und Ruhetag wechseln" },
+        ["nut_profile_saved"] = new() { ["ar"] = "تم حفظ الملف والأهداف", ["en"] = "Profile and targets saved", ["de"] = "Profil und Ziele gespeichert" },
+        ["nut_profile_guest"] = new() { ["ar"] = "تعمل الأهداف بالقيم الافتراضية حتى تسجّل الدخول وتحفظ ملفك.", ["en"] = "Targets use these values until you sign in and save your profile.", ["de"] = "Bis du dich anmeldest und dein Profil speicherst, gelten diese Werte." },
+        ["nut_years"] = new() { ["ar"] = "سنة", ["en"] = "years", ["de"] = "Jahre" },
+        ["nut_gauge_legend_low"] = new() { ["ar"] = "أقل من 30 غ", ["en"] = "< 30 g", ["de"] = "< 30 g" },
+        ["nut_gauge_legend_aim"] = new() { ["ar"] = "30–40 غ", ["en"] = "30–40 g", ["de"] = "30–40 g" },
+        ["nut_gauge_legend_high"] = new() { ["ar"] = "أكثر من 40 غ", ["en"] = "> 40 g", ["de"] = "> 40 g" },
+        // {0} = grams of protein in this meal
+        ["nut_gauge_value"] = new() { ["ar"] = "{0} غ بروتين. الهدف 30–40 غ لكل وجبة", ["en"] = "{0} g protein. Aim for 30–40 g per meal", ["de"] = "{0} g Eiweiß. Ziel: 30–40 g pro Mahlzeit" },
+        ["nut_surprise_meal1"] = new() { ["ar"] = "يملأ الوجبة 1 الفارغة في الأيام القادمة من هذا الأسبوع بأطباق عشوائية.", ["en"] = "Fills each empty Meal 1 in the rest of this week with a random dish.", ["de"] = "Füllt jede leere Mahlzeit 1 im Rest der Woche mit einem zufälligen Gericht." },
+
+        // Quick-add recent items and the Week header date (3.0)
+        ["nut_quick_nuts"] = new() { ["ar"] = "زبيب ومكسرات", ["en"] = "Raisins and nuts", ["de"] = "Rosinen und Nüsse" },
+        ["nut_quick_bar"] = new() { ["ar"] = "لوح بروتين", ["en"] = "Protein bar", ["de"] = "Proteinriegel" },
+        ["nut_quick_apple"] = new() { ["ar"] = "تفاحة", ["en"] = "Apple", ["de"] = "Apfel" },
+        ["nut_quick_yogurt"] = new() { ["ar"] = "زبادي يوناني", ["en"] = "Greek yogurt", ["de"] = "Griechischer Joghurt" },
+        // {0} = day of the month, {1} = month name
+        ["nut_day_month"] = new() { ["ar"] = "{0} {1}", ["en"] = "{0} {1}", ["de"] = "{0}. {1}" },
+
+        // Meal details: every slot of the chosen day is filled
+        ["nut_nothing_open"] = new() { ["ar"] = "كل الخانات ممتلئة، لا يوجد ما يُخطَّط.", ["en"] = "Every slot is already filled, so there is nothing to plan.", ["de"] = "Alle Slots sind schon belegt, es gibt nichts zu planen." },
+
+        // Progress: weight, waist, weekly check and weekly summary (3.0)
+        ["nut_progress"] = new() { ["ar"] = "التقدم", ["en"] = "Progress", ["de"] = "Fortschritt" },
+        ["nut_weight_tab"] = new() { ["ar"] = "الوزن", ["en"] = "Weight", ["de"] = "Gewicht" },
+        ["nut_summary_tab"] = new() { ["ar"] = "ملخص الأسبوع", ["en"] = "Weekly summary", ["de"] = "Wochenübersicht" },
+        ["nut_log_today"] = new() { ["ar"] = "سجّل اليوم", ["en"] = "Log today", ["de"] = "Heute eintragen" },
+        ["nut_waist"] = new() { ["ar"] = "الخصر", ["en"] = "Waist", ["de"] = "Taille" },
+        ["nut_avg7"] = new() { ["ar"] = "متوسط 7 أيام", ["en"] = "7-day average", ["de"] = "7-Tage-Schnitt" },
+        ["nut_raw"] = new() { ["ar"] = "القياسات اليومية", ["en"] = "Daily entries", ["de"] = "Tageswerte" },
+        ["nut_plan_line"] = new() { ["ar"] = "المخطط", ["en"] = "Plan", ["de"] = "Plan" },
+        ["nut_range_2"] = new() { ["ar"] = "أسبوعان", ["en"] = "2 weeks", ["de"] = "2 Wochen" },
+        ["nut_range_4"] = new() { ["ar"] = "4 أسابيع", ["en"] = "4 weeks", ["de"] = "4 Wochen" },
+        ["nut_check_on_title"] = new() { ["ar"] = "على المسار الصحيح", ["en"] = "On track", ["de"] = "Im Plan" },
+        // {0} = kg lost by the 7-day average this week
+        ["nut_check_on_body"] = new() { ["ar"] = "انخفض متوسط 7 أيام بمقدار {0} كغ هذا الأسبوع. المخطط 0.2 إلى 0.5 كغ.", ["en"] = "Your 7-day average fell {0} kg this week. The plan is 0.2 to 0.5 kg.", ["de"] = "Dein 7-Tage-Schnitt ist diese Woche um {0} kg gesunken. Geplant sind 0,2 bis 0,5 kg." },
+        ["nut_check_slow_title"] = new() { ["ar"] = "أبطأ من المخطط", ["en"] = "Slower than planned", ["de"] = "Langsamer als geplant" },
+        // {0} = kg lost this week
+        ["nut_check_slow_body"] = new() { ["ar"] = "النزول {0} كغ فقط مقابل 0.2 إلى 0.5 كغ المخطط. قلّل 150 سعرة أو زد الخطوات.", ["en"] = "Down {0} kg against a plan of 0.2 to 0.5 kg. Reduce by 150 kcal or add steps.", ["de"] = "{0} kg weniger, geplant sind 0,2 bis 0,5 kg. Reduziere um 150 kcal oder geh mehr." },
+        ["nut_check_fast_title"] = new() { ["ar"] = "أسرع من المخطط", ["en"] = "Faster than planned", ["de"] = "Schneller als geplant" },
+        // {0} = kg lost this week
+        ["nut_check_fast_body"] = new() { ["ar"] = "النزول {0} كغ مقابل 0.2 إلى 0.5 كغ المخطط. أضف 150 سعرة.", ["en"] = "Down {0} kg against a plan of 0.2 to 0.5 kg. Add 150 kcal.", ["de"] = "{0} kg weniger, geplant sind 0,2 bis 0,5 kg. Füge 150 kcal hinzu." },
+        ["nut_reduce_150"] = new() { ["ar"] = "قلّل 150 سعرة", ["en"] = "Reduce by 150 kcal", ["de"] = "150 kcal reduzieren" },
+        ["nut_add_150"] = new() { ["ar"] = "أضف 150 سعرة", ["en"] = "Add 150 kcal", ["de"] = "150 kcal hinzufügen" },
+        // {0} = new daily kcal target
+        ["nut_adjust_done"] = new() { ["ar"] = "الهدف اليومي الآن {0} سعرة", ["en"] = "Daily target is now {0} kcal", ["de"] = "Tagesziel jetzt {0} kcal" },
+        ["nut_not_enough_title"] = new() { ["ar"] = "لا توجد بيانات كافية بعد", ["en"] = "Not enough data yet", ["de"] = "Noch zu wenig Daten" },
+        // {0} = entries so far, {1} = entries still needed
+        ["nut_not_enough_body"] = new() { ["ar"] = "{0} من 7 قياسات. سجّل {1} أيام أخرى لعرض اتجاه 7 أيام.", ["en"] = "{0} of 7 entries. Log {1} more days to see your 7-day trend.", ["de"] = "{0} von 7 Einträgen. Trage noch {1} Tage ein, dann siehst du deinen 7-Tage-Trend." },
+        ["nut_check_starts"] = new() { ["ar"] = "يبدأ الفحص الأسبوعي بعد 14 يوماً من القياسات.", ["en"] = "The weekly check starts after 14 days of entries.", ["de"] = "Der Wochencheck startet nach 14 Tagen mit Einträgen." },
+        ["nut_empty_title"] = new() { ["ar"] = "لا توجد قياسات بعد", ["en"] = "No measurements yet", ["de"] = "Noch keine Messwerte" },
+        ["nut_empty_body"] = new() { ["ar"] = "زِن نفسك كل صباح في الوقت نفسه. الاتجاه يحتاج إلى أسبوع تقريباً.", ["en"] = "Weigh yourself at the same time each morning. A trend needs about a week.", ["de"] = "Wiege dich jeden Morgen zur selben Zeit. Für einen Trend brauchst du etwa eine Woche." },
+        ["nut_first_entry"] = new() { ["ar"] = "سجّل أول وزن", ["en"] = "Log your first weight", ["de"] = "Erstes Gewicht eintragen" },
+        ["nut_log_title"] = new() { ["ar"] = "تسجيل القياسات", ["en"] = "Log measurements", ["de"] = "Messwerte eintragen" },
+        // {0} = last weight in kg
+        ["nut_last"] = new() { ["ar"] = "الأخير: {0} كغ", ["en"] = "Last: {0} kg", ["de"] = "Zuletzt: {0} kg" },
+        ["nut_avg_kcal"] = new() { ["ar"] = "متوسط السعرات", ["en"] = "Average calories", ["de"] = "Ø Kalorien" },
+        ["nut_avg_protein"] = new() { ["ar"] = "متوسط البروتين", ["en"] = "Average protein", ["de"] = "Ø Eiweiß" },
+        ["nut_days_on"] = new() { ["ar"] = "أيام ضمن 10% من الهدف", ["en"] = "Days within 10% of target", ["de"] = "Tage innerhalb von 10 % des Ziels" },
+        ["nut_weight_trend"] = new() { ["ar"] = "اتجاه الوزن", ["en"] = "Weight trend", ["de"] = "Gewichtstrend" },
+        // {0} = target value
+        ["nut_target"] = new() { ["ar"] = "الهدف {0}", ["en"] = "Target {0}", ["de"] = "Ziel {0}" },
+        ["nut_last_week"] = new() { ["ar"] = "الأسبوع الماضي", ["en"] = "Last week", ["de"] = "Letzte Woche" },
+        ["nut_this_week"] = new() { ["ar"] = "هذا الأسبوع حتى الآن", ["en"] = "This week so far", ["de"] = "Diese Woche bisher" },
+        ["nut_on_target"] = new() { ["ar"] = "ضمن الهدف", ["en"] = "On target", ["de"] = "Im Ziel" },
+        ["nut_under"] = new() { ["ar"] = "تحت", ["en"] = "Under", ["de"] = "Darunter" },
+        ["nut_change_week"] = new() { ["ar"] = "متوسط 7 أيام، التغيّر خلال الأسبوع", ["en"] = "7-day average, change over the week", ["de"] = "7-Tage-Schnitt, Änderung in der Woche" },
+        ["nut_trend_title"] = new() { ["ar"] = "التغيّر هذا الأسبوع", ["en"] = "Change this week", ["de"] = "Änderung diese Woche" },
+        // {0} = signed change in kg, e.g. "−0.3"
+        ["nut_trend_body"] = new() { ["ar"] = "تغيّر متوسط 7 أيام بمقدار {0} كغ هذا الأسبوع.", ["en"] = "Your 7-day average changed by {0} kg this week.", ["de"] = "Dein 7-Tage-Schnitt hat sich diese Woche um {0} kg verändert." },
+        // {0} = what is changed ("Weight", "Waist")
+        ["nut_decrease"] = new() { ["ar"] = "إنقاص {0}", ["en"] = "Decrease {0}", ["de"] = "{0} verringern" },
+        ["nut_increase"] = new() { ["ar"] = "زيادة {0}", ["en"] = "Increase {0}", ["de"] = "{0} erhöhen" },
+        // {0} = number of logged days, {1} = days in the period
+        ["nut_days_on_count"] = new() { ["ar"] = "{0} / {1}", ["en"] = "{0} / {1}", ["de"] = "{0} / {1}" },
+        ["nut_no_data"] = new() { ["ar"] = "لم يُسجَّل", ["en"] = "Not logged", ["de"] = "Nicht erfasst" },
+        // {0} = previous average, {1} = current average (kg)
+        ["nut_trend_from_to"] = new() { ["ar"] = "{0} ← {1} كغ", ["en"] = "{0} → {1} kg", ["de"] = "{0} → {1} kg" },
+
+        // Suggestions, Meals filters and the protein plan (3.0)
+        ["nut_suggest"] = new() { ["ar"] = "اقتراحات", ["en"] = "Suggestions", ["de"] = "Vorschläge" },
+        // {0} = slot name
+        ["nut_suggest_for"] = new() { ["ar"] = "اقتراحات: {0}", ["en"] = "Suggestions for {0}", ["de"] = "Vorschläge für {0}" },
+        // {0} = grams of protein, {1} = kcal still open
+        ["nut_reason"] = new() { ["ar"] = "{0} غ بروتين، تناسب ما تبقى لك: {1} سعرة", ["en"] = "{0} g protein, fits your remaining {1} kcal", ["de"] = "{0} g Eiweiß, passt zu deinen restlichen {1} kcal" },
+        ["nut_browse"] = new() { ["ar"] = "تصفح كل الوجبات", ["en"] = "Browse all meals", ["de"] = "Alle Gerichte ansehen" },
+        ["nut_no_fit"] = new() { ["ar"] = "لا شيء يناسب السعرات المتبقية. جرّب إضافة سريعة.", ["en"] = "Nothing fits the remaining calories. Try a quick add.", ["de"] = "Nichts passt zu den restlichen Kalorien. Versuche Schnell erfassen." },
+        ["nut_filter_high_protein"] = new() { ["ar"] = "غني بالبروتين", ["en"] = "High protein", ["de"] = "Eiweißreich" },
+        ["nut_filter_under_600"] = new() { ["ar"] = "أقل من 600 سعرة", ["en"] = "Under 600 kcal", ["de"] = "Unter 600 kcal" },
+        ["nut_filter_quick"] = new() { ["ar"] = "سريع (أقل من 20 د)", ["en"] = "Quick (under 20 min)", ["de"] = "Schnell (unter 20 Min.)" },
+        ["nut_filter_favourites"] = new() { ["ar"] = "المفضلة", ["en"] = "Favourites", ["de"] = "Favoriten" },
+        ["nut_filter_all"] = new() { ["ar"] = "الكل", ["en"] = "All", ["de"] = "Alle" },
+        ["nut_no_results"] = new() { ["ar"] = "لا توجد وجبات تطابق هذه التصفية", ["en"] = "No meals match these filters", ["de"] = "Keine Gerichte passen zu diesen Filtern" },
+        ["nut_fits_today"] = new() { ["ar"] = "مناسبة لليوم", ["en"] = "Fits today", ["de"] = "Passt heute" },
+        ["nut_plan_protein"] = new() { ["ar"] = "خطّط بروتيني لليوم", ["en"] = "Plan my protein for today", ["de"] = "Mein Eiweiß für heute planen" },
+        ["nut_chip_snack"] = new() { ["ar"] = "سناك أقل من 250 سعرة مع بروتين", ["en"] = "Snack under 250 kcal with protein", ["de"] = "Snack unter 250 kcal mit Eiweiß" },
+        // {0} = kcal open, {1} = grams of protein open
+        ["nut_assistant_intro"] = new() { ["ar"] = "ما زال عندك {0} سعرة و{1} غ بروتين غير مخططة اليوم. هذه خطة مناسبة:", ["en"] = "You still have {0} kcal and {1} g protein open today. This plan fits:", ["de"] = "Heute sind noch {0} kcal und {1} g Eiweiß offen. Dieser Plan passt:" },
+        ["nut_assistant_snack"] = new() { ["ar"] = "هذا السناك يناسب يومك:", ["en"] = "This snack fits your day:", ["de"] = "Dieser Snack passt zu deinem Tag:" },
+        ["nut_proposal"] = new() { ["ar"] = "اقتراح", ["en"] = "Proposal", ["de"] = "Vorschlag" },
+        ["nut_apply"] = new() { ["ar"] = "تطبيق", ["en"] = "Apply", ["de"] = "Übernehmen" },
+        // {0} = grams of protein for the day, {1} = kcal for the day
+        ["nut_applied"] = new() { ["ar"] = "تم. يومك الآن يصل إلى {0} غ بروتين و{1} سعرة.", ["en"] = "Done. Your day now reaches {0} g protein and {1} kcal.", ["de"] = "Fertig. Dein Tag erreicht jetzt {0} g Eiweiß und {1} kcal." },
+        ["nut_proposal_remove"] = new() { ["ar"] = "إزالة", ["en"] = "Remove", ["de"] = "Entfernen" },
+        // {0} = number of meals shown
+        ["nut_results_count"] = new() { ["ar"] = "{0} وجبة", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
+        // {0} = meal name, {1} = kcal, {2} = grams of protein
+        ["nut_pick_line"] = new() { ["ar"] = "{1} سعرة · {2} غ", ["en"] = "{1} kcal · {2} g", ["de"] = "{1} kcal · {2} g" },
+
+        // Assistant protein plan total (3.0)
+        // {0} = grams of protein the plan adds, {1} = its kcal
+        ["nut_plan_total"] = new() { ["ar"] = "+{0} غ بروتين · {1} سعرة", ["en"] = "+{0} g protein · {1} kcal", ["de"] = "+{0} g Eiweiß · {1} kcal" },
+
+        // Shopping by servings (3.0)
+        ["nut_planned_meals"] = new() { ["ar"] = "الوجبات المخططة", ["en"] = "Planned meals", ["de"] = "Geplante Gerichte" },
+        ["nut_shop_sub"] = new() { ["ar"] = "من اليوم حتى الأحد", ["en"] = "From today to Sunday", ["de"] = "Von heute bis Sonntag" },
+        // {0} = how many times one cook is eaten
+        ["nut_prep_times"] = new() { ["ar"] = "اطبخ مرة وكُل {0} مرات", ["en"] = "Cook once, eat {0}×", ["de"] = "Einmal kochen, {0}× essen" },
+        // {0} = number of planned meals that need this item
+        ["nut_used_in"] = new() { ["ar"] = "{0} وجبات", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
+        ["nut_pc"] = new() { ["ar"] = "حبة", ["en"] = "pc", ["de"] = "Stk." },
+        ["nut_ml"] = new() { ["ar"] = "مل", ["en"] = "ml", ["de"] = "ml" },
+        ["nut_l"] = new() { ["ar"] = "ل", ["en"] = "l", ["de"] = "l" },
+        ["nut_nothing_planned"] = new() { ["ar"] = "لا وجبات مخططة من اليوم حتى الأحد.", ["en"] = "No meals planned from today to Sunday.", ["de"] = "Von heute bis Sonntag ist nichts geplant." },
+        // {0} = items added, {1} = items whose amount changed, {2} = items removed
+        ["nut_sync_result"] = new() { ["ar"] = "أُضيف {0}، وحُدّث {1}، وحُذف {2}", ["en"] = "{0} added, {1} updated, {2} removed", ["de"] = "{0} hinzugefügt, {1} aktualisiert, {2} entfernt" },
+
+        // Friends: opt-in nutrition sharing (3.0)
+        ["nut_share_title"] = new() { ["ar"] = "شارك تغذيتي مع الأصدقاء", ["en"] = "Share my nutrition with friends", ["de"] = "Meine Ernährung mit Freunden teilen" },
+        ["nut_share_body"] = new() { ["ar"] = "يرى الأصدقاء الذين تقبلهم سعراتك وبروتينك اليومي. لا يُشارك الوزن أبداً. مغلق افتراضياً.", ["en"] = "Friends you accept can see your daily calories and protein. Weight is never shared. Off by default.", ["de"] = "Angenommene Freunde sehen deine täglichen Kalorien und dein Eiweiß. Das Gewicht wird nie geteilt. Standardmäßig aus." },
+        ["nut_not_shared"] = new() { ["ar"] = "غير مشارَك", ["en"] = "Not shared", ["de"] = "Nicht geteilt" },
+        ["nut_friend_week"] = new() { ["ar"] = "قيم الأسبوع", ["en"] = "Their week", ["de"] = "Werte der Woche" },
+        ["nut_shared_on"] = new() { ["ar"] = "المشاركة مفعّلة", ["en"] = "Sharing on", ["de"] = "Teilen ist an" }
     };
 }

@@ -7,6 +7,8 @@
 @inject ILocalizationService Loc
 @inject ThemeService Theme
 @inject ToastService Toasts
+@inject INutritionStore NutritionStore
+@inject NavigationManager Nav
 @implements IDisposable
 
 @* Everyday options first; the Gemini key, model and About live under "Advanced". *@
@@ -14,13 +16,29 @@
     <header class="mk-header">
         <div class="mk-header-row">
             <div class="mk-title-block"><h1 class="mk-title">@Loc["settings_title"]</h1></div>
-            <button class="mk-icon-btn" aria-label="@Loc["back"]" @onclick="Close">
-                <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
         </div>
     </header>
 
     <main class="mk-stack">
+        <a class="mk-set-card mk-set-profile" href="settings/profile">
+            <span class="mk-set-profile-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></span>
+            <span class="mk-set-link-copy">
+                <strong>@Loc["nut_profile"]</strong>
+                <span>@Loc.T("nut_profile_meta", Loc.Num(nutrition.Age), Loc.Num(nutrition.HeightCm), Loc.Num(nutrition.WeightKg))</span>
+                <span class="mk-nchips">
+                    <span class="mk-nchip">@Loc.Num(trainTargets.Kcal)&nbsp;@Loc["nut_kcal"]</span>
+                    <span class="mk-nchip is-protein">@Loc.Num(trainTargets.Protein)&nbsp;@Loc["nut_g"] @Loc["nut_protein"]</span>
+                </span>
+            </span>
+            <svg class="i mk-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </a>
+
+        <a class="mk-set-link" href="friends">
+            <span class="mk-set-link-copy"><strong>@Loc["nut_friends"]</strong><span>@Loc["nut_friends_sub"]</span></span>
+            @if (requestCount > 0) { <span class="mk-tag is-accent">@Loc.T("nut_request_count", requestCount)</span> }
+            <svg class="i mk-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+        </a>
+
         <section class="mk-set-card">
             <h2>@Loc["settings_lang_title"]</h2>
             <div class="mk-seg is-inset" role="radiogroup" aria-label="@Loc["settings_lang_title"]">
@@ -39,6 +57,24 @@
                 {
                     var value = mode;
                     <button role="radio" aria-checked="@(themeMode == value)" class="@(themeMode == value ? "is-active" : "")" @onclick="() => SetThemeAsync(value)">@Loc["settings_theme_" + value]</button>
+                }
+            </div>
+        </section>
+
+        <section class="mk-set-card">
+            <h2>@Loc["nut_account"]</h2>
+            <div class="mk-set-row is-spread">
+                <span class="mk-set-link-copy">
+                    <span>@(signedInEmail is { Length: > 0 } ? Loc.T("nut_signed_as", signedInEmail) : Loc["nut_signed_out"])</span>
+                    <span class="mk-set-hint">@Loc["nut_privacy"]</span>
+                </span>
+                @if (signedInEmail is { Length: > 0 })
+                {
+                    <button class="mk-btn is-soft is-sm" @onclick="SignOutAsync">@Loc["nut_sign_out"]</button>
+                }
+                else
+                {
+                    <a class="mk-btn is-soft is-sm" href="signin">@Loc["nut_sign_in"]</a>
                 }
             </div>
         </section>
@@ -112,6 +148,10 @@
   private bool showAdvanced;
   private string themeMode = "system";
   private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
+  private NutritionProfile nutrition = new();
+  private DailyTargets trainTargets = TargetCalculator.For(new NutritionProfile(), DayType.Training);
+  private int requestCount;
+  private string? signedInEmail;
 
   protected override async Task OnInitializedAsync() {
     Loc.OnLanguageChanged += HandleLanguageChanged;
@@ -119,9 +159,20 @@
     var user = await Auth.GetCurrentUserAsync();
     if (user is null) return;
     uid = user.Uid;
-    var profile = await UserService.GetProfileAsync(uid);
-    currentUsername = profile?.Username ?? "";
+    signedInEmail = user.IsGuest ? null : user.Email;
     themeMode = await Theme.GetAsync();
+    try
+    {
+      var profileTask = UserService.GetProfileAsync(uid);
+      var nutritionTask = NutritionStore.GetProfileAsync(uid);
+      await Task.WhenAll(profileTask, nutritionTask);
+      var profile = await profileTask;
+      currentUsername = profile?.Username ?? "";
+      requestCount = profile?.IncomingFriendRequests?.Count ?? 0;
+      nutrition = await nutritionTask ?? new NutritionProfile();
+      trainTargets = TargetCalculator.For(nutrition, DayType.Training);
+    }
+    catch { /* offline: the cards show the defaults */ }
   }
 
   private async Task SetThemeAsync(string value) {
@@ -129,7 +180,10 @@
     await Theme.SetAsync(value);
   }
 
-  private async Task Close() => await JS.InvokeVoidAsync("nxtweek.goBack", "/");
+  private async Task SignOutAsync() {
+    await Auth.SignOutAsync();
+    Nav.NavigateTo("/signin", forceLoad: true);
+  }
 
   private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
 
