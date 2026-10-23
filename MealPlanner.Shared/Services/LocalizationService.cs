@@ -891,6 +891,13 @@ public class LocalizationService : ILocalizationService
         ["nut_l"] = new() { ["ar"] = "ل", ["en"] = "l", ["de"] = "l" },
         ["nut_nothing_planned"] = new() { ["ar"] = "لا وجبات مخططة من اليوم حتى الأحد.", ["en"] = "No meals planned from today to Sunday.", ["de"] = "Von heute bis Sonntag ist nichts geplant." },
         // {0} = items added, {1} = items whose amount changed, {2} = items removed
-        ["nut_sync_result"] = new() { ["ar"] = "أُضيف {0}، وحُدّث {1}، وحُذف {2}", ["en"] = "{0} added, {1} updated, {2} removed", ["de"] = "{0} hinzugefügt, {1} aktualisiert, {2} entfernt" }
+        ["nut_sync_result"] = new() { ["ar"] = "أُضيف {0}، وحُدّث {1}، وحُذف {2}", ["en"] = "{0} added, {1} updated, {2} removed", ["de"] = "{0} hinzugefügt, {1} aktualisiert, {2} entfernt" },
+
+        // Friends: opt-in nutrition sharing (3.0)
+        ["nut_share_title"] = new() { ["ar"] = "شارك تغذيتي مع الأصدقاء", ["en"] = "Share my nutrition with friends", ["de"] = "Meine Ernährung mit Freunden teilen" },
+        ["nut_share_body"] = new() { ["ar"] = "يرى الأصدقاء الذين تقبلهم سعراتك وبروتينك اليومي. لا يُشارك الوزن أبداً. مغلق افتراضياً.", ["en"] = "Friends you accept can see your daily calories and protein. Weight is never shared. Off by default.", ["de"] = "Angenommene Freunde sehen deine täglichen Kalorien und dein Eiweiß. Das Gewicht wird nie geteilt. Standardmäßig aus." },
+        ["nut_not_shared"] = new() { ["ar"] = "غير مشارَك", ["en"] = "Not shared", ["de"] = "Nicht geteilt" },
+        ["nut_friend_week"] = new() { ["ar"] = "قيم الأسبوع", ["en"] = "Their week", ["de"] = "Werte der Woche" },
+        ["nut_shared_on"] = new() { ["ar"] = "المشاركة مفعّلة", ["en"] = "Sharing on", ["de"] = "Teilen ist an" }
     };
 }

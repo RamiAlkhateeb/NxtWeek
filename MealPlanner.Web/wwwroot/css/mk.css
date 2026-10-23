@@ -918,3 +918,10 @@ html, body { background: var(--nxt-page); }
 .mk-planned-prep { width: 100%; align-items: center; }
 .mk-planned-prep-label { flex: 1.4 1 auto; padding-inline: 12px; font-size: 13px; font-weight: 600; color: var(--mk-muted); text-align: start; }
 .mk-shop-amount { flex: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* ----- 3.0 friends sharing --------------------------------------------------------- */
+.mk-friend-share { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; }
+.mk-friend-share-row { display: flex; align-items: center; gap: 8px; min-height: 36px; border-radius: 12px; background: var(--nxt-inset); padding: 0 10px; font-size: 13.5px; }
+.mk-friend-share-row b { min-width: 44px; }
+.mk-friend-share-row .mk-num:first-of-type { flex: 1; }
+.mk-friend-share-p { color: var(--mk-pro-ink); }

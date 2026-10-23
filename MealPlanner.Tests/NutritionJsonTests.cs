@@ -38,13 +38,13 @@ public class NutritionJsonTests
     [Fact]
     public void Profile_round_trips()
     {
-        var p = new NutritionProfile { Goal = Goal.Keep, ShareNutrition = true };
+        var p = new NutritionProfile { Goal = Goal.Keep, WeeklyAdjustKcal = -150 };
         p.Overrides.Training.Kcal = 2000;
 
         var back = JsonSerializer.Deserialize<NutritionProfile>(JsonSerializer.Serialize(p, Web), Web)!;
 
         Assert.Equal(Goal.Keep, back.Goal);
-        Assert.True(back.ShareNutrition);
+        Assert.Equal(-150, back.WeeklyAdjustKcal);
         Assert.Equal(2000, back.Overrides.Training.Kcal);
         Assert.Equal("13:00", back.MealTimes[MealSlot.Meal1]);
     }

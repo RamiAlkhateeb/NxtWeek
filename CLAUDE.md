@@ -72,11 +72,16 @@ nxtweek.theme
 | Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Nutrition profile and targets | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
+| Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
-Direct `weeklyPlan` writes are invisible once a day exists under `days`. (Friends' "copy week"
-still writes `weeklyPlan` until the friends step moves it.)
+Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.
+
+Another user's data is read narrowly: `GetProfileAsync` does a `?shallow=true` read plus the profile's own
+lists, so `days`, `body`, `nutritionProfile` and `shopping` never travel with a profile, and people are
+discovered from the `usernames` node, never by reading `users`. Friends see your meals; calories and
+protein only when `users/{key}/shareNutrition` is on; weight never.
 
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.

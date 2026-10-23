@@ -155,8 +155,6 @@ public class NutritionProfile
     public Dictionary<MealSlot, string> MealTimes { get; set; } = DefaultMealTimes();
     public TargetOverrides Overrides { get; set; } = new();
     public int WeeklyAdjustKcal { get; set; }
-    // Friends see daily calories and protein only when this is on. Weight is never shared.
-    public bool ShareNutrition { get; set; }
 
     public static Dictionary<MealSlot, string> DefaultMealTimes() => new()
     {

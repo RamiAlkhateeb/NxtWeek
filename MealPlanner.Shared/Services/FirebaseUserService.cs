@@ -23,11 +23,51 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
 
     public async Task<UserProfile?> GetProfileAsync(string uid)
     {
-        var profile = await http.GetFromJsonAsync<UserProfile>(Url($"users/{Key(uid)}"));
+        var profile = await ReadProfileAsync(uid);
         if (profile is null) return null;
         profile.Uid = uid; // node key is authoritative
         NormalizeCollections(profile);
         return profile;
+    }
+
+    // Only these subtrees of users/{key} belong to the profile. The rest (days, weeklyPlan, shopping,
+    // nutritionProfile, body…) is never downloaded with it: friends' profiles are read here too, and
+    // nobody's weight or plan detail should travel to another browser as a side effect.
+    private static readonly string[] ProfileSubtrees =
+        ["friendIds", "favoriteMealIds", "selectedMealIds", "incomingFriendRequests", "outgoingFriendRequestIds"];
+
+    private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// Reads a profile without its large or private subtrees: a shallow read returns the scalar fields
+    /// as values and every subtree as <c>true</c>; only the profile's own lists are then fetched.
+    /// </summary>
+    private async Task<UserProfile?> ReadProfileAsync(string key)
+    {
+        var shallow = await http.GetFromJsonAsync<JsonObject>($"{Url($"users/{Key(key)}")}?shallow=true");
+        if (shallow is null) return null;
+        var node = new JsonObject();
+        var wanted = new List<string>();
+        foreach (var (name, value) in shallow)
+        {
+            if (ProfileSubtrees.Contains(name)) wanted.Add(name);
+            else if (value is JsonValue v && !(v.TryGetValue<bool>(out var b) && b && IsSubtreeName(name))) node[name] = v.DeepClone();
+        }
+        var subtrees = await Task.WhenAll(wanted.Select(async name =>
+            (name, value: await http.GetFromJsonAsync<JsonNode>(Url($"users/{Key(key)}/{name}")))));
+        foreach (var (name, value) in subtrees) node[name] = value?.DeepClone();
+        return node.Deserialize<UserProfile>(Web);
+    }
+
+    // Boolean profile fields are real values in a shallow read; any other "true" is a subtree marker.
+    private static bool IsSubtreeName(string name) =>
+        !string.Equals(name, "firstWeekAutoFilled", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(name, "shareNutrition", StringComparison.OrdinalIgnoreCase);
+
+    public async Task SetShareNutritionAsync(string uid, bool share)
+    {
+        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/shareNutrition"), share);
+        response.EnsureSuccessStatusCode();
     }
 
     // Merge-only write. Never PUTs the whole document, so sibling weeklyPlan /
@@ -168,7 +208,14 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         // Update friend references across other users (explicit path writes only),
         // then move the user's own whole node. Each change targets just one field
         // of a friend's profile so their weeklyPlan / shopping are never touched.
-        var allProfiles = await http.GetFromJsonAsync<Dictionary<string, UserProfile>>(Url("users")) ?? new();
+        // Only people linked to me can hold a reference to my key: friends and pending requests either way.
+        var linked = (current.FriendIds ?? new())
+            .Concat(current.OutgoingFriendRequestIds ?? new())
+            .Concat(current.IncomingFriendRequests?.Keys ?? Enumerable.Empty<string>())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var linkedProfiles = await Task.WhenAll(linked.Select(async key => (key, profile: await ReadProfileAsync(key))));
+        var allProfiles = linkedProfiles.Where(x => x.profile is not null).ToDictionary(x => x.key, x => x.profile!);
 
         var friendPatches = new Dictionary<string, object?>();
         foreach (var pair in allProfiles.Where(p => !string.Equals(p.Key, currentUid, StringComparison.OrdinalIgnoreCase)))
@@ -268,18 +315,16 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     // is that username), never random guest keys or legacy email-keyed records.
     public async Task<List<UserProfile>> GetRegisteredUsersAsync(string excludeUid)
     {
-        var all = await http.GetFromJsonAsync<Dictionary<string, UserProfile>>(Url("users")) ?? new();
+        // The username reservations are the list of named accounts; reading them instead of
+        // users/ means discovering people never downloads anybody's data.
+        var reservations = await http.GetFromJsonAsync<Dictionary<string, UsernameReservation>>(Url("usernames")) ?? new();
         var result = new List<UserProfile>();
-        foreach (var pair in all)
+        foreach (var (name, reservation) in reservations)
         {
-            var key = pair.Key;
-            if (string.Equals(key, excludeUid, StringComparison.OrdinalIgnoreCase)) continue;
-            if (key.StartsWith("guest_", StringComparison.OrdinalIgnoreCase)) continue;
-            var profile = pair.Value;
-            if (profile is null) continue;
-            if (string.IsNullOrWhiteSpace(profile.Username)) continue;
-            if (!string.Equals(key, profile.Username, StringComparison.OrdinalIgnoreCase)) continue;
-            profile.Uid = key;
+            if (reservation is null || !string.Equals(name, reservation.UserKey, StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(name, excludeUid, StringComparison.OrdinalIgnoreCase)) continue;
+            if (name.StartsWith("guest_", StringComparison.OrdinalIgnoreCase)) continue;
+            var profile = new UserProfile { Uid = name, Username = name, DisplayName = name };
             NormalizeCollections(profile);
             result.Add(profile);
         }
@@ -293,7 +338,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     {
         var normalized = NormalizeUsernameForLookup(username);
         if (normalized is null) return null;
-        var profile = await http.GetFromJsonAsync<UserProfile>(Url($"users/{Key(normalized)}"));
+        var profile = await ReadProfileAsync(normalized);
         if (profile is null) return null;
         // Only named accounts are recoverable by username.
         if (string.IsNullOrWhiteSpace(profile.Username) ||
