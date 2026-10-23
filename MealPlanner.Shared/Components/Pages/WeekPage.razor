@@ -76,7 +76,16 @@
             <TargetsPanel Totals="totals" Type="SelectedType" Compact="true" />
         </div>
         <div id="mk-targets-panel">
-            <TargetsPanel Totals="totals" Type="SelectedType" OnToggleType="ToggleDayTypeAsync" />
+            <TargetsPanel Totals="totals" Type="SelectedType" OnToggleType="ToggleDayTypeAsync">
+                <FootContent>
+                    @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, SelectedType, profile.MealTimes).Count > 0)
+                    {
+                        <a class="mk-ask" href="@($"ai-plan?ask=protein&day={selectedDate:yyyy-MM-dd}")">
+                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_plan_protein"]
+                        </a>
+                    }
+                </FootContent>
+            </TargetsPanel>
         </div>
 
         <div class="mk-stack mk-slots">
@@ -97,7 +106,13 @@
                           OnOpen="() => openSlot = s"
                           OnToggleEaten="() => ToggleEatenAsync(s)"
                           OnQuickAdd="() => quickSlot = s"
-                          OnAddMeal="() => PickMeal(s, false)" />
+                          OnAddMeal="() => PickMeal(s, false)">
+                    <EmptyActions>
+                        <button type="button" class="mk-mini is-ink" @onclick="() => suggestSlot = s">
+                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_suggest"]
+                        </button>
+                    </EmptyActions>
+                </SlotCard>
             }
 
             @if (SelectedType == DayType.Rest)
@@ -140,6 +155,15 @@
            OnMealSaved="StateHasChanged"
            OnDismiss="() => openSlot = null" />
 
+@if (!isLoading && !loadError)
+{
+    <SuggestSheet IsOpen="suggestSlot is not null" Slot="suggestSlot ?? MealSlot.Meal1" Totals="Totals" Items="SuggestionsFor(suggestSlot)"
+                  OnAdd="AddSuggestionAsync"
+                  OnBrowse="() => { if (suggestSlot is { } s) PickMeal(s, false); }"
+                  OnQuickAdd="() => { quickSlot = suggestSlot; suggestSlot = null; }"
+                  OnDismiss="() => suggestSlot = null" />
+}
+
 <QuickAddSheet IsOpen="quickSlot is not null" Slot="quickSlot ?? MealSlot.Meal1" OnAdd="AddQuickAsync" OnDismiss="() => quickSlot = null" />
 
 <NxtBottomSheet IsOpen="showSurpriseConfirm" Title="@Loc["week_surprise_week"]" Eyebrow="@Loc["week_surprise_week_eyebrow"]" OnDismiss="() => showSurpriseConfirm = false">
@@ -162,6 +186,7 @@
     private NutritionProfile profile = new();
     private MealSlot? openSlot;
     private MealSlot? quickSlot;
+    private MealSlot? suggestSlot;
     private bool showSurpriseConfirm;
     private bool isFilling;
     private bool onboardingDone;
@@ -353,9 +378,36 @@
         return SaveAsync(() => DayPlan.SetDayTypeAsync(uid, date, next));
     }
 
+    // Suggestions come from meals in the app language (all meals if that language has none).
+    private IEnumerable<MealCatalogItem> Candidates
+    {
+        get
+        {
+            var live = catalog.Values.Where(m => !m.IsArchived).ToList();
+            var inLanguage = live.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase)).ToList();
+            return inLanguage.Count > 0 ? inLanguage : live;
+        }
+    }
+
+    private IReadOnlyList<Suggestion> SuggestionsFor(MealSlot? slot)
+    {
+        if (slot is not { } s) return [];
+        var empty = DayMath.EmptySlots(SelectedDay, SelectedType, profile.MealTimes);
+        return Suggestions.ForSlot(s, Totals.OpenKcal, empty.Count, Suggestions.UsedMealIds(SelectedDay, Slots), Candidates);
+    }
+
+    private async Task AddSuggestionAsync(MealCatalogItem meal)
+    {
+        if (suggestSlot is not { } slot) return;
+        var date = selectedDate;
+        suggestSlot = null;
+        await SaveAsync(() => DayPlan.SetEntryAsync(uid, date, slot, new SlotEntry { MealId = meal.Id }), Loc.T("nut_added_toast", Loc["nut_slot_" + slot]));
+    }
+
     private void PickMeal(MealSlot slot, bool replace)
     {
         openSlot = null;
+        suggestSlot = null;
         Nav.NavigateTo($"/meals?day={selectedDate:yyyy-MM-dd}&slot={slot}{(replace ? "&replace=1" : "")}");
     }
 

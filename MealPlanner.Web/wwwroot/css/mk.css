@@ -891,3 +891,17 @@ html, body { background: var(--nxt-page); }
 .mk-log-stepper button svg { width: 22px; height: 22px; }
 .mk-log-stepper b { font-size: 40px; line-height: 1; min-width: 150px; text-align: center; font-variant-numeric: tabular-nums; }
 .mk-log-stepper b small { font-size: 16px; color: var(--mk-muted); }
+
+/* ----- 3.0 suggestions ---------------------------------------------------- */
+.mk-ask { min-height: 44px; padding: 0 14px; border-radius: 999px; background: var(--mk-accent-soft); color: var(--mk-accent-ink); font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.mk-ask svg { width: 16px; height: 16px; }
+.mk-budget { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.mk-suggest-list { display: flex; flex-direction: column; gap: 8px; }
+.mk-suggest { display: flex; align-items: center; gap: 10px; background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: var(--mk-radius-row); padding: 8px; }
+.mk-suggest-reason { font-size: 12.5px; font-weight: 700; color: var(--mk-ok-ink); }
+.mk-no-results { align-items: center; text-align: center; padding-top: 40px; color: var(--mk-muted); }
+.mk-no-results b { color: var(--nxt-text); }
+.mk-chip.is-accent { color: var(--mk-accent-ink); }
+.mk-plan-total { font-size: 13px; font-weight: 700; color: var(--mk-ok-ink); padding: 4px; }
+.mk-budget .mk-sheet-row-title::first-letter { text-transform: uppercase; }
+.mk-page .mk-chip.is-outline.is-active { background: var(--nxt-ink); color: var(--nxt-on-ink); box-shadow: none; }

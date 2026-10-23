@@ -844,6 +844,40 @@ public class LocalizationService : ILocalizationService
         ["nut_days_on_count"] = new() { ["ar"] = "{0} / {1}", ["en"] = "{0} / {1}", ["de"] = "{0} / {1}" },
         ["nut_no_data"] = new() { ["ar"] = "لم يُسجَّل", ["en"] = "Not logged", ["de"] = "Nicht erfasst" },
         // {0} = previous average, {1} = current average (kg)
-        ["nut_trend_from_to"] = new() { ["ar"] = "{0} ← {1} كغ", ["en"] = "{0} → {1} kg", ["de"] = "{0} → {1} kg" }
+        ["nut_trend_from_to"] = new() { ["ar"] = "{0} ← {1} كغ", ["en"] = "{0} → {1} kg", ["de"] = "{0} → {1} kg" },
+
+        // Suggestions, Meals filters and the protein plan (3.0)
+        ["nut_suggest"] = new() { ["ar"] = "اقتراحات", ["en"] = "Suggestions", ["de"] = "Vorschläge" },
+        // {0} = slot name
+        ["nut_suggest_for"] = new() { ["ar"] = "اقتراحات: {0}", ["en"] = "Suggestions for {0}", ["de"] = "Vorschläge für {0}" },
+        // {0} = grams of protein, {1} = kcal still open
+        ["nut_reason"] = new() { ["ar"] = "{0} غ بروتين، تناسب ما تبقى لك: {1} سعرة", ["en"] = "{0} g protein, fits your remaining {1} kcal", ["de"] = "{0} g Eiweiß, passt zu deinen restlichen {1} kcal" },
+        ["nut_browse"] = new() { ["ar"] = "تصفح كل الوجبات", ["en"] = "Browse all meals", ["de"] = "Alle Gerichte ansehen" },
+        ["nut_no_fit"] = new() { ["ar"] = "لا شيء يناسب السعرات المتبقية. جرّب إضافة سريعة.", ["en"] = "Nothing fits the remaining calories. Try a quick add.", ["de"] = "Nichts passt zu den restlichen Kalorien. Versuche Schnell erfassen." },
+        ["nut_filter_high_protein"] = new() { ["ar"] = "غني بالبروتين", ["en"] = "High protein", ["de"] = "Eiweißreich" },
+        ["nut_filter_under_600"] = new() { ["ar"] = "أقل من 600 سعرة", ["en"] = "Under 600 kcal", ["de"] = "Unter 600 kcal" },
+        ["nut_filter_quick"] = new() { ["ar"] = "سريع (أقل من 20 د)", ["en"] = "Quick (under 20 min)", ["de"] = "Schnell (unter 20 Min.)" },
+        ["nut_filter_favourites"] = new() { ["ar"] = "المفضلة", ["en"] = "Favourites", ["de"] = "Favoriten" },
+        ["nut_filter_all"] = new() { ["ar"] = "الكل", ["en"] = "All", ["de"] = "Alle" },
+        ["nut_no_results"] = new() { ["ar"] = "لا توجد وجبات تطابق هذه التصفية", ["en"] = "No meals match these filters", ["de"] = "Keine Gerichte passen zu diesen Filtern" },
+        ["nut_fits_today"] = new() { ["ar"] = "مناسبة لليوم", ["en"] = "Fits today", ["de"] = "Passt heute" },
+        ["nut_plan_protein"] = new() { ["ar"] = "خطّط بروتيني لليوم", ["en"] = "Plan my protein for today", ["de"] = "Mein Eiweiß für heute planen" },
+        ["nut_chip_snack"] = new() { ["ar"] = "سناك أقل من 250 سعرة مع بروتين", ["en"] = "Snack under 250 kcal with protein", ["de"] = "Snack unter 250 kcal mit Eiweiß" },
+        // {0} = kcal open, {1} = grams of protein open
+        ["nut_assistant_intro"] = new() { ["ar"] = "ما زال عندك {0} سعرة و{1} غ بروتين غير مخططة اليوم. هذه خطة مناسبة:", ["en"] = "You still have {0} kcal and {1} g protein open today. This plan fits:", ["de"] = "Heute sind noch {0} kcal und {1} g Eiweiß offen. Dieser Plan passt:" },
+        ["nut_assistant_snack"] = new() { ["ar"] = "هذا السناك يناسب يومك:", ["en"] = "This snack fits your day:", ["de"] = "Dieser Snack passt zu deinem Tag:" },
+        ["nut_proposal"] = new() { ["ar"] = "اقتراح", ["en"] = "Proposal", ["de"] = "Vorschlag" },
+        ["nut_apply"] = new() { ["ar"] = "تطبيق", ["en"] = "Apply", ["de"] = "Übernehmen" },
+        // {0} = grams of protein for the day, {1} = kcal for the day
+        ["nut_applied"] = new() { ["ar"] = "تم. يومك الآن يصل إلى {0} غ بروتين و{1} سعرة.", ["en"] = "Done. Your day now reaches {0} g protein and {1} kcal.", ["de"] = "Fertig. Dein Tag erreicht jetzt {0} g Eiweiß und {1} kcal." },
+        ["nut_proposal_remove"] = new() { ["ar"] = "إزالة", ["en"] = "Remove", ["de"] = "Entfernen" },
+        // {0} = number of meals shown
+        ["nut_results_count"] = new() { ["ar"] = "{0} وجبة", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
+        // {0} = meal name, {1} = kcal, {2} = grams of protein
+        ["nut_pick_line"] = new() { ["ar"] = "{1} سعرة · {2} غ", ["en"] = "{1} kcal · {2} g", ["de"] = "{1} kcal · {2} g" },
+
+        // Assistant protein plan total (3.0)
+        // {0} = grams of protein the plan adds, {1} = its kcal
+        ["nut_plan_total"] = new() { ["ar"] = "+{0} غ بروتين · {1} سعرة", ["en"] = "+{0} g protein · {1} kcal", ["de"] = "+{0} g Eiweiß · {1} kcal" }
     };
 }

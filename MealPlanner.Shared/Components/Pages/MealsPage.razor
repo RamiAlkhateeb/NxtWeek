@@ -54,6 +54,15 @@
                 <button class="mk-chip @(selectedMealType == type ? "is-active" : "")" @onclick="() => SetMealType(type)">@Loc.GetMealTypeName(type)</button>
             }
         </div>
+
+        <div class="mk-chip-row" role="group" aria-label="@Loc["meals_filter"]">
+            @foreach (var (flag, key) in NutritionFilters)
+            {
+                var f = flag;
+                var on = filters.HasFlag(f);
+                <button class="mk-chip is-outline @(on ? "is-active" : "")" aria-pressed="@(on ? "true" : "false")" @onclick="() => filters ^= f">@Loc[key]</button>
+            }
+        </div>
     </header>
 
     @if (!string.IsNullOrEmpty(confirmMessage))
@@ -64,6 +73,14 @@
     @if (isLoading)
     {
         <div class="mk-grid"><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (FilteredMeals.Count == 0 && (filters != MealFilters.None || selectedMealType is not null || !string.IsNullOrWhiteSpace(searchText)))
+    {
+        <div class="mk-stack mk-no-results">
+            <svg class="i" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <b>@Loc["nut_no_results"]</b>
+            <button class="mk-btn is-soft is-sm" @onclick="ClearFilters">@Loc["nut_filter_all"]</button>
+        </div>
     }
     else if (FilteredMeals.Count == 0)
     {
@@ -91,7 +108,11 @@
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
                     </div>
-                    <div class="mk-meal-nut"><NutritionChips Nutrition="meal.Nutrition" /></div>
+                    <div class="mk-meal-nut">
+                        <NutritionChips Nutrition="meal.Nutrition">
+                            @if (pickBudget is { } pb && MealFiltering.FitsToday(meal, pb.OpenKcal)) { <span class="mk-tag is-ok">@Loc["nut_fits_today"]</span> }
+                        </NutritionChips>
+                    </div>
                 </article>
             }
         </div>
@@ -162,6 +183,22 @@
     private string searchText = "";
 
     private MealType? selectedMealType;
+    private MealFilters filters;
+
+    private static readonly (MealFilters Flag, string Key)[] NutritionFilters =
+    [
+        (MealFilters.HighProtein, "nut_filter_high_protein"),
+        (MealFilters.Under600, "nut_filter_under_600"),
+        (MealFilters.Quick, "nut_filter_quick"),
+        (MealFilters.Favourites, "nut_filter_favourites")
+    ];
+
+    private void ClearFilters()
+    {
+        filters = MealFilters.None;
+        selectedMealType = null;
+        searchText = "";
+    }
     private bool filterByAppLanguage = true;
     private bool showFilters;
 
@@ -201,6 +238,13 @@
                                       || m.Ingredients.Any(i => i.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
             if (selectedMealType.HasValue)
                 query = query.Where(m => m.MealType == selectedMealType.Value);
+            if (filters != MealFilters.None)
+            {
+                var favourites = (userProfile?.FavoriteMealIds ?? []).ToHashSet();
+                query = query.Where(m => MealFiltering.Matches(m, filters, favourites));
+            }
+            // Choosing for a slot: what fits the day comes first, then the most protein.
+            if (pickBudget is { } budget) query = MealFiltering.PickOrder(query, budget.OpenKcal);
             return query.ToList();
         }
     }
