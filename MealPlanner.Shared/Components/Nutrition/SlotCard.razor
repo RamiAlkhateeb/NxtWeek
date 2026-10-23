@@ -40,8 +40,8 @@ else
                     @SlotLabel
                     @if (Entry.Leftover) { <span class="mk-tag is-warn">@Loc["nut_leftover"]</span> }
                     @if (Entry.IsQuick) { <span class="mk-tag is-accent">@Loc["nut_quick_tag"]</span> }
-                    @if (Entry.Servings != 1) { <span class="mk-tag">×@Loc.Servings(Entry.Servings)</span> }
-                    @if (Entry.PrepBatches > 1) { <span class="mk-tag is-ok">@Loc["nut_prep"] ×@Entry.PrepBatches</span> }
+                    @if (Entry.Servings != 1) { <span class="mk-tag">@NutFormat.Times(Loc.Servings(Entry.Servings))</span> }
+                    @if (Entry.PrepBatches > 1) { <span class="mk-tag is-ok">@Loc["nut_prep"] @NutFormat.Times(Entry.PrepBatches.ToString())</span> }
                 </span>
                 <span class="mk-slot-name">@name</span>
                 @if (n.Missing)

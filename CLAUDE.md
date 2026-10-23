@@ -9,7 +9,7 @@ There is no mascot; do not add one.
 | Project | What lives there |
 |---|---|
 | `MealPlanner.Shared` | **All** pages, components, models and service interfaces. A Razor class library — this is where nearly every change goes. |
-| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, weight trend, weekly summary). |
+| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, weight trend, weekly summary, suggestions, shopping amounts). |
 | `MealPlanner.Web` | The WASM host: `Program.cs` (DI), `App.razor`, `MainLayout`, `wwwroot` (CSS, icons, illustrations, service worker), and the browser-specific service implementations. |
 
 ```bash

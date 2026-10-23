@@ -46,7 +46,7 @@
                         @foreach (var k in new[] { 1, 2, 3 })
                         {
                             var batches = k;
-                            <button type="button" class="@(Entry.PrepBatches == batches ? "is-active" : "")" aria-pressed="@(Entry.PrepBatches == batches ? "true" : "false")" @onclick="() => OnPrep.InvokeAsync(batches)">@(batches == 1 ? Loc["nut_off"] : "×" + batches)</button>
+                            <button type="button" class="@(Entry.PrepBatches == batches ? "is-active" : "")" aria-pressed="@(Entry.PrepBatches == batches ? "true" : "false")" @onclick="() => OnPrep.InvokeAsync(batches)">@(batches == 1 ? Loc["nut_off"] : NutFormat.Times(batches.ToString()))</button>
                         }
                     </div>
                 </div>

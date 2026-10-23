@@ -905,3 +905,16 @@ html, body { background: var(--nxt-page); }
 .mk-plan-total { font-size: 13px; font-weight: 700; color: var(--mk-ok-ink); padding: 4px; }
 .mk-budget .mk-sheet-row-title::first-letter { text-transform: uppercase; }
 .mk-page .mk-chip.is-outline.is-active { background: var(--nxt-ink); color: var(--nxt-on-ink); box-shadow: none; }
+
+/* ----- 3.0 shopping by servings ------------------------------------------------- */
+.mk-planned { display: flex; flex-direction: column; gap: 8px; }
+.mk-planned-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.mk-planned-list { padding: 4px 12px; }
+.mk-planned-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 0; border-bottom: 1px solid var(--mk-hairline); }
+.mk-planned-row:last-child { border-bottom: 0; }
+.mk-planned-row .mk-slot-tile { width: 44px; height: 44px; border-radius: 13px; }
+.mk-planned-row .mk-slot-body { min-width: 120px; }
+.mk-planned-name { font-size: 14px; overflow-wrap: anywhere; }
+.mk-planned-prep { width: 100%; align-items: center; }
+.mk-planned-prep-label { flex: 1.4 1 auto; padding-inline: 12px; font-size: 13px; font-weight: 600; color: var(--mk-muted); text-align: start; }
+.mk-shop-amount { flex: none; font-size: 13px; font-variant-numeric: tabular-nums; }

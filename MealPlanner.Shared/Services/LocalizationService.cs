@@ -427,7 +427,6 @@ public class LocalizationService : ILocalizationService
         ["shopping_week_no_meals"] = new() { ["ar"] = "لا توجد وجبات مخططة لبقية هذا الأسبوع.", ["en"] = "No meals planned for the rest of this week.", ["de"] = "Für den Rest der Woche sind keine Gerichte geplant." },
         ["shopping_week_nothing_new"] = new() { ["ar"] = "كل المكونات موجودة في قوائمك بالفعل.", ["en"] = "Every ingredient is already on your lists.", ["de"] = "Alle Zutaten stehen schon auf deinen Listen." },
         // {0} = number added, {1} = store name
-        ["shopping_week_added"] = new() { ["ar"] = "أُضيفت {0} مكونات إلى {1}", ["en"] = "Added {0} ingredients to {1}", ["de"] = "{0} Zutaten zu {1} hinzugefügt" },
         ["aisle_produce"] = new() { ["ar"] = "خضار وفواكه", ["en"] = "Produce", ["de"] = "Obst & Gemüse" },
         ["aisle_bakery"] = new() { ["ar"] = "مخبوزات", ["en"] = "Bakery", ["de"] = "Backwaren" },
         ["aisle_dairy"] = new() { ["ar"] = "ألبان وبيض", ["en"] = "Dairy & eggs", ["de"] = "Milch & Eier" },
@@ -878,6 +877,20 @@ public class LocalizationService : ILocalizationService
 
         // Assistant protein plan total (3.0)
         // {0} = grams of protein the plan adds, {1} = its kcal
-        ["nut_plan_total"] = new() { ["ar"] = "+{0} غ بروتين · {1} سعرة", ["en"] = "+{0} g protein · {1} kcal", ["de"] = "+{0} g Eiweiß · {1} kcal" }
+        ["nut_plan_total"] = new() { ["ar"] = "+{0} غ بروتين · {1} سعرة", ["en"] = "+{0} g protein · {1} kcal", ["de"] = "+{0} g Eiweiß · {1} kcal" },
+
+        // Shopping by servings (3.0)
+        ["nut_planned_meals"] = new() { ["ar"] = "الوجبات المخططة", ["en"] = "Planned meals", ["de"] = "Geplante Gerichte" },
+        ["nut_shop_sub"] = new() { ["ar"] = "من اليوم حتى الأحد", ["en"] = "From today to Sunday", ["de"] = "Von heute bis Sonntag" },
+        // {0} = how many times one cook is eaten
+        ["nut_prep_times"] = new() { ["ar"] = "اطبخ مرة وكُل {0} مرات", ["en"] = "Cook once, eat {0}×", ["de"] = "Einmal kochen, {0}× essen" },
+        // {0} = number of planned meals that need this item
+        ["nut_used_in"] = new() { ["ar"] = "{0} وجبات", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
+        ["nut_pc"] = new() { ["ar"] = "حبة", ["en"] = "pc", ["de"] = "Stk." },
+        ["nut_ml"] = new() { ["ar"] = "مل", ["en"] = "ml", ["de"] = "ml" },
+        ["nut_l"] = new() { ["ar"] = "ل", ["en"] = "l", ["de"] = "l" },
+        ["nut_nothing_planned"] = new() { ["ar"] = "لا وجبات مخططة من اليوم حتى الأحد.", ["en"] = "No meals planned from today to Sunday.", ["de"] = "Von heute bis Sonntag ist nichts geplant." },
+        // {0} = items added, {1} = items whose amount changed, {2} = items removed
+        ["nut_sync_result"] = new() { ["ar"] = "أُضيف {0}، وحُدّث {1}، وحُذف {2}", ["en"] = "{0} added, {1} updated, {2} removed", ["de"] = "{0} hinzugefügt, {1} aktualisiert, {2} entfernt" }
     };
 }

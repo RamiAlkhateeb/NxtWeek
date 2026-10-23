@@ -9,7 +9,7 @@ public static class NutFormat
     private static readonly CultureInfo Latin = CultureInfo.GetCultureInfo("en-US");
 
     // Arabic screens keep Western digits and separators, as everywhere else in the app.
-    private static CultureInfo NumberCulture(ILocalizationService loc) => loc.IsArabic ? Latin : loc.Culture;
+    public static CultureInfo NumberCulture(this ILocalizationService loc) => loc.IsArabic ? Latin : loc.Culture;
 
     /// <summary>Whole number with the language's grouping: "1,950" / "1.950".</summary>
     public static string Num(this ILocalizationService loc, double value) =>
@@ -30,6 +30,9 @@ public static class NutFormat
     /// sign stays in front of the number instead of jumping to its end.
     /// </summary>
     public static string Isolate(string signedNumber) => "\u2066" + signedNumber + "\u2069";
+
+    /// <summary>"×1.5" that stays "×1.5" inside right-to-left text.</summary>
+    public static string Times(string value) => Isolate("×" + value);
 
     /// <summary>Parses what a user typed, accepting either decimal separator. Empty or invalid is null.</summary>
     public static double? Parse(string? text)

@@ -9,6 +9,8 @@
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject ToastService Toasts
+@inject INutritionStore NutritionStore
+@inject IMealImageService MealImages
 
 <div class="mk-page mk-shopping" dir="@Loc.Direction">
     <header class="mk-header">
@@ -45,6 +47,42 @@
 
     <main class="mk-stack">
         @if (!string.IsNullOrWhiteSpace(errorMessage)) { <div class="mk-notice is-error">@errorMessage</div> }
+
+        @if (!isLoading)
+        {
+            <section class="mk-planned" aria-label="@Loc["nut_planned_meals"]">
+                <div class="mk-planned-head"><b>@Loc["nut_planned_meals"]</b><span class="mk-subtitle">@Loc["nut_shop_sub"]</span></div>
+                @if (planned.Count == 0)
+                {
+                    <p class="mk-subtitle">@Loc["nut_nothing_planned"]</p>
+                }
+                else
+                {
+                    <div class="mk-card mk-planned-list">
+                        @foreach (var p in planned)
+                        {
+                            var entry = p;
+                            <div class="mk-planned-row">
+                                <span class="mk-slot-tile mk-tile @MealTypeStyle.T(entry.Meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(entry.Meal)" alt="" loading="lazy" /></span>
+                                <span class="mk-slot-body">
+                                    <b class="mk-planned-name">@entry.Meal.Name</b>
+                                    <span class="mk-subtitle">@Loc.GetShortDayName(entry.Date.DayOfWeek) · @Loc["nut_slot_" + entry.Slot]@if (entry.Entry.PrepBatches > 1) { <text> · @Loc.T("nut_prep_times", entry.Entry.PrepBatches)</text> }</span>
+                                </span>
+                                <ServingsStepper Value="entry.Entry.Servings" ValueChanged="v => UpdatePlannedAsync(entry, e => e.Servings = v)" />
+                                <div class="mk-seg is-inset mk-planned-prep" role="group" aria-label="@Loc["nut_prep"]">
+                                    <span class="mk-planned-prep-label">@Loc["nut_prep"]</span>
+                                    @foreach (var n in new[] { 1, 2, 3 })
+                                    {
+                                        var batches = n;
+                                        <button type="button" class="@(entry.Entry.PrepBatches == batches ? "is-active" : "")" aria-pressed="@(entry.Entry.PrepBatches == batches ? "true" : "false")" @onclick="() => UpdatePlannedAsync(entry, e => e.PrepBatches = batches)">@(batches == 1 ? Loc["nut_off"] : NutFormat.Times(batches.ToString()))</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+        }
 
         @if (isLoading)
         {
@@ -157,7 +195,7 @@
         </button>
         <button class="mk-shop-item-name" @onclick="() => OpenEdit(shop, item)">
             <span>@item.Name</span>
-            @if (QuantityText(item) is { Length: > 0 } qty) { <span class="mk-subtitle">@qty</span> }
+            @if (QuantityText(item) is { Length: > 0 } qty) { <span class="mk-subtitle">@qty@if (item.UsedIn > 1) { <text> · @Loc.T("nut_used_in", item.UsedIn)</text> }</span> }
         </button>
         <button class="mk-item-remove" aria-label="@(Loc["delete"] + ": " + item.Name)" title="@Loc["delete"]" @onclick="() => RemoveItemAsync(shop, item)"><svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 12h12"/></svg></button>
     </div>;
@@ -168,11 +206,18 @@
             <span class="mk-aisle-item-name">@item.Name</span>
             @if (Subtitle(shop, item) is { Length: > 0 } sub) { <span class="mk-subtitle">@sub</span> }
         </button>
-        <div class="mk-stepper" role="group" aria-label="@item.Name">
-            <button aria-label="@Loc["shopping_increase"]" @onclick="() => ChangeQuantityAsync(shop, item, 1)">+</button>
-            <span>@(QuantityText(item, always: true))</span>
-            <button aria-label="@Loc["shopping_decrease"]" disabled="@(item.Quantity <= 1)" @onclick="() => ChangeQuantityAsync(shop, item, -1)">−</button>
-        </div>
+        @if (IsMeasuredByWeight(item))
+        {
+            <b class="mk-shop-amount">@QuantityText(item)</b>
+        }
+        else
+        {
+            <div class="mk-stepper" role="group" aria-label="@item.Name">
+                <button aria-label="@Loc["shopping_increase"]" @onclick="() => ChangeQuantityAsync(shop, item, 1)">+</button>
+                <span>@(QuantityText(item, always: true))</span>
+                <button aria-label="@Loc["shopping_decrease"]" disabled="@(item.Quantity <= 1)" @onclick="() => ChangeQuantityAsync(shop, item, -1)">−</button>
+            </div>
+        }
         <button class="mk-item-remove" aria-label="@(Loc["delete"] + ": " + item.Name)" title="@Loc["delete"]" @onclick="() => RemoveItemAsync(shop, item)"><svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 12h12"/></svg></button>
     </div>;
 }
@@ -282,7 +327,7 @@
         }
 
         uid = user.Uid;
-        await LoadShopsAsync(first: true);
+        await Task.WhenAll(LoadShopsAsync(first: true), LoadPlannedAsync());
     }
 
     // `first` shows the skeleton and opens the first store; later refreshes are silent so toggling an item doesn't flash.
@@ -305,20 +350,58 @@
         }
     }
 
+    private List<PlannedEntry> planned = new();
+    private Dictionary<string, MealCatalogItem> catalog = new();
+    private NutritionProfile profile = new();
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly Sunday => Today.AddDays((7 - (int)Today.DayOfWeek) % 7);
+
+    // What is still to cook from today to Sunday. Not essential to the list, so failures only show the error line.
+    private async Task LoadPlannedAsync()
+    {
+        try
+        {
+            var profileTask = NutritionStore.GetProfileAsync(uid);
+            var daysTask = DayPlan.GetDaysAsync(uid, Today, Sunday);
+            var catalogTask = CatalogService.GetAllMealsAsync();
+            await Task.WhenAll(profileTask, daysTask, catalogTask);
+            profile = await profileTask ?? new NutritionProfile();
+            catalog = (await catalogTask).ToDictionary(m => m.Id);
+            planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, profile);
+        }
+        catch (Exception ex) { errorMessage = ex.Message; }
+    }
+
+    // Servings and meal prep are the same values Week shows; changing them here changes the plan.
+    private async Task UpdatePlannedAsync(PlannedEntry entry, Action<SlotEntry> change)
+    {
+        change(entry.Entry);
+        try { await DayPlan.UpdateEntryAsync(uid, entry.Date, entry.Slot, change); }
+        catch (Exception ex) { Toasts.Show(ex.Message, isError: true); await LoadPlannedAsync(); }
+    }
+
     private void ToggleStore(string id) { if (!expanded.Remove(id)) expanded.Add(id); }
     private void ToggleBought(string id) { if (!showBought.Remove(id)) showBought.Add(id); }
 
-    private static string QuantityText(ShoppingItem item, bool always = false)
+    // Measured amounts read "1.2 kg", "750 g", "3 pc"; units typed by hand are shown as written.
+    private string QuantityText(ShoppingItem item, bool always = false)
     {
+        if (ShoppingAggregator.Format(item.Quantity, item.Unit, Loc.NumberCulture()) is { } f)
+            return $"{f.Amount} {Loc[UnitKey(f.Unit)]}";
         var unit = string.IsNullOrWhiteSpace(item.Unit) ? "" : " " + item.Unit;
         if (item.Quantity <= 1 && unit.Length == 0) return always ? "1" : "";
         return $"{Math.Max(1, item.Quantity)}{unit}";
     }
 
+    private static string UnitKey(string unit) => unit switch { "kg" => "nut_kg", "g" => "nut_g", "l" => "nut_l", "ml" => "nut_ml", _ => "nut_pc" };
+
+    private static bool IsMeasuredByWeight(ShoppingItem item) => item.Unit is IngredientUnit.Grams or IngredientUnit.Millilitres;
+
     private string Subtitle(ShoppingShop shop, ShoppingItem item)
     {
         var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(item.SourceMeal)) parts.Add(Loc.T("shopping_for_meal", item.SourceMeal));
+        if (item.UsedIn > 1) parts.Add(Loc.T("nut_used_in", item.UsedIn));
+        else if (!string.IsNullOrWhiteSpace(item.SourceMeal)) parts.Add(Loc.T("shopping_for_meal", item.SourceMeal));
         if (shops.Count > 1) parts.Add(shop.Name);
         return string.Join(" · ", parts);
     }
@@ -456,42 +539,37 @@
         catch (Exception ex) { errorMessage = ex.Message; }
     }
 
-    // The missing link between Week and Shopping: every ingredient of this week's remaining meals that isn't on a list yet.
+    // The missing link between Week and Shopping: brings the list in line with what is still to cook this week,
+    // with amounts for the planned servings and meal prep. Bought and typed items are left alone.
     private async Task AddWeekIngredientsAsync()
     {
         isAddingWeek = true;
         try
         {
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            var monday = today.AddDays(-(7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7);
-            var week = await DayPlan.GetDaysAsync(uid, today, monday.AddDays(6));
-            var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id);
-            // Meals still to cook: not eaten yet and not leftovers.
-            var meals = week.Values
-                .SelectMany(d => d.Slots.Values)
-                .Where(e => !e.Eaten && !e.Leftover && !string.IsNullOrWhiteSpace(e.MealId))
-                .Select(e => catalog.GetValueOrDefault(e.MealId!))
-                .OfType<MealCatalogItem>()
-                .DistinctBy(m => m.Id)
-                .ToList();
-            if (meals.Count == 0) { Toasts.Show(Loc["shopping_week_no_meals"]); return; }
+            await LoadPlannedAsync();
+            var lines = ShoppingAggregator.Merge(planned);
+            var all = shops.SelectMany(sh => sh.Items.Values.Select(item => (Shop: sh, Item: item))).ToList();
+            var sync = ShoppingAggregator.Sync(all.Select(x => x.Item), lines);
+            if (planned.Count == 0 && sync.Remove.Count == 0) { Toasts.Show(Loc["shopping_week_no_meals"]); return; }
+            if (sync.IsEmpty) { Toasts.Show(Loc["shopping_week_nothing_new"]); return; }
 
-            var known = shops.SelectMany(s => s.Items.Values).Select(i => i.Name.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
-            var added = 0;
-            foreach (var meal in meals)
+            var shopOf = all.ToDictionary(x => x.Item.Id, x => x.Shop.Id);
+            var target = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            foreach (var line in sync.Add)
             {
-                foreach (var ingredient in meal.Ingredients.Select(i => i.Trim()).Where(i => i.Length > 0))
-                {
-                    if (!known.Add(ingredient)) continue;
-                    await ShoppingListService.AddItemAsync(uid, shop.Id, ingredient, new ShoppingItemOptions(Aisle: Aisles.For(ingredient).Key, SourceMeal: meal.Name));
-                    added++;
-                }
+                var aisle = string.IsNullOrEmpty(line.Aisle) ? Aisles.For(line.Name).Key : line.Aisle;
+                await ShoppingListService.AddItemAsync(uid, target.Id, line.Name, new ShoppingItemOptions(
+                    Quantity: ShoppingAggregator.StoredQuantity(line), Unit: line.Unit, Aisle: aisle,
+                    SourceMeal: line.FirstMeal, IngredientKey: line.Key, UsedIn: line.UsedIn));
             }
+            foreach (var (item, line) in sync.Update)
+                await ShoppingListService.UpdateAutoItemAsync(uid, shopOf[item.Id], item.Id, ShoppingAggregator.StoredQuantity(line), line.UsedIn, line.FirstMeal);
+            foreach (var item in sync.Remove)
+                await ShoppingListService.DeleteItemAsync(uid, shopOf[item.Id], item.Id);
 
-            expanded.Add(shop.Id);
+            expanded.Add(target.Id);
             await LoadShopsAsync();
-            Toasts.Show(added == 0 ? Loc["shopping_week_nothing_new"] : Loc.T("shopping_week_added", added, shop.Name));
+            Toasts.Show(Loc.T("nut_sync_result", sync.Add.Count, sync.Update.Count, sync.Remove.Count));
         }
         catch (Exception ex) { Toasts.Show(ex.Message, isError: true); }
         finally { isAddingWeek = false; }
