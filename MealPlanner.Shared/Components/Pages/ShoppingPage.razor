@@ -3,7 +3,8 @@
 @using MealPlanner.Shared.Services
 @inject IAuthService Auth
 @inject IShoppingListService ShoppingListService
-@inject IMealService MealService
+@inject IDayPlanService DayPlan
+@inject IMealCatalogService CatalogService
 @inject IAisleService Aisles
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
@@ -12,6 +13,7 @@
 <div class="mk-page mk-shopping" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row">
+            <BackButton Fallback="/" />
             <div class="mk-title-block">
                 <h1 class="mk-title">@Loc["shopping_title"]</h1>
                 @if (!isLoading) { <p class="mk-subtitle">@SummaryText</p> }
@@ -462,8 +464,16 @@
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
             var monday = today.AddDays(-(7 + (int)today.DayOfWeek - (int)DayOfWeek.Monday) % 7);
-            var week = await MealService.GetWeekAsync(monday, monday.AddDays(6));
-            var meals = week.Where(m => m.Date >= today && !string.IsNullOrWhiteSpace(m.MealId)).ToList();
+            var week = await DayPlan.GetDaysAsync(uid, today, monday.AddDays(6));
+            var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id);
+            // Meals still to cook: not eaten yet and not leftovers.
+            var meals = week.Values
+                .SelectMany(d => d.Slots.Values)
+                .Where(e => !e.Eaten && !e.Leftover && !string.IsNullOrWhiteSpace(e.MealId))
+                .Select(e => catalog.GetValueOrDefault(e.MealId!))
+                .OfType<MealCatalogItem>()
+                .DistinctBy(m => m.Id)
+                .ToList();
             if (meals.Count == 0) { Toasts.Show(Loc["shopping_week_no_meals"]); return; }
 
             var known = shops.SelectMany(s => s.Items.Values).Select(i => i.Name.Trim()).ToHashSet(StringComparer.OrdinalIgnoreCase);

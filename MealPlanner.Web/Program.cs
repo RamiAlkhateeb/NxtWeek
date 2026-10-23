@@ -30,6 +30,7 @@ builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
 builder.Services.AddScoped<IWeekFillService, WeekFillService>();
 builder.Services.AddScoped<IMealAssignService, MealAssignService>();
 builder.Services.AddScoped<INutritionStore, FirebaseNutritionStore>();
+builder.Services.AddScoped<IDayPlanService, DayPlanService>();
 builder.Services.AddScoped<INutritionEstimator, FakeNutritionEstimator>();
 builder.Services.AddScoped<IGeminiPlannerService, GeminiPlannerService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();

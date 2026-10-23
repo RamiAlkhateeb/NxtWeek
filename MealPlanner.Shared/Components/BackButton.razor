@@ -1,0 +1,14 @@
+@inject IJSRuntime JS
+@inject ILocalizationService Loc
+
+@* Back for screens opened from a tab (Shopping, Assistant, Friends, Profile). The chevron is
+   drawn for RTL and flipped by .mk-chev in LTR. *@
+<button type="button" class="mk-icon-btn" aria-label="@Loc["back"]" @onclick="GoBack">
+    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+</button>
+
+@code {
+    [Parameter] public string Fallback { get; set; } = "/";
+
+    private async Task GoBack() => await JS.InvokeVoidAsync("nxtweek.goBack", Fallback);
+}

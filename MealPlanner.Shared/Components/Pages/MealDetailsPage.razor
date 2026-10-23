@@ -6,6 +6,8 @@
 @inject IUserService UserService
 @inject IAuthService Auth
 @inject IMealAssignService Assigner
+@inject IDayPlanService DayPlan
+@inject INutritionStore NutritionStore
 @inject IMealImageService MealImages
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
@@ -92,9 +94,32 @@
         </div>
 
         <div class="mk-details-cta">
-            <button class="mk-btn is-lg is-block" disabled="@isAdding" @onclick="AddToDay">
-                @Loc.T("meal_add_to_named_day_cta", $"{Loc.GetDayName(selectedDay.DayOfWeek)} {selectedDay.Day}")
-            </button>
+            @if (pickSlot is { } ps)
+            {
+                <button class="mk-btn is-lg is-block" disabled="@isAdding" @onclick="() => AddToSlot(ps)">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc.T("nut_add_to", Loc["nut_slot_" + ps])
+                </button>
+            }
+            else
+            {
+                var empty = EmptySlotsOf(selectedDay);
+                @if (empty.Count == 0)
+                {
+                    <p class="mk-subtitle mk-cta-note">@Loc["nut_nothing_open"]</p>
+                }
+                else
+                {
+                    <div class="mk-cta-slots" role="group" aria-label="@Loc.FormatDayDate(selectedDay)">
+                        @foreach (var slot in empty)
+                        {
+                            var sl = slot;
+                            <button class="mk-btn" disabled="@isAdding" @onclick="() => AddToSlot(sl)">
+                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["nut_slot_" + sl]
+                            </button>
+                        }
+                    </div>
+                }
+            }
         </div>
     }
 </div>
@@ -127,6 +152,10 @@
     private string uid = "";
     private List<DateOnly> days = new();
     private HashSet<DateOnly> planned = new();
+    private Dictionary<DateOnly, PlanDay> plan = new();
+    private NutritionProfile nutritionProfile = new();
+    // Pick mode from an empty slot on Week: ?day=...&slot=Meal1
+    private MealSlot? pickSlot;
     private DateOnly selectedDay;
 
     private bool showEdit;
@@ -154,8 +183,11 @@
 
             var today = DateOnly.FromDateTime(DateTime.Today);
             days = Enumerable.Range(0, 14).Select(i => today.AddDays(i)).ToList();
-            var plan = await UserService.GetWeeklyPlanAsync(uid, days[0], days[^1]);
-            planned = plan.Where(e => !string.IsNullOrWhiteSpace(e.MealId)).Select(e => e.Date).ToHashSet();
+            plan = await DayPlan.GetDaysAsync(uid, days[0], days[^1]);
+            planned = plan.Where(d => d.Value.Slots.Count > 0).Select(d => d.Key).ToHashSet();
+            nutritionProfile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
+            var slotQuery = QueryValue("slot=");
+            if (slotQuery is not null && Enum.TryParse<MealSlot>(slotQuery, out var slot)) pickSlot = slot;
 
             // Preselect the day we came from; otherwise the first free day, otherwise today.
             var cameFrom = QueryDay();
@@ -164,17 +196,24 @@
                 if (!days.Contains(d)) days.Add(d);
                 selectedDay = d;
             }
-            else selectedDay = days.FirstOrDefault(x => !planned.Contains(x), today);
+            else selectedDay = days.FirstOrDefault(x => EmptySlotsOf(x).Count > 0, today);
         }
         isLoading = false;
     }
 
-    private DateOnly? QueryDay()
+    private DateOnly? QueryDay() => DateOnly.TryParse(QueryValue("day="), out var parsed) ? parsed : null;
+
+    private string? QueryValue(string key)
     {
         var query = new Uri(Nav.Uri).Query;
-        const string key = "day=";
         var i = query.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-        return i >= 0 && DateOnly.TryParse(query[(i + key.Length)..].Split('&')[0], out var parsed) ? parsed : null;
+        return i >= 0 ? query[(i + key.Length)..].Split('&')[0] : null;
+    }
+
+    private IReadOnlyList<MealSlot> EmptySlotsOf(DateOnly date)
+    {
+        var day = plan.GetValueOrDefault(date);
+        return DayMath.EmptySlots(day, DayMath.TypeOf(day, date, nutritionProfile), nutritionProfile.MealTimes);
     }
 
     private async Task Close() => await JS.InvokeVoidAsync("nxtweek.goBack", "/");
@@ -186,15 +225,15 @@
         isFavorite = !isFavorite;
     }
 
-    private async Task AddToDay()
+    private async Task AddToSlot(MealSlot slot)
     {
         if (meal is null) return;
         isAdding = true;
         try
         {
-            await Assigner.AssignAsync(uid, selectedDay, meal);
-            var message = Uri.EscapeDataString(Loc.T("meals_added_toast", meal.Name, Loc.GetDayName(selectedDay.DayOfWeek)));
-            Nav.NavigateTo($"/?updated={selectedDay:yyyy-MM-dd}&toast={message}");
+            await Assigner.AssignAsync(uid, selectedDay, meal, slot);
+            var message = Uri.EscapeDataString(Loc.T("nut_added_toast", Loc["nut_slot_" + slot]));
+            Nav.NavigateTo($"/?day={selectedDay:yyyy-MM-dd}&toast={message}");
         }
         catch (Exception ex)
         {

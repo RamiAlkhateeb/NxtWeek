@@ -1,0 +1,19 @@
+@* A progress bar: solid for eaten, faded for planned, empty for what is still open. *@
+@{
+    var eaten = DayStatus.Percent(Eaten, Target);
+    var planned = Math.Min(100 - eaten, DayStatus.Percent(Planned, Target));
+}
+<div class="mk-bar @(Thin ? "is-thin" : "")" aria-hidden="true">
+    <i style="width:@P(eaten);background:@Colour"></i>
+    <i class="is-planned" style="inset-inline-start:@P(eaten);width:@P(planned);background:@Colour"></i>
+</div>
+
+@code {
+    [Parameter] public double Eaten { get; set; }
+    [Parameter] public double Planned { get; set; }
+    [Parameter] public double Target { get; set; }
+    [Parameter] public string Colour { get; set; } = "var(--mk-kc)";
+    [Parameter] public bool Thin { get; set; }
+
+    private static string P(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+}

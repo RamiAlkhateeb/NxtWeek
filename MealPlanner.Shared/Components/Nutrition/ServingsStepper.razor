@@ -1,0 +1,14 @@
+@inject ILocalizationService Loc
+
+<span class="mk-stepper" role="group" aria-label="@Loc["nut_servings_label"]">
+    <button type="button" aria-label="@Loc["nut_servings_less"]" disabled="@(Value <= DayStatus.ServingsMin)" @onclick="() => Change(-1)">−</button>
+    <b aria-live="polite">@Loc.Servings(Value)</b>
+    <button type="button" aria-label="@Loc["nut_servings_more"]" disabled="@(Value >= DayStatus.ServingsMax)" @onclick="() => Change(1)">+</button>
+</span>
+
+@code {
+    [Parameter] public double Value { get; set; } = 1;
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+
+    private Task Change(int direction) => ValueChanged.InvokeAsync(DayStatus.StepServings(Value, direction));
+}

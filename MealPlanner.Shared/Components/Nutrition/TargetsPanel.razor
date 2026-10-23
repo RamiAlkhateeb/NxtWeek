@@ -1,0 +1,80 @@
+@inject ILocalizationService Loc
+
+@* The day's calories, protein, carbs and fat against target. Compact = the slim sticky bar
+   shown once the full panel has scrolled away. *@
+@{
+    var t = Totals.Targets;
+    var e = Totals.Eaten;
+    var pl = Totals.Planned;
+    var leftKcal = Totals.LeftKcal;
+    var over = leftKcal < 0;
+}
+@if (Compact)
+{
+    <div class="mk-tp is-compact">
+        @CompactPart(Loc["nut_calories"], e.Kcal, pl.Kcal, t.Kcal, "var(--mk-kc)", Loc["nut_kcal"])
+        @CompactPart(Loc["nut_protein"], e.Protein, pl.Protein, t.Protein, "var(--mk-pro)", Loc["nut_g"])
+    </div>
+}
+else
+{
+    <section class="mk-tp" aria-label="@Loc["nut_daily_targets"]">
+        <div class="mk-tp-top">
+            <div class="mk-ringw">
+                <MacroRing Eaten="e.Kcal" Planned="pl.Kcal" Target="t.Kcal" />
+                <div class="mk-ringw-mid">
+                    <b>@(over ? "+" + Loc.Num(-leftKcal) : Loc.Num(leftKcal))</b>
+                    <span>@Loc["nut_kcal"] @(over ? Loc["nut_over"] : Loc["nut_left"])</span>
+                </div>
+            </div>
+            <div class="mk-tp-macros">
+                <div class="mk-tp-protein">
+                    <div class="mk-tp-row"><span class="mk-tp-pro-label">@Loc["nut_protein"]</span><span class="mk-num"><b>@Loc.Num(e.Protein)</b> / @Loc.Num(t.Protein) @Loc["nut_g"]</span></div>
+                    <MacroBar Eaten="e.Protein" Planned="pl.Protein" Target="t.Protein" Colour="var(--mk-pro)" />
+                    <span class="mk-tp-small">@Loc.Num(Math.Max(0, Totals.LeftProtein)) @Loc["nut_g"] @Loc["nut_left"]</span>
+                </div>
+                <div>
+                    <div class="mk-tp-row mk-tp-small"><span>@Loc["nut_carbs_short"] @Loc.Num(e.Carbs)/@Loc.Num(t.Carbs)</span><span>@Loc["nut_fat_short"] @Loc.Num(e.Fat)/@Loc.Num(t.Fat)</span></div>
+                    <div class="mk-tp-thin">
+                        <MacroBar Eaten="e.Carbs" Planned="pl.Carbs" Target="t.Carbs" Colour="var(--mk-carb)" Thin="true" />
+                        <MacroBar Eaten="e.Fat" Planned="pl.Fat" Target="t.Fat" Colour="var(--mk-fat)" Thin="true" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mk-legend">
+            <span><i style="background:var(--mk-kc)"></i>@Loc["nut_eaten"] @Loc.Num(e.Kcal)</span>
+            <span><i style="background:var(--mk-kc);opacity:.35"></i>@Loc["nut_planned"] @Loc.Num(pl.Kcal)</span>
+            <span><i class="is-open"></i>@Loc["nut_open"] @Loc.Num(Math.Max(0, Totals.OpenKcal))</span>
+        </div>
+        <div class="mk-tp-foot">
+            <button type="button" class="mk-dtype" title="@Loc["nut_day_type_switch"]" @onclick="OnToggleType">
+                @if (Type == DayType.Training)
+                {
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3 4 4.5 4 8.5A4 4 0 0 1 12 15.5 4 4 0 0 1 8 11.5c0-2 1-3 2-4 .3 1.2 1 2 2 2 0-2.5-1-4 0-6.5z"/><path d="M8 18a5 5 0 0 0 8 0"/></svg>
+                }
+                else
+                {
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg>
+                }
+                @Loc.T("nut_day_type_button", Type == DayType.Training ? Loc["nut_day_training"] : Loc["nut_day_rest"], Loc.Num(t.Kcal))
+            </button>
+            @FootContent
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public DayTotals Totals { get; set; } = default!;
+    [Parameter] public DayType Type { get; set; }
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public EventCallback OnToggleType { get; set; }
+    /// <summary>Extra buttons beside the day type (step 5: "Plan my protein for today").</summary>
+    [Parameter] public RenderFragment? FootContent { get; set; }
+
+    private RenderFragment CompactPart(string title, double eaten, double planned, double target, string colour, string unit) =>
+        @<div class="mk-tp-cpart">
+            <div class="mk-tp-row"><b class="mk-tp-small">@title</b><span class="mk-tp-small">@Loc.Num(Math.Max(0, target - eaten)) @unit @Loc["nut_left"]</span></div>
+            <MacroBar Eaten="eaten" Planned="planned" Target="target" Colour="@colour" Thin="true" />
+        </div>;
+}

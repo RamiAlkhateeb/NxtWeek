@@ -1,0 +1,116 @@
+@inject ILocalizationService Loc
+
+@* Log something without a recipe. Carbs and fat are split from the calories that protein
+   does not cover, unless a known item supplies its own. *@
+<NxtBottomSheet IsOpen="IsOpen" Eyebrow="@Loc["nut_slot_" + Slot]" Title="@Loc["nut_quick_title"]" OnDismiss="OnDismiss">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <div class="mk-note">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+            <span>@Loc["nut_quick_hint"]</span>
+        </div>
+
+        <div class="mk-field">
+            <span class="mk-label">@Loc["nut_recent"]</span>
+            <div class="mk-chip-wrap">
+                @foreach (var item in Items)
+                {
+                    var it = item;
+                    <button type="button" class="mk-chip @(picked == it ? "is-active" : "")" aria-pressed="@(picked == it ? "true" : "false")" @onclick="() => Pick(it)">@Loc[it.NameKey] · @AmountText(it)</button>
+                }
+            </div>
+        </div>
+
+        <label class="mk-field">
+            <span class="mk-label">@Loc["nut_what_is"]</span>
+            <input class="mk-input" autocomplete="off" @bind="name" @bind:event="oninput" @bind:after="() => picked = null" />
+        </label>
+        <div class="mk-nut-form">
+            <label class="mk-field">
+                <span class="mk-label">@Loc["nut_amount"]</span>
+                <span class="mk-input-unit"><input autocomplete="off" @bind="amount" @bind:event="oninput" /></span>
+            </label>
+            <label class="mk-field">
+                <span class="mk-label">@Loc["nut_calories"]</span>
+                <span class="mk-input-unit"><input inputmode="numeric" autocomplete="off" @bind="kcal" @bind:event="oninput" /><span>@Loc["nut_kcal"]</span></span>
+            </label>
+            <label class="mk-field">
+                <span class="mk-label">@Loc["nut_protein"]</span>
+                <span class="mk-input-unit"><input inputmode="numeric" autocomplete="off" @bind="protein" @bind:event="oninput" /><span>@Loc["nut_g"]</span></span>
+            </label>
+        </div>
+
+        <div class="mk-sheet-row">
+            <span class="mk-sheet-row-title">@Loc["nut_also_eaten"]</span>
+            <ToggleSwitch @bind-Checked="eatenNow" Label="@Loc["nut_also_eaten"]" />
+        </div>
+
+        <div class="mk-btn-row">
+            <button type="button" class="mk-btn is-soft" @onclick="OnDismiss">@Loc["cancel"]</button>
+            <button type="button" class="mk-btn" style="flex:2 1 auto" disabled="@(!IsValid)" @onclick="Save">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc.T("nut_add_to", Loc["nut_slot_" + Slot])
+            </button>
+        </div>
+    </div>
+</NxtBottomSheet>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public MealSlot Slot { get; set; }
+    [Parameter] public EventCallback<SlotEntry> OnAdd { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    /// <summary>Common snacks from the prototype; amount is grams, or pieces when Grams is null.</summary>
+    public sealed record QuickItem(string NameKey, double? Grams, double Kcal, double Protein, double Carbs, double Fat);
+
+    private static readonly QuickItem[] Items =
+    [
+        new("nut_quick_nuts", 30, 150, 4, 14, 9),
+        new("nut_quick_bar", null, 200, 20, 18, 7),
+        new("nut_quick_apple", null, 95, 0, 25, 0),
+        new("nut_quick_yogurt", 150, 130, 16, 6, 5)
+    ];
+
+    private QuickItem? picked;
+    private string name = "", amount = "", kcal = "", protein = "";
+    private bool eatenNow;
+    private bool wasOpen;
+
+    private bool IsValid => !string.IsNullOrWhiteSpace(name) && NutFormat.Parse(kcal) is > 0;
+
+    protected override void OnParametersSet()
+    {
+        // Each opening starts from the first recent item, like the prototype.
+        if (IsOpen && !wasOpen) { Pick(Items[0]); eatenNow = false; }
+        wasOpen = IsOpen;
+    }
+
+    private string AmountText(QuickItem it) => it.Grams is { } g ? $"{Loc.Num(g)} {Loc["nut_g"]}" : "1";
+
+    private void Pick(QuickItem it)
+    {
+        picked = it;
+        name = Loc[it.NameKey];
+        amount = AmountText(it);
+        kcal = Loc.Input(it.Kcal);
+        protein = Loc.Input(it.Protein);
+    }
+
+    private async Task Save()
+    {
+        var k = NutFormat.Parse(kcal) ?? 0;
+        var p = NutFormat.Parse(protein) ?? 0;
+        double carbs, fat;
+        if (picked is not null && picked.Kcal == k && picked.Protein == p) { carbs = picked.Carbs; fat = picked.Fat; }
+        else
+        {
+            var rest = Math.Max(0, k - 4 * p);
+            carbs = Math.Round(rest * .55 / 4);
+            fat = Math.Round(rest * .45 / 9);
+        }
+        await OnAdd.InvokeAsync(new SlotEntry
+        {
+            Quick = new QuickAddEntry { Name = name.Trim(), Amount = amount.Trim(), Kcal = k, Protein = p, Carbs = carbs, Fat = fat },
+            Eaten = eatenNow
+        });
+    }
+}

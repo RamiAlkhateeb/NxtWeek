@@ -73,6 +73,11 @@ nxtweek.theme
 | Nutrition profile and targets | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 
+Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
+it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
+Direct `weeklyPlan` writes are invisible once a day exists under `days`. (Friends' "copy week"
+still writes `weeklyPlan` until the friends step moves it.)
+
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.
 

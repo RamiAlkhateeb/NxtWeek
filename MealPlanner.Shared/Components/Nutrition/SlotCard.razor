@@ -1,0 +1,79 @@
+@inject ILocalizationService Loc
+@inject IMealImageService MealImages
+
+@* One slot of the day. Empty: what is still open and how to fill it. Filled: the meal or
+   quick add, its tags and nutrition, and a round "eaten" check. *@
+@if (Entry is null)
+{
+    <div class="mk-slot is-empty">
+        <div class="mk-slot-body">
+            <span class="mk-slot-label">@SlotLabel</span>
+            <span class="mk-slot-hint">@Loc.T("nut_open_line", Loc.Num(Math.Max(0, OpenKcal)), Loc.Num(Math.Max(0, OpenProtein)))</span>
+            <div class="mk-slot-actions">
+                @EmptyActions
+                <button type="button" class="mk-mini" @onclick="OnQuickAdd">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>@Loc["nut_quick_add"]
+                </button>
+                <button type="button" class="mk-mini" @onclick="OnAddMeal">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10"/><path d="M17 21V3c-2.5 1.5-3.5 4-3.5 8H17"/></svg>@Loc["nut_add_meal"]
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    var n = DayMath.Of(Entry, _ => Meal?.Nutrition);
+    var name = Entry.Quick?.Name ?? Meal?.Name ?? "";
+    <div class="mk-slot @(Entry.Eaten ? "is-eaten" : "")">
+        <button type="button" class="mk-slot-open" aria-label="@Loc.T("nut_slot_entry", Loc["nut_slot_" + Slot], name)" @onclick="OnOpen">
+            @if (Entry.IsQuick || Meal is null)
+            {
+                <span class="mk-slot-tile is-quick" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
+            }
+            else
+            {
+                <span class="mk-slot-tile mk-tile @MealTypeStyle.T(Meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(Meal)" alt="" loading="lazy" /></span>
+            }
+            <span class="mk-slot-body">
+                <span class="mk-slot-label">
+                    @SlotLabel
+                    @if (Entry.Leftover) { <span class="mk-tag is-warn">@Loc["nut_leftover"]</span> }
+                    @if (Entry.IsQuick) { <span class="mk-tag is-accent">@Loc["nut_quick_tag"]</span> }
+                    @if (Entry.Servings != 1) { <span class="mk-tag">×@Loc.Servings(Entry.Servings)</span> }
+                    @if (Entry.PrepBatches > 1) { <span class="mk-tag is-ok">@Loc["nut_prep"] ×@Entry.PrepBatches</span> }
+                </span>
+                <span class="mk-slot-name">@name</span>
+                @if (n.Missing)
+                {
+                    <NutritionChips Nutrition="null" />
+                }
+                else
+                {
+                    var shown = new NutritionInfo { Kcal = n.Totals.Kcal, Protein = n.Totals.Protein, Source = n.Source ?? NutritionSource.Manual };
+                    <NutritionChips Nutrition="shown"><ProteinGauge Protein="@(n.Totals.Protein / Math.Max(0.5, Entry.Servings))" /></NutritionChips>
+                }
+            </span>
+        </button>
+        <button type="button" class="mk-eat @(Entry.Eaten ? "is-on" : "")" aria-pressed="@(Entry.Eaten ? "true" : "false")" aria-label="@Loc.T("nut_slot_entry", Entry.Eaten ? Loc["nut_undo"] : Loc["nut_mark_eaten"], name)" @onclick="OnToggleEaten">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter] public MealSlot Slot { get; set; }
+    [Parameter] public string Time { get; set; } = "";
+    [Parameter] public SlotEntry? Entry { get; set; }
+    [Parameter] public MealCatalogItem? Meal { get; set; }
+    [Parameter] public double OpenKcal { get; set; }
+    [Parameter] public double OpenProtein { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnToggleEaten { get; set; }
+    [Parameter] public EventCallback OnQuickAdd { get; set; }
+    [Parameter] public EventCallback OnAddMeal { get; set; }
+    /// <summary>Extra actions before Quick add (step 5: Suggest).</summary>
+    [Parameter] public RenderFragment? EmptyActions { get; set; }
+
+    private string SlotLabel => string.IsNullOrEmpty(Time) ? Loc["nut_slot_" + Slot] : $"{Loc["nut_slot_" + Slot]} · {Time}";
+}

@@ -45,9 +45,12 @@ public sealed class LocalAuthService(IJSRuntime js) : IAuthService
                 rawEmail = sanitizedEmail.Replace("_at_", "@").Replace("_dot_", ".");
             }
 
+            // Like the Firebase path above: the data key the user already has wins over the e-mail,
+            // so signing in never hides the plan that was made as a guest.
+            var activeKey = await js.InvokeAsync<string?>("localStorage.getItem", "nxtweek.activeUserKey");
             _cachedUser = new AuthUser
             {
-                Uid = sanitizedEmail,
+                Uid = string.IsNullOrWhiteSpace(activeKey) ? sanitizedEmail : activeKey,
                 Email = rawEmail,
                 DisplayName = rawEmail,
                 IdToken = "",

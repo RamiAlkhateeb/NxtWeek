@@ -7,6 +7,8 @@
 @inject GeminiClient Gemini
 @inject IMealCatalogService CatalogService
 @inject IUserService UserService
+@inject IMealAssignService Assigner
+@inject IDayPlanService DayPlan
 @inject IShoppingListService ShoppingListService
 @inject IAisleService Aisles
 @inject IMealImageService MealImages
@@ -19,6 +21,7 @@
 <div class="mk-page mk-ai" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row">
+            <BackButton Fallback="/" />
             <div class="mk-ai-heading">
                 <span class="mk-ai-badge" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></span>
                 <h1 class="mk-title is-md">@Loc["ai_plan_title"]</h1>
@@ -357,7 +360,7 @@
                 Language = Loc.CurrentLanguage,
                 CreatedBy = uid
             });
-            await UserService.AssignMealToDateAsync(uid, meal.Date, catalogItem.Id);
+            await Assigner.AssignAsync(uid, meal.Date, catalogItem);
         }
         if (entry.Meals.Count > 0)
             parts.Insert(0, Loc.T("ai_applied_meals", string.Join(Loc["list_and"], entry.Meals.Select(m => Loc.T("ai_applied_meal_on", m.Name, Loc.GetDayName(m.Date.DayOfWeek))))));
@@ -415,15 +418,18 @@
         try
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
-            var plan = await UserService.GetWeeklyPlanAsync(uid, today, today.AddDays(13));
+            var plan = await DayPlan.GetDaysAsync(uid, today, today.AddDays(13));
             var names = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id, m => m.Name);
 
             planContext = string.Join('\n', Enumerable.Range(0, 14).Select(offset =>
             {
                 var date = today.AddDays(offset);
-                var entry = plan.FirstOrDefault(e => e.Date == date && !string.IsNullOrWhiteSpace(e.MealId));
-                var meal = entry is null ? "FREE" : names.GetValueOrDefault(entry.MealId, "(a meal)");
-                return $"{date:yyyy-MM-dd} {date.DayOfWeek}: {meal}";
+                var meals = plan.TryGetValue(date, out var day)
+                    ? day.Slots.OrderBy(s => s.Key)
+                        .Select(s => s.Value.Quick?.Name ?? names.GetValueOrDefault(s.Value.MealId ?? "", "(a meal)"))
+                        .ToList()
+                    : [];
+                return $"{date:yyyy-MM-dd} {date.DayOfWeek}: {(meals.Count == 0 ? "FREE" : string.Join(", ", meals))}";
             }));
         }
         catch

@@ -2,6 +2,7 @@
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
 @inject IUserService UserService
+@inject IDayPlanService DayPlan
 @inject IMealCatalogService CatalogService
 @inject IMealImageService MealImages
 @inject IAuthService Auth
@@ -129,10 +130,14 @@
             .Select(d => new Cell(d, d.Month == currentMonth.Month && d.Year == currentMonth.Year))
             .ToList();
 
-        var plan = await UserService.GetWeeklyPlanAsync(uid, gridStart, gridStart.AddDays(cellCount - 1));
+        var plan = await DayPlan.GetDaysAsync(uid, gridStart, gridStart.AddDays(cellCount - 1));
         var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id);
-        foreach (var item in plan)
-            if (catalog.TryGetValue(item.MealId, out var meal)) entries[item.Date] = new(meal, item.IsFavorite);
+        // A cell shows the day's first planned meal (Meal 1, then post-workout, dinner, snack).
+        foreach (var (date, day) in plan)
+        {
+            var first = day.Slots.OrderBy(s => s.Key).Select(s => s.Value.MealId).FirstOrDefault(id => !string.IsNullOrWhiteSpace(id));
+            if (first is not null && catalog.TryGetValue(first, out var meal)) entries[date] = new(meal, false);
+        }
 
         isLoading = false;
     }

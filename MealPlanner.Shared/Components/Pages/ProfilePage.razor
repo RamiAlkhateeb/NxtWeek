@@ -1,0 +1,239 @@
+@page "/settings/profile"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject INutritionStore NutritionStore
+@inject ILocalizationService Loc
+@inject ToastService Toasts
+@implements IDisposable
+
+@* Profile & targets: body data, goal, meal times and training days drive the calculated
+   targets; each day type's targets can be overridden field by field. *@
+<div class="mk-page mk-profile" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/settings" />
+            <div class="mk-title-block"><h1 class="mk-title">@Loc["nut_profile"]</h1></div>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (loadError)
+    {
+        <div class="mk-stack">
+            <div class="mk-notice is-error" role="alert">@Loc["nut_load_error"]</div>
+            <button class="mk-btn is-block" @onclick="LoadAsync">@Loc["nut_retry"]</button>
+        </div>
+    }
+    else
+    {
+        var calc = TargetCalculator.Calculate(p);
+        <main class="mk-stack">
+            @if (isGuest)
+            {
+                <div class="mk-note">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    <span>@Loc["nut_profile_guest"]</span>
+                </div>
+            }
+
+            <section class="mk-set-card">
+                <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_sex"]">
+                    @foreach (var sex in new[] { Sex.Male, Sex.Female })
+                    {
+                        var v = sex;
+                        <button type="button" class="@(p.Sex == v ? "is-active" : "")" aria-pressed="@(p.Sex == v ? "true" : "false")" @onclick="() => p.Sex = v">@(v == Sex.Male ? Loc["nut_male"] : Loc["nut_female"])</button>
+                    }
+                </div>
+                <div class="mk-nut-form is-three">
+                    <label class="mk-field">
+                        <span class="mk-label">@Loc["nut_age"]</span>
+                        <span class="mk-input-unit"><input inputmode="numeric" autocomplete="off" value="@Loc.Input(p.Age)" @onchange="e => SetNumber(e, v => p.Age = (int)Math.Clamp(Math.Round(v), 14, 100))" /><span>@Loc["nut_years"]</span></span>
+                    </label>
+                    <label class="mk-field">
+                        <span class="mk-label">@Loc["nut_height"]</span>
+                        <span class="mk-input-unit"><input inputmode="decimal" autocomplete="off" value="@Loc.Input(p.HeightCm)" @onchange="e => SetNumber(e, v => p.HeightCm = Math.Clamp(v, 100, 230))" /><span>@Loc["nut_cm"]</span></span>
+                    </label>
+                    <label class="mk-field">
+                        <span class="mk-label">@Loc["nut_weight"]</span>
+                        <span class="mk-input-unit"><input inputmode="decimal" autocomplete="off" value="@Loc.Input(p.WeightKg)" @onchange="e => SetNumber(e, v => p.WeightKg = Math.Clamp(v, 30, 300))" /><span>@Loc["nut_kg"]</span></span>
+                    </label>
+                </div>
+                <label class="mk-field">
+                    <span class="mk-label">@Loc["nut_activity"]</span>
+                    <select class="mk-input" value="@p.Activity" @onchange="e => p.Activity = int.TryParse(e.Value?.ToString(), out var a) ? a : p.Activity">
+                        @for (var i = 0; i < 4; i++)
+                        {
+                            <option value="@i" selected="@(p.Activity == i)">@Loc["nut_activity_" + i]</option>
+                        }
+                    </select>
+                </label>
+                <div class="mk-field">
+                    <span class="mk-label">@Loc["nut_goal"]</span>
+                    <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_goal"]">
+                        @foreach (var goal in new[] { Goal.Lose, Goal.Keep, Goal.Gain })
+                        {
+                            var g = goal;
+                            <button type="button" class="@(p.Goal == g ? "is-active" : "")" aria-pressed="@(p.Goal == g ? "true" : "false")" @onclick="() => p.Goal = g">@Loc["nut_goal_" + g]</button>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <section class="mk-set-card">
+                <h2>@Loc["nut_meal_times"]</h2>
+                <p class="mk-set-hint">@Loc["nut_meal_times_hint"]</p>
+                @foreach (var slot in Enum.GetValues<MealSlot>())
+                {
+                    var s = slot;
+                    <div class="mk-set-row is-spread">
+                        <label for="tm-@s">@Loc["nut_slot_" + s]</label>
+                        <input id="tm-@s" class="mk-input mk-time" type="time" dir="ltr" value="@p.MealTimes.GetValueOrDefault(s)" aria-label="@Loc.T("nut_time_for", Loc["nut_slot_" + s])" @onchange="e => SetTime(s, e.Value?.ToString())" />
+                    </div>
+                }
+            </section>
+
+            <section class="mk-set-card">
+                <h2>@Loc["nut_training_days"]</h2>
+                <div class="mk-chip-wrap">
+                    @for (var i = 0; i < 7; i++)
+                    {
+                        var index = i;
+                        var dow = (DayOfWeek)((index + 1) % 7);
+                        var on = p.TrainingDays[index];
+                        <button type="button" class="mk-chip mk-day-toggle @(on ? "is-active" : "")" aria-pressed="@(on ? "true" : "false")" aria-label="@Loc.GetDayName(dow)" @onclick="() => p.TrainingDays[index] = !p.TrainingDays[index]">@Loc.GetDayAbbr(dow)</button>
+                    }
+                </div>
+            </section>
+
+            <section class="mk-set-card mk-calc">
+                @CalcRow(Loc["nut_bmr"], $"{Loc.Num(calc.Bmr)} {Loc["nut_kcal"]}")
+                @CalcRow(Loc["nut_tdee"], $"{Loc.Num(calc.Tdee)} {Loc["nut_kcal"]}")
+                @CalcRow(Loc["nut_adjust"], Signed(calc.GoalDeltaKcal + calc.WeeklyAdjustKcal))
+                @if (calc.WeeklyAdjustKcal != 0) { @CalcRow(Loc["nut_adjust_check"], Signed(calc.WeeklyAdjustKcal)) }
+                <p class="mk-set-hint">@Loc.T("nut_per_kg", Loc.Dec1(p.WeightKg > 0 ? TargetCalculator.For(p, DayType.Training).Protein / p.WeightKg : 0))</p>
+            </section>
+
+            <h2 class="mk-section-title">@Loc["nut_calc"]</h2>
+            @TargetCard(DayType.Training)
+            @TargetCard(DayType.Rest)
+
+            @if (!string.IsNullOrEmpty(saveError)) { <div class="mk-notice is-error" role="alert">@saveError</div> }
+            <button class="mk-btn is-lg is-block" disabled="@isSaving" @onclick="SaveAsync">@Loc["save"]</button>
+        </main>
+    }
+</div>
+
+<SignInExplainerSheet IsOpen="showSignIn" ReturnPath="/settings/profile" OnDismiss="() => showSignIn = false" />
+
+@code {
+    private NutritionProfile p = new();
+    private string uid = "";
+    private bool isGuest = true;
+    private bool isLoading = true, loadError, isSaving, showSignIn;
+    private string saveError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguageChanged;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = false;
+        try
+        {
+            var user = await Auth.GetCurrentUserAsync();
+            uid = user?.Uid ?? "";
+            isGuest = user is null || user.IsGuest;
+            p = (string.IsNullOrEmpty(uid) ? null : await NutritionStore.GetProfileAsync(uid)) ?? new NutritionProfile();
+        }
+        catch { loadError = true; }
+        finally { isLoading = false; }
+    }
+
+    private static void SetNumber(ChangeEventArgs e, Action<double> set)
+    {
+        if (NutFormat.Parse(e.Value?.ToString()) is { } v) set(v);
+    }
+
+    private void SetTime(MealSlot slot, string? value)
+    {
+        if (TimeOnly.TryParse(value, out var t)) p.MealTimes[slot] = t.ToString("HH:mm");
+    }
+
+    private string Signed(int kcal) => $"{(kcal > 0 ? "+" : kcal < 0 ? "−" : "")}{Loc.Num(Math.Abs(kcal))} {Loc["nut_kcal"]}";
+
+    private RenderFragment CalcRow(string label, string value) =>
+        @<div class="mk-calc-row"><span>@label</span><b>@value</b></div>;
+
+    private RenderFragment TargetCard(DayType type) => __builder =>
+    {
+        var targets = TargetCalculator.For(p, type);
+        var o = p.Overrides.For(type);
+        <section class="mk-set-card">
+            <div class="mk-set-row is-spread">
+                <h2>@(type == DayType.Training ? Loc["nut_day_training"] : Loc["nut_day_rest"])</h2>
+                <span class="mk-tag @(o.IsEmpty ? "is-ok" : "is-warn")">@(o.IsEmpty ? Loc["nut_calculated"] : Loc["nut_custom"])</span>
+            </div>
+            <div class="mk-nut-form">
+                @OverrideField(type, "kcal", Loc["nut_calories"], Loc["nut_kcal"], targets.Kcal, o.Kcal is not null)
+                @OverrideField(type, "protein", Loc["nut_protein"], Loc["nut_g"], targets.Protein, o.Protein is not null)
+                @OverrideField(type, "carbs", Loc["nut_carbs"], Loc["nut_g"], targets.Carbs, o.Carbs is not null)
+                @OverrideField(type, "fat", Loc["nut_fat"], Loc["nut_g"], targets.Fat, o.Fat is not null)
+            </div>
+            @if (type == DayType.Rest) { <p class="mk-set-hint">@Loc["nut_rest_note"]</p> }
+            @if (!o.IsEmpty)
+            {
+                <button type="button" class="mk-btn is-outline is-sm mk-self-start" @onclick="() => ResetOverrides(type)">@Loc["nut_reset"]</button>
+            }
+        </section>
+    };
+
+    private RenderFragment OverrideField(DayType type, string field, string label, string unit, int value, bool custom) =>
+        @<label class="mk-field">
+            <span class="mk-label">@label</span>
+            <span class="mk-input-unit @(custom ? "is-estimate" : "")"><input inputmode="numeric" autocomplete="off" value="@Loc.Input(value)" @onchange="e => SetOverride(type, field, e.Value?.ToString())" /><span>@unit</span></span>
+        </label>;
+
+    private void SetOverride(DayType type, string field, string? text)
+    {
+        var o = p.Overrides.For(type);
+        int? v = NutFormat.Parse(text) is { } d ? (int)Math.Round(d) : null;
+        switch (field)
+        {
+            case "kcal": o.Kcal = v; break;
+            case "protein": o.Protein = v; break;
+            case "carbs": o.Carbs = v; break;
+            case "fat": o.Fat = v; break;
+        }
+    }
+
+    private void ResetOverrides(DayType type)
+    {
+        if (type == DayType.Rest) p.Overrides.Rest = new(); else p.Overrides.Training = new();
+    }
+
+    private async Task SaveAsync()
+    {
+        // Health data needs an account: guests are asked to sign in first.
+        if (isGuest) { showSignIn = true; return; }
+        isSaving = true;
+        saveError = "";
+        try
+        {
+            await NutritionStore.SaveProfileAsync(uid, p);
+            Toasts.Show(Loc["nut_profile_saved"]);
+        }
+        catch (Exception ex) { saveError = ex.Message; }
+        finally { isSaving = false; }
+    }
+
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguageChanged;
+}

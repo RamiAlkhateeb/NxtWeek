@@ -229,7 +229,7 @@ html, body { background: var(--nxt-page); }
     height: calc(var(--mk-nav-h) + env(safe-area-inset-bottom));
     padding: 0 6px env(safe-area-inset-bottom);
     box-sizing: border-box;
-    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center;
     background: var(--nxt-card);
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -1px 0 var(--nxt-border), 0 -8px 24px rgba(0,0,0,.04);
@@ -689,3 +689,156 @@ html, body { background: var(--nxt-page); }
 .mk-details-card .mk-nut { padding-block: 12px; }
 .mk-meal-nut { padding: 6px 4px 2px; }
 .mk-ingredients-sheet .mk-nut { margin-bottom: 4px; }
+
+/* ----- 3.0: touch targets (44 px) and wrapping for long German labels --------------- */
+.mk-page .mk-seg > a, .mk-page .mk-seg > button { min-height: 44px; height: auto; white-space: normal; text-align: center; line-height: 1.2; padding-block: 6px; }
+.mk-page .mk-chip { min-height: 44px; height: auto; }
+.mk-header-row.is-start { justify-content: flex-start; }
+.mk-header-row > .mk-icon-btn:first-child + .mk-title-block,
+.mk-header-row > .mk-icon-btn:first-child + .mk-ai-heading { flex: 1; }
+.mk-icon-btn.is-pink { background: var(--mk-accent-soft); color: var(--mk-accent-ink); }
+.mk-self-start { align-self: flex-start; }
+.mk-section-title { margin: 6px 0 0; font-size: 15px; font-weight: 800; }
+.mk-set-hint { margin: 0; font-size: 13px; color: var(--mk-muted); line-height: 1.45; }
+.mk-set-row.is-spread { justify-content: space-between; flex-wrap: wrap; }
+.mk-banner-copy { display: flex; flex-direction: column; gap: 2px; }
+.mk-banner-copy span { font-weight: 600; }
+.mk-banner-cancel { min-height: 44px; display: inline-flex; align-items: center; }
+.mk-num { font-variant-numeric: tabular-nums; }
+
+.mk-tag { display: inline-flex; align-items: center; min-height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--nxt-inset); color: var(--mk-muted); white-space: nowrap; }
+.mk-tag.is-warn { background: var(--mk-warn-soft); color: var(--mk-warn-ink); }
+.mk-tag.is-ok { background: var(--mk-ok-soft); color: var(--mk-ok-ink); }
+.mk-tag.is-accent { background: var(--mk-accent-soft); color: var(--mk-accent-ink); }
+
+/* day strip */
+.mk-dstrip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.mk-dchip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 7px; border: 0; border-radius: 16px; background: var(--nxt-inset); color: var(--nxt-text); font: inherit; min-height: 60px; min-width: 0; }
+.mk-dchip-name { font-size: 11px; color: var(--mk-muted); font-weight: 600; }
+.mk-dchip-num { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mk-dchip.is-today { box-shadow: inset 0 0 0 2px var(--nxt-accent); }
+.mk-dchip.is-on { background: var(--nxt-ink); color: var(--nxt-on-ink); }
+.mk-dchip.is-on .mk-dchip-name { color: inherit; opacity: .8; }
+.mk-dchip-dot { width: 6px; height: 6px; border-radius: 50%; box-sizing: border-box; }
+.mk-dchip-dot.is-none { border: 1.5px solid var(--mk-muted); opacity: .5; }
+.mk-dchip-dot.is-planned { background: var(--nxt-accent); opacity: .45; }
+.mk-dchip-dot.is-partlyeaten { background: linear-gradient(90deg, var(--mk-ok) 50%, var(--nxt-accent) 50%); }
+.mk-dchip-dot.is-alleaten { background: var(--mk-ok); }
+
+/* targets panel */
+.mk-tp { margin: 12px 16px 0; background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: var(--mk-radius-card); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.mk-tp-top { display: flex; align-items: center; gap: 12px; }
+.mk-ringw { position: relative; width: 92px; height: 92px; flex: none; }
+.mk-ring { transform: rotate(-90deg); }
+.mk-ringw-mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.1; }
+.mk-ringw-mid b { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mk-ringw-mid span { font-size: 11px; color: var(--mk-muted); font-weight: 600; max-width: 70px; }
+.mk-tp-macros { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.mk-tp-protein { display: flex; flex-direction: column; gap: 4px; }
+.mk-tp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 13px; }
+.mk-tp-pro-label { color: var(--mk-pro-ink); font-weight: 700; }
+.mk-tp-small { font-size: 12px; color: var(--mk-muted); font-variant-numeric: tabular-nums; }
+.mk-tp-thin { display: flex; gap: 6px; }
+.mk-tp-thin > * { flex: 1; }
+.mk-tp-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mk-dtype { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--nxt-inset); color: var(--nxt-text); font: inherit; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.mk-dtype svg { width: 16px; height: 16px; }
+.mk-bar { position: relative; height: 8px; border-radius: 4px; background: var(--nxt-inset); overflow: hidden; }
+.mk-bar.is-thin { height: 5px; }
+.mk-bar i { position: absolute; inset-block: 0; inset-inline-start: 0; border-radius: 4px; display: block; }
+.mk-bar i.is-planned { opacity: .32; }
+.mk-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--mk-muted); }
+.mk-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline-end: 4px; }
+.mk-legend i.is-open { background: var(--nxt-inset); box-shadow: inset 0 0 0 1px var(--nxt-border); }
+
+/* the slim bar that takes over once the panel scrolls away */
+.mk-tp-sticky { position: sticky; top: 0; z-index: 25; height: 0; overflow: visible; }
+.mk-tp-sticky .mk-tp { margin: 0; border-radius: 0 0 20px 20px; border-top: 0; flex-direction: row; gap: 12px; transform: translateY(-110%); opacity: 0; visibility: hidden; pointer-events: none; transition: transform .2s ease, opacity .2s ease, visibility 0s linear .2s; box-shadow: var(--mk-shadow-hero); }
+.mk-tp-sticky.is-visible .mk-tp { transform: none; opacity: 1; visibility: visible; pointer-events: auto; transition: transform .2s ease, opacity .2s ease; }
+.mk-tp-cpart { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { .mk-tp-sticky .mk-tp { transition: none; } }
+
+/* slots */
+.mk-slots { gap: 10px; }
+.mk-slot { background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: var(--mk-radius-row); padding: 8px; padding-inline-start: 10px; display: flex; align-items: center; gap: 8px; min-height: 84px; }
+.mk-slot.is-eaten { background: var(--nxt-inset); border-color: transparent; }
+.mk-slot.is-eaten .mk-slot-tile { opacity: .6; }
+.mk-slot.is-eaten .mk-slot-name { color: var(--mk-muted); }
+.mk-slot.is-eaten .mk-nchip:not(.is-protein) { background: var(--nxt-card); }
+.mk-slot.is-empty { border: 1.5px dashed var(--nxt-border); background: transparent; align-items: flex-start; padding: 10px 12px; }
+.mk-slot-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; text-align: start; }
+.mk-slot-tile { width: 52px; height: 52px; border-radius: 15px; flex: none; display: grid; place-items: center; overflow: hidden; }
+.mk-slot-tile img { width: 82%; height: 82%; object-fit: contain; }
+.mk-slot-tile.is-quick { background: var(--mk-accent-soft); color: var(--mk-accent-ink); }
+.mk-slot-tile.is-quick svg { width: 24px; height: 24px; }
+.mk-slot-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.mk-slot-label { font-size: 12px; color: var(--mk-muted); font-weight: 700; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.mk-slot-name { font-size: 15px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.mk-slot-hint { font-size: 13px; color: var(--mk-muted); }
+.mk-slot-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mk-mini { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--nxt-inset); color: var(--nxt-text); font: inherit; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.mk-mini.is-ink { background: var(--nxt-ink); color: var(--nxt-on-ink); }
+.mk-mini svg { width: 16px; height: 16px; }
+.mk-eat { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 2px solid var(--nxt-border); background: transparent; color: transparent; display: grid; place-items: center; }
+.mk-eat.is-on { background: var(--mk-ok); border-color: var(--mk-ok); color: #fff; }
+:root[data-theme="dark"] .mk-eat.is-on { color: #000; }
+.mk-eat svg { width: 20px; height: 20px; }
+.mk-slot:not(.is-eaten) .mk-eat:hover { color: var(--mk-muted); }
+.mk-slot-footnote { margin: 0; text-align: center; font-size: 12px; color: var(--mk-muted); }
+.mk-gauge-card { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+.mk-gauge { position: relative; width: 54px; height: 8px; border-radius: 4px; background: var(--nxt-inset); flex: none; display: inline-block; }
+.mk-slot.is-eaten .mk-gauge { background: var(--nxt-card); }
+.mk-gauge-zone { position: absolute; inset-block: 0; inset-inline-start: 60%; width: 20%; background: var(--mk-ok-soft); box-shadow: inset 0 0 0 1px var(--mk-ok); border-radius: 3px; }
+.mk-gauge-dot { position: absolute; top: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--nxt-card); margin-inline-start: -6px; box-sizing: border-box; }
+.mk-gauge-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+
+/* sheets */
+.mk-sheet-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mk-sheet-group { display: flex; flex-direction: column; gap: 8px; }
+.mk-sheet-row-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.mk-sheet-row-title { font-weight: 700; }
+.mk-sheet-row-hint { font-size: 12.5px; color: var(--mk-muted); }
+.mk-stepper { display: inline-flex; align-items: center; background: var(--nxt-inset); border-radius: 999px; min-height: 44px; }
+.mk-stepper button { width: 44px; height: 44px; border: 0; background: transparent; border-radius: 50%; font: inherit; font-size: 20px; font-weight: 700; color: var(--nxt-text); }
+.mk-stepper button:disabled { opacity: .35; }
+.mk-stepper b { min-width: 38px; text-align: center; font-size: 15px; font-variant-numeric: tabular-nums; }
+.mk-switch { width: 52px; height: 32px; flex: none; border: 0; border-radius: 999px; background: var(--nxt-border); position: relative; padding: 0; margin-block: 6px; }
+.mk-switch i { position: absolute; top: 3px; inset-inline-start: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: inset-inline-start .15s ease; }
+.mk-switch.is-on { background: var(--mk-ok); }
+.mk-switch.is-on i { inset-inline-start: 23px; }
+@media (prefers-reduced-motion: reduce) { .mk-switch i { transition: none; } }
+.mk-sign-sheet { align-items: stretch; }
+.mk-sign-lock { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--mk-accent-soft); color: var(--mk-accent-ink); }
+.mk-sign-lock svg { width: 26px; height: 26px; }
+.mk-checklist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.mk-checklist li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+.mk-checklist li::before { content: "✓"; color: var(--mk-ok-ink); font-weight: 800; }
+
+/* meal details: one button per empty slot */
+.mk-cta-slots { display: flex; flex-wrap: wrap; gap: 8px; background: var(--nxt-card); padding: 8px; border-radius: 24px; box-shadow: var(--mk-shadow-hero); }
+.mk-cta-slots .mk-btn { flex: 1 1 auto; min-height: 48px; height: auto; white-space: normal; }
+.mk-cta-note { background: var(--nxt-card); padding: 12px 16px; border-radius: 20px; text-align: center; box-shadow: var(--mk-shadow-hero); }
+
+/* settings and profile */
+.mk-set-profile { flex-direction: row; align-items: center; gap: 12px; text-decoration: none; color: var(--nxt-text); }
+.mk-set-profile-icon { width: 44px; height: 44px; border-radius: 14px; flex: none; display: grid; place-items: center; background: var(--mk-accent-soft); color: var(--mk-accent-ink); }
+.mk-set-profile svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mk-set-profile .mk-chev { color: var(--mk-muted); }
+.mk-set-link-copy .mk-nchips { margin-top: 4px; }
+.mk-set-link-copy .mk-nchip { font-size: 12px; color: var(--nxt-text); }
+.mk-set-link-copy .mk-nchip.is-protein { color: var(--mk-pro-ink); }
+.mk-nut-form.is-three { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.mk-time { width: 132px; flex: none; text-align: center; }
+.mk-day-toggle { min-width: 48px; justify-content: center; }
+.mk-calc { gap: 2px; }
+.mk-calc-row { display: flex; justify-content: space-between; gap: 12px; min-height: 32px; align-items: center; font-size: 14px; }
+.mk-calc-row span { color: var(--mk-muted); }
+.mk-calc-row b { font-variant-numeric: tabular-nums; }
+.mk-profile .mk-set-card h2 { font-size: 16px; }
+.nxt-sheet:focus, .nxt-sheet:focus-visible { outline: none; }
+
+/* Sheets render outside .mk-page, so their outline icons need the same stroke style. */
+.nxt-sheet svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+/* Three tabs leave room for whole labels; long German ones wrap instead of being cut off. */
+.mk-nav-item .mk-nav-label { white-space: normal; overflow: visible; text-overflow: clip; text-align: center; overflow-wrap: anywhere; }

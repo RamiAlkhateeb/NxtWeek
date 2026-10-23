@@ -1,0 +1,31 @@
+@* Calories as a ring: solid arc for eaten, faded arc for planned. Drawn the same way in every
+   language (charts are not mirrored). *@
+@{
+    const double r = 38;
+    var c = 2 * Math.PI * r;
+    var eatenFraction = Target > 0 ? Math.Min(1, Eaten / Target) : 0;
+    var plannedFraction = Target > 0 ? Math.Min(1 - eatenFraction, Planned / Target) : 0;
+}
+<svg class="mk-ring" width="@Size" height="@Size" viewBox="0 0 92 92" aria-hidden="true">
+    <circle cx="46" cy="46" r="38" fill="none" stroke="var(--nxt-inset)" stroke-width="9" />
+    @* A zero-length arc with round caps would still draw a dot, so empty arcs are left out. *@
+    @if (plannedFraction > 0)
+    {
+        <circle cx="46" cy="46" r="38" fill="none" stroke="var(--mk-kc)" stroke-opacity=".32" stroke-width="9" stroke-linecap="round"
+                stroke-dasharray="@F(plannedFraction * c) @F(c)" stroke-dashoffset="@F(-eatenFraction * c)" />
+    }
+    @if (eatenFraction > 0)
+    {
+        <circle cx="46" cy="46" r="38" fill="none" stroke="var(--mk-kc)" stroke-width="9" stroke-linecap="round"
+                stroke-dasharray="@F(eatenFraction * c) @F(c)" />
+    }
+</svg>
+
+@code {
+    [Parameter] public double Eaten { get; set; }
+    [Parameter] public double Planned { get; set; }
+    [Parameter] public double Target { get; set; }
+    [Parameter] public int Size { get; set; } = 92;
+
+    private static string F(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}

@@ -1,31 +1,30 @@
 using MealPlanner.Shared.Models;
+using MealPlanner.Shared.Nutrition;
 
 namespace MealPlanner.Shared.Services;
 
-/// <summary>Puts a catalog meal on a day of the user's plan (used by the Meals grid and the meal details page).</summary>
+/// <summary>Puts a catalog meal into a slot of a day (Meals grid, meal details, assistant, Surprise week).</summary>
 public interface IMealAssignService
 {
-    Task AssignAsync(string uid, DateOnly date, MealCatalogItem meal);
+    /// <param name="slot">The slot to fill; when null, the first empty slot the meal suits.</param>
+    /// <returns>The slot the meal went into.</returns>
+    Task<MealSlot> AssignAsync(string uid, DateOnly date, MealCatalogItem meal, MealSlot? slot = null);
 }
 
-public sealed class MealAssignService(IUserService users, IMealCacheService cache) : IMealAssignService
+public sealed class MealAssignService(IDayPlanService plan, INutritionStore store) : IMealAssignService
 {
-    public async Task AssignAsync(string uid, DateOnly date, MealCatalogItem meal)
+    public async Task<MealSlot> AssignAsync(string uid, DateOnly date, MealCatalogItem meal, MealSlot? slot = null)
     {
-        await users.AssignMealToDateAsync(uid, date, meal.Id);
+        var target = slot ?? await PickSlotAsync(uid, date, meal);
+        await plan.SetEntryAsync(uid, date, target, new SlotEntry { MealId = meal.Id });
+        return target;
+    }
 
-        // Keep the read-through week cache in step so the Week page never flashes the old meal.
-        var cached = await cache.GetCachedWeekAsync();
-        if (cached is null) return;
-        var id = date.ToString("yyyy-MM-dd");
-        cached.RemoveAll(m => m.Id == id);
-        cached.Add(new Meal
-        {
-            Id = id, Date = date, DayName = date.DayOfWeek.ToString(),
-            Name = meal.Name, MealId = meal.Id, IsFavorite = false,
-            SideDishes = meal.SideDishes, Ingredients = meal.Ingredients,
-            MealType = meal.MealType, Language = meal.Language
-        });
-        await cache.SetCachedWeekAsync(cached);
+    private async Task<MealSlot> PickSlotAsync(string uid, DateOnly date, MealCatalogItem meal)
+    {
+        var profile = await store.GetProfileAsync(uid) ?? new NutritionProfile();
+        var days = await plan.GetDaysAsync(uid, date, date);
+        days.TryGetValue(date, out var day);
+        return SlotPicker.FirstEmptyFor(day, DayMath.TypeOf(day, date, profile), profile.MealTimes, meal);
     }
 }

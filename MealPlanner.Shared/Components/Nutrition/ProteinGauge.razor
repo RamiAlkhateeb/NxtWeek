@@ -1,0 +1,16 @@
+@inject ILocalizationService Loc
+
+@* Protein for one meal on a 0–50 g scale with the 30–40 g aim marked. The scale reads
+   left to right in every language, so it is never mirrored. *@
+@{
+    var zone = DayStatus.ZoneFor(Protein);
+    var colour = zone switch { ProteinZone.Aim => "var(--mk-ok)", ProteinZone.Low => "var(--mk-warn)", _ => "var(--mk-pro)" };
+}
+<span class="mk-gauge" dir="ltr" role="img" aria-label="@Loc.T("nut_gauge_value", Loc.Num(Protein))">
+    <span class="mk-gauge-zone"></span>
+    <span class="mk-gauge-dot" style="inset-inline-start:@DayStatus.GaugePercent(Protein).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%;background:@colour"></span>
+</span>
+
+@code {
+    [Parameter] public double Protein { get; set; }
+}

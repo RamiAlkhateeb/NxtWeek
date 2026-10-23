@@ -12,9 +12,12 @@
 
 <div class="mk-page mk-friends" dir="@Loc.Direction">
     <header class="mk-header">
-        <div class="mk-title-block">
-            <h1 class="mk-title">@Loc["friends_title"]</h1>
-            <p class="mk-subtitle">@Loc["friends_subtitle"]</p>
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/settings" />
+            <div class="mk-title-block">
+                <h1 class="mk-title">@Loc["friends_title"]</h1>
+                <p class="mk-subtitle">@Loc["friends_subtitle"]</p>
+            </div>
         </div>
 
         @if (!isLoading && hasUsername)
