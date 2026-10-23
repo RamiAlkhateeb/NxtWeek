@@ -23,7 +23,7 @@ else
             <div class="mk-ringw">
                 <MacroRing Eaten="e.Kcal" Planned="pl.Kcal" Target="t.Kcal" />
                 <div class="mk-ringw-mid">
-                    <b>@(over ? "+" + Loc.Num(-leftKcal) : Loc.Num(leftKcal))</b>
+                    <b>@(over ? NutFormat.Isolate("+" + Loc.Num(-leftKcal)) : Loc.Num(leftKcal))</b>
                     <span>@Loc["nut_kcal"] @(over ? Loc["nut_over"] : Loc["nut_left"])</span>
                 </div>
             </div>

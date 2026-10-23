@@ -1,0 +1,112 @@
+@page "/progress/log"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject INutritionStore NutritionStore
+@inject NavigationManager Nav
+@inject ILocalizationService Loc
+@inject ToastService Toasts
+@implements IDisposable
+
+@* Today's weight and waist. Saving needs an account; guests are asked to sign in first. *@
+<div class="mk-page mk-log" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/progress" />
+            <div class="mk-title-block"><h1 class="mk-title">@Loc["nut_log_title"]</h1></div>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else
+    {
+        <main class="mk-stack">
+            <p class="mk-subtitle">@Loc.FormatDayDate(Today)@if (lastKg is { } last) { <text> · @Loc.T("nut_last", Loc.Dec1(last))</text> }</p>
+            @Stepper(Loc["nut_weight"], Loc["nut_kg"], kg, 0.1, v => kg = Math.Clamp(v, 30, 300))
+            @Stepper(Loc["nut_waist"], Loc["nut_cm"], waistCm, 0.5, v => waistCm = Math.Clamp(v, 40, 200))
+
+            @if (!string.IsNullOrEmpty(error)) { <div class="mk-notice is-error" role="alert">@error</div> }
+            <button class="mk-btn is-lg is-block" disabled="@isSaving" @onclick="SaveAsync">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["save"]
+            </button>
+            @if (isGuest)
+            {
+                <div class="mk-note">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    <span>@Loc["nut_sign_title"]</span>
+                </div>
+            }
+        </main>
+    }
+</div>
+
+<SignInExplainerSheet IsOpen="showSignIn" ReturnPath="/progress/log" OnDismiss="() => showSignIn = false" />
+
+@code {
+    private double kg = 69, waistCm = 85;
+    private double? lastKg;
+    private string uid = "";
+    private bool isGuest = true, isLoading = true, isSaving, showSignIn;
+    private string error = "";
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguageChanged;
+        try
+        {
+            var user = await Auth.GetCurrentUserAsync();
+            uid = user?.Uid ?? "";
+            isGuest = user is null || user.IsGuest;
+            var profile = string.IsNullOrEmpty(uid) ? null : await NutritionStore.GetProfileAsync(uid);
+            kg = profile?.WeightKg ?? kg;
+            if (!isGuest)
+            {
+                // Start from the last values, so a normal morning is one or two taps.
+                var logs = await NutritionStore.GetBodyLogsAsync(uid);
+                lastKg = logs.LastOrDefault(l => l.Kg is not null)?.Kg;
+                kg = lastKg ?? kg;
+                waistCm = logs.LastOrDefault(l => l.WaistCm is not null)?.WaistCm ?? waistCm;
+            }
+        }
+        catch { /* the steppers still work from the defaults */ }
+        finally { isLoading = false; }
+    }
+
+    private RenderFragment Stepper(string label, string unit, double value, double step, Action<double> set) =>
+        @<section class="mk-set-card mk-log-card">
+            <span class="mk-sheet-row-title">@label</span>
+            <div class="mk-log-stepper">
+                <button type="button" aria-label="@Loc.T("nut_decrease", label)" @onclick="() => set(Math.Round((value - step) * 10) / 10)">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+                </button>
+                <b aria-live="polite">@Loc.Dec1(value)<small>&nbsp;@unit</small></b>
+                <button type="button" aria-label="@Loc.T("nut_increase", label)" @onclick="() => set(Math.Round((value + step) * 10) / 10)">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            </div>
+        </section>;
+
+    private async Task SaveAsync()
+    {
+        // Health data needs an account: nothing is written for a guest.
+        if (isGuest) { showSignIn = true; return; }
+        isSaving = true;
+        error = "";
+        try
+        {
+            await NutritionStore.SaveBodyLogAsync(uid, new BodyLog { Date = Today, Kg = kg, WaistCm = waistCm });
+            Toasts.Show(Loc["nut_saved"]);
+            Nav.NavigateTo("/progress");
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { isSaving = false; }
+    }
+
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguageChanged;
+}

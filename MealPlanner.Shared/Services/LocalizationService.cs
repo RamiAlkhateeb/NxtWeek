@@ -787,6 +787,63 @@ public class LocalizationService : ILocalizationService
         ["nut_day_month"] = new() { ["ar"] = "{0} {1}", ["en"] = "{0} {1}", ["de"] = "{0}. {1}" },
 
         // Meal details: every slot of the chosen day is filled
-        ["nut_nothing_open"] = new() { ["ar"] = "كل الخانات ممتلئة، لا يوجد ما يُخطَّط.", ["en"] = "Every slot is already filled, so there is nothing to plan.", ["de"] = "Alle Slots sind schon belegt, es gibt nichts zu planen." }
+        ["nut_nothing_open"] = new() { ["ar"] = "كل الخانات ممتلئة، لا يوجد ما يُخطَّط.", ["en"] = "Every slot is already filled, so there is nothing to plan.", ["de"] = "Alle Slots sind schon belegt, es gibt nichts zu planen." },
+
+        // Progress: weight, waist, weekly check and weekly summary (3.0)
+        ["nut_progress"] = new() { ["ar"] = "التقدم", ["en"] = "Progress", ["de"] = "Fortschritt" },
+        ["nut_weight_tab"] = new() { ["ar"] = "الوزن", ["en"] = "Weight", ["de"] = "Gewicht" },
+        ["nut_summary_tab"] = new() { ["ar"] = "ملخص الأسبوع", ["en"] = "Weekly summary", ["de"] = "Wochenübersicht" },
+        ["nut_log_today"] = new() { ["ar"] = "سجّل اليوم", ["en"] = "Log today", ["de"] = "Heute eintragen" },
+        ["nut_waist"] = new() { ["ar"] = "الخصر", ["en"] = "Waist", ["de"] = "Taille" },
+        ["nut_avg7"] = new() { ["ar"] = "متوسط 7 أيام", ["en"] = "7-day average", ["de"] = "7-Tage-Schnitt" },
+        ["nut_raw"] = new() { ["ar"] = "القياسات اليومية", ["en"] = "Daily entries", ["de"] = "Tageswerte" },
+        ["nut_plan_line"] = new() { ["ar"] = "المخطط", ["en"] = "Plan", ["de"] = "Plan" },
+        ["nut_range_2"] = new() { ["ar"] = "أسبوعان", ["en"] = "2 weeks", ["de"] = "2 Wochen" },
+        ["nut_range_4"] = new() { ["ar"] = "4 أسابيع", ["en"] = "4 weeks", ["de"] = "4 Wochen" },
+        ["nut_check_on_title"] = new() { ["ar"] = "على المسار الصحيح", ["en"] = "On track", ["de"] = "Im Plan" },
+        // {0} = kg lost by the 7-day average this week
+        ["nut_check_on_body"] = new() { ["ar"] = "انخفض متوسط 7 أيام بمقدار {0} كغ هذا الأسبوع. المخطط 0.2 إلى 0.5 كغ.", ["en"] = "Your 7-day average fell {0} kg this week. The plan is 0.2 to 0.5 kg.", ["de"] = "Dein 7-Tage-Schnitt ist diese Woche um {0} kg gesunken. Geplant sind 0,2 bis 0,5 kg." },
+        ["nut_check_slow_title"] = new() { ["ar"] = "أبطأ من المخطط", ["en"] = "Slower than planned", ["de"] = "Langsamer als geplant" },
+        // {0} = kg lost this week
+        ["nut_check_slow_body"] = new() { ["ar"] = "النزول {0} كغ فقط مقابل 0.2 إلى 0.5 كغ المخطط. قلّل 150 سعرة أو زد الخطوات.", ["en"] = "Down {0} kg against a plan of 0.2 to 0.5 kg. Reduce by 150 kcal or add steps.", ["de"] = "{0} kg weniger, geplant sind 0,2 bis 0,5 kg. Reduziere um 150 kcal oder geh mehr." },
+        ["nut_check_fast_title"] = new() { ["ar"] = "أسرع من المخطط", ["en"] = "Faster than planned", ["de"] = "Schneller als geplant" },
+        // {0} = kg lost this week
+        ["nut_check_fast_body"] = new() { ["ar"] = "النزول {0} كغ مقابل 0.2 إلى 0.5 كغ المخطط. أضف 150 سعرة.", ["en"] = "Down {0} kg against a plan of 0.2 to 0.5 kg. Add 150 kcal.", ["de"] = "{0} kg weniger, geplant sind 0,2 bis 0,5 kg. Füge 150 kcal hinzu." },
+        ["nut_reduce_150"] = new() { ["ar"] = "قلّل 150 سعرة", ["en"] = "Reduce by 150 kcal", ["de"] = "150 kcal reduzieren" },
+        ["nut_add_150"] = new() { ["ar"] = "أضف 150 سعرة", ["en"] = "Add 150 kcal", ["de"] = "150 kcal hinzufügen" },
+        // {0} = new daily kcal target
+        ["nut_adjust_done"] = new() { ["ar"] = "الهدف اليومي الآن {0} سعرة", ["en"] = "Daily target is now {0} kcal", ["de"] = "Tagesziel jetzt {0} kcal" },
+        ["nut_not_enough_title"] = new() { ["ar"] = "لا توجد بيانات كافية بعد", ["en"] = "Not enough data yet", ["de"] = "Noch zu wenig Daten" },
+        // {0} = entries so far, {1} = entries still needed
+        ["nut_not_enough_body"] = new() { ["ar"] = "{0} من 7 قياسات. سجّل {1} أيام أخرى لعرض اتجاه 7 أيام.", ["en"] = "{0} of 7 entries. Log {1} more days to see your 7-day trend.", ["de"] = "{0} von 7 Einträgen. Trage noch {1} Tage ein, dann siehst du deinen 7-Tage-Trend." },
+        ["nut_check_starts"] = new() { ["ar"] = "يبدأ الفحص الأسبوعي بعد 14 يوماً من القياسات.", ["en"] = "The weekly check starts after 14 days of entries.", ["de"] = "Der Wochencheck startet nach 14 Tagen mit Einträgen." },
+        ["nut_empty_title"] = new() { ["ar"] = "لا توجد قياسات بعد", ["en"] = "No measurements yet", ["de"] = "Noch keine Messwerte" },
+        ["nut_empty_body"] = new() { ["ar"] = "زِن نفسك كل صباح في الوقت نفسه. الاتجاه يحتاج إلى أسبوع تقريباً.", ["en"] = "Weigh yourself at the same time each morning. A trend needs about a week.", ["de"] = "Wiege dich jeden Morgen zur selben Zeit. Für einen Trend brauchst du etwa eine Woche." },
+        ["nut_first_entry"] = new() { ["ar"] = "سجّل أول وزن", ["en"] = "Log your first weight", ["de"] = "Erstes Gewicht eintragen" },
+        ["nut_log_title"] = new() { ["ar"] = "تسجيل القياسات", ["en"] = "Log measurements", ["de"] = "Messwerte eintragen" },
+        // {0} = last weight in kg
+        ["nut_last"] = new() { ["ar"] = "الأخير: {0} كغ", ["en"] = "Last: {0} kg", ["de"] = "Zuletzt: {0} kg" },
+        ["nut_avg_kcal"] = new() { ["ar"] = "متوسط السعرات", ["en"] = "Average calories", ["de"] = "Ø Kalorien" },
+        ["nut_avg_protein"] = new() { ["ar"] = "متوسط البروتين", ["en"] = "Average protein", ["de"] = "Ø Eiweiß" },
+        ["nut_days_on"] = new() { ["ar"] = "أيام ضمن 10% من الهدف", ["en"] = "Days within 10% of target", ["de"] = "Tage innerhalb von 10 % des Ziels" },
+        ["nut_weight_trend"] = new() { ["ar"] = "اتجاه الوزن", ["en"] = "Weight trend", ["de"] = "Gewichtstrend" },
+        // {0} = target value
+        ["nut_target"] = new() { ["ar"] = "الهدف {0}", ["en"] = "Target {0}", ["de"] = "Ziel {0}" },
+        ["nut_last_week"] = new() { ["ar"] = "الأسبوع الماضي", ["en"] = "Last week", ["de"] = "Letzte Woche" },
+        ["nut_this_week"] = new() { ["ar"] = "هذا الأسبوع حتى الآن", ["en"] = "This week so far", ["de"] = "Diese Woche bisher" },
+        ["nut_on_target"] = new() { ["ar"] = "ضمن الهدف", ["en"] = "On target", ["de"] = "Im Ziel" },
+        ["nut_under"] = new() { ["ar"] = "تحت", ["en"] = "Under", ["de"] = "Darunter" },
+        ["nut_change_week"] = new() { ["ar"] = "متوسط 7 أيام، التغيّر خلال الأسبوع", ["en"] = "7-day average, change over the week", ["de"] = "7-Tage-Schnitt, Änderung in der Woche" },
+        ["nut_trend_title"] = new() { ["ar"] = "التغيّر هذا الأسبوع", ["en"] = "Change this week", ["de"] = "Änderung diese Woche" },
+        // {0} = signed change in kg, e.g. "−0.3"
+        ["nut_trend_body"] = new() { ["ar"] = "تغيّر متوسط 7 أيام بمقدار {0} كغ هذا الأسبوع.", ["en"] = "Your 7-day average changed by {0} kg this week.", ["de"] = "Dein 7-Tage-Schnitt hat sich diese Woche um {0} kg verändert." },
+        // {0} = what is changed ("Weight", "Waist")
+        ["nut_decrease"] = new() { ["ar"] = "إنقاص {0}", ["en"] = "Decrease {0}", ["de"] = "{0} verringern" },
+        ["nut_increase"] = new() { ["ar"] = "زيادة {0}", ["en"] = "Increase {0}", ["de"] = "{0} erhöhen" },
+        // {0} = number of logged days, {1} = days in the period
+        ["nut_days_on_count"] = new() { ["ar"] = "{0} / {1}", ["en"] = "{0} / {1}", ["de"] = "{0} / {1}" },
+        ["nut_no_data"] = new() { ["ar"] = "لم يُسجَّل", ["en"] = "Not logged", ["de"] = "Nicht erfasst" },
+        // {0} = previous average, {1} = current average (kg)
+        ["nut_trend_from_to"] = new() { ["ar"] = "{0} ← {1} كغ", ["en"] = "{0} → {1} kg", ["de"] = "{0} → {1} kg" }
     };
 }

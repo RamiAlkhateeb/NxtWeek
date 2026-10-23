@@ -1,0 +1,234 @@
+@page "/progress"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject INutritionStore NutritionStore
+@inject IDayPlanService DayPlan
+@inject IMealCatalogService CatalogService
+@inject ILocalizationService Loc
+@inject ToastService Toasts
+@inject NavigationManager Nav
+@implements IDisposable
+
+@* Progress: weight and waist with the weekly check, and a weekly summary of what was eaten.
+   Body data is only read for signed-in accounts. *@
+<div class="mk-page mk-progress" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/" />
+            <div class="mk-title-block"><h1 class="mk-title">@Loc["nut_progress"]</h1></div>
+        </div>
+        <div class="mk-seg is-inset" role="tablist" aria-label="@Loc["nut_progress"]">
+            <button type="button" role="tab" aria-selected="@(tab == Tab.Weight ? "true" : "false")" class="@(tab == Tab.Weight ? "is-active" : "")" @onclick="() => tab = Tab.Weight">@Loc["nut_weight_tab"]</button>
+            <button type="button" role="tab" aria-selected="@(tab == Tab.Summary ? "true" : "false")" class="@(tab == Tab.Summary ? "is-active" : "")" @onclick="() => tab = Tab.Summary">@Loc["nut_summary_tab"]</button>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (loadError)
+    {
+        <div class="mk-stack">
+            <div class="mk-notice is-error" role="alert">@Loc["nut_load_error"]</div>
+            <button class="mk-btn is-block" @onclick="LoadAsync">@Loc["nut_retry"]</button>
+        </div>
+    }
+    else if (tab == Tab.Weight)
+    {
+        <main class="mk-stack">
+            @if (isGuest)
+            {
+                <div class="mk-wcard is-nd is-empty">
+                    <span class="mk-wcard-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+                    <b>@Loc["nut_sign_title"]</b>
+                    <span class="mk-subtitle">@Loc["nut_sign_body"]</span>
+                    <a class="mk-btn" href="signin?return=%2Fprogress">@Loc["nut_sign_in"]</a>
+                </div>
+            }
+            else
+            {
+                var check = WeightTrend.Check(logs, Today, profile.Goal);
+                @if (check.State != WeeklyCheckState.Empty)
+                {
+                    var now = WeightTrend.SevenDayAverage(logs, Today);
+                    var before = WeightTrend.SevenDayAverage(logs, Today.AddDays(-7));
+                    var lastKg = logs.LastOrDefault(l => l.Kg is not null)?.Kg;
+                    <div class="mk-stat-row">
+                        <StatTile Label="@Loc["nut_avg7"]" Value="@(now is { } n ? Loc.Dec1(n) : lastKg is { } l ? Loc.Dec1(l) : "–")" Unit="@Loc["nut_kg"]" />
+                        <StatTile Label="@Loc["nut_change_week"]" Value="@(now is { } a && before is { } b ? Signed(a - b) : "–")" Unit="@Loc["nut_kg"]"
+                                  Colour="@(now is not null && before is not null ? "var(--mk-ok-ink)" : "var(--mk-muted)")" />
+                    </div>
+
+                    <section class="mk-card mk-chart-card">
+                        <div class="mk-chart-controls">
+                            <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_weight_tab"]">
+                                <button type="button" class="@(waist ? "" : "is-active")" aria-pressed="@(waist ? "false" : "true")" @onclick="() => waist = false">@Loc["nut_weight_tab"]</button>
+                                <button type="button" class="@(waist ? "is-active" : "")" aria-pressed="@(waist ? "true" : "false")" @onclick="() => waist = true">@Loc["nut_waist"]</button>
+                            </div>
+                            <div class="mk-seg is-inset" role="group">
+                                <button type="button" class="@(range == 14 ? "is-active" : "")" aria-pressed="@(range == 14 ? "true" : "false")" @onclick="() => range = 14">@Loc["nut_range_2"]</button>
+                                <button type="button" class="@(range == 28 ? "is-active" : "")" aria-pressed="@(range == 28 ? "true" : "false")" @onclick="() => range = 28">@Loc["nut_range_4"]</button>
+                            </div>
+                        </div>
+                        @if (waist)
+                        {
+                            <WeightChart Points="WaistPoints" Today="Today" RangeDays="range" IsWaist="true" />
+                        }
+                        else
+                        {
+                            var avg = WeightTrend.AverageLine(logs, Today, range);
+                            <WeightChart Points="WeightPoints" Average="avg" Planned="WeightTrend.PlannedLine(avg, Today, profile.Goal)" Today="Today" RangeDays="range" />
+                        }
+                    </section>
+                }
+
+                <WeeklyCheckCard Check="check" OnAdjust="AdjustAsync" Busy="isAdjusting" />
+
+                @if (check.State != WeeklyCheckState.Empty)
+                {
+                    <a class="mk-btn is-lg is-block" href="progress/log"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["nut_log_today"]</a>
+                }
+            }
+        </main>
+    }
+    else
+    {
+        var lastWeek = sumLast;
+        var monday = lastWeek ? ThisMonday.AddDays(-7) : ThisMonday;
+        var s = WeeklySummary.For(monday, lastWeek ? ThisMonday : Today, days, profile, id => catalog.GetValueOrDefault(id)?.Nutrition);
+        var period = s.Days.Count(d => d != SummaryDay.Future);
+        <main class="mk-stack">
+            <div class="mk-seg is-inset" role="group">
+                <button type="button" class="@(sumLast ? "is-active" : "")" aria-pressed="@(sumLast ? "true" : "false")" @onclick="() => sumLast = true">@Loc["nut_last_week"]</button>
+                <button type="button" class="@(sumLast ? "" : "is-active")" aria-pressed="@(sumLast ? "false" : "true")" @onclick="() => sumLast = false">@Loc["nut_this_week"]</button>
+            </div>
+            <div class="mk-stat-row">
+                <StatTile Label="@Loc["nut_avg_kcal"]" Value="@(s.LoggedDays > 0 ? Loc.Num(s.AverageKcal) : "–")" Unit="@Loc["nut_kcal"]">
+                    @if (s.LoggedDays > 0)
+                    {
+                        <span class="mk-stat-sub">@Loc.T("nut_target", Loc.Num(s.AverageTargetKcal))</span>
+                        <MacroBar Eaten="s.AverageKcal" Target="Math.Max(s.AverageKcal, s.AverageTargetKcal)" Thin="true" />
+                    }
+                </StatTile>
+                <StatTile Label="@Loc["nut_avg_protein"]" Value="@(s.LoggedDays > 0 ? Loc.Num(s.AverageProtein) : "–")" Unit="@Loc["nut_g"]">
+                    <span class="mk-stat-sub">@Loc.T("nut_target", Loc.Num(s.ProteinTarget))</span>
+                    @if (s.LoggedDays > 0) { <MacroBar Eaten="s.AverageProtein" Target="Math.Max(s.AverageProtein, s.ProteinTarget)" Colour="var(--mk-pro)" Thin="true" /> }
+                </StatTile>
+            </div>
+
+            <section class="mk-card mk-sum-card">
+                <div class="mk-sum-head">
+                    <b>@Loc["nut_days_on"]</b>
+                    <b class="mk-sum-count">@Loc.Num(s.WithinTarget)<small> / @Loc.Num(period)</small></b>
+                </div>
+                <DayDotsStrip Days="s.Days" Monday="monday" />
+                <div class="mk-legend">
+                    <span><i class="is-within-key"></i>@Loc["nut_on_target"]</span>
+                    <span><i class="is-off-key"></i>@Loc["nut_over"] / @Loc["nut_under"]</span>
+                    <span><i class="is-open"></i>@Loc["nut_no_data"]</span>
+                </div>
+            </section>
+
+            <section class="mk-card mk-sum-card">
+                <b>@Loc["nut_weight_trend"]</b>
+                @{
+                    var a = isGuest ? null : WeightTrend.SevenDayAverage(logs, lastWeek ? Today.AddDays(-7) : Today);
+                    var b = isGuest ? null : WeightTrend.SevenDayAverage(logs, lastWeek ? Today.AddDays(-14) : Today.AddDays(-7));
+                    var entries = logs.Count(l => l.Kg is not null);
+                }
+                @if (a is not null && b is not null)
+                {
+                    <div class="mk-trend">
+                        <span class="mk-trend-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>
+                        <span class="mk-set-link-copy">
+                            <b class="mk-trend-value">@Signed(a.Value - b.Value) @Loc["nut_kg"]</b>
+                            <span>@Loc.T("nut_trend_from_to", Loc.Dec1(b.Value), Loc.Dec1(a.Value)) · @Loc["nut_avg7"]</span>
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="mk-note">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                        <span>@Loc.T("nut_not_enough_body", Loc.Num(entries), Loc.Num(Math.Max(0, WeightTrend.EntriesForCheck - entries)))</span>
+                    </div>
+                }
+            </section>
+        </main>
+    }
+</div>
+
+@code {
+    private enum Tab { Weight, Summary }
+
+    private Tab tab = Tab.Weight;
+    private bool waist;
+    private int range = 28;
+    private bool sumLast = true;
+    private bool isLoading = true, loadError, isGuest = true, isAdjusting;
+    private string uid = "";
+    private NutritionProfile profile = new();
+    private List<BodyLog> logs = new();
+    private Dictionary<DateOnly, PlanDay> days = new();
+    private Dictionary<string, MealCatalogItem> catalog = new();
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly ThisMonday => Today.AddDays(-(((int)Today.DayOfWeek + 6) % 7));
+    private IReadOnlyList<ChartPoint> WeightPoints => logs.Where(l => l.Kg is not null).Select(l => new ChartPoint(l.Date, l.Kg!.Value)).ToList();
+    private IReadOnlyList<ChartPoint> WaistPoints => logs.Where(l => l.WaistCm is not null).Select(l => new ChartPoint(l.Date, l.WaistCm!.Value)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguageChanged;
+        if (new Uri(Nav.Uri).Query.Contains("tab=summary", StringComparison.OrdinalIgnoreCase)) tab = Tab.Summary;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = false;
+        try
+        {
+            var user = await Auth.GetCurrentUserAsync();
+            uid = user?.Uid ?? "";
+            isGuest = user is null || user.IsGuest;
+            var profileTask = NutritionStore.GetProfileAsync(uid);
+            var daysTask = DayPlan.GetDaysAsync(uid, ThisMonday.AddDays(-7), ThisMonday.AddDays(6));
+            var catalogTask = CatalogService.GetAllMealsAsync();
+            // Health data stays unread for guests: there is none, and nothing is fetched.
+            var logsTask = isGuest ? Task.FromResult(new List<BodyLog>()) : NutritionStore.GetBodyLogsAsync(uid);
+            await Task.WhenAll(profileTask, daysTask, catalogTask, logsTask);
+            profile = await profileTask ?? new NutritionProfile();
+            days = await daysTask;
+            catalog = (await catalogTask).ToDictionary(m => m.Id);
+            logs = await logsTask;
+        }
+        catch { loadError = true; }
+        finally { isLoading = false; }
+    }
+
+    private async Task AdjustAsync(int delta)
+    {
+        isAdjusting = true;
+        try
+        {
+            profile.WeeklyAdjustKcal += delta;
+            await NutritionStore.SaveProfileAsync(uid, profile);
+            Toasts.Show(Loc.T("nut_adjust_done", Loc.Num(TargetCalculator.For(profile, DayType.Training).Kcal)));
+        }
+        catch (Exception ex)
+        {
+            profile.WeeklyAdjustKcal -= delta;
+            Toasts.Show(ex.Message, isError: true);
+        }
+        finally { isAdjusting = false; }
+    }
+
+    private string Signed(double v) => NutFormat.Isolate((v > 0 ? "+" : v < 0 ? "−" : "") + Loc.Dec1(Math.Abs(v)));
+
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguageChanged;
+}

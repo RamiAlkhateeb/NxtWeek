@@ -25,6 +25,12 @@ public static class NutFormat
     /// <summary>A value for an input field: no grouping, at most one decimal ("1950", "12,5").</summary>
     public static string Input(this ILocalizationService loc, double value) => value.ToString("0.#", NumberCulture(loc));
 
+    /// <summary>
+    /// Wraps a signed number ("−0.3", "+150") in left-to-right isolate marks, so in Arabic text the
+    /// sign stays in front of the number instead of jumping to its end.
+    /// </summary>
+    public static string Isolate(string signedNumber) => "\u2066" + signedNumber + "\u2069";
+
     /// <summary>Parses what a user typed, accepting either decimal separator. Empty or invalid is null.</summary>
     public static double? Parse(string? text)
     {

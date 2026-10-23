@@ -167,7 +167,7 @@
         if (TimeOnly.TryParse(value, out var t)) p.MealTimes[slot] = t.ToString("HH:mm");
     }
 
-    private string Signed(int kcal) => $"{(kcal > 0 ? "+" : kcal < 0 ? "−" : "")}{Loc.Num(Math.Abs(kcal))} {Loc["nut_kcal"]}";
+    private string Signed(int kcal) => $"{NutFormat.Isolate($"{(kcal > 0 ? "+" : kcal < 0 ? "−" : "")}{Loc.Num(Math.Abs(kcal))}")} {Loc["nut_kcal"]}";
 
     private RenderFragment CalcRow(string label, string value) =>
         @<div class="mk-calc-row"><span>@label</span><b>@value</b></div>;

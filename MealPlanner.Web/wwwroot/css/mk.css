@@ -842,3 +842,52 @@ html, body { background: var(--nxt-page); }
 .nxt-sheet svg.i { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 /* Three tabs leave room for whole labels; long German ones wrap instead of being cut off. */
 .mk-nav-item .mk-nav-label { white-space: normal; overflow: visible; text-overflow: clip; text-align: center; overflow-wrap: anywhere; }
+
+/* ----- 3.0 progress: weight, waist, weekly check and summary ---------------------- */
+.mk-stat-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+.mk-stat-row > * { flex: 1 1 140px; }
+.mk-stat { background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: var(--mk-radius-row); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mk-stat-label { font-size: 12px; font-weight: 700; color: var(--mk-muted); }
+.mk-stat-value { font-size: 26px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.mk-stat-value small { font-size: 13px; font-weight: 700; color: var(--mk-muted); }
+.mk-stat-sub { font-size: 12px; color: var(--mk-muted); font-variant-numeric: tabular-nums; }
+.mk-chart-card { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; overflow: visible; }
+.mk-chart-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.mk-chart-controls .mk-seg { flex: 1 1 150px; }
+.mk-chart { width: 100%; overflow: hidden; }
+.mk-chart svg { display: block; width: 100%; height: auto; }
+.mk-wcard { border-radius: var(--mk-radius-card); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.mk-wcard p { margin: 0; font-size: 14px; line-height: 1.45; }
+.mk-wcard-title { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; }
+.mk-wcard-title svg { width: 20px; height: 20px; flex: none; }
+.mk-wcard.is-on { background: var(--mk-ok-soft); color: var(--mk-ok-ink); }
+.mk-wcard.is-slow { background: var(--mk-warn-soft); color: var(--mk-warn-ink); }
+.mk-wcard.is-fast { background: var(--mk-pro-soft); color: var(--mk-pro-ink); }
+.mk-wcard.is-nd { background: var(--nxt-inset); color: var(--nxt-text); }
+.mk-wcard.is-empty { align-items: center; text-align: center; padding: 20px 16px; }
+.mk-wcard.is-empty b { font-size: 16px; }
+.mk-wcard-icon { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--nxt-card); color: var(--nxt-text); }
+.mk-wcard-icon svg { width: 28px; height: 28px; }
+.mk-ddots { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.mk-ddot { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--mk-muted); font-weight: 600; }
+.mk-ddot i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; box-sizing: border-box; }
+.mk-ddot i svg { width: 14px; height: 14px; }
+.mk-ddot i.is-within { background: var(--mk-ok-soft); color: var(--mk-ok-ink); box-shadow: inset 0 0 0 1px var(--mk-ok); }
+.mk-ddot i.is-off { background: var(--mk-warn-soft); color: var(--mk-warn-ink); box-shadow: inset 0 0 0 1px var(--mk-warn); }
+.mk-ddot i.is-nodata, .mk-ddot i.is-future { background: var(--nxt-inset); box-shadow: inset 0 0 0 1px var(--nxt-border); }
+.mk-legend i.is-within-key { background: var(--mk-ok-soft); box-shadow: inset 0 0 0 1px var(--mk-ok); }
+.mk-legend i.is-off-key { background: var(--mk-warn-soft); box-shadow: inset 0 0 0 1px var(--mk-warn); }
+.mk-sum-card { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.mk-sum-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.mk-sum-count { font-size: 20px; font-variant-numeric: tabular-nums; }
+.mk-sum-count small { font-size: 13px; color: var(--mk-muted); }
+.mk-trend { display: flex; align-items: center; gap: 12px; }
+.mk-trend-icon { width: 48px; height: 48px; flex: none; border-radius: 16px; display: grid; place-items: center; background: var(--mk-ok-soft); color: var(--mk-ok-ink); }
+.mk-trend-icon svg { width: 24px; height: 24px; }
+.mk-trend-value { font-size: 22px; font-variant-numeric: tabular-nums; color: var(--nxt-text); }
+.mk-log-card { align-items: center; gap: 12px; }
+.mk-log-stepper { display: flex; align-items: center; gap: 12px; }
+.mk-log-stepper button { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--nxt-inset); color: var(--nxt-text); display: grid; place-items: center; }
+.mk-log-stepper button svg { width: 22px; height: 22px; }
+.mk-log-stepper b { font-size: 40px; line-height: 1; min-width: 150px; text-align: center; font-variant-numeric: tabular-nums; }
+.mk-log-stepper b small { font-size: 16px; color: var(--mk-muted); }
