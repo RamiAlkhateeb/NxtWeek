@@ -48,46 +48,94 @@ public class FriendShareTests
         Assert.Equal(1, e.PrepBatches);
     }
 
-    /// <summary>Answers Firebase REST requests from a dictionary and records every URL asked for.</summary>
+    /// <summary>Answers Firebase REST requests from a dictionary and records every request (with its body).</summary>
     private sealed class FakeFirebase(Dictionary<string, string> responses) : HttpMessageHandler
     {
         public List<string> Requests { get; } = new();
+        public List<(string Method, string Path, string Body)> Writes { get; } = new();
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri!.PathAndQuery;
-            Requests.Add(path);
+            if (request.Method == HttpMethod.Get) Requests.Add(path);
+            else Writes.Add((request.Method.Method, path, request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken)));
             var body = responses.GetValueOrDefault(path, "null");
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
         }
     }
 
-    [Fact]
-    public async Task Reading_a_profile_never_downloads_plan_or_health_data()
+    // Firebase's real shallow answer: every child, text and booleans included, comes back as true.
+    private static Dictionary<string, string> Sara() => new()
     {
-        var fake = new FakeFirebase(new()
-        {
-            ["/users/sara.json?shallow=true"] = """{"uid":"sara","username":"sara","displayName":"sara","firstWeekAutoFilled":true,"shareNutrition":true,"friendIds":true,"days":true,"body":true,"nutritionProfile":true,"weeklyPlan":true,"shopping":true}""",
-            ["/users/sara/friendIds.json"] = """["omar"]"""
-        });
-        var service = new FirebaseUserService(new HttpClient(fake), new FirebaseOptions { DatabaseUrl = "https://db.example/" });
+        ["/users/sara.json?shallow=true"] = """{"uid":true,"username":true,"displayName":true,"authUid":true,"firstWeekAutoFilled":true,"shareNutrition":true,"friendIds":true,"days":true,"body":true,"nutritionProfile":true,"weeklyPlan":true,"shopping":true}""",
+        ["/users/sara/uid.json"] = "\"sara\"",
+        ["/users/sara/username.json"] = "\"sara\"",
+        ["/users/sara/displayName.json"] = "\"Sara\"",
+        ["/users/sara/authUid.json"] = "\"auth-1\"",
+        ["/users/sara/firstWeekAutoFilled.json"] = "false",
+        ["/users/sara/shareNutrition.json"] = "true",
+        ["/users/sara/friendIds.json"] = """["omar"]"""
+    };
 
-        var profile = await service.GetProfileAsync("sara");
+    private static FirebaseUserService Service(FakeFirebase fake) =>
+        new(new HttpClient(fake), new FirebaseOptions { DatabaseUrl = "https://db.example/" });
+
+    [Fact]
+    public async Task Reading_a_profile_gets_its_fields_but_never_plan_or_health_data()
+    {
+        var fake = new FakeFirebase(Sara());
+
+        var profile = await Service(fake).GetProfileAsync("sara");
 
         Assert.NotNull(profile);
         Assert.Equal("sara", profile!.Username);
-        Assert.True(profile.FirstWeekAutoFilled);
+        Assert.Equal("Sara", profile.DisplayName);
+        Assert.Equal("auth-1", profile.AuthUid);
+        Assert.False(profile.FirstWeekAutoFilled);
         Assert.True(profile.ShareNutrition);
         Assert.Equal(["omar"], profile.FriendIds);
-        Assert.Equal(["/users/sara.json?shallow=true", "/users/sara/friendIds.json"], fake.Requests);
+        Assert.DoesNotContain(fake.Requests, r => r.Contains("/days") || r.Contains("/body") || r.Contains("/nutritionProfile") || r.Contains("/weeklyPlan") || r.Contains("/shopping"));
+        Assert.DoesNotContain(fake.Requests, r => r == "/users/sara.json");
+    }
+
+    [Fact]
+    public async Task Recovery_finds_a_named_account()
+    {
+        var profile = await Service(new FakeFirebase(Sara())).GetNamedProfileAsync("Sara");
+
+        Assert.NotNull(profile);
+        Assert.Equal("sara", profile!.Uid);
     }
 
     [Fact]
     public async Task Missing_profile_is_null()
     {
-        var service = new FirebaseUserService(new HttpClient(new FakeFirebase(new())), new FirebaseOptions { DatabaseUrl = "https://db.example/" });
+        Assert.Null(await Service(new FakeFirebase(new())).GetProfileAsync("nobody"));
+        Assert.Null(await Service(new FakeFirebase(new())).GetNamedProfileAsync("nobody"));
+    }
 
-        Assert.Null(await service.GetProfileAsync("nobody"));
+    [Fact]
+    public async Task Saving_a_profile_never_blanks_identity_fields()
+    {
+        var fake = new FakeFirebase(new());
+
+        await Service(fake).CreateProfileAsync(new UserProfile { Uid = "sara", FirstWeekAutoFilled = true });
+
+        var (_, _, body) = Assert.Single(fake.Writes);
+        Assert.DoesNotContain("\"username\"", body);
+        Assert.DoesNotContain("\"displayName\"", body);
+        Assert.DoesNotContain("\"authUid\"", body);
+        Assert.DoesNotContain("\"syncEmail\"", body);
+        Assert.Contains("\"firstWeekAutoFilled\":true", body);
+    }
+
+    [Fact]
+    public async Task An_existing_account_has_data()
+    {
+        var service = Service(new FakeFirebase(Sara()));
+
+        Assert.True(await service.HasDataAsync("sara"));
+        Assert.False(await service.HasDataAsync("nobody"));
     }
 
     [Fact]
@@ -97,9 +145,8 @@ public class FriendShareTests
         {
             ["/usernames.json"] = """{"sara":{"userKey":"sara"},"omar":{"userKey":"omar"},"me":{"userKey":"me"},"stale":{"userKey":"other"}}"""
         });
-        var service = new FirebaseUserService(new HttpClient(fake), new FirebaseOptions { DatabaseUrl = "https://db.example/" });
 
-        var people = await service.GetRegisteredUsersAsync("me");
+        var people = await Service(fake).GetRegisteredUsersAsync("me");
 
         Assert.Equal(["omar", "sara"], people.Select(p => p.Username));
         Assert.Equal(["/usernames.json"], fake.Requests);
