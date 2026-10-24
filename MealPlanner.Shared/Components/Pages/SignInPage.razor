@@ -66,10 +66,15 @@
 
         try
         {
-            // Keep the data key the guest already plans under, so their week and lists stay theirs.
+            // An e-mail that already has an account opens that account. A new e-mail keeps the data key
+            // the guest already plans under, so their week and lists carry over to the account.
             var before = await Auth.GetCurrentUserAsync();
+            var account = EmailUtils.Sanitize(email);
+            var existing = await UserService.HasDataAsync(account);
             await Auth.SignInAsync(email);
-            if (before is { IsGuest: true } && !string.IsNullOrWhiteSpace(before.Uid))
+            if (existing)
+                await Auth.SetActiveDataKeyAsync(account);
+            else if (before is { IsGuest: true } && !string.IsNullOrWhiteSpace(before.Uid))
                 await Auth.SetActiveDataKeyAsync(before.Uid);
             Nav.NavigateTo(ReturnPath(), replace: true);
         }

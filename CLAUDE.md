@@ -78,10 +78,12 @@ Write day slots only through `IDayPlanService` (or `IMealAssignService`, which p
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
 Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.
 
-Another user's data is read narrowly: `GetProfileAsync` does a `?shallow=true` read plus the profile's own
-lists, so `days`, `body`, `nutritionProfile` and `shopping` never travel with a profile, and people are
+Another user's data is read narrowly: `GetProfileAsync` does a `?shallow=true` read (Firebase answers every
+child with `true`, so it only tells which fields exist) and then reads each profile field on its own, so `days`, `body`, `nutritionProfile` and `shopping` never travel with a profile, and people are
 discovered from the `usernames` node, never by reading `users`. Friends see your meals; calories and
-protein only when `users/{key}/shareNutrition` is on; weight never.
+protein only when `users/{key}/shareNutrition` is on; weight never. `CreateProfileAsync` never writes an
+empty username, display name or account link. E-mail sign-in opens `users/{sanitized e-mail}` when it
+exists; otherwise the guest's key is kept.
 
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.

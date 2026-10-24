@@ -30,39 +30,42 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         return profile;
     }
 
-    // Only these subtrees of users/{key} belong to the profile. The rest (days, weeklyPlan, shopping,
+    // Only these children of users/{key} belong to the profile. The rest (days, weeklyPlan, shopping,
     // nutritionProfile, body…) is never downloaded with it: friends' profiles are read here too, and
     // nobody's weight or plan detail should travel to another browser as a side effect.
-    private static readonly string[] ProfileSubtrees =
-        ["friendIds", "favoriteMealIds", "selectedMealIds", "incomingFriendRequests", "outgoingFriendRequestIds"];
+    private static readonly string[] ProfileFields =
+    [
+        "uid", "username", "authUid", "syncEmail", "displayName", "firstWeekAutoFilled", "shareNutrition",
+        "friendIds", "favoriteMealIds", "selectedMealIds", "incomingFriendRequests", "outgoingFriendRequestIds"
+    ];
 
     private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
 
     /// <summary>
-    /// Reads a profile without its large or private subtrees: a shallow read returns the scalar fields
-    /// as values and every subtree as <c>true</c>; only the profile's own lists are then fetched.
+    /// Reads a profile without its large or private subtrees. A shallow read only says which children
+    /// exist (Firebase truncates every child, text and booleans included, to <c>true</c>), so each
+    /// profile field that exists is then read on its own.
     /// </summary>
     private async Task<UserProfile?> ReadProfileAsync(string key)
     {
         var shallow = await http.GetFromJsonAsync<JsonObject>($"{Url($"users/{Key(key)}")}?shallow=true");
         if (shallow is null) return null;
-        var node = new JsonObject();
-        var wanted = new List<string>();
-        foreach (var (name, value) in shallow)
-        {
-            if (ProfileSubtrees.Contains(name)) wanted.Add(name);
-            else if (value is JsonValue v && !(v.TryGetValue<bool>(out var b) && b && IsSubtreeName(name))) node[name] = v.DeepClone();
-        }
-        var subtrees = await Task.WhenAll(wanted.Select(async name =>
+        var present = shallow.Select(child => child.Key)
+            .Where(name => ProfileFields.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        var fields = await Task.WhenAll(present.Select(async name =>
             (name, value: await http.GetFromJsonAsync<JsonNode>(Url($"users/{Key(key)}/{name}")))));
-        foreach (var (name, value) in subtrees) node[name] = value?.DeepClone();
+        var node = new JsonObject();
+        foreach (var (name, value) in fields) node[name] = value?.DeepClone();
         return node.Deserialize<UserProfile>(Web);
     }
 
-    // Boolean profile fields are real values in a shallow read; any other "true" is a subtree marker.
-    private static bool IsSubtreeName(string name) =>
-        !string.Equals(name, "firstWeekAutoFilled", StringComparison.OrdinalIgnoreCase) &&
-        !string.Equals(name, "shareNutrition", StringComparison.OrdinalIgnoreCase);
+    public async Task<bool> HasDataAsync(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        var shallow = await http.GetFromJsonAsync<JsonObject>($"{Url($"users/{Key(key)}")}?shallow=true");
+        return shallow is { Count: > 0 };
+    }
 
     public async Task SetShareNutritionAsync(string uid, bool share)
     {
@@ -81,16 +84,16 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         var patch = new Dictionary<string, object?>
         {
             ["uid"] = profile.Uid,
-            ["username"] = profile.Username,
-            ["authUid"] = profile.AuthUid,
-            ["syncEmail"] = profile.SyncEmail,
-            ["displayName"] = profile.DisplayName,
             ["firstWeekAutoFilled"] = profile.FirstWeekAutoFilled,
             ["selectedMealIds"] = profile.SelectedMealIds ?? new(),
             ["favoriteMealIds"] = profile.FavoriteMealIds ?? new(),
             ["friendIds"] = profile.FriendIds ?? new(),
             ["outgoingFriendRequestIds"] = profile.OutgoingFriendRequestIds ?? new()
         };
+        // Identity fields are only ever set, never cleared here: a profile read that came back without
+        // them must not be able to blank a stored username, display name or account link.
+        foreach (var (field, value) in new[] { ("username", profile.Username), ("authUid", profile.AuthUid), ("syncEmail", profile.SyncEmail), ("displayName", profile.DisplayName) })
+            if (!string.IsNullOrWhiteSpace(value)) patch[field] = value;
         if (profile.IncomingFriendRequests is { Count: > 0 })
             patch["incomingFriendRequests"] = profile.IncomingFriendRequests;
 
@@ -261,8 +264,9 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         JsonObject moved = rawNode;
         moved["uid"] = username;
         moved["username"] = username;
-        moved["authUid"] = current.AuthUid;
-        moved["syncEmail"] = current.SyncEmail;
+        // The raw node already carries the account link; only overwrite it with a real value.
+        if (!string.IsNullOrWhiteSpace(current.AuthUid)) moved["authUid"] = current.AuthUid;
+        if (!string.IsNullOrWhiteSpace(current.SyncEmail)) moved["syncEmail"] = current.SyncEmail;
         // Display name mirrors the username (a user no longer shows as "ضيف" guest).
         moved["displayName"] = username;
 

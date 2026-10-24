@@ -29,5 +29,7 @@ public interface IUserService
     Task DeclineFriendRequestAsync(string uid, string senderUid);
     /// <summary>Opt in or out of showing friends daily calories and protein.</summary>
     Task SetShareNutritionAsync(string uid, bool share);
+    /// <summary>True when something is stored under users/{key} (an existing account).</summary>
+    Task<bool> HasDataAsync(string key);
 
 }
