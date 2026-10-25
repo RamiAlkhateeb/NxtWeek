@@ -35,6 +35,10 @@ aisle key from `AisleService`) and `SuitableSlots`. Every dish exists once per l
 measured; the UI always shows the badge. When a seed row already exists (same id, or an older
 seed with the same name), seeding only fills nutrition, ingredient lines and slots it is missing.
 
+Built-in meals from before 3.0 get their estimated nutrition from `SeedMealNutrition.ById`
+(`MealPlanner.Shared/Services/SeedMealNutrition.cs`); a test fails if a built-in meal has no entry,
+so add one (per serving, macros adding up to the calories) whenever you add a meal to the list.
+
 ## Pictures
 
 `MealImageService` picks an SVG from `MealPlanner.Web/wwwroot/img/meals/`:
