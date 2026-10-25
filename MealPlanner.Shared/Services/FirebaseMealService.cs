@@ -132,7 +132,23 @@ public class FirebaseMealService : IMealService
 
     public async Task SeedAsync(List<Meal> meals)
     {
-        var catalogMeals = new List<MealCatalogItem>
+        var catalogMeals = BuiltInMeals();
+
+        // Built-in meals from before 3.0 get estimated nutrition; the seed backfill only fills rows without any.
+        foreach (var seed in catalogMeals) seed.Nutrition ??= SeedMealNutrition.For(seed.Id);
+        catalogMeals.AddRange(NutritionSeedMeals.All());
+        foreach (var catalogMeal in catalogMeals)
+        {
+            if (string.IsNullOrWhiteSpace(catalogMeal.Language))
+            {
+                catalogMeal.Language = "ar";
+            }
+        }
+        await _catalogService.SeedCatalogAsync(catalogMeals);
+    }
+
+    /// <summary>The built-in catalog meals (all languages), before the 3.0 nutrition meals are added.</summary>
+    public static List<MealCatalogItem> BuiltInMeals() => new List<MealCatalogItem>
 {
     new() { Id = "m1", Name = "رز وفاصوليا خضراء باللحمة", MealType = MealType.Meat, Ingredients = new() { "فاصوليا خضراء", "لحم غنم", "أرز", "ثوم", "كزبرة", "سمنة" }, SideDishes = new() { "مخلل", "بصل أخضر" } },
 
@@ -276,17 +292,6 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "de_m26", Name = "Brotzeit mit Obatzda", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "bread" }, Ingredients = new() { "Camembert", "Butter", "Zwiebeln", "Paprikapulver", "Brezn" }, SideDishes = new() { "Radieschen", "Gewürzgurken" } },
     new() { Id = "de_m27", Name = "Bunter Sommersalat mit Feta", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "salad" }, Ingredients = new() { "Blattsalat", "Tomaten", "Gurke", "Feta", "Olivenöl" }, SideDishes = new() { "Baguette" } }
 };
-
-        catalogMeals.AddRange(NutritionSeedMeals.All());
-        foreach (var catalogMeal in catalogMeals)
-        {
-            if (string.IsNullOrWhiteSpace(catalogMeal.Language))
-            {
-                catalogMeal.Language = "ar";
-            }
-        }
-        await _catalogService.SeedCatalogAsync(catalogMeals);
-    }
 
     public async Task<bool> IsSeededAsync()
     {

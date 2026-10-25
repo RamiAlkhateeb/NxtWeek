@@ -144,6 +144,9 @@ public class FirebaseMealCatalogService : IMealCatalogService
 
         using var response = await _http.PatchAsJsonAsync($"{_baseUrl}/{CatalogPath}/{row.Id}.json", patch);
         response.EnsureSuccessStatusCode();
+        // A later seed with the same name (an older row matched twice) must see this row as filled.
+        if (patch.ContainsKey("nutrition")) row.Nutrition = seed.Nutrition;
+        if (patch.ContainsKey("ingredientLines")) row.IngredientLines = seed.IngredientLines;
     }
 
     private class MealCatalogItemDto
