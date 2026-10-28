@@ -88,6 +88,14 @@ exists; otherwise the guest's key is kept.
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.
 
+## Meal details from Gemini
+
+When a meal is added (Meals "New meal", or the Assistant's Apply), `IMealDetailsService` asks Gemini with the
+user's own key for ingredient lines (amount per serving, unit, aisle, English camelCase `id` so shopping merges)
+and nutrition per serving. `MealDetailsMapper` (pure, tested) rejects implausible replies and only fills what the
+meal lacks, always as an estimate. Without a key the meal is added as before with a hint; a Gemini failure never
+loses the meal. "Estimate from ingredients" uses the same call (`GeminiNutritionEstimator`).
+
 ## Meal pictures
 
 No remote photography. `IMealImageService` resolves a flat SVG illustration from

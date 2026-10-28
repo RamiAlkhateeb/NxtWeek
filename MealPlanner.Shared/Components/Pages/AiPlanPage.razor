@@ -16,6 +16,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject INutritionStore NutritionStore
+@inject IMealDetailsService MealDetails
 
 @* The family AI assistant. It discusses first: concrete changes arrive as an editable proposal card and are only
    saved when the user taps "Apply". *@
@@ -406,6 +407,7 @@
             if (names.Count > 0) parts.Add(Loc.T("ai_applied_removed", string.Join(Loc["list_and"], names)));
         }
 
+        var detailsFailed = new List<string>();
         foreach (var meal in entry.Meals)
         {
             var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
@@ -417,6 +419,7 @@
                 CreatedBy = uid
             });
             await Assigner.AssignAsync(uid, meal.Date, catalogItem);
+            if (await MealDetails.FillMissingAsync(catalogItem) == MealDetailsResult.Failed) detailsFailed.Add(catalogItem.Name);
         }
         if (entry.Meals.Count > 0)
             parts.Insert(0, Loc.T("ai_applied_meals", string.Join(Loc["list_and"], entry.Meals.Select(m => Loc.T("ai_applied_meal_on", m.Name, Loc.GetDayName(m.Date.DayOfWeek))))));
@@ -430,6 +433,7 @@
         }
 
         if (notFound.Count > 0) parts.Add(Loc.T("ai_applied_not_found", string.Join(Loc["list_and"], notFound)));
+        if (detailsFailed.Count > 0) parts.Add(Loc.T("nut_details_failed_for", string.Join(Loc["list_and"], detailsFailed)));
 
         entry.State = ProposalState.Applied;
         entry.Summary = string.Join(Loc["ai_applied_sep"], parts);

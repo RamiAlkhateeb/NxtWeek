@@ -6,6 +6,8 @@
 @inject IAuthService Auth
 @inject IMealAssignService Assigner
 @inject IDayPlanService DayPlan
+@inject IMealDetailsService MealDetails
+@inject ToastService Toasts
 @inject INutritionStore NutritionStore
 @inject IMealService MealService
 @inject NavigationManager Nav
@@ -156,7 +158,18 @@
             }
         </div>
         @if (!string.IsNullOrWhiteSpace(newMealError)) { <div class="mk-notice is-error">@newMealError</div> }
-        <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(newMealName)" @onclick="CreateNewMeal">@Loc["meals_save_and_select"]</button>
+        <button class="mk-btn is-lg is-block" disabled="@(string.IsNullOrWhiteSpace(newMealName) || isFillingDetails)" @onclick="CreateNewMeal">
+            @if (isFillingDetails)
+            {
+                <span class="mk-busy-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span role="status">@Loc["nut_filling_details"]</span>
+            }
+            else
+            {
+                @Loc["meals_save_and_select"]
+            }
+        </button>
+        <p class="mk-set-hint">@Loc["nut_details_hint"]</p>
     </div>
 </NxtBottomSheet>
 
@@ -214,6 +227,7 @@
     private bool showNewMeal;
     private string newMealName = "";
     private string newMealError = "";
+    private bool isFillingDetails;
     private MealType newMealType = MealType.Vegetarian;
     private bool pageInitialized;
     private bool openedFromNavAction;
@@ -361,6 +375,16 @@
                 Language = Loc.CurrentLanguage,
                 CreatedBy = uid
             });
+            // The meal exists from here on; ingredients and nutrition from Gemini are a bonus on top.
+            if (MealDetailsMapper.NeedsDetails(created))
+            {
+                isFillingDetails = true;
+                StateHasChanged();
+                var result = await MealDetails.FillMissingAsync(created);
+                isFillingDetails = false;
+                if (result == MealDetailsResult.NoKey) Toasts.Show(Loc["nut_details_no_key"]);
+                else if (result == MealDetailsResult.Failed) Toasts.Show(Loc["nut_details_failed"], isError: true);
+            }
             allMeals = await CatalogService.GetAllMealsAsync();
             CloseNewMeal();
             await SelectMeal(created);

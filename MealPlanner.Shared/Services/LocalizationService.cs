@@ -898,6 +898,14 @@ public class LocalizationService : ILocalizationService
         ["nut_share_body"] = new() { ["ar"] = "يرى الأصدقاء الذين تقبلهم سعراتك وبروتينك اليومي. لا يُشارك الوزن أبداً. مغلق افتراضياً.", ["en"] = "Friends you accept can see your daily calories and protein. Weight is never shared. Off by default.", ["de"] = "Angenommene Freunde sehen deine täglichen Kalorien und dein Eiweiß. Das Gewicht wird nie geteilt. Standardmäßig aus." },
         ["nut_not_shared"] = new() { ["ar"] = "غير مشارَك", ["en"] = "Not shared", ["de"] = "Nicht geteilt" },
         ["nut_friend_week"] = new() { ["ar"] = "قيم الأسبوع", ["en"] = "Their week", ["de"] = "Werte der Woche" },
-        ["nut_shared_on"] = new() { ["ar"] = "المشاركة مفعّلة", ["en"] = "Sharing on", ["de"] = "Teilen ist an" }
+        ["nut_shared_on"] = new() { ["ar"] = "المشاركة مفعّلة", ["en"] = "Sharing on", ["de"] = "Teilen ist an" },
+
+        // Gemini fills ingredients and nutrition for new meals (3.0.3)
+        ["nut_filling_details"] = new() { ["ar"] = "جارٍ إضافة المكوّنات والقيم الغذائية…", ["en"] = "Adding ingredients and nutrition…", ["de"] = "Zutaten und Nährwerte werden ergänzt …" },
+        ["nut_details_hint"] = new() { ["ar"] = "يضيف Gemini المكوّنات والقيم الغذائية تلقائياً، ويمكنك تعديلها لاحقاً.", ["en"] = "Gemini adds the ingredients and nutrition automatically; you can edit them later.", ["de"] = "Gemini ergänzt Zutaten und Nährwerte automatisch; du kannst sie später ändern." },
+        ["nut_details_no_key"] = new() { ["ar"] = "أُضيفت الوجبة. أضف مفتاح Gemini في الإعدادات لتُملأ المكوّنات والقيم الغذائية تلقائياً.", ["en"] = "Meal added. Add your Gemini key in Settings to fill in ingredients and nutrition automatically.", ["de"] = "Gericht hinzugefügt. Hinterlege deinen Gemini-Schlüssel in den Einstellungen, damit Zutaten und Nährwerte automatisch ergänzt werden." },
+        ["nut_details_failed"] = new() { ["ar"] = "أُضيفت الوجبة، لكن تعذّر ملء المكوّنات والقيم الغذائية.", ["en"] = "Meal added, but its ingredients and nutrition couldn't be filled in.", ["de"] = "Gericht hinzugefügt, aber Zutaten und Nährwerte konnten nicht ergänzt werden." },
+        // {0} = meal names
+        ["nut_details_failed_for"] = new() { ["ar"] = "تعذّر ملء المكوّنات والقيم الغذائية لـ: {0}", ["en"] = "Couldn't fill in ingredients and nutrition for {0}", ["de"] = "Zutaten und Nährwerte für {0} konnten nicht ergänzt werden" }
     };
 }
