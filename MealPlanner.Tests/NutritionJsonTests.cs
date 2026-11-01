@@ -50,6 +50,17 @@ public class NutritionJsonTests
     }
 
     [Fact]
+    public void Meals_turned_off_round_trip_as_names_and_default_to_none()
+    {
+        var p = new NutritionProfile { OffSlots = [MealSlot.Snack] };
+        var json = JsonSerializer.Serialize(p, Web);
+
+        Assert.Contains("\"Snack\"", json);
+        Assert.Equal([MealSlot.Snack], JsonSerializer.Deserialize<NutritionProfile>(json, Web)!.OffSlots);
+        Assert.Empty(JsonSerializer.Deserialize<NutritionProfile>("{\"goal\":\"Keep\"}", Web)!.OffSlots);
+    }
+
+    [Fact]
     public void Old_catalog_rows_without_nutrition_still_load()
     {
         var meal = JsonSerializer.Deserialize<MealCatalogItem>("{\"name\":\"Mujaddara\",\"mealType\":\"Vegan\"}", Web)!;

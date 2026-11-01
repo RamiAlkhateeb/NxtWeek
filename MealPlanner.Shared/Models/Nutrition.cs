@@ -153,6 +153,8 @@ public class NutritionProfile
     public List<bool> TrainingDays { get; set; } = [true, false, true, false, true, false, false];
     // "HH:mm" per slot.
     public Dictionary<MealSlot, string> MealTimes { get; set; } = DefaultMealTimes();
+    // Meals the user does not eat. Stored as "off" so old profiles keep all four. Meal 1 is always on.
+    public List<MealSlot> OffSlots { get; set; } = new();
     public TargetOverrides Overrides { get; set; } = new();
     public int WeeklyAdjustKcal { get; set; }
 
@@ -163,6 +165,8 @@ public class NutritionProfile
         [MealSlot.Dinner] = "19:00",
         [MealSlot.Snack] = "21:00"
     };
+
+    public bool IsOn(MealSlot slot) => slot == MealSlot.Meal1 || OffSlots is null || !OffSlots.Contains(slot);
 
     public bool IsTrainingDay(DateOnly date)
     {

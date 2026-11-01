@@ -31,7 +31,7 @@ public static class ShoppingAggregator
         for (var date = today; date <= sunday; date = date.AddDays(1))
         {
             if (!days.TryGetValue(date, out var day)) continue;
-            foreach (var slot in DayMath.SlotsFor(DayMath.TypeOf(day, date, profile), profile.MealTimes))
+            foreach (var slot in DayMath.SlotsFor(DayMath.TypeOf(day, date, profile), profile))
             {
                 if (!day.Slots.TryGetValue(slot, out var entry) || entry.Eaten || entry.Leftover) continue;
                 if (entry.MealId is null || !catalog.TryGetValue(entry.MealId, out var meal)) continue;

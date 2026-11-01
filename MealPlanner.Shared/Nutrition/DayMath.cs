@@ -37,18 +37,26 @@ public static class DayMath
     public static DayType TypeOf(PlanDay? day, DateOnly date, NutritionProfile profile) =>
         day?.Type ?? (profile.IsTrainingDay(date) ? DayType.Training : DayType.Rest);
 
-    /// <summary>Slots for a day type, ordered by the user's meal times. Rest days have no post-workout slot.</summary>
-    public static IReadOnlyList<MealSlot> SlotsFor(DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes = null)
+    /// <summary>
+    /// Slots for a day type, ordered by the user's meal times. Rest days have no post-workout slot;
+    /// slots in <paramref name="off"/> are left out, except Meal 1, which every day has.
+    /// </summary>
+    public static IReadOnlyList<MealSlot> SlotsFor(DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes = null,
+        IReadOnlyCollection<MealSlot>? off = null)
     {
         var times = mealTimes ?? NutritionProfile.DefaultMealTimes();
         var slots = type == DayType.Training ? TrainingSlots : RestSlots;
         return slots
+            .Where(slot => slot == MealSlot.Meal1 || off is null || !off.Contains(slot))
             .Select((slot, index) => (slot, index, time: times.TryGetValue(slot, out var t) ? t : ""))
             .OrderBy(x => x.time, StringComparer.Ordinal)
             .ThenBy(x => x.index)
             .Select(x => x.slot)
             .ToList();
     }
+
+    public static IReadOnlyList<MealSlot> SlotsFor(DayType type, NutritionProfile? profile) =>
+        SlotsFor(type, profile?.MealTimes, profile?.OffSlots);
 
     public static EntryNutrition Of(SlotEntry entry, Func<string, NutritionInfo?> nutritionFor)
     {
@@ -62,13 +70,13 @@ public static class DayMath
     }
 
     public static DayTotals Totals(PlanDay? day, DayType type, DailyTargets targets, Func<string, NutritionInfo?> nutritionFor,
-        IReadOnlyDictionary<MealSlot, string>? mealTimes = null)
+        IReadOnlyDictionary<MealSlot, string>? mealTimes = null, IReadOnlyCollection<MealSlot>? off = null)
     {
         var eaten = MacroTotals.Zero;
         var planned = MacroTotals.Zero;
         if (day is not null)
         {
-            foreach (var slot in SlotsFor(type, mealTimes))
+            foreach (var slot in SlotsFor(type, mealTimes, off))
             {
                 if (!day.Slots.TryGetValue(slot, out var entry)) continue;
                 var n = Of(entry, nutritionFor).Totals;
@@ -78,8 +86,16 @@ public static class DayMath
         return new DayTotals(eaten, planned, targets);
     }
 
-    public static IReadOnlyList<MealSlot> EmptySlots(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes = null) =>
-        SlotsFor(type, mealTimes).Where(s => day is null || !day.Slots.ContainsKey(s)).ToList();
+    public static DayTotals Totals(PlanDay? day, DayType type, DailyTargets targets, Func<string, NutritionInfo?> nutritionFor,
+        NutritionProfile? profile) =>
+        Totals(day, type, targets, nutritionFor, profile?.MealTimes, profile?.OffSlots);
+
+    public static IReadOnlyList<MealSlot> EmptySlots(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes = null,
+        IReadOnlyCollection<MealSlot>? off = null) =>
+        SlotsFor(type, mealTimes, off).Where(s => day is null || !day.Slots.ContainsKey(s)).ToList();
+
+    public static IReadOnlyList<MealSlot> EmptySlots(PlanDay? day, DayType type, NutritionProfile? profile) =>
+        EmptySlots(day, type, profile?.MealTimes, profile?.OffSlots);
 
     /// <summary>
     /// Days saved before slots existed held one meal at users/{key}/weeklyPlan/{date}. Until the

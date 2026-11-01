@@ -730,8 +730,10 @@ public class LocalizationService : ILocalizationService
         // {0} = grams of protein per kg
         ["nut_per_kg"] = new() { ["ar"] = "{0} غ لكل كغ من وزن الجسم", ["en"] = "{0} g per kg body weight", ["de"] = "{0} g pro kg Körpergewicht" },
         ["nut_training_days"] = new() { ["ar"] = "أيام التمرين", ["en"] = "Training days", ["de"] = "Trainingstage" },
-        ["nut_meal_times"] = new() { ["ar"] = "أوقات الوجبات", ["en"] = "Meal times", ["de"] = "Mahlzeiten-Zeiten" },
-        ["nut_meal_times_hint"] = new() { ["ar"] = "أوقاتك المعتادة. تُرتَّب الوجبات حسب الوقت ويظهر الوقت على البطاقة.", ["en"] = "Your usual times. Slots are sorted by time and show it on the card.", ["de"] = "Deine üblichen Zeiten. Die Slots werden nach Zeit sortiert und zeigen sie auf der Karte." },
+        ["nut_meals_in_day"] = new() { ["ar"] = "الوجبات في اليوم", ["en"] = "Meals in a day", ["de"] = "Mahlzeiten am Tag" },
+        ["nut_meals_in_day_hint"] = new() { ["ar"] = "أطفئ الوجبات التي لا تتناولها. الوجبة 1 مفعّلة دائمًا. يبقى ما خطّطته في وجبة تطفئها محفوظًا. تُرتَّب الوجبات حسب الوقت.", ["en"] = "Turn off the meals you don't eat. Meal 1 is always on. Food planned in a meal you turn off is kept. Meals are sorted by time.", ["de"] = "Schalte die Mahlzeiten aus, die du nicht isst. Mahlzeit 1 ist immer an. Geplantes Essen in einer ausgeschalteten Mahlzeit bleibt erhalten. Die Mahlzeiten werden nach Zeit sortiert." },
+        ["nut_meal_on_for"] = new() { ["ar"] = "تضمين {0}", ["en"] = "Include {0}", ["de"] = "{0} einbeziehen" },
+        ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg
         ["nut_profile_meta"] = new() { ["ar"] = "{0} سنة · {1} سم · {2} كغ", ["en"] = "{0} y · {1} cm · {2} kg", ["de"] = "{0} J. · {1} cm · {2} kg" },

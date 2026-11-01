@@ -94,7 +94,7 @@ public static class WeeklySummary
             var day = days.GetValueOrDefault(date);
             var type = DayMath.TypeOf(day, date, profile);
             var target = TargetCalculator.For(profile, type);
-            var totals = DayMath.Totals(day, type, target, nutritionFor, profile.MealTimes);
+            var totals = DayMath.Totals(day, type, target, nutritionFor, profile);
             // A day with nothing ticked as eaten is "not logged", not a 0 kcal day.
             if (totals.Eaten.Kcal <= 0) { states.Add(SummaryDay.NoData); continue; }
             logged++;

@@ -71,6 +71,7 @@ nxtweek.theme
 | Shopping list | `users/{key}/shopping` |
 | Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Nutrition profile and targets | `users/{key}/nutritionProfile` |
+| Meals turned off (Meal 1 is always on; planned food in them is kept, just not shown or counted) | `users/{key}/nutritionProfile/offSlots` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
 

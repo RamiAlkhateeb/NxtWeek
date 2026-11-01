@@ -25,6 +25,6 @@ public sealed class MealAssignService(IDayPlanService plan, INutritionStore stor
         var profile = await store.GetProfileAsync(uid) ?? new NutritionProfile();
         var days = await plan.GetDaysAsync(uid, date, date);
         days.TryGetValue(date, out var day);
-        return SlotPicker.FirstEmptyFor(day, DayMath.TypeOf(day, date, profile), profile.MealTimes, meal);
+        return SlotPicker.FirstEmptyFor(day, DayMath.TypeOf(day, date, profile), profile, meal);
     }
 }
