@@ -460,6 +460,7 @@ html, body { background: var(--nxt-page); }
 .mk-bubble.is-ai { align-self: flex-end; background: var(--nxt-card); border: 1px solid var(--nxt-border); border-radius: 20px 20px 6px 20px; }
 .mk-bubble.is-error { background: var(--nxt-danger-soft); border-color: transparent; color: var(--nxt-danger); }
 .mk-bubble.is-muted { align-self: center; max-width: none; background: transparent; color: var(--mk-muted); font-size: 12px; padding: 0; }
+.mk-bubble.is-note { background: transparent; border-style: dashed; color: var(--mk-muted); font-size: 13px; }
 .mk-bubble.is-typing { color: var(--mk-muted); display: inline-flex; align-items: center; gap: 8px; }
 [dir="ltr"] .mk-bubble.is-user { align-self: flex-end; border-radius: 20px 20px 6px 20px; }
 [dir="ltr"] .mk-bubble.is-ai { align-self: flex-start; border-radius: 20px 20px 20px 6px; }

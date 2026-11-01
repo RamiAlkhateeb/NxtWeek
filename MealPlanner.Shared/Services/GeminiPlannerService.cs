@@ -107,7 +107,8 @@ public class GeminiPlannerService : IGeminiPlannerService
             Always reply in {languageName} (language code: {_loc.CurrentLanguage}), including dish and item
             names, using everyday food vocabulary a home cook would use.
 
-            The user's plan for the coming days (FREE means nothing is planned yet):
+            The user's plan for the coming days, one line per day listing each meal the user eats that day
+            (FREE marks a meal with nothing planned yet; a new dish goes into a FREE main meal of that day):
             {(string.IsNullOrWhiteSpace(planContext) ? "(unknown)" : planContext)}
 
             Current shopping list:
@@ -123,8 +124,8 @@ public class GeminiPlannerService : IGeminiPlannerService
               for which days.
             - If something important is missing (which dish, which day, dietary needs), ask ONE short
               question instead of guessing.
-            - Prefer FREE days when the user hasn't said which day. Mention when a day already has a meal
-              and ask before replacing it.
+            - Prefer days with a FREE meal when the user hasn't said which day. A day with no FREE meal is
+              full: the app will not replace anything there, so suggest another day instead.
             - Politely steer off-topic requests back to cooking, meals and shopping.
 
             THE "action" FIELD — nothing is saved unless you return "apply"

@@ -101,7 +101,9 @@ public class DayPlanServiceTests
         var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } };
         var shake = new MealCatalogItem { SuitableSlots = [MealSlot.PostWorkout, MealSlot.Snack] };
 
-        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FirstEmptyFor(day, DayType.Training, null, null));
+        // A dish that says nothing about where it fits is a main meal: Dinner, not the post-workout slot.
+        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Training, null, null));
+        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FirstEmptyFor(day, DayType.Training, null, shake));
         Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Rest, null, null));
         Assert.Equal(MealSlot.Snack, SlotPicker.FirstEmptyFor(day, DayType.Rest, null, shake));
     }
@@ -115,6 +117,25 @@ public class DayPlanServiceTests
         Assert.Equal(MealSlot.Meal1, SlotPicker.FirstEmptyFor(new PlanDay(), DayType.Training, profile, shake));
         var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } };
         Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Training, profile, shake));
+    }
+
+    [Fact]
+    public void Only_open_non_main_meals_left_still_take_a_dish()
+    {
+        var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" }, [MealSlot.Dinner] = new SlotEntry { MealId = "b" } } };
+
+        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FreeSlotFor(day, DayType.Training, (NutritionProfile?)null, null));
+    }
+
+    [Fact]
+    public void A_full_day_has_no_free_slot()
+    {
+        var day = new PlanDay();
+        foreach (var s in Enum.GetValues<MealSlot>()) day.Slots[s] = new SlotEntry { MealId = "a" };
+
+        Assert.Null(SlotPicker.FreeSlotFor(day, DayType.Training, (NutritionProfile?)null, null));
+        var oneMeal = new NutritionProfile { OffSlots = [MealSlot.PostWorkout, MealSlot.Dinner, MealSlot.Snack] };
+        Assert.Null(SlotPicker.FreeSlotFor(new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } }, DayType.Rest, oneMeal, null));
     }
 
     [Fact]

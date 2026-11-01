@@ -47,20 +47,32 @@ public static class DayStatus
 /// <summary>Where a meal goes when the user did not pick a slot.</summary>
 public static class SlotPicker
 {
-    /// <summary>The first empty slot (by time) the meal suits; any empty slot if none suits; Meal 1 when the day is full.</summary>
-    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, NutritionProfile? profile, MealCatalogItem? meal) =>
-        FirstEmptyFor(day, type, profile?.MealTimes, meal, profile?.OffSlots);
+    // A dish that says nothing about where it fits is a main meal, not a post-workout shake or a snack.
+    private static readonly MealSlot[] MainMeals = [MealSlot.Meal1, MealSlot.Dinner];
 
-    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes, MealCatalogItem? meal,
+    /// <summary>
+    /// The first empty slot (by time) the meal suits — main meals for a meal without suitable slots — else any
+    /// empty slot; null when the day has none. Never a slot that is turned off.
+    /// </summary>
+    public static MealSlot? FreeSlotFor(PlanDay? day, DayType type, NutritionProfile? profile, MealCatalogItem? meal) =>
+        FreeSlotFor(day, type, profile?.MealTimes, meal, profile?.OffSlots);
+
+    public static MealSlot? FreeSlotFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes, MealCatalogItem? meal,
         IReadOnlyCollection<MealSlot>? off = null)
     {
         var empty = DayMath.EmptySlots(day, type, mealTimes, off);
-        if (empty.Count == 0) return MealSlot.Meal1;
-        if (meal is { SuitableSlots.Count: > 0 })
-        {
-            foreach (var slot in empty)
-                if (meal.SuitableSlots.Contains(slot)) return slot;
-        }
+        if (empty.Count == 0) return null;
+        IReadOnlyCollection<MealSlot> suits = meal is { SuitableSlots.Count: > 0 } ? meal.SuitableSlots : MainMeals;
+        foreach (var slot in empty)
+            if (suits.Contains(slot)) return slot;
         return empty[0];
     }
+
+    /// <summary>Like <see cref="FreeSlotFor(PlanDay?, DayType, NutritionProfile?, MealCatalogItem?)"/>, but Meal 1 when the day is full.</summary>
+    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, NutritionProfile? profile, MealCatalogItem? meal) =>
+        FreeSlotFor(day, type, profile, meal) ?? MealSlot.Meal1;
+
+    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes, MealCatalogItem? meal,
+        IReadOnlyCollection<MealSlot>? off = null) =>
+        FreeSlotFor(day, type, mealTimes, meal, off) ?? MealSlot.Meal1;
 }

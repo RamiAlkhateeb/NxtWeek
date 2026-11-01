@@ -97,6 +97,12 @@ and nutrition per serving. `MealDetailsMapper` (pure, tested) rejects implausibl
 meal lacks, always as an estimate. Without a key the meal is added as before with a hint; a Gemini failure never
 loses the meal. "Estimate from ingredients" uses the same call (`GeminiNutritionEstimator`).
 
+All Gemini calls go through Nxt.UI's `GeminiClient`: it tries the model chosen in Settings (saved as soon as it is
+picked), then up to three chat models the key can reach, and reports a switch in `LastFallback`. Failures are
+`GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`. The
+Assistant's Apply only fills empty meals (`IMealAssignService.FindFreeSlotAsync`), never replaces one, and reuses a
+catalog meal of the same name.
+
 ## Meal pictures
 
 No remote photography. `IMealImageService` resolves a flat SVG illustration from
