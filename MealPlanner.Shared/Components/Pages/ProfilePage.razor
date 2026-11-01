@@ -7,7 +7,7 @@
 @inject ToastService Toasts
 @implements IDisposable
 
-@* Profile & targets: body data, goal, meal times and training days drive the calculated
+@* Profile & targets: body data, goal, the meals in a day, their times and training days drive the calculated
    targets; each day type's targets can be overridden field by field. *@
 <div class="mk-page mk-profile" dir="@Loc.Direction">
     <header class="mk-header">
@@ -84,14 +84,20 @@
             </section>
 
             <section class="mk-set-card">
-                <h2>@Loc["nut_meal_times"]</h2>
-                <p class="mk-set-hint">@Loc["nut_meal_times_hint"]</p>
+                <h2>@Loc["nut_meals_in_day"]</h2>
+                <p class="mk-set-hint">@Loc["nut_meals_in_day_hint"]</p>
                 @foreach (var slot in Enum.GetValues<MealSlot>())
                 {
                     var s = slot;
-                    <div class="mk-set-row is-spread">
-                        <label for="tm-@s">@Loc["nut_slot_" + s]</label>
-                        <input id="tm-@s" class="mk-input mk-time" type="time" dir="ltr" value="@p.MealTimes.GetValueOrDefault(s)" aria-label="@Loc.T("nut_time_for", Loc["nut_slot_" + s])" @onchange="e => SetTime(s, e.Value?.ToString())" />
+                    var on = p.IsOn(s);
+                    var always = s == MealSlot.Meal1;
+                    <div class="mk-set-row mk-meal-row @(on ? "" : "is-off")">
+                        <label for="tm-@s" class="mk-meal-row-name">
+                            @Loc["nut_slot_" + s]
+                            @if (always) { <small id="always-@s" class="mk-set-hint">@Loc["nut_always_on"]</small> }
+                        </label>
+                        <input id="tm-@s" class="mk-input mk-time" type="time" dir="ltr" disabled="@(!on)" value="@p.MealTimes.GetValueOrDefault(s)" aria-label="@Loc.T("nut_time_for", Loc["nut_slot_" + s])" @onchange="e => SetTime(s, e.Value?.ToString())" />
+                        <ToggleSwitch Checked="on" Disabled="always" DescribedBy="@(always ? $"always-{s}" : null)" Label="@Loc.T("nut_meal_on_for", Loc["nut_slot_" + s])" CheckedChanged="v => SetOn(s, v)" />
                     </div>
                 }
             </section>
@@ -165,6 +171,14 @@
     private void SetTime(MealSlot slot, string? value)
     {
         if (TimeOnly.TryParse(value, out var t)) p.MealTimes[slot] = t.ToString("HH:mm");
+    }
+
+    private void SetOn(MealSlot slot, bool on)
+    {
+        if (slot == MealSlot.Meal1) return;
+        p.OffSlots ??= new();
+        p.OffSlots.Remove(slot);
+        if (!on) p.OffSlots.Add(slot);
     }
 
     private string Signed(int kcal) => $"{NutFormat.Isolate($"{(kcal > 0 ? "+" : kcal < 0 ? "−" : "")}{Loc.Num(Math.Abs(kcal))}")} {Loc["nut_kcal"]}";

@@ -213,7 +213,7 @@
     private IReadOnlyList<MealSlot> EmptySlotsOf(DateOnly date)
     {
         var day = plan.GetValueOrDefault(date);
-        return DayMath.EmptySlots(day, DayMath.TypeOf(day, date, nutritionProfile), nutritionProfile.MealTimes);
+        return DayMath.EmptySlots(day, DayMath.TypeOf(day, date, nutritionProfile), nutritionProfile);
     }
 
     private async Task Close() => await JS.InvokeVoidAsync("nxtweek.goBack", "/");

@@ -808,6 +808,14 @@ html, body { background: var(--nxt-page); }
 .mk-switch.is-on { background: var(--mk-ok); }
 .mk-switch.is-on i { inset-inline-start: 23px; }
 @media (prefers-reduced-motion: reduce) { .mk-switch i { transition: none; } }
+.mk-switch:disabled { opacity: .7; cursor: default; }
+/* Profile: one row per meal of the day — name, time, on/off. */
+.mk-meal-row { flex-wrap: wrap; }
+.mk-meal-row-name { flex: 1 1 6em; display: flex; flex-direction: column; min-width: 0; }
+.mk-meal-row-name small.mk-set-hint { margin: 0; padding: 0; }
+.mk-set-row.mk-meal-row .mk-input.mk-time { flex: 0 0 auto; width: 140px; }
+.mk-meal-row.is-off .mk-meal-row-name { color: var(--mk-muted); }
+.mk-meal-row.is-off .mk-time { opacity: .5; }
 .mk-sign-sheet { align-items: stretch; }
 .mk-sign-lock { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--mk-accent-soft); color: var(--mk-accent-ink); }
 .mk-sign-lock svg { width: 26px; height: 26px; }

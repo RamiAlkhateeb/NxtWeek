@@ -34,6 +34,33 @@ public class DayMathTests
     }
 
     [Fact]
+    public void Meals_turned_off_are_left_out_but_meal_1_stays()
+    {
+        var profile = new NutritionProfile { OffSlots = [MealSlot.Dinner, MealSlot.Snack] };
+
+        Assert.Equal([MealSlot.Meal1], DayMath.SlotsFor(DayType.Rest, profile));
+        Assert.Equal([MealSlot.Meal1, MealSlot.PostWorkout], DayMath.SlotsFor(DayType.Training, profile));
+
+        var everythingOff = new NutritionProfile { OffSlots = Enum.GetValues<MealSlot>().ToList() };
+        Assert.Equal([MealSlot.Meal1], DayMath.SlotsFor(DayType.Training, everythingOff));
+        Assert.True(everythingOff.IsOn(MealSlot.Meal1));
+        Assert.False(everythingOff.IsOn(MealSlot.Dinner));
+    }
+
+    [Fact]
+    public void A_meal_that_is_off_does_not_count_and_is_not_empty()
+    {
+        var profile = new NutritionProfile { OffSlots = [MealSlot.Dinner] };
+        var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "chicken" }, [MealSlot.Dinner] = new SlotEntry { MealId = "chicken" } } };
+
+        var totals = DayMath.Totals(day, DayType.Rest, new DailyTargets(1950, 135, 205, 65, 30), Lookup, profile);
+
+        Assert.Equal(520, totals.Planned.Kcal);
+        Assert.Equal([MealSlot.Snack], DayMath.EmptySlots(day, DayType.Rest, profile));
+        Assert.Equal(DayDot.Planned, DayStatus.DotFor(day, DayType.Rest, profile));
+    }
+
+    [Fact]
     public void Day_type_comes_from_training_days_unless_set_on_the_day()
     {
         var profile = new NutritionProfile(); // Mon, Wed, Fri

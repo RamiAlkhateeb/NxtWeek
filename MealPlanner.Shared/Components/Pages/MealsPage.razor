@@ -315,7 +315,7 @@
             var day = days.GetValueOrDefault(selectedDate);
             var type = DayMath.TypeOf(day, selectedDate, profile);
             var nutrition = allMeals.ToDictionary(m => m.Id, m => m.Nutrition);
-            pickBudget = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile.MealTimes);
+            pickBudget = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile);
         }
         catch { pickBudget = null; }
     }

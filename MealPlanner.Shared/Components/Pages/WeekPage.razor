@@ -78,7 +78,7 @@
         <div id="mk-targets-panel">
             <TargetsPanel Totals="totals" Type="SelectedType" OnToggleType="ToggleDayTypeAsync">
                 <FootContent>
-                    @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, SelectedType, profile.MealTimes).Count > 0)
+                    @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, SelectedType, profile).Count > 0)
                     {
                         <a class="mk-ask" href="@($"ai-plan?ask=protein&day={selectedDate:yyyy-MM-dd}")">
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_plan_protein"]
@@ -203,8 +203,8 @@
 
     private PlanDay? SelectedDay => days.GetValueOrDefault(selectedDate);
     private DayType SelectedType => DayMath.TypeOf(SelectedDay, selectedDate, profile);
-    private IReadOnlyList<MealSlot> Slots => DayMath.SlotsFor(SelectedType, profile.MealTimes);
-    private DayTotals Totals => DayMath.Totals(SelectedDay, SelectedType, TargetCalculator.For(profile, SelectedType), NutritionFor, profile.MealTimes);
+    private IReadOnlyList<MealSlot> Slots => DayMath.SlotsFor(SelectedType, profile);
+    private DayTotals Totals => DayMath.Totals(SelectedDay, SelectedType, TargetCalculator.For(profile, SelectedType), NutritionFor, profile);
 
     private List<DateOnly> EmptyUpcomingMeal1 => WeekDates
         .Where(d => d >= Today && !(days.GetValueOrDefault(d)?.Slots.ContainsKey(MealSlot.Meal1) ?? false))
@@ -300,7 +300,7 @@
     private Task ReloadAsync() => LoadAsync();
 
     private void RefreshDots() =>
-        dots = WeekDates.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), DayMath.TypeOf(days.GetValueOrDefault(d), d, profile), profile.MealTimes));
+        dots = WeekDates.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), DayMath.TypeOf(days.GetValueOrDefault(d), d, profile), profile));
 
     private async Task GoToWeekAsync(int offset)
     {
@@ -392,7 +392,7 @@
     private IReadOnlyList<Suggestion> SuggestionsFor(MealSlot? slot)
     {
         if (slot is not { } s) return [];
-        var empty = DayMath.EmptySlots(SelectedDay, SelectedType, profile.MealTimes);
+        var empty = DayMath.EmptySlots(SelectedDay, SelectedType, profile);
         return Suggestions.ForSlot(s, Totals.OpenKcal, empty.Count, Suggestions.UsedMealIds(SelectedDay, Slots), Candidates);
     }
 

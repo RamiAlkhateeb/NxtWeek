@@ -195,7 +195,10 @@
 <div class="mk-ai-composer" dir="@Loc.Direction">
     <div class="mk-chip-row">
         <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunLocalAsync(LocalAsk.Protein)">@Loc["nut_plan_protein"]</button>
-        <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunLocalAsync(LocalAsk.Snack)">@Loc["nut_chip_snack"]</button>
+        @if (snackOn)
+        {
+            <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunLocalAsync(LocalAsk.Snack)">@Loc["nut_chip_snack"]</button>
+        }
         @foreach (var suggestion in Suggestions)
         {
             <button class="mk-chip is-outline" disabled="@isBusy" @onclick="() => SendAsync(suggestion)">@suggestion</button>
@@ -241,6 +244,8 @@
 
     private Entry? OpenProposal => entries.LastOrDefault(e => e.Kind == EntryKind.Proposal && e.State == ProposalState.Open);
 
+    private bool snackOn = true;
+
     protected override async Task OnInitializedAsync()
     {
         var user = await Auth.GetCurrentUserAsync();
@@ -252,6 +257,9 @@
 
         uid = user.Uid;
         await RefreshPlanContextAsync();
+        // No snack chip for someone who turned the evening snack off.
+        try { snackOn = (await NutritionStore.GetProfileAsync(uid))?.IsOn(MealSlot.Snack) ?? true; }
+        catch { /* keep the chip */ }
 
         // From Week: ai-plan?ask=protein&day=yyyy-MM-dd
         var query = new Uri(Nav.Uri).Query;
@@ -454,9 +462,9 @@
         var catalog = (await catalogTask).Where(m => !m.IsArchived).ToList();
         var nutrition = catalog.ToDictionary(m => m.Id, m => m.Nutrition);
         var type = DayMath.TypeOf(day, date, profile);
-        var totals = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile.MealTimes);
+        var totals = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile);
         var inLanguage = catalog.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase)).ToList();
-        return new DayState(day, type, DayMath.SlotsFor(type, profile.MealTimes), totals, profile, inLanguage.Count > 0 ? inLanguage : catalog);
+        return new DayState(day, type, DayMath.SlotsFor(type, profile), totals, profile, inLanguage.Count > 0 ? inLanguage : catalog);
     }
 
     // The protein plan and the snack pick run on the device from the user's own targets; no Gemini key needed.
@@ -470,7 +478,7 @@
         {
             var date = askDate;
             var st = await LoadDayAsync(date);
-            var empty = DayMath.EmptySlots(st.Day, st.Type, st.Profile.MealTimes);
+            var empty = DayMath.EmptySlots(st.Day, st.Type, st.Profile);
             var used = MealPlanner.Shared.Nutrition.Suggestions.UsedMealIds(st.Day, st.Slots);
             if (ask == LocalAsk.Protein)
             {

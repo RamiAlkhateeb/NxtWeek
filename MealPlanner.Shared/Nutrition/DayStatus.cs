@@ -17,10 +17,14 @@ public static class DayStatus
     public const double ServingsMax = 6;
 
     /// <summary>The dot under a day chip, counting only the slots that day has.</summary>
-    public static DayDot DotFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes = null)
+    public static DayDot DotFor(PlanDay? day, DayType type, NutritionProfile? profile) =>
+        DotFor(day, type, profile?.MealTimes, profile?.OffSlots);
+
+    public static DayDot DotFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes = null,
+        IReadOnlyCollection<MealSlot>? off = null)
     {
         if (day is null) return DayDot.None;
-        var entries = DayMath.SlotsFor(type, mealTimes).Where(day.Slots.ContainsKey).Select(s => day.Slots[s]).ToList();
+        var entries = DayMath.SlotsFor(type, mealTimes, off).Where(day.Slots.ContainsKey).Select(s => day.Slots[s]).ToList();
         if (entries.Count == 0) return DayDot.None;
         if (entries.All(e => e.Eaten)) return DayDot.AllEaten;
         return entries.Any(e => e.Eaten) ? DayDot.PartlyEaten : DayDot.Planned;
@@ -44,9 +48,13 @@ public static class DayStatus
 public static class SlotPicker
 {
     /// <summary>The first empty slot (by time) the meal suits; any empty slot if none suits; Meal 1 when the day is full.</summary>
-    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes, MealCatalogItem? meal)
+    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, NutritionProfile? profile, MealCatalogItem? meal) =>
+        FirstEmptyFor(day, type, profile?.MealTimes, meal, profile?.OffSlots);
+
+    public static MealSlot FirstEmptyFor(PlanDay? day, DayType type, IReadOnlyDictionary<MealSlot, string>? mealTimes, MealCatalogItem? meal,
+        IReadOnlyCollection<MealSlot>? off = null)
     {
-        var empty = DayMath.EmptySlots(day, type, mealTimes);
+        var empty = DayMath.EmptySlots(day, type, mealTimes, off);
         if (empty.Count == 0) return MealSlot.Meal1;
         if (meal is { SuitableSlots.Count: > 0 })
         {

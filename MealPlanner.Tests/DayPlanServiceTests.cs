@@ -107,6 +107,17 @@ public class DayPlanServiceTests
     }
 
     [Fact]
+    public void A_meal_is_never_placed_in_a_slot_that_is_off()
+    {
+        var profile = new NutritionProfile { OffSlots = [MealSlot.PostWorkout, MealSlot.Snack] };
+        var shake = new MealCatalogItem { SuitableSlots = [MealSlot.PostWorkout, MealSlot.Snack] };
+
+        Assert.Equal(MealSlot.Meal1, SlotPicker.FirstEmptyFor(new PlanDay(), DayType.Training, profile, shake));
+        var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } };
+        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Training, profile, shake));
+    }
+
+    [Fact]
     public void A_full_day_falls_back_to_meal_1()
     {
         var day = new PlanDay();

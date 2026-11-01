@@ -51,6 +51,8 @@ public sealed class FirebaseNutritionStore(HttpClient http, FirebaseOptions opti
         profile.MealTimes ??= NutritionProfile.DefaultMealTimes();
         foreach (var (slot, time) in NutritionProfile.DefaultMealTimes())
             profile.MealTimes.TryAdd(slot, time);
+        // Firebase drops an empty list, so "all meals on" reads back as null.
+        profile.OffSlots ??= new();
         if (profile.TrainingDays is not { Count: 7 }) profile.TrainingDays = new NutritionProfile().TrainingDays;
         return profile;
     }
