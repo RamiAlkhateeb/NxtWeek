@@ -597,7 +597,11 @@ public class LocalizationService : ILocalizationService
         // {0} = meals with their days
         ["ai_applied_meals"] = new() { ["ar"] = "أُضيف {0}", ["en"] = "Added {0}", ["de"] = "{0} hinzugefügt" },
         // {0} = meal, {1} = weekday
-        ["ai_applied_meal_on"] = new() { ["ar"] = "{0} ليوم {1}", ["en"] = "{0} on {1}", ["de"] = "{0} am {1}" },
+        ["ai_applied_meal_in"] = new() { ["ar"] = "{0} في {1} يوم {2}", ["en"] = "{0} for {1} on {2}", ["de"] = "{0} als {1} am {2}" },
+        ["ai_applied_day_full"] = new() { ["ar"] = "لم يُضف {0}: كل وجبات يوم {1} مخطّطة", ["en"] = "{0} wasn't added: every meal on {1} is already planned", ["de"] = "{0} wurde nicht hinzugefügt: Alle Mahlzeiten am {1} sind schon geplant" },
+        ["ai_apply_partial"] = new() { ["ar"] = "حُفظ: {0}. بقيت التغييرات الأخرى في البطاقة، اضغط «تطبيق» للمحاولة مجددًا. ({1})", ["en"] = "Saved: {0}. The other changes are still on the card; tap Apply to try again. ({1})", ["de"] = "Gespeichert: {0}. Die übrigen Änderungen sind noch auf der Karte; tippe auf Übernehmen, um es erneut zu versuchen. ({1})" },
+        ["ai_apply_network"] = new() { ["ar"] = "تعذّر الحفظ، تحقّق من الاتصال", ["en"] = "couldn't save, check your connection", ["de"] = "Speichern fehlgeschlagen, prüfe deine Verbindung" },
+        ["ai_apply_nothing_saved"] = new() { ["ar"] = "لا شيء بعد", ["en"] = "nothing yet", ["de"] = "noch nichts" },
         // {0} = items
         ["ai_applied_items"] = new() { ["ar"] = "أُضيف {0} إلى المشتريات", ["en"] = "Added {0} to shopping", ["de"] = "{0} zum Einkauf hinzugefügt" },
         ["ai_applied_removed"] = new() { ["ar"] = "حُذف {0} من المشتريات", ["en"] = "Removed {0} from shopping", ["de"] = "{0} vom Einkauf entfernt" },

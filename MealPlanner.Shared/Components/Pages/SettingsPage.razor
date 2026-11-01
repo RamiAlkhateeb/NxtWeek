@@ -155,6 +155,8 @@
 
   protected override async Task OnInitializedAsync() {
     Loc.OnLanguageChanged += HandleLanguageChanged;
+    // The assistant's "Open Settings" link lands here with the Gemini key and model showing.
+    showAdvanced = new Uri(Nav.Uri).Query.Contains("advanced=1", StringComparison.OrdinalIgnoreCase);
     await Loc.InitializeAsync();
     var user = await Auth.GetCurrentUserAsync();
     if (user is null) return;

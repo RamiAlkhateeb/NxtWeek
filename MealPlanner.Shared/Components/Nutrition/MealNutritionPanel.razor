@@ -2,6 +2,7 @@
 @inject IMealCatalogService CatalogService
 @inject INutritionEstimator Estimator
 @inject ToastService Toasts
+@inject NxtText L
 @implements IDisposable
 
 @* Nutrition per serving for one catalog meal: the grid with its source badge, the
@@ -148,7 +149,7 @@
         error = "";
         try { return await Estimator.EstimateAsync(Meal, estimateCts.Token); }
         catch (OperationCanceledException) { return null; }
-        catch (Exception ex) { error = ex.Message; return null; }
+        catch (Exception ex) { error = ex is GeminiApiException or AiKeyMissingException ? L.AiError(ex) : ex.Message; return null; }
         finally { estimating = false; }
     }
 

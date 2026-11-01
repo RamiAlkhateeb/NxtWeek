@@ -17,6 +17,7 @@
 @inject IJSRuntime JS
 @inject INutritionStore NutritionStore
 @inject IMealDetailsService MealDetails
+@inject NxtText L
 
 @* The family AI assistant. It discusses first: concrete changes arrive as an editable proposal card and are only
    saved when the user taps "Apply". *@
@@ -60,9 +61,9 @@
                     break;
 
                 case EntryKind.Assistant:
-                    <div class="mk-bubble is-ai @(entry.IsError ? "is-error" : "")">
+                    <div class="mk-bubble is-ai @(entry.IsError ? "is-error" : "") @(entry.IsNote ? "is-note" : "")" role="@(entry.IsError ? "alert" : null)">
                         @entry.Text
-                        @if (entry.ShowSettingsLink) { <a class="mk-bubble-link" href="settings">@Loc["ai_plan_go_to_settings"]</a> }
+                        @if (entry.ShowSettingsLink) { <a class="mk-bubble-link" href="settings?advanced=1">@L["ai_go_settings"]</a> }
                     </div>
                     break;
 
@@ -218,6 +219,7 @@
         public string Text { get; set; } = "";
         public bool IsError { get; init; }
         public bool ShowSettingsLink { get; init; }
+        public bool IsNote { get; init; }
         public ProposalState State { get; set; } = ProposalState.Open;
         public string Summary { get; set; } = "";
         public List<ParsedMealEntry> Meals { get; init; } = new();
@@ -227,6 +229,10 @@
         public DateOnly Date { get; init; }
         public List<PlannedPick> SlotItems { get; init; } = new();
         public int ChangeCount => Meals.Count + AddItems.Count + RemoveItems.Count;
+        // What Apply already saved (it leaves the card), and what it could not do (a full day, an item not on the list).
+        public List<string> Saved { get; } = new();
+        public List<string> SavedMeals { get; } = new();
+        public List<string> Notes { get; } = new();
         public PlanChanges ToChanges() => new(Meals, AddItems, RemoveItems);
     }
 
@@ -334,6 +340,10 @@
                 throw;
             }
 
+            // Never ignore the chosen model silently: say so when another one answered.
+            if (L.AiFallbackNote(Gemini.LastFallback) is { } fallbackNote)
+                Add(new Entry { Kind = EntryKind.Assistant, Text = fallbackNote, IsNote = true });
+
             var open = OpenProposal;
             // "Apply" with nothing pending can't be honoured; if it carries changes, show them as a proposal instead,
             // with our own wording since the model's text would claim it was already done.
@@ -375,13 +385,21 @@
         }
         catch (Exception ex)
         {
-            Add(new Entry { Kind = EntryKind.Assistant, Text = ex.Message, IsError = true });
+            AddError(ex);
         }
         finally
         {
             isBusy = false;
             scrollPending = true;
         }
+    }
+
+    // Gemini failures in the user's language with Google's own reason; key and model problems link to Settings.
+    private void AddError(Exception ex)
+    {
+        var fixable = ex is AiKeyMissingException || ex is GeminiApiException { Kind: GeminiErrorKind.InvalidKey or GeminiErrorKind.ModelUnavailable };
+        var text = ex is GeminiApiException or AiKeyMissingException ? L.AiError(ex) : ex.Message;
+        Add(new Entry { Kind = EntryKind.Assistant, Text = text, IsError = true, ShowSettingsLink = fixable });
     }
 
     private async Task ApplyAsync(Entry entry)
@@ -395,58 +413,121 @@
         }
         catch (Exception ex)
         {
-            Add(new Entry { Kind = EntryKind.Assistant, Text = ex.Message, IsError = true });
+            AddError(ex);
         }
         finally { isBusy = false; scrollPending = true; }
     }
 
     // Saves exactly what the user saw (and trimmed) on the card, not whatever the model repeated.
+    // Each change leaves the card as soon as it is saved, so a failure halfway keeps only the rest on the card
+    // and tapping Apply again never saves anything twice.
     private async Task ApplyCoreAsync(Entry entry, List<ShoppingShop> shops)
     {
-        var parts = new List<string>();
-
-        // Removals run before additions so "replace milk with oat milk" can't delete the new item.
-        var notFound = new List<string>();
-        if (entry.RemoveItems.Count > 0)
+        var toFill = new List<MealCatalogItem>();
+        try
         {
-            var (removed, missing) = await RemoveItemsAsync(shops, entry.RemoveItems);
-            notFound = missing;
-            var names = removed.SelectMany(r => r.Names).ToList();
-            if (names.Count > 0) parts.Add(Loc.T("ai_applied_removed", string.Join(Loc["list_and"], names)));
-        }
-
-        var detailsFailed = new List<string>();
-        foreach (var meal in entry.Meals)
-        {
-            var catalogItem = await CatalogService.CreateMealAsync(new MealCatalogItem
+            // Removals run before additions so "replace milk with oat milk" can't delete the new item.
+            if (entry.RemoveItems.Count > 0)
             {
-                Name = meal.Name,
-                MealType = meal.MealType,
-                Ingredients = meal.Ingredients.ToList(),
-                Language = Loc.CurrentLanguage,
-                CreatedBy = uid
-            });
-            await Assigner.AssignAsync(uid, meal.Date, catalogItem);
-            if (await MealDetails.FillMissingAsync(catalogItem) == MealDetailsResult.Failed) detailsFailed.Add(catalogItem.Name);
-        }
-        if (entry.Meals.Count > 0)
-            parts.Insert(0, Loc.T("ai_applied_meals", string.Join(Loc["list_and"], entry.Meals.Select(m => Loc.T("ai_applied_meal_on", m.Name, Loc.GetDayName(m.Date.DayOfWeek))))));
+                var (removed, missing) = await RemoveItemsAsync(shops, entry.RemoveItems);
+                entry.RemoveItems.Clear();
+                var names = removed.SelectMany(r => r.Names).ToList();
+                if (names.Count > 0) entry.Saved.Add(Loc.T("ai_applied_removed", string.Join(Loc["list_and"], names)));
+                if (missing.Count > 0) entry.Notes.Add(Loc.T("ai_applied_not_found", string.Join(Loc["list_and"], missing)));
+            }
 
-        if (entry.AddItems.Count > 0)
+            if (entry.Meals.Count > 0)
+            {
+                var catalog = (await CatalogService.GetAllMealsAsync()).Where(m => !m.IsArchived).ToList();
+                foreach (var meal in entry.Meals.ToList())
+                {
+                    var day = Loc.GetDayName(meal.Date.DayOfWeek);
+                    var existing = FindCatalogMeal(catalog, meal.Name);
+                    var draft = existing ?? new MealCatalogItem
+                    {
+                        Name = meal.Name.Trim(),
+                        MealType = meal.MealType,
+                        Ingredients = meal.Ingredients.ToList(),
+                        Language = Loc.CurrentLanguage,
+                        CreatedBy = uid
+                    };
+                    // Only an empty meal of the day is used; a full day is reported, never overwritten.
+                    var slot = await Assigner.FindFreeSlotAsync(uid, meal.Date, draft);
+                    if (slot is null)
+                    {
+                        entry.Notes.Add(Loc.T("ai_applied_day_full", meal.Name, day));
+                    }
+                    else
+                    {
+                        // Reuse the catalog meal of the same name instead of adding a copy to the shared catalog.
+                        var catalogItem = existing ?? await CatalogService.CreateMealAsync(draft);
+                        if (existing is null) catalog.Add(catalogItem);
+                        await Assigner.AssignAsync(uid, meal.Date, catalogItem, slot);
+                        entry.SavedMeals.Add(Loc.T("ai_applied_meal_in", catalogItem.Name, Loc["nut_slot_" + slot], day));
+                        if (MealDetailsMapper.NeedsDetails(catalogItem) && !toFill.Contains(catalogItem)) toFill.Add(catalogItem);
+                    }
+                    entry.Meals.Remove(meal);
+                }
+            }
+
+            if (entry.AddItems.Count > 0)
+            {
+                var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+                var added = new List<string>();
+                foreach (var item in entry.AddItems.ToList())
+                {
+                    await ShoppingListService.AddItemAsync(uid, shop.Id, item, new ShoppingItemOptions(Aisle: Aisles.For(item).Key));
+                    entry.AddItems.Remove(item);
+                    added.Add(item);
+                }
+                entry.Saved.Add(Loc.T("ai_applied_items", string.Join(Loc["list_and"], added)));
+            }
+        }
+        catch (Exception ex)
         {
-            var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
-            foreach (var item in entry.AddItems)
-                await ShoppingListService.AddItemAsync(uid, shop.Id, item, new ShoppingItemOptions(Aisle: Aisles.For(item).Key));
-            parts.Add(Loc.T("ai_applied_items", string.Join(Loc["list_and"], entry.AddItems)));
+            if (toFill.Count > 0) _ = FillDetailsAsync(entry, toFill);
+            var saved = SavedSummary(entry);
+            // Firebase errors read as browser resource keys in WebAssembly; say what happened instead.
+            var reason = ex is HttpRequestException or TaskCanceledException ? Loc["ai_apply_network"] : ex.Message;
+            throw new InvalidOperationException(Loc.T("ai_apply_partial", saved.Count > 0 ? string.Join(Loc["ai_applied_sep"], saved) : Loc["ai_apply_nothing_saved"], reason), ex);
         }
-
-        if (notFound.Count > 0) parts.Add(Loc.T("ai_applied_not_found", string.Join(Loc["list_and"], notFound)));
-        if (detailsFailed.Count > 0) parts.Add(Loc.T("nut_details_failed_for", string.Join(Loc["list_and"], detailsFailed)));
 
         entry.State = ProposalState.Applied;
-        entry.Summary = string.Join(Loc["ai_applied_sep"], parts);
+        entry.Summary = string.Join(Loc["ai_applied_sep"], SavedSummary(entry).Concat(entry.Notes));
         history.Add(new ChatTurn(false, "[Saved the proposal]"));
         await RefreshPlanContextAsync();
+
+        // The plan is saved; ingredients and nutrition arrive in the background, all meals at once.
+        if (toFill.Count > 0) _ = FillDetailsAsync(entry, toFill);
+    }
+
+    // Meals first, in the order they were saved, then the shopping changes.
+    private List<string> SavedSummary(Entry entry)
+    {
+        var parts = new List<string>();
+        if (entry.SavedMeals.Count > 0) parts.Add(Loc.T("ai_applied_meals", string.Join(Loc["list_and"], entry.SavedMeals)));
+        parts.AddRange(entry.Saved);
+        return parts;
+    }
+
+    private static MealCatalogItem? FindCatalogMeal(List<MealCatalogItem> catalog, string name)
+    {
+        var wanted = name.Trim();
+        return catalog.FirstOrDefault(m => string.Equals(m.Name?.Trim(), wanted, StringComparison.CurrentCultureIgnoreCase));
+    }
+
+    private async Task FillDetailsAsync(Entry entry, List<MealCatalogItem> meals)
+    {
+        try
+        {
+            var results = await Task.WhenAll(meals.Select(MealDetails.FillMissingAsync));
+            var failed = meals.Where((_, i) => results[i] == MealDetailsResult.Failed).Select(m => m.Name).ToList();
+            if (failed.Count == 0) return;
+            var note = Loc.T("nut_details_failed_for", string.Join(Loc["list_and"], failed));
+            entry.Summary = string.IsNullOrEmpty(entry.Summary) ? note : entry.Summary + Loc["ai_applied_sep"] + note;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch { /* the meals are saved; details can still be filled from the meal page */ }
     }
 
     private sealed record DayState(PlanDay? Day, DayType Type, IReadOnlyList<MealSlot> Slots, DayTotals Totals, NutritionProfile Profile, List<MealCatalogItem> Candidates);
@@ -505,7 +586,7 @@
                 Add(new Entry { Kind = EntryKind.Assistant, Text = Loc["nut_no_fit"] });
             }
         }
-        catch (Exception ex) { Add(new Entry { Kind = EntryKind.Assistant, Text = ex.Message, IsError = true }); }
+        catch (Exception ex) { AddError(ex); }
         finally { isBusy = false; scrollPending = true; }
     }
 
@@ -526,7 +607,7 @@
             entry.State = ProposalState.Applied;
             await RefreshPlanContextAsync();
         }
-        catch (Exception ex) { Add(new Entry { Kind = EntryKind.Assistant, Text = ex.Message, IsError = true }); }
+        catch (Exception ex) { AddError(ex); }
         finally { isBusy = false; scrollPending = true; }
     }
 
@@ -562,23 +643,34 @@
     }
 
     /// <summary>Gives the assistant the next two weeks of the plan so it can prefer free days.</summary>
+    // English names for the prompt only; the model never shows them.
+    private static readonly Dictionary<MealSlot, string> SlotNames = new()
+    {
+        [MealSlot.Meal1] = "Meal 1", [MealSlot.PostWorkout] = "Post-workout", [MealSlot.Dinner] = "Dinner", [MealSlot.Snack] = "Snack"
+    };
+
     private async Task RefreshPlanContextAsync()
     {
         try
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
             var plan = await DayPlan.GetDaysAsync(uid, today, today.AddDays(13));
-            var names = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id, m => m.Name);
+            var profile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
+            var names = new Dictionary<string, string>();
+            foreach (var m in await CatalogService.GetAllMealsAsync()) names.TryAdd(m.Id, m.Name);
 
+            // One line per day with each meal the user eats, so the model sees which meals are still open.
             planContext = string.Join('\n', Enumerable.Range(0, 14).Select(offset =>
             {
                 var date = today.AddDays(offset);
-                var meals = plan.TryGetValue(date, out var day)
-                    ? day.Slots.OrderBy(s => s.Key)
-                        .Select(s => s.Value.Quick?.Name ?? names.GetValueOrDefault(s.Value.MealId ?? "", "(a meal)"))
-                        .ToList()
-                    : [];
-                return $"{date:yyyy-MM-dd} {date.DayOfWeek}: {(meals.Count == 0 ? "FREE" : string.Join(", ", meals))}";
+                plan.TryGetValue(date, out var day);
+                var slots = DayMath.SlotsFor(DayMath.TypeOf(day, date, profile), profile).Select(slot =>
+                {
+                    var entry = day?.Slots.GetValueOrDefault(slot);
+                    var what = entry is null ? "FREE" : entry.Quick?.Name ?? names.GetValueOrDefault(entry.MealId ?? "", "(a meal)");
+                    return $"{SlotNames[slot]}: {what}";
+                });
+                return $"{date:yyyy-MM-dd} {date.DayOfWeek}: {string.Join("; ", slots)}";
             }));
         }
         catch
