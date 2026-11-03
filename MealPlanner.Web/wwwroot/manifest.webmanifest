@@ -27,6 +27,20 @@
       "purpose": "maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "المشتريات",
+      "short_name": "المشتريات",
+      "url": "./shopping",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "type": "image/png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
   "lang": "ar",
   "dir": "rtl"
 }
