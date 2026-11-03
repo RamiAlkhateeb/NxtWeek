@@ -7,8 +7,13 @@ page, white rounded cards, near-black text, a pink-red accent and black round pr
 
 ## Screenshots
 
-<!-- App Screenshot Placeholder: Add your app screenshot file here (e.g. docs/screenshots/app-preview.png) -->
-![Makdous App Screenshot](docs/screenshots/app-preview.png)
+<p align="center">
+  <img src="https://ramialkhateeb.github.io/assets/projects/nxtweek/2.webp" alt="Week plan" width="260">
+  <img src="https://ramialkhateeb.github.io/assets/projects/nxtweek/3.webp" alt="Shopping list" width="260">
+  <img src="https://ramialkhateeb.github.io/assets/projects/nxtweek/1.webp" alt="AI Assistant" width="260">
+</p>
+
+More screens, in Arabic and dark mode, are in [`docs/screenshots`](docs/screenshots).
 
 ## Current experience
 
