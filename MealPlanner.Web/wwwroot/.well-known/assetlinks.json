@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.makdous",
+        "sha256_cert_fingerprints": ["A8:9B:32:BA:E9:0C:25:A6:62:74:20:52:C8:C2:43:1E:C4:62:ED:24:DD:F2:D3:9B:62:29:93:FC:A6:0E:50:96"]
+      }
+    }]
