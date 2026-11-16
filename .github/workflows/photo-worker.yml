@@ -1,0 +1,30 @@
+name: Deploy the meal photo worker
+
+on:
+  push:
+    branches: [main]
+    paths: ['photo-worker/**', '.github/workflows/photo-worker.yml']
+  workflow_dispatch:
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test
+        run: node --test photo-worker/test/*.test.js
+      - name: Deploy to Cloudflare
+        # Needs the repository secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit, Workers AI: Read)
+        # and CLOUDFLARE_ACCOUNT_ID. Without them the job stops here with a note instead of failing.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Cloudflare secrets are not set; the photo worker was not deployed."
+            exit 0
+          fi
+          cd photo-worker && npx --yes wrangler@4 deploy

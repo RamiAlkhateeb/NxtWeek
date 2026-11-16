@@ -10,7 +10,6 @@
 @inject INutritionStore NutritionStore
 @inject IMealImageService MealImages
 @inject IMealPhotoService Photos
-@inject NxtText Text
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject ToastService Toasts
@@ -41,7 +40,7 @@
                 <svg viewBox="0 0 24 24" fill="@(isFavorite ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-8-5-9.5-10A5 5 0 0 1 12 7a5 5 0 0 1 9.5 4C20 16 12 21 12 21z"/></svg>
             </button>
             <div class="mk-hero-photo">
-                @if (!hasOwnPhoto && canGenerate)
+                @if (!hasOwnPhoto)
                 {
                     <button class="mk-pill-btn" disabled="@isGenerating" @onclick="GeneratePhotoAsync">
                         @if (isGenerating) { <span class="nxt-dots" aria-hidden="true"><i></i><i></i><i></i></span> @Loc["nut_photo_making"] }
@@ -164,7 +163,7 @@
     private bool isFavorite;
     private bool isLoading = true;
     private bool isAdding;
-    private bool isSavingPhoto, isGenerating, canGenerate, hasSharedPhoto;
+    private bool isSavingPhoto, isGenerating, hasSharedPhoto;
     private string? photoError;
     private string uid = "";
     private List<DateOnly> days = new();
@@ -197,12 +196,8 @@
         {
             var profile = await UserService.GetProfileAsync(uid);
             isFavorite = profile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
-            try
-            {
-                canGenerate = await Photos.CanGenerateAsync();
-                hasSharedPhoto = await Photos.GetAsync(meal.Id) is not null;
-            }
-            catch { canGenerate = false; }
+            try { hasSharedPhoto = await Photos.HasAsync(meal.Id); }
+            catch { hasSharedPhoto = false; }
 
             var today = DateOnly.FromDateTime(DateTime.Today);
             days = Enumerable.Range(0, 14).Select(i => today.AddDays(i)).ToList();
@@ -265,7 +260,7 @@
         finally { isAdding = false; }
     }
 
-    // An AI photo for everyone, with the user's own Gemini key. Shown as the meal's picture wherever it appears.
+    // An AI photo for everyone, drawn for free by the photo worker. Shown as the meal's picture wherever it appears.
     private async Task GeneratePhotoAsync()
     {
         if (meal is null || isGenerating) return;
@@ -277,7 +272,7 @@
             hasSharedPhoto = true;
             Toasts.Show(Loc["nut_photo_made"]);
         }
-        catch (Exception ex) { photoError = Text.AiError(ex); }
+        catch (Exception ex) { photoError = Loc[MealPhotoException.MessageKey(ex)]; }
         finally { isGenerating = false; }
     }
 

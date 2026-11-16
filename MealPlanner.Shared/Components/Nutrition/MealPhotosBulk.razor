@@ -3,10 +3,10 @@
 @inject IMealCatalogService Catalog
 @inject IMealImageService MealImages
 @inject ILocalizationService Loc
-@inject NxtText Text
 
 @* Settings → Advanced: AI photos for every meal (in the app's language) that has none yet, one after another,
-   with the user's own Gemini key. Shows progress, can be stopped, and stops by itself on a key or quota error.
+   drawn for free by the photo worker. Shows progress, can be stopped, waits once when asked to slow down, and
+   stops by itself when today's free allowance is used up or the service cannot be reached.
    The photos are shared with everyone, so each meal only ever needs one. *@
 <div class="mk-bulk-photos" dir="@Loc.Direction">
     <span class="mk-sheet-row-copy">
@@ -55,8 +55,6 @@
         message = "";
         try
         {
-            // Checked now, not on load: the key may have just been added in the section above.
-            if (!await Photos.CanGenerateAsync()) { message = Loc["nut_photos_bulk_no_key"]; return; }
             await MealImages.EnsureLoadedAsync();
             var meals = (await Catalog.GetAllMealsAsync())
                 .Where(m => !m.IsArchived && string.IsNullOrWhiteSpace(m.PhotoUrl) && !MealImages.HasPhoto(m.Id)
@@ -88,16 +86,23 @@
                 StateHasChanged();
                 try
                 {
-                    await Photos.GenerateAsync(meal);
+                    try { await Photos.GenerateAsync(meal); }
+                    catch (MealPhotoException busy) when (busy.Problem == MealPhotoProblem.Busy)
+                    {
+                        // Too fast for the per-minute limit: wait once, then try this meal again.
+                        await Task.Delay(TimeSpan.FromSeconds(30), cancel.Token);
+                        await Photos.GenerateAsync(meal);
+                    }
                     left.Remove(meal);
                 }
-                catch (Exception ex) when (ex is Nxt.UI.Ai.GeminiApiException { Kind: Nxt.UI.Ai.GeminiErrorKind.Blocked or Nxt.UI.Ai.GeminiErrorKind.Other })
+                catch (MealPhotoException failed) when (failed.Problem == MealPhotoProblem.Failed)
                 {
-                    // One dish Google would not draw: skip it and carry on.
+                    // One dish the model would not draw: skip it and carry on.
                 }
+                catch (TaskCanceledException) { break; }
                 catch (Exception ex)
                 {
-                    message = Loc.T("nut_photo_failed", Text.AiError(ex));
+                    message = Loc[MealPhotoException.MessageKey(ex)];
                     break;
                 }
                 done++;
