@@ -74,7 +74,7 @@
                         {
                             var entry = p;
                             <div class="mk-planned-row">
-                                <span class="mk-slot-tile mk-tile @MealTypeStyle.T(entry.Meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(entry.Meal)" alt="" loading="lazy" /></span>
+                                <span class="mk-slot-tile mk-tile @MealTypeStyle.T(entry.Meal.MealType)" aria-hidden="true"><MealPhoto Meal="entry.Meal" /></span>
                                 <span class="mk-slot-body">
                                     <b class="mk-planned-name">@entry.Meal.Name</b>
                                     <span class="mk-subtitle">@Loc.GetShortDayName(entry.Date.DayOfWeek) · @Loc[slotPrefs.NameKey(entry.Slot)]@if (entry.Entry.PrepBatches > 1) { <text> · @Loc.T("nut_prep_times", entry.Entry.PrepBatches)</text> }</span>

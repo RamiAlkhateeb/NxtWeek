@@ -124,7 +124,7 @@
 
     private RenderFragment MealRow(MealCatalogItem meal, NutritionInfo? nutrition, string? reason, bool dashed) =>
         @<div class="mk-suggest @(dashed ? "is-dashed" : "")" role="listitem">
-            <span class="mk-slot-tile mk-tile @MealTypeStyle.T(meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(meal)" alt="" loading="lazy" /></span>
+            <span class="mk-slot-tile mk-tile @MealTypeStyle.T(meal.MealType)" aria-hidden="true"><MealPhoto Meal="meal" /></span>
             <span class="mk-slot-body">
                 <span class="mk-slot-name">@meal.Name</span>
                 <NutritionChips Nutrition="nutrition" />

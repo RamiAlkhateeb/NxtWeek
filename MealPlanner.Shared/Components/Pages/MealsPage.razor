@@ -7,6 +7,8 @@
 @inject IMealAssignService Assigner
 @inject IDayPlanService DayPlan
 @inject IMealDetailsService MealDetails
+@inject IMealPhotoService Photos
+@inject NxtText Text
 @inject ToastService Toasts
 @inject INutritionStore NutritionStore
 @inject IMealService MealService
@@ -108,7 +110,7 @@
                     {
                         var m = meal;
                         <button type="button" class="mk-top-meal" aria-label="@Loc.T("nut_top_meal_label", m.Name, count)" @onclick="() => OpenMeal(m)">
-                            <span class="mk-tile @MealTypeStyle.T(m.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(m)" alt="" loading="lazy" /></span>
+                            <span class="mk-tile @MealTypeStyle.T(m.MealType)" aria-hidden="true"><MealPhoto Meal="m" /></span>
                             <span class="mk-top-name">@m.Name</span>
                             <span class="mk-top-count" aria-hidden="true">@Loc.T("nut_times_eaten", count)</span>
                         </button>
@@ -122,7 +124,7 @@
                 var favorite = userProfile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
                 <article class="mk-meal-card">
                     <div class="mk-tile mk-meal-tile @MealTypeStyle.T(meal.MealType) @(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : "has-photo")">
-                        <button class="mk-meal-open" aria-label="@meal.Name" @onclick="() => OpenMeal(meal)"><img src="@MealImages.GetImageUrl(meal)" alt="" loading="lazy" /></button>
+                        <button class="mk-meal-open" aria-label="@meal.Name" @onclick="() => OpenMeal(meal)"><MealPhoto Meal="meal" /></button>
                         <button class="mk-heart @(favorite ? "is-on" : "")" aria-pressed="@favorite" aria-label="@(favorite ? Loc["meal_remove_favorite_short"] : Loc["meal_favorite"])" @onclick="() => ToggleFavorite(meal)">
                             <span><svg viewBox="0 0 24 24" fill="@(favorite ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-8-5-9.5-10A5 5 0 0 1 12 7a5 5 0 0 1 9.5 4C20 16 12 21 12 21z"/></svg></span>
                         </button>
@@ -459,12 +461,24 @@
             }
             allMeals = await CatalogService.GetAllMealsAsync();
             CloseNewMeal();
+            _ = MakePhotoAsync(allMeals.FirstOrDefault(m => m.Id == created.Id) ?? created);
             await SelectMeal(created);
         }
         catch (Exception ex) { newMealError = ex.Message; }
     }
 
-    private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
+    // A new meal gets an AI photo in the background (with the user's key); the meal never waits for it.
+    private async Task MakePhotoAsync(MealCatalogItem meal)
+    {
+        try
+        {
+            if (!await Photos.CanGenerateAsync()) return;
+            await Photos.GenerateAsync(meal);
+        }
+        catch (Exception ex) { Toasts.Show(Loc.T("nut_photo_failed", Text.AiError(ex)), isError: true); }
+    }
+
+        private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
     {
         isLoading = true;
         StateHasChanged();

@@ -63,7 +63,7 @@
                             @foreach (var pick in entry.Picks.ToList())
                             {
                                 <div class="mk-proposal-row">
-                                    <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(pick.Meal.MealType)"><img src="@MealImages.GetImageUrl(pick.Meal)" alt="" /></div>
+                                    <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(pick.Meal.MealType)"><MealPhoto Meal="pick.Meal" Lazy="false" /></div>
                                     <div class="mk-proposal-text-col">
                                         <span class="mk-row-date">@Loc[prefs.NameKey(pick.Slot)]</span>
                                         <span class="mk-proposal-name">@pick.Meal.Name</span>

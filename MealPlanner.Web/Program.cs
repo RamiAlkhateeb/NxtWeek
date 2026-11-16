@@ -59,6 +59,7 @@ builder.Services.AddNxtUi(o =>
     };
 });
 builder.Services.AddScoped<IMealImageService, MealImageService>();
+builder.Services.AddScoped<IMealPhotoService, MealPhotoService>();
 builder.Services.AddSingleton<IAisleService, AisleService>();
 
 await builder.Build().RunAsync();

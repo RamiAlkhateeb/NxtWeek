@@ -212,3 +212,18 @@ async function updateServiceWorker() {
     watches.delete(id);
   };
 })();
+
+// A square JPEG of at most `size` px from any image data URL: the centre is kept, the rest cropped.
+window.nxtweek.squareJpeg = (dataUrl, size) => new Promise(resolve => {
+  const img = new Image();
+  img.onload = () => {
+    const side = Math.min(img.width, img.height);
+    const out = Math.max(1, Math.min(size, side));
+    const canvas = document.createElement('canvas');
+    canvas.width = out; canvas.height = out;
+    canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, out, out);
+    resolve(canvas.toDataURL('image/jpeg', 0.8));
+  };
+  img.onerror = () => resolve(null);
+  img.src = dataUrl;
+});

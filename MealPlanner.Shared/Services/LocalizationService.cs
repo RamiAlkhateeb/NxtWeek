@@ -826,6 +826,11 @@ public class LocalizationService : ILocalizationService
         ["nut_fav_added"] = new() { ["ar"] = "أضيفت {0} إلى مفضلتك", ["en"] = "{0} added to your favourites", ["de"] = "{0} zu deinen Favoriten hinzugefügt" },
         ["nut_fav_removed"] = new() { ["ar"] = "أزيلت {0} من مفضلتك", ["en"] = "{0} removed from your favourites", ["de"] = "{0} aus deinen Favoriten entfernt" },
         ["nut_shop_shared_with"] = new() { ["ar"] = "مشتركة مع {0}", ["en"] = "Shared with {0}", ["de"] = "Geteilt mit {0}" },
+        ["nut_photo_make"] = new() { ["ar"] = "اصنع صورة", ["en"] = "Make a photo", ["de"] = "Foto erstellen" },
+        ["nut_photo_remake"] = new() { ["ar"] = "صورة جديدة", ["en"] = "New photo", ["de"] = "Neues Foto" },
+        ["nut_photo_making"] = new() { ["ar"] = "جارٍ الرسم…", ["en"] = "Drawing…", ["de"] = "Wird gezeichnet…" },
+        ["nut_photo_made"] = new() { ["ar"] = "صورة جديدة للوجبة، يراها الجميع", ["en"] = "New photo for this meal, seen by everyone", ["de"] = "Neues Foto für dieses Gericht, für alle sichtbar" },
+        ["nut_photo_failed"] = new() { ["ar"] = "تعذّر صنع الصورة: {0}", ["en"] = "Couldn't make a photo: {0}", ["de"] = "Foto konnte nicht erstellt werden: {0}" },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

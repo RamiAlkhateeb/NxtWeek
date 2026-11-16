@@ -88,7 +88,7 @@
                 @if (topMeal is { } top)
                 {
                     <section class="mk-card mk-review-row">
-                        <span class="mk-tile @MealTypeStyle.T(top.Meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(top.Meal)" alt="" /></span>
+                        <span class="mk-tile @MealTypeStyle.T(top.Meal.MealType)" aria-hidden="true"><MealPhoto Meal="top.Meal" Lazy="false" /></span>
                         <span class="mk-set-link-copy">
                             <span>@Loc["nut_best_meal"]</span>
                             <b>@top.Meal.Name</b>
@@ -209,7 +209,7 @@
         finally { isLoading = false; }
     }
 
-    private static async Task<T?> SafeAsync<T>(Task<T> task) where T : class
+    private static async Task<T?> SafeAsync<T>(Task<T?> task) where T : class
     {
         try { return await task; } catch { return null; }
     }

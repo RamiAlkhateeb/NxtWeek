@@ -75,6 +75,7 @@ nxtweek.theme
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 | Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
+| AI meal photos, shared by all users (480 px JPEG data URL) | `MealPhotos/{mealId}` |
 | Sync with one friend: partner and whose list is shared (both sides) | `users/{key}/sync` |
 | Waiting sync request (with the person asked) / the one I sent | `users/{key}/syncRequest`, `users/{key}/syncOutgoing` |
 | Protein-challenge count, only while sharing nutrition | `users/{key}/shareStats` |
@@ -160,7 +161,16 @@ picked), then up to three chat models the key can reach, and reports a switch in
 
 ## Meal pictures
 
-No remote photography. `IMealImageService` resolves a flat SVG illustration from
+Show a meal's picture with `<MealPhoto Meal="meal" />`, never a bare `<img>`. The order is the user's own private
+photo (`IMealImageService`, `users/{key}/mealPhotos`), then the shared AI photo, then the illustration.
+
+AI photos (`IMealPhotoService`) are shared by everyone at `MealPhotos/{mealId}`: one 480 px square JPEG data URL,
+kept out of `MealCatalog` so the catalog download stays small. A shallow read says which meals have one; each photo is
+fetched only when shown. They are drawn with the user's own Gemini key (`GeminiClient.GenerateImageAsync` in Nxt.UI):
+in the background when a meal is added, and from "Make a photo" on the meal's page. Most free keys cannot generate
+images; that error is shown with `NxtText.AiError` and the illustration stays.
+
+`IMealImageService` resolves a flat SVG illustration from
 `wwwroot/img/meals/` for every meal — user-supplied `PhotoUrl` first, then an
 archetype `Tag`, then a name keyword (matched in all three languages), then the
 `MealType`. Seeded meals carry a `Tags` entry so they resolve by tag.

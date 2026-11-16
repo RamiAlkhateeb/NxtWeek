@@ -63,7 +63,7 @@
         <div class="mk-month-preview">
             @if (chosen is not null)
             {
-                <div class="mk-tile mk-preview-tile @MealTypeStyle.T(chosen.Meal.MealType)"><img src="@MealImages.GetImageUrl(chosen.Meal)" alt="" /></div>
+                <div class="mk-tile mk-preview-tile @MealTypeStyle.T(chosen.Meal.MealType)"><MealPhoto Meal="chosen.Meal" Lazy="false" /></div>
                 <div class="mk-preview-text">
                     <span class="mk-row-date">@PreviewDate(selected.Value)</span>
                     <span class="mk-preview-name">@chosen.Meal.Name</span>
