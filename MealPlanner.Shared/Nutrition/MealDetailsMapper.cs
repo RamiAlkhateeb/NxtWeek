@@ -23,6 +23,8 @@ public sealed class SuggestedMealDetails
     public double Carbs { get; set; }
     public double Fat { get; set; }
     public double Fibre { get; set; }
+    // Total cooking time in minutes, for the Quick filter. 0 when the reply has none.
+    public int Minutes { get; set; }
 }
 
 /// <summary>
@@ -86,6 +88,11 @@ public static class MealDetailsMapper
                 Fibre = Math.Round(d.Fibre),
                 Source = NutritionSource.Estimate
             };
+            changed = true;
+        }
+        if (meal.PreparationMinutes is null or <= 0 && d.Minutes is > 0 and <= 600)
+        {
+            meal.PreparationMinutes = d.Minutes;
             changed = true;
         }
         return changed;

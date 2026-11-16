@@ -1,0 +1,137 @@
+@inject ILocalizationService Loc
+@inject IMealImageService MealImages
+
+@* The one sheet for filling (or changing) a slot: search the whole catalog in place, or pick from
+   up to three suggestions with a reason, a "Rediscover" meal, Browse all meals, or Quick add. *@
+<NxtBottomSheet IsOpen="IsOpen" Title="@(Replacing ? Loc.T("nut_change_for", SlotName) : Loc.T("nut_add_to", SlotName))" OnDismiss="Close">
+    <div class="mk-sheet-body mk-add-sheet" dir="@Loc.Direction">
+        @if (!string.IsNullOrEmpty(Tip))
+        {
+            <div class="mk-night-tip">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+                <span>@Tip</span>
+            </div>
+        }
+        <label class="mk-search">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input type="search" autocomplete="off" placeholder="@Loc["meals_search_placeholder"]" aria-label="@Loc["meals_search_placeholder"]"
+                   value="@query" @oninput="e => query = e.Value?.ToString() ?? string.Empty" />
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(query))
+        {
+            var found = MealFiltering.Search(Catalog, query);
+            if (found.Count == 0)
+            {
+                <div class="mk-note" role="status">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                    <span>@Loc.T("nut_search_none", query.Trim())</span>
+                </div>
+            }
+            else
+            {
+                <div class="mk-suggest-list" role="list">
+                    @foreach (var meal in found)
+                    {
+                        @MealRow(meal, meal.Nutrition, null, false)
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <section class="mk-card mk-budget">
+                <div class="mk-tp-row">
+                    <span class="mk-sheet-row-title">@Loc["nut_open_title"]</span>
+                    <span><b>@Loc.Num(Math.Max(0, Totals.OpenKcal))</b> @Loc["nut_kcal"] · <b>@Loc.Num(Math.Max(0, Totals.OpenProtein))</b> @Loc["nut_g"] @Loc["nut_protein"]</span>
+                </div>
+                <MacroBar Eaten="Totals.Eaten.Kcal + Totals.Planned.Kcal" Target="Totals.Targets.Kcal" Thin="true" />
+                <MacroBar Eaten="Totals.Eaten.Protein + Totals.Planned.Protein" Target="Totals.Targets.Protein" Colour="var(--mk-pro)" Thin="true" />
+            </section>
+
+            <div class="mk-field">
+                <span class="mk-label">@Loc["nut_suggest"]</span>
+                @if (Items.Count == 0)
+                {
+                    <div class="mk-note">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                        <span>@Loc["nut_no_fit"]</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="mk-suggest-list" role="list">
+                        @foreach (var s in Items)
+                        {
+                            @MealRow(s.Meal, s.Nutrition, Loc.T("nut_reason", Loc.Num(s.Nutrition.Protein), Loc.Num(Math.Max(0, Totals.OpenKcal))), false)
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (RediscoverItem is { } again)
+            {
+                <div class="mk-field">
+                    <span class="mk-label">@Loc["nut_rediscover"]</span>
+                    <div class="mk-suggest-list" role="list">@MealRow(again.Meal, again.Nutrition, Loc["nut_not_had"], true)</div>
+                </div>
+            }
+        }
+
+        <div class="mk-btn-row">
+            <button type="button" class="mk-btn is-soft" @onclick="OnBrowse">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10"/><path d="M17 21V3c-2.5 1.5-3.5 4-3.5 8H17"/></svg>@Loc["nut_browse"]
+            </button>
+            <button type="button" class="mk-btn is-soft" @onclick="OnQuickAdd">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>@Loc["nut_quick_add"]
+            </button>
+        </div>
+    </div>
+</NxtBottomSheet>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public MealSlot Slot { get; set; }
+    /// <summary>The slot's name as shown (Ramadan mode renames slots).</summary>
+    [Parameter] public string? Name { get; set; }
+    /// <summary>A short hint above the search, such as the iftar tip in Ramadan mode.</summary>
+    [Parameter] public string? Tip { get; set; }
+    /// <summary>The slot already holds a meal that the pick will replace.</summary>
+    [Parameter] public bool Replacing { get; set; }
+    [Parameter, EditorRequired] public DayTotals Totals { get; set; } = default!;
+    [Parameter] public IReadOnlyList<Suggestion> Items { get; set; } = [];
+    [Parameter] public Suggestion? RediscoverItem { get; set; }
+    /// <summary>Every meal the search may find (the caller narrows it to the app language).</summary>
+    [Parameter] public IEnumerable<MealCatalogItem> Catalog { get; set; } = [];
+    [Parameter] public EventCallback<MealCatalogItem> OnAdd { get; set; }
+    [Parameter] public EventCallback OnBrowse { get; set; }
+    [Parameter] public EventCallback OnQuickAdd { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private string query = "";
+    private bool wasOpen;
+
+    private string SlotName => Name ?? Loc["nut_slot_" + Slot];
+
+    protected override void OnParametersSet()
+    {
+        // Each opening starts with an empty search.
+        if (IsOpen && !wasOpen) query = "";
+        wasOpen = IsOpen;
+    }
+
+    private Task Close() => OnDismiss.InvokeAsync();
+
+    private RenderFragment MealRow(MealCatalogItem meal, NutritionInfo? nutrition, string? reason, bool dashed) =>
+        @<div class="mk-suggest @(dashed ? "is-dashed" : "")" role="listitem">
+            <span class="mk-slot-tile mk-tile @MealTypeStyle.T(meal.MealType)" aria-hidden="true"><MealPhoto Meal="meal" /></span>
+            <span class="mk-slot-body">
+                <span class="mk-slot-name">@meal.Name</span>
+                <NutritionChips Nutrition="nutrition" />
+                @if (reason is not null) { <span class="mk-suggest-reason @(dashed ? "is-muted" : "")">@reason</span> }
+            </span>
+            <button type="button" class="mk-icon-btn is-ink" aria-label="@Loc.T("nut_slot_entry", Loc.T("nut_add_to", SlotName), meal.Name)" @onclick="() => OnAdd.InvokeAsync(meal)">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </div>;
+}

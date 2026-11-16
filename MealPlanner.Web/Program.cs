@@ -30,10 +30,11 @@ builder.Services.AddScoped<ISuggestionService, RandomSuggestionService>();
 builder.Services.AddScoped<IWeekFillService, WeekFillService>();
 builder.Services.AddScoped<IMealAssignService, MealAssignService>();
 builder.Services.AddScoped<INutritionStore, FirebaseNutritionStore>();
-builder.Services.AddScoped<IDayPlanService, DayPlanService>();
+builder.Services.AddScoped<IDayPlanService>(sp => new DayPlanService(sp.GetRequiredService<INutritionStore>()));
+builder.Services.AddScoped<ISyncService, FirebaseSyncService>();
+builder.Services.AddScoped<LiveWatch>();
 builder.Services.AddScoped<IMealDetailsService, GeminiMealDetailsService>();
 builder.Services.AddScoped<INutritionEstimator, GeminiNutritionEstimator>();
-builder.Services.AddScoped<IGeminiPlannerService, GeminiPlannerService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();
 builder.Services.AddScoped<IDataExportService, LocalDataExportService>();
 builder.Services.AddScoped<IDataImportService, LocalDataImportService>();
@@ -58,6 +59,7 @@ builder.Services.AddNxtUi(o =>
     };
 });
 builder.Services.AddScoped<IMealImageService, MealImageService>();
+builder.Services.AddScoped<IMealPhotoService, MealPhotoService>();
 builder.Services.AddSingleton<IAisleService, AisleService>();
 
 await builder.Build().RunAsync();

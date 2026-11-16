@@ -1,17 +1,33 @@
 @inject ILocalizationService Loc
 
-<div class="mk-dstrip" role="group">
+@* Monday-based week with an arrow at each end. A logged day (every meal eaten or skipped) shows a tick. *@
+<div class="mk-dstrip has-arrows" role="group">
+    <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_prev"]" disabled="@(!CanGoPrev)" @onclick="OnPrev">
+        <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
     @foreach (var date in Dates)
     {
         var d = date;
         var on = d == Selected;
         var dot = Dots.GetValueOrDefault(d);
-        <button type="button" class="mk-dchip @(on ? "is-on" : "") @(d == Today ? "is-today" : "")" aria-pressed="@(on ? "true" : "false")" aria-label="@Loc.FormatDayDate(d)" @onclick="() => OnSelect.InvokeAsync(d)">
+        var logged = Logged.Contains(d);
+        <button type="button" class="mk-dchip @(on ? "is-on" : "") @(d == Today ? "is-today" : "")" aria-pressed="@(on ? "true" : "false")"
+                aria-label="@(logged ? Loc.T("nut_day_logged", Loc.FormatDayDate(d)) : Loc.FormatDayDate(d))" @onclick="() => OnSelect.InvokeAsync(d)">
             <span class="mk-dchip-name">@Loc.GetDayAbbr(d.DayOfWeek)</span>
             <span class="mk-dchip-num">@d.Day</span>
-            <span class="mk-dchip-dot is-@dot.ToString().ToLowerInvariant()"></span>
+            @if (logged)
+            {
+                <span class="mk-dchip-stamp" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
+            }
+            else
+            {
+                <span class="mk-dchip-dot is-@dot.ToString().ToLowerInvariant()"></span>
+            }
         </button>
     }
+    <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_next"]" disabled="@(!CanGoNext)" @onclick="OnNext">
+        <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    </button>
 </div>
 
 @code {
@@ -19,5 +35,10 @@
     [Parameter] public DateOnly Selected { get; set; }
     [Parameter] public DateOnly Today { get; set; }
     [Parameter] public IReadOnlyDictionary<DateOnly, DayDot> Dots { get; set; } = new Dictionary<DateOnly, DayDot>();
+    [Parameter] public IReadOnlySet<DateOnly> Logged { get; set; } = new HashSet<DateOnly>();
+    [Parameter] public bool CanGoPrev { get; set; }
+    [Parameter] public bool CanGoNext { get; set; }
     [Parameter] public EventCallback<DateOnly> OnSelect { get; set; }
+    [Parameter] public EventCallback OnPrev { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
 }

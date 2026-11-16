@@ -1,0 +1,46 @@
+@inject ILocalizationService Loc
+
+@* A short celebration for a completed day or for reaching protein. It is a status message, not a dialog:
+   tapping anywhere or pressing Escape closes it, and the owner hides it again after a few seconds.
+   The pop animation is dropped under prefers-reduced-motion (mk.css). *@
+@if (Kind != Celebration.None)
+{
+    <div class="mk-cele" dir="@Loc.Direction" @onclick="OnClose" @onkeydown="Key">
+        <div class="mk-cele-card" role="status" aria-live="polite">
+            <span class="mk-cele-icon" aria-hidden="true">
+                @if (Kind == Celebration.DayComplete)
+                {
+                    <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+                }
+                else
+                {
+                    <svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                }
+            </span>
+            <b class="mk-cele-title">@Title</b>
+            <span class="mk-cele-body">@Body</span>
+            <button type="button" class="mk-cele-close" @ref="root">@Loc["nut_cele_close"]</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Celebration Kind { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Body { get; set; } = "";
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private ElementReference root;
+    private Celebration shown;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Focus it when it appears so Escape works straight away.
+        if (Kind == shown) return;
+        shown = Kind;
+        if (Kind == Celebration.None) return;
+        try { await root.FocusAsync(); } catch { /* not focusable yet: tap still closes it */ }
+    }
+
+    private Task Key(KeyboardEventArgs e) => e.Key == "Escape" ? OnClose.InvokeAsync() : Task.CompletedTask;
+}

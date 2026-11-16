@@ -14,13 +14,13 @@ public interface IAisleService
 public sealed class AisleService : IAisleService
 {
     public static readonly Aisle Produce = new("produce", "#22a85a", "aisle_produce");
-    public static readonly Aisle Bakery = new("bakery", "#e0a458", "aisle_bakery");
-    public static readonly Aisle Dairy = new("dairy", "#6aa7d8", "aisle_dairy");
-    public static readonly Aisle Meat = new("meat", "#e8553f", "aisle_meat");
-    public static readonly Aisle Pantry = new("pantry", "#a47e4f", "aisle_pantry");
+    public static readonly Aisle Bakery = new("bakery", "#b9803f", "aisle_bakery");
+    public static readonly Aisle Dairy = new("dairy", "#4d8fe0", "aisle_dairy");
+    public static readonly Aisle Meat = new("meat", "#e0584a", "aisle_meat");
+    public static readonly Aisle Pantry = new("pantry", "#d98a00", "aisle_pantry");
     public static readonly Aisle Other = new("other", "#98989f", "aisle_other");
 
-    public IReadOnlyList<Aisle> All { get; } = [Produce, Bakery, Dairy, Meat, Pantry, Other];
+    public IReadOnlyList<Aisle> All { get; } = [Produce, Meat, Dairy, Pantry, Bakery, Other];
 
     // Checked in order, first hit wins ("زيت زيتون" must reach pantry before "زيتون" hits produce).
     private static readonly (Aisle Aisle, string[] Words)[] Rules =

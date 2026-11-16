@@ -7,7 +7,7 @@ public class DayPlanServiceTests
     private static readonly DateOnly Monday = new(2026, 10, 19);
 
     /// <summary>Behaves like FirebaseNutritionStore: legacy entries read as Meal 1 until the day is saved.</summary>
-    private sealed class MemoryStore : INutritionStore
+    internal sealed class MemoryStore : INutritionStore
     {
         public Dictionary<DateOnly, PlanDay> Days { get; } = new();
         public Dictionary<DateOnly, WeeklyPlanEntry> Legacy { get; } = new();
@@ -16,19 +16,39 @@ public class DayPlanServiceTests
         public Task<Dictionary<DateOnly, PlanDay>> GetDaysAsync(string uid, DateOnly start, DateOnly end)
         {
             var result = new Dictionary<DateOnly, PlanDay>();
+            if (Others.TryGetValue(uid, out var other))
+            {
+                foreach (var (date, day) in other) if (date >= start && date <= end) result[date] = Clone(day);
+                return Task.FromResult(result);
+            }
             foreach (var (date, legacy) in Legacy) if (date >= start && date <= end) result[date] = DayMath.FromLegacy(legacy);
             foreach (var (date, day) in Days) if (date >= start && date <= end) result[date] = Clone(day);
             return Task.FromResult(result);
         }
 
-        public Task SaveDayAsync(string uid, PlanDay day) { Days[day.Date] = Clone(day); Saves++; return Task.CompletedTask; }
+        public Task SaveDayAsync(string uid, PlanDay day)
+        {
+            if (Others.TryGetValue(uid, out var other)) { other[day.Date] = Clone(day); return Task.CompletedTask; }
+            Days[day.Date] = Clone(day); Saves++; return Task.CompletedTask;
+        }
 
         private static PlanDay Clone(PlanDay d) => System.Text.Json.JsonSerializer.Deserialize<PlanDay>(System.Text.Json.JsonSerializer.Serialize(d))!;
 
         public Task<NutritionProfile?> GetProfileAsync(string uid) => Task.FromResult<NutritionProfile?>(null);
         public Task SaveProfileAsync(string uid, NutritionProfile profile) => Task.CompletedTask;
+        public MealPrefs Prefs { get; set; } = new();
+        public Task<MealPrefs> GetMealPrefsAsync(string uid) => Task.FromResult(Prefs);
+        public Task SaveMealPrefsAsync(string uid, MealPrefs prefs) { Prefs = prefs; return Task.CompletedTask; }
         public Task<List<BodyLog>> GetBodyLogsAsync(string uid) => Task.FromResult(new List<BodyLog>());
         public Task SaveBodyLogAsync(string uid, BodyLog log) => Task.CompletedTask;
+        public Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid) => Task.FromResult(new Dictionary<DateOnly, string>());
+        public Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl) => Task.CompletedTask;
+        public Dictionary<string, SyncLink> Links { get; } = new();
+        public Dictionary<string, Dictionary<DateOnly, PlanDay>> Others { get; } = new();
+        public Task<SyncLink?> GetSyncLinkAsync(string uid) => Task.FromResult(Links.GetValueOrDefault(uid));
+        public SharedReview? Shared;
+        public Task<SharedReview?> GetSharedReviewAsync(string uid) => Task.FromResult(Shared);
+        public Task ShareReviewAsync(string uid, SharedReview review) { Shared = review; return Task.CompletedTask; }
     }
 
     [Fact]
@@ -84,15 +104,65 @@ public class DayPlanServiceTests
         Assert.Equal(1.5, entry.Servings);
     }
 
+    private static MealPrefs AllFour() => new() { On = [MealSlot.Meal1, MealSlot.PostWorkout, MealSlot.Dinner, MealSlot.Snack] };
+
     [Fact]
-    public async Task Day_type_is_stored_on_the_day()
+    public async Task A_day_saved_before_3_1_keeps_its_day_type_when_edited()
+    {
+        var store = new MemoryStore();
+        store.Days[Monday] = new PlanDay { Date = Monday, Type = DayType.Rest };
+        var plan = new DayPlanService(store);
+
+        await plan.SetEntryAsync("u", Monday, MealSlot.Meal1, new SlotEntry { MealId = "a" });
+
+        Assert.Equal(DayType.Rest, store.Days[Monday].Type);
+    }
+
+    [Fact]
+    public async Task Assigning_without_a_slot_uses_the_users_meals()
+    {
+        var store = new MemoryStore { Prefs = new MealPrefs { On = [MealSlot.Meal1, MealSlot.Dinner] } };
+        var assign = new MealAssignService(new DayPlanService(store), store);
+        var meal = new MealCatalogItem { Id = "a" };
+
+        Assert.Equal(MealSlot.Meal1, await assign.AssignAsync("u", Monday, meal));
+        Assert.Equal(MealSlot.Dinner, await assign.AssignAsync("u", Monday, new MealCatalogItem { Id = "b" }));
+        Assert.Null(await assign.FindFreeSlotAsync("u", Monday, new MealCatalogItem { Id = "c" }));
+    }
+
+    [Fact]
+    public async Task Moving_a_meal_to_another_day_saves_both_days()
     {
         var store = new MemoryStore();
         var plan = new DayPlanService(store);
+        await plan.SetEntryAsync("u", Monday, MealSlot.Dinner, new SlotEntry { MealId = "a", Servings = 2 });
+        await plan.SetEntryAsync("u", Monday.AddDays(1), MealSlot.Dinner, new SlotEntry { MealId = "b" });
 
-        await plan.SetDayTypeAsync("u", Monday, DayType.Rest);
+        var changed = await plan.MoveEntryAsync("u", Monday, MealSlot.Dinner, Monday.AddDays(1), MealSlot.Dinner);
 
-        Assert.Equal(DayType.Rest, store.Days[Monday].Type);
+        Assert.Equal(2, changed.Count);
+        Assert.Equal("b", store.Days[Monday].Slots[MealSlot.Dinner].MealId);
+        Assert.Equal("a", store.Days[Monday.AddDays(1)].Slots[MealSlot.Dinner].MealId);
+        Assert.Equal(2, store.Days[Monday.AddDays(1)].Slots[MealSlot.Dinner].Servings);
+    }
+
+    [Fact]
+    public async Task Moving_within_a_day_and_copying_save_one_day()
+    {
+        var store = new MemoryStore();
+        var plan = new DayPlanService(store);
+        await plan.SetEntryAsync("u", Monday, MealSlot.Meal1, new SlotEntry { MealId = "a" });
+
+        Assert.Single(await plan.MoveEntryAsync("u", Monday, MealSlot.Meal1, Monday, MealSlot.Dinner));
+        Assert.Equal("a", store.Days[Monday].Slots[MealSlot.Dinner].MealId);
+        Assert.False(store.Days[Monday].Slots.ContainsKey(MealSlot.Meal1));
+
+        var copy = await plan.CopyEntryAsync("u", Monday, MealSlot.Dinner, Monday.AddDays(3), MealSlot.Meal1);
+        Assert.Equal("a", copy!.Slots[MealSlot.Meal1].MealId);
+        Assert.Equal("a", store.Days[Monday].Slots[MealSlot.Dinner].MealId);
+
+        Assert.Empty(await plan.MoveEntryAsync("u", Monday, MealSlot.Snack, Monday.AddDays(1), MealSlot.Snack));
+        Assert.Null(await plan.CopyEntryAsync("u", Monday, MealSlot.Snack, Monday.AddDays(1), MealSlot.Snack));
     }
 
     [Fact]
@@ -101,22 +171,22 @@ public class DayPlanServiceTests
         var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } };
         var shake = new MealCatalogItem { SuitableSlots = [MealSlot.PostWorkout, MealSlot.Snack] };
 
-        // A dish that says nothing about where it fits is a main meal: Dinner, not the post-workout slot.
-        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Training, null, null));
-        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FirstEmptyFor(day, DayType.Training, null, shake));
-        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Rest, null, null));
-        Assert.Equal(MealSlot.Snack, SlotPicker.FirstEmptyFor(day, DayType.Rest, null, shake));
+        // A dish that says nothing about where it fits is a main meal: Dinner, not a snack.
+        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, AllFour(), null));
+        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FirstEmptyFor(day, AllFour(), shake));
+        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, null, null));
+        Assert.Equal(MealSlot.Snack, SlotPicker.FirstEmptyFor(day, null, shake));
     }
 
     [Fact]
     public void A_meal_is_never_placed_in_a_slot_that_is_off()
     {
-        var profile = new NutritionProfile { OffSlots = [MealSlot.PostWorkout, MealSlot.Snack] };
+        var prefs = new MealPrefs { On = [MealSlot.Meal1, MealSlot.Dinner] };
         var shake = new MealCatalogItem { SuitableSlots = [MealSlot.PostWorkout, MealSlot.Snack] };
 
-        Assert.Equal(MealSlot.Meal1, SlotPicker.FirstEmptyFor(new PlanDay(), DayType.Training, profile, shake));
+        Assert.Equal(MealSlot.Meal1, SlotPicker.FirstEmptyFor(new PlanDay(), prefs, shake));
         var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } };
-        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, DayType.Training, profile, shake));
+        Assert.Equal(MealSlot.Dinner, SlotPicker.FirstEmptyFor(day, prefs, shake));
     }
 
     [Fact]
@@ -124,7 +194,7 @@ public class DayPlanServiceTests
     {
         var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" }, [MealSlot.Dinner] = new SlotEntry { MealId = "b" } } };
 
-        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FreeSlotFor(day, DayType.Training, (NutritionProfile?)null, null));
+        Assert.Equal(MealSlot.PostWorkout, SlotPicker.FreeSlotFor(day, AllFour(), null));
     }
 
     [Fact]
@@ -133,9 +203,9 @@ public class DayPlanServiceTests
         var day = new PlanDay();
         foreach (var s in Enum.GetValues<MealSlot>()) day.Slots[s] = new SlotEntry { MealId = "a" };
 
-        Assert.Null(SlotPicker.FreeSlotFor(day, DayType.Training, (NutritionProfile?)null, null));
-        var oneMeal = new NutritionProfile { OffSlots = [MealSlot.PostWorkout, MealSlot.Dinner, MealSlot.Snack] };
-        Assert.Null(SlotPicker.FreeSlotFor(new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } }, DayType.Rest, oneMeal, null));
+        Assert.Null(SlotPicker.FreeSlotFor(day, AllFour(), null));
+        var oneMeal = new MealPrefs { On = [MealSlot.Meal1] };
+        Assert.Null(SlotPicker.FreeSlotFor(new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } }, oneMeal, null));
     }
 
     [Fact]
@@ -144,6 +214,6 @@ public class DayPlanServiceTests
         var day = new PlanDay();
         foreach (var s in Enum.GetValues<MealSlot>()) day.Slots[s] = new SlotEntry { MealId = "a" };
 
-        Assert.Equal(MealSlot.Meal1, SlotPicker.FirstEmptyFor(day, DayType.Training, null, null));
+        Assert.Equal(MealSlot.Meal1, SlotPicker.FirstEmptyFor(day, AllFour(), null));
     }
 }

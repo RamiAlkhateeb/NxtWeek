@@ -7,6 +7,8 @@
 @inject IMealAssignService Assigner
 @inject IDayPlanService DayPlan
 @inject IMealDetailsService MealDetails
+@inject IMealPhotoService Photos
+@inject NxtText Text
 @inject ToastService Toasts
 @inject INutritionStore NutritionStore
 @inject IMealService MealService
@@ -21,7 +23,7 @@
             <h1 class="mk-title">@Loc["meals_title"]</h1>
             <button class="mk-icon-btn" aria-label="@Loc["meals_filter"]" @onclick="() => showFilters = true">
                 <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
-                @if (!filterByAppLanguage) { <span class="mk-dot-badge" aria-hidden="true"></span> }
+                @if (!filterByAppLanguage || selectedMealType is not null) { <span class="mk-dot-badge" aria-hidden="true"></span> }
             </button>
         </div>
 
@@ -32,7 +34,7 @@
                 <span class="mk-banner-copy">
                     @if (pickSlot is { } ps)
                     {
-                        <b>@Loc.T("nut_pick_for", Loc["nut_slot_" + ps])</b>
+                        <b>@Loc.T("nut_pick_for", Loc[slotPrefs.NameKey(ps)])</b>
                         @if (pickBudget is { } budget) { <span>@Loc.T("nut_budget", Loc.Num(Math.Max(0, budget.OpenKcal)), Loc.Num(Math.Max(0, budget.OpenProtein)))</span> }
                     }
                     else
@@ -49,21 +51,23 @@
             <input type="search" placeholder="@Loc["meals_search_placeholder"]" aria-label="@Loc["meals_search_placeholder"]" @bind="searchText" @bind:event="oninput" />
         </label>
 
-        <div class="mk-chip-row" role="group" aria-label="@Loc["meals_meal_type"]">
-            <button class="mk-chip @(selectedMealType is null ? "is-active" : "")" @onclick="() => SetMealType(null)">@Loc["meals_filter_all"]</button>
-            @foreach (var type in AllTypes)
-            {
-                <button class="mk-chip @(selectedMealType == type ? "is-active" : "")" @onclick="() => SetMealType(type)">@Loc.GetMealTypeName(type)</button>
-            }
-        </div>
-
-        <div class="mk-chip-row" role="group" aria-label="@Loc["meals_filter"]">
+        <div class="mk-chip-row is-wrap mk-meal-filters" role="group" aria-label="@Loc["meals_filter"]">
             @foreach (var (flag, key) in NutritionFilters)
             {
                 var f = flag;
                 var on = filters.HasFlag(f);
                 <button class="mk-chip is-outline @(on ? "is-active" : "")" aria-pressed="@(on ? "true" : "false")" @onclick="() => filters ^= f">@Loc[key]</button>
             }
+            <label class="mk-sort">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>
+                <span class="mk-visually-hidden">@Loc["nut_sort"]</span>
+                <select aria-label="@Loc["nut_sort"]" value="@sort" @onchange="e => sort = Enum.TryParse<MealSort>(e.Value?.ToString(), out var v) ? v : MealSort.Recommended">
+                    @foreach (var option in Enum.GetValues<MealSort>())
+                    {
+                        <option value="@option" selected="@(sort == option)">@Loc["nut_sort_" + option]</option>
+                    }
+                </select>
+            </label>
         </div>
     </header>
 
@@ -75,6 +79,13 @@
     @if (isLoading)
     {
         <div class="mk-grid"><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (loadError)
+    {
+        <div class="mk-stack">
+            <div class="mk-notice is-error" role="alert">@Loc["meals_load_error"]</div>
+            <button class="mk-btn is-block" @onclick="LoadAsync">@Loc["nut_retry"]</button>
+        </div>
     }
     else if (FilteredMeals.Count == 0 && (filters != MealFilters.None || selectedMealType is not null || !string.IsNullOrWhiteSpace(searchText)))
     {
@@ -90,13 +101,30 @@
     }
     else
     {
+        @if (ShowTopMeals)
+        {
+            <section class="mk-top-meals" aria-labelledby="mk-top-title">
+                <h2 id="mk-top-title" class="mk-label">@Loc["nut_top_meals"]</h2>
+                <div class="mk-top-row">
+                    @foreach (var (meal, count) in topMeals)
+                    {
+                        var m = meal;
+                        <button type="button" class="mk-top-meal" aria-label="@Loc.T("nut_top_meal_label", m.Name, count)" @onclick="() => OpenMeal(m)">
+                            <span class="mk-tile @MealTypeStyle.T(m.MealType)" aria-hidden="true"><MealPhoto Meal="m" /></span>
+                            <span class="mk-top-name">@m.Name</span>
+                            <span class="mk-top-count" aria-hidden="true">@Loc.T("nut_times_eaten", count)</span>
+                        </button>
+                    }
+                </div>
+            </section>
+        }
         <div class="mk-grid">
             @foreach (var meal in FilteredMeals)
             {
                 var favorite = userProfile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
                 <article class="mk-meal-card">
                     <div class="mk-tile mk-meal-tile @MealTypeStyle.T(meal.MealType) @(string.IsNullOrWhiteSpace(meal.PhotoUrl) ? "" : "has-photo")">
-                        <button class="mk-meal-open" aria-label="@meal.Name" @onclick="() => OpenMeal(meal)"><img src="@MealImages.GetImageUrl(meal)" alt="" loading="lazy" /></button>
+                        <button class="mk-meal-open" aria-label="@meal.Name" @onclick="() => OpenMeal(meal)"><MealPhoto Meal="meal" /></button>
                         <button class="mk-heart @(favorite ? "is-on" : "")" aria-pressed="@favorite" aria-label="@(favorite ? Loc["meal_remove_favorite_short"] : Loc["meal_favorite"])" @onclick="() => ToggleFavorite(meal)">
                             <span><svg viewBox="0 0 24 24" fill="@(favorite ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-8-5-9.5-10A5 5 0 0 1 12 7a5 5 0 0 1 9.5 4C20 16 12 21 12 21z"/></svg></span>
                         </button>
@@ -106,7 +134,7 @@
                             <span class="mk-meal-name">@meal.Name</span>
                             <span class="mk-subtitle">@Loc.GetMealTypeName(meal.MealType)@if (meal.PreparationMinutes is > 0) { <text> · @Loc.T("nut_minutes", Loc.Num(meal.PreparationMinutes.Value))</text> }</span>
                         </button>
-                        <button class="mk-icon-btn is-ink" aria-label="@(pickSlot is { } addSlot ? Loc.T("nut_add_to", Loc["nut_slot_" + addSlot]) : isContextMode ? Loc.T("meals_add_to_named_day", PickDayLabel) : Loc["meals_add_to_day_short"])" @onclick="() => SelectMeal(meal)">
+                        <button class="mk-icon-btn is-ink" aria-label="@(pickSlot is { } addSlot ? Loc.T("nut_add_to", Loc[slotPrefs.NameKey(addSlot)]) : isContextMode ? Loc.T("meals_add_to_named_day", PickDayLabel) : Loc["meals_add_to_day_short"])" @onclick="() => SelectMeal(meal)">
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
                     </div>
@@ -128,6 +156,15 @@
 
 <NxtBottomSheet IsOpen="showFilters" Title="@Loc["meals_filter"]" OnDismiss="() => showFilters = false">
     <div class="mk-sheet-body" dir="@Loc.Direction">
+        <span class="mk-label">@Loc["meals_meal_type"]</span>
+        <div class="mk-chip-wrap" role="group" aria-label="@Loc["meals_meal_type"]">
+            <button class="mk-chip @(selectedMealType is null ? "is-active" : "")" aria-pressed="@(selectedMealType is null ? "true" : "false")" @onclick="() => SetMealType(null)">@Loc["meals_filter_all"]</button>
+            @foreach (var type in AllTypes)
+            {
+                var t = type;
+                <button class="mk-chip @(selectedMealType == t ? "is-active" : "")" aria-pressed="@(selectedMealType == t ? "true" : "false")" @onclick="() => SetMealType(t)">@Loc.GetMealTypeName(t)</button>
+            }
+        </div>
         <span class="mk-label">@Loc["meals_language_filter"]</span>
         <div class="mk-seg">
             <button class="@(filterByAppLanguage ? "is-active" : "")" @onclick="() => filterByAppLanguage = true">@Loc["meals_lang_app"]</button>
@@ -197,11 +234,17 @@
 
     private MealType? selectedMealType;
     private MealFilters filters;
+    private MealSort sort = MealSort.Recommended;
+    private bool loadError;
+    private Dictionary<string, int> eatenCounts = new();
+    private List<(MealCatalogItem Meal, int Count)> topMeals = new();
+
+    private bool ShowTopMeals => topMeals.Count > 0 && pickSlot is null && !isContextMode && filters == MealFilters.None
+                                 && selectedMealType is null && string.IsNullOrWhiteSpace(searchText);
 
     private static readonly (MealFilters Flag, string Key)[] NutritionFilters =
     [
         (MealFilters.HighProtein, "nut_filter_high_protein"),
-        (MealFilters.Under600, "nut_filter_under_600"),
         (MealFilters.Quick, "nut_filter_quick"),
         (MealFilters.Favourites, "nut_filter_favourites")
     ];
@@ -209,6 +252,7 @@
     private void ClearFilters()
     {
         filters = MealFilters.None;
+        sort = MealSort.Recommended;
         selectedMealType = null;
         searchText = "";
     }
@@ -249,14 +293,14 @@
             }
             if (!string.IsNullOrWhiteSpace(searchText))
                 query = query.Where(m => m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)
-                                      || m.Ingredients.Any(i => i.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+                                      || m.Ingredients.Any(i => i.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                                      || m.IngredientLines.Any(l => l.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
             if (selectedMealType.HasValue)
                 query = query.Where(m => m.MealType == selectedMealType.Value);
+            var favourites = (userProfile?.FavoriteMealIds ?? []).ToHashSet();
             if (filters != MealFilters.None)
-            {
-                var favourites = (userProfile?.FavoriteMealIds ?? []).ToHashSet();
                 query = query.Where(m => MealFiltering.Matches(m, filters, favourites));
-            }
+            query = MealFiltering.Sort(query, sort, favourites, eatenCounts);
             // Choosing for a slot: what fits the day comes first, then the most protein.
             if (pickBudget is { } budget) query = MealFiltering.PickOrder(query, budget.OpenKcal);
             return query.ToList();
@@ -292,20 +336,50 @@
             pickSlot = slot;
         currentWeekDays = Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
 
-        await MealService.SeedAsync(new List<Meal>());
-        await MealImages.EnsureLoadedAsync();
-        allMeals = await CatalogService.GetAllMealsAsync();
-        userProfile = await UserService.GetProfileAsync(uid);
-        if (pickSlot is not null) await LoadPickBudgetAsync();
-
-        isLoading = false;
+        await LoadAsync();
         pageInitialized = true;
         if (CreateRequested) OpenNewMealFromNavigation();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = false;
+        try
+        {
+            try { await MealService.SeedAsync(new List<Meal>()); } catch { /* seeding is best effort */ }
+            await MealImages.EnsureLoadedAsync();
+            var mealsTask = CatalogService.GetAllMealsAsync();
+            var profileTask = UserService.GetProfileAsync(uid);
+            await Task.WhenAll(mealsTask, profileTask);
+            allMeals = await mealsTask;
+            userProfile = await profileTask;
+            if (pickSlot is not null) await LoadPickBudgetAsync();
+            await LoadHistoryAsync();
+        }
+        catch { loadError = true; }
+        finally { isLoading = false; }
+    }
+
+    // "Your top meals" and the Recommended order come from what was eaten in the last 12 weeks. Not essential.
+    private async Task LoadHistoryAsync()
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var days = await DayPlan.GetDaysAsync(uid, today.AddDays(-84), today);
+            eatenCounts = MealFiltering.EatenCounts(days, today);
+            topMeals = MealFiltering.TopMeals(eatenCounts, allMeals);
+        }
+        catch { eatenCounts = new(); topMeals = new(); }
     }
 
     private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
 
     // What the chosen day still has open, shown in the pick banner. Not essential, so failures are silent.
+    // Slot names follow Ramadan mode (suhoor, iftar, late snack).
+    private MealPrefs slotPrefs = new();
+
     private async Task LoadPickBudgetAsync()
     {
         try
@@ -313,9 +387,9 @@
             var profile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
             var days = await DayPlan.GetDaysAsync(uid, selectedDate, selectedDate);
             var day = days.GetValueOrDefault(selectedDate);
-            var type = DayMath.TypeOf(day, selectedDate, profile);
+            var prefs = slotPrefs = await NutritionStore.GetMealPrefsAsync(uid);
             var nutrition = allMeals.ToDictionary(m => m.Id, m => m.Nutrition);
-            pickBudget = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile);
+            pickBudget = DayMath.Totals(day, TargetCalculator.For(profile), id => nutrition.GetValueOrDefault(id), prefs);
         }
         catch { pickBudget = null; }
     }
@@ -387,12 +461,24 @@
             }
             allMeals = await CatalogService.GetAllMealsAsync();
             CloseNewMeal();
+            _ = MakePhotoAsync(allMeals.FirstOrDefault(m => m.Id == created.Id) ?? created);
             await SelectMeal(created);
         }
         catch (Exception ex) { newMealError = ex.Message; }
     }
 
-    private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
+    // A new meal gets an AI photo in the background (with the user's key); the meal never waits for it.
+    private async Task MakePhotoAsync(MealCatalogItem meal)
+    {
+        try
+        {
+            if (!await Photos.CanGenerateAsync()) return;
+            await Photos.GenerateAsync(meal);
+        }
+        catch (Exception ex) { Toasts.Show(Loc.T("nut_photo_failed", Text.AiError(ex)), isError: true); }
+    }
+
+        private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)
     {
         isLoading = true;
         StateHasChanged();
@@ -402,7 +488,7 @@
             var slot = await Assigner.AssignAsync(uid, date, meal, pickSlot);
             var text = pickSlot is null
                 ? Loc.T("meals_added_toast", meal.Name, Loc.GetDayName(date.DayOfWeek))
-                : Loc.T("nut_added_toast", Loc["nut_slot_" + slot]);
+                : Loc.T("nut_added_toast", Loc[slotPrefs.NameKey(slot)]);
             Nav.NavigateTo($"/?day={date:yyyy-MM-dd}&toast={Uri.EscapeDataString(text)}");
         }
         catch (Exception ex)

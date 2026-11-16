@@ -9,7 +9,7 @@ There is no mascot; do not add one.
 | Project | What lives there |
 |---|---|
 | `MealPlanner.Shared` | **All** pages, components, models and service interfaces. A Razor class library — this is where nearly every change goes. |
-| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, weight trend, weekly summary, suggestions, shopping amounts). |
+| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, stamps and check-in, weight trend, weekly summary, suggestions, shopping amounts). |
 | `MealPlanner.Web` | The WASM host: `Program.cs` (DI), `App.razor`, `MainLayout`, `wwwroot` (CSS, icons, illustrations, service worker), and the browser-specific service implementations. |
 
 ```bash
@@ -69,11 +69,69 @@ nxtweek.theme
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
 | Shopping list | `users/{key}/shopping` |
-| Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
-| Nutrition profile and targets | `users/{key}/nutritionProfile` |
-| Meals turned off (Meal 1 is always on; planned food in them is kept, just not shown or counted) | `users/{key}/nutritionProfile/offSlots` |
+| Day slots (Meal 1, afternoon snack, dinner, evening snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
+| Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
+| Body data, goal and target overrides (health data, signed-in only) | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
+| Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
+| AI meal photos, shared by all users (480 px JPEG data URL) | `MealPhotos/{mealId}` |
+| Sync with one friend: partner and whose list is shared (both sides) | `users/{key}/sync` |
+| Waiting sync request (with the person asked) / the one I sent | `users/{key}/syncRequest`, `users/{key}/syncOutgoing` |
+| Protein-challenge count, only while sharing nutrition | `users/{key}/shareStats` |
+| Week shared from the Sunday review: Monday, days logged, most eaten meal (never calories or weight) | `users/{key}/sharedReview` |
+
+Makdous is about meals only: there are no training or rest days, and one daily target. The afternoon snack is
+stored under its first name, `PostWorkout`. Fields from before 3.1 (`days/*/type`, and `mealTimes`, `offSlots`,
+`trainingDays`, `overrides/rest` in `nutritionProfile`) are still read but never written; `INutritionStore.GetMealPrefsAsync`
+builds `mealPrefs` from them once. A slot entry is planned, eaten or skipped; skipped counts nowhere.
+
+Three bottom tabs: Week, Meals, Settings. Friends, Shopping and Progress open from icons in the Week header.
+A new user starts at `/setup` (goal, about you, meal times, targets; `/welcome` is the same page). Meal times
+save for everyone; goal and body data are saved only for a signed-in user, so a guest who declines to sign in
+continues with the default targets. Settings is grouped as You, App and Account.
+
+The Week page shows calories and protein with what is left; carbs and fat appear under Details only when
+`mealPrefs.trackMacros` is on. An empty slot is one "Add a meal" target that opens `AddMealSheet` (search,
+suggestions with a reason, Rediscover, Browse all meals, Quick add). Slot cards have no tick button: once today's
+planned meal is past its time the card asks "Did you eat this?" (`DayStatus.NeedsCheckIn`); No marks it skipped.
+A meal is moved or copied to another slot or day through `IDayPlanService.MoveEntryAsync` / `CopyEntryAsync`
+(rules in `PlanMoves`: a move onto a taken slot swaps, a copy replaces). The assistant (`/ai-plan`) only has the
+two on-device asks; there is no free-text Gemini chat.
+
+Meals: search, High protein / Quick (`PreparationMinutes` ≤ 20) / Favourites chips and a sort (`MealFiltering.Sort`:
+Recommended = favourites, then most eaten, then name; Fewest calories; Most protein). Meal type and language live in
+the filter sheet. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
+The Gemini details call also fills a missing cooking time.
+
+Progress is one page: weight and waist with the weekly check, the weekly summary, badges (`Badges`, pure: first full
+week, protein 7 days in a row, 10 different meals, first batch cook, shared a week; computed from eaten meals only, so a
+missed day never takes one away) and the private weekly photo.
+
+Come-back features, all without notifications, with their rules in `ComeBack` and `PlanMoves.CopyWeek` (pure, tested):
+the stamp line on Week counts logged days (`DayStatus.Stamps`; a missed day never resets anything); the Sunday review
+(`/review?week=`) is announced on Week from Sunday 18:00 through Monday until opened (`mealPrefs.reviewSeen`), and its
+"Plan next week" copies meals and servings into the empty slots of the following week from today on; "Copy this week" shows
+on an empty next week; `CelebrationOverlay` marks day complete and protein reached (no animation under reduced motion).
+Ramadan mode (`mealPrefs.ramadan`) renames Meal 1, Dinner and the evening snack to suhoor, iftar and late snack with
+their own `ramadanTimes`: show slot names with `Loc[prefs.NameKey(slot)]` and times with `prefs.TimeOf(slot)`, never
+`"nut_slot_" + slot` directly.
+
+Shopping (`/shopping`) is shopping by servings: the meals still to cook from today to Sunday (not eaten, skipped or
+leftover) with their servings and meal prep, and one list grouped by aisle that follows them. The page brings the list in
+line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
+(`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
+and ones the plan no longer needs. Old accounts with several stores see all their items together.
+
+Friends: each friend's week shows their meals (tap one to add it to your favourites) and, only when they share, calories
+and protein. The protein challenge shows when you and a friend both share; each side publishes just its protein-day count
+(`FriendShare.ProteinDays`). Sync (`ISyncService`) links one friend at a time: the one asked accepts after a confirmation, and
+their meals from today on become the requester's (`SyncMerge.Adopt`). From then on `DayPlanService` mirrors every change to a
+catalog meal on a day from today on into the partner's day (`SyncMerge.Mirror`). Servings, eaten, skipped, meal prep,
+leftovers and quick adds stay personal, and an answered entry is never changed. Both use the requester's shopping list
+(`IShoppingListService.GetListOwnerAsync`), and its amounts count both people's servings. Stopping gives the other side a copy
+of the list. Live updates use `LiveWatch` (Firebase REST streaming on one narrow path, plus a reload when the tab is shown
+again): Week watches this week's days, Shopping watches the shared list and both plans.
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
@@ -91,7 +149,7 @@ exists; otherwise the guest's key is kept.
 
 ## Meal details from Gemini
 
-When a meal is added (Meals "New meal", or the Assistant's Apply), `IMealDetailsService` asks Gemini with the
+When a meal is added (Meals "New meal"), `IMealDetailsService` asks Gemini with the
 user's own key for ingredient lines (amount per serving, unit, aisle, English camelCase `id` so shopping merges)
 and nutrition per serving. `MealDetailsMapper` (pure, tested) rejects implausible replies and only fills what the
 meal lacks, always as an estimate. Without a key the meal is added as before with a hint; a Gemini failure never
@@ -99,13 +157,20 @@ loses the meal. "Estimate from ingredients" uses the same call (`GeminiNutrition
 
 All Gemini calls go through Nxt.UI's `GeminiClient`: it tries the model chosen in Settings (saved as soon as it is
 picked), then up to three chat models the key can reach, and reports a switch in `LastFallback`. Failures are
-`GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`. The
-Assistant's Apply only fills empty meals (`IMealAssignService.FindFreeSlotAsync`), never replaces one, and reuses a
-catalog meal of the same name.
+`GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`.
 
 ## Meal pictures
 
-No remote photography. `IMealImageService` resolves a flat SVG illustration from
+Show a meal's picture with `<MealPhoto Meal="meal" />`, never a bare `<img>`. The order is the user's own private
+photo (`IMealImageService`, `users/{key}/mealPhotos`), then the shared AI photo, then the illustration.
+
+AI photos (`IMealPhotoService`) are shared by everyone at `MealPhotos/{mealId}`: one 480 px square JPEG data URL,
+kept out of `MealCatalog` so the catalog download stays small. A shallow read says which meals have one; each photo is
+fetched only when shown. They are drawn with the user's own Gemini key (`GeminiClient.GenerateImageAsync` in Nxt.UI):
+in the background when a meal is added, and from "Make a photo" on the meal's page. Most free keys cannot generate
+images; that error is shown with `NxtText.AiError` and the illustration stays.
+
+`IMealImageService` resolves a flat SVG illustration from
 `wwwroot/img/meals/` for every meal — user-supplied `PhotoUrl` first, then an
 archetype `Tag`, then a name keyword (matched in all three languages), then the
 `MealType`. Seeded meals carry a `Tags` entry so they resolve by tag.

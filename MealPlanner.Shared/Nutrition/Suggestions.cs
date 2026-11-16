@@ -42,6 +42,37 @@ public static class Suggestions
             .ToList();
     }
 
+    public const int RediscoverAfterDays = 21;
+
+    /// <summary>
+    /// "Rediscover": a meal the user has eaten before but not in the last three weeks, that suits the slot and
+    /// fits the open calories. The one eaten most often wins. Null when there is none.
+    /// </summary>
+    public static Suggestion? Rediscover(MealSlot slot, double openKcal, ISet<string> usedToday, IEnumerable<MealCatalogItem> candidates,
+        IReadOnlyDictionary<DateOnly, PlanDay> history, DateOnly today, ISet<string>? exclude = null)
+    {
+        var eaten = new Dictionary<string, (int Count, DateOnly Last)>();
+        foreach (var (date, day) in history)
+        {
+            if (date >= today) continue;
+            foreach (var entry in day.Slots.Values)
+            {
+                if (!entry.Eaten || entry.Skipped || string.IsNullOrEmpty(entry.MealId)) continue;
+                var seen = eaten.GetValueOrDefault(entry.MealId);
+                eaten[entry.MealId] = (seen.Count + 1, seen.Count == 0 || date > seen.Last ? date : seen.Last);
+            }
+        }
+        var cutoff = today.AddDays(-RediscoverAfterDays);
+        return candidates
+            .Where(m => m.Nutrition is not null && !m.IsArchived && Suits(m, slot) && m.Nutrition.Kcal <= openKcal)
+            .Where(m => !usedToday.Contains(m.Id) && exclude?.Contains(m.Id) != true)
+            .Where(m => eaten.TryGetValue(m.Id, out var e) && e.Last < cutoff)
+            .OrderByDescending(m => eaten[m.Id].Count)
+            .ThenByDescending(m => m.Nutrition!.Protein)
+            .Select(m => new Suggestion(m, m.Nutrition!))
+            .FirstOrDefault();
+    }
+
     /// <summary>
     /// One meal per empty slot (no meal twice, nothing already on the day) that reaches the open protein
     /// within the open calories, with as little extra protein and as few calories as possible.
@@ -102,6 +133,8 @@ public enum MealFilters
     Favourites = 8
 }
 
+public enum MealSort { Recommended, FewestKcal, MostProtein }
+
 /// <summary>The Meals tab's nutrition filters and the pick-mode order.</summary>
 public static class MealFiltering
 {
@@ -117,6 +150,66 @@ public static class MealFiltering
         if (filters.HasFlag(MealFilters.Quick) && !(meal.PreparationMinutes is > 0 and <= QuickMinutes)) return false;
         if (filters.HasFlag(MealFilters.Favourites) && !favourites.Contains(meal.Id)) return false;
         return true;
+    }
+
+    /// <summary>Meals whose name or an ingredient contains the text; an empty search matches nothing.</summary>
+    public static List<MealCatalogItem> Search(IEnumerable<MealCatalogItem> meals, string? text, int max = 20)
+    {
+        var q = text?.Trim() ?? "";
+        if (q.Length == 0) return [];
+        return meals
+            .Where(m => !m.IsArchived)
+            .Where(m => (m.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
+                        || m.Ingredients.Any(i => i.Contains(q, StringComparison.OrdinalIgnoreCase))
+                        || m.IngredientLines.Any(l => l.Name.Contains(q, StringComparison.OrdinalIgnoreCase)))
+            // A name match is what the user is most likely after; names that start with the text come first.
+            .OrderByDescending(m => m.Name?.StartsWith(q, StringComparison.OrdinalIgnoreCase) ?? false)
+            .ThenByDescending(m => m.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
+            .ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Take(max)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Recommended: favourites first, then the meals eaten most, then by name. Fewest calories and most protein put
+    /// meals without nutrition last.
+    /// </summary>
+    public static IEnumerable<MealCatalogItem> Sort(IEnumerable<MealCatalogItem> meals, MealSort sort, ISet<string> favourites,
+        IReadOnlyDictionary<string, int>? eatenCounts = null) => sort switch
+    {
+        MealSort.FewestKcal => meals.OrderBy(m => m.Nutrition is null).ThenBy(m => m.Nutrition?.Kcal ?? 0).ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase),
+        MealSort.MostProtein => meals.OrderBy(m => m.Nutrition is null).ThenByDescending(m => m.Nutrition?.Protein ?? 0).ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase),
+        _ => meals.OrderByDescending(m => favourites.Contains(m.Id))
+                  .ThenByDescending(m => eatenCounts?.GetValueOrDefault(m.Id) ?? 0)
+                  .ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase)
+    };
+
+    /// <summary>How often each meal was eaten (not planned, not skipped) before today.</summary>
+    public static Dictionary<string, int> EatenCounts(IReadOnlyDictionary<DateOnly, PlanDay> days, DateOnly today)
+    {
+        var counts = new Dictionary<string, int>();
+        foreach (var (date, day) in days)
+        {
+            if (date > today) continue;
+            foreach (var entry in day.Slots.Values)
+                if (entry.Eaten && !entry.Skipped && !string.IsNullOrEmpty(entry.MealId))
+                    counts[entry.MealId] = counts.GetValueOrDefault(entry.MealId) + 1;
+        }
+        return counts;
+    }
+
+    /// <summary>"Your top meals": the most eaten meals that are still in the catalog, most first.</summary>
+    public static List<(MealCatalogItem Meal, int Count)> TopMeals(IReadOnlyDictionary<string, int> eatenCounts, IEnumerable<MealCatalogItem> catalog, int max = 5)
+    {
+        var byId = new Dictionary<string, MealCatalogItem>();
+        foreach (var m in catalog) if (!m.IsArchived) byId.TryAdd(m.Id, m);
+        return eatenCounts
+            .Where(kv => kv.Value > 0 && byId.ContainsKey(kv.Key))
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => byId[kv.Key].Name, StringComparer.CurrentCultureIgnoreCase)
+            .Take(max)
+            .Select(kv => (byId[kv.Key], kv.Value))
+            .ToList();
     }
 
     public static bool FitsToday(MealCatalogItem meal, double openKcal) => meal.Nutrition is not null && meal.Nutrition.Kcal <= openKcal;

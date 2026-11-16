@@ -1,0 +1,226 @@
+@page "/setup"
+@page "/welcome"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@implements IDisposable
+@inject IAuthService Auth
+@inject IUserService UserService
+@inject INutritionStore NutritionStore
+@inject NavigationManager Nav
+@inject ILocalizationService Loc
+
+@* First run (and "Run setup again"): goal, about you, meal times, then the daily targets.
+   Meal times are preferences and save for everyone. Goal and body data are health data: they are saved
+   only to a signed-in account, never to this device, so a guest is asked to sign in at the end. *@
+<div class="mk-page mk-setup" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <div class="mk-title-block"><h1 class="mk-title is-md">@Loc["app_title"]</h1></div>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else
+    {
+        <main class="mk-stack mk-setup-body">
+            @if (step < 3)
+            {
+                <div class="mk-setup-progress" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="@(step + 1)" aria-label="@Loc.T("setup_step_of", step + 1)">
+                    @for (var i = 0; i < 3; i++) { <span class="@(i <= step ? "is-done" : "")"></span> }
+                </div>
+                <span class="mk-setup-step">@Loc.T("setup_step_of", step + 1)</span>
+            }
+
+            @switch (step)
+            {
+                case 0:
+                    <h2 class="mk-setup-title" tabindex="-1">@Loc["setup_goal_q"]</h2>
+                    <div class="mk-stack" role="radiogroup" aria-label="@Loc["nut_goal"]">
+                        @foreach (var goal in new[] { Goal.Lose, Goal.Keep, Goal.Gain })
+                        {
+                            var g = goal;
+                            <button type="button" role="radio" aria-checked="@(p.Goal == g ? "true" : "false")" class="mk-goal-card @(p.Goal == g ? "is-active" : "")" @onclick="() => p.Goal = g">
+                                <span class="mk-goal-icon" aria-hidden="true">
+                                    <svg class="i" viewBox="0 0 24 24">
+                                        @if (g == Goal.Lose) { <path d="M3 7l6 6 4-4 8 8" /><path d="M21 11v6h-6" /> }
+                                        else if (g == Goal.Keep) { <path d="M4 12h16" /><path d="M8 8l-4 4 4 4M16 8l4 4-4 4" /> }
+                                        else { <path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /> }
+                                    </svg>
+                                </span>
+                                <span class="mk-goal-copy"><b>@Loc["nut_goal_" + g]</b><span>@Loc["setup_goal_" + g]</span></span>
+                                @if (p.Goal == g)
+                                {
+                                    <svg class="i mk-goal-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>
+                                }
+                            </button>
+                        }
+                    </div>
+                    break;
+
+                case 1:
+                    <h2 class="mk-setup-title" tabindex="-1">@Loc["setup_about_q"]</h2>
+                    <p class="mk-subtitle">@Loc["setup_about_body"]</p>
+                    <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_sex"]">
+                        @foreach (var sex in new[] { Sex.Male, Sex.Female })
+                        {
+                            var v = sex;
+                            <button type="button" class="@(p.Sex == v ? "is-active" : "")" aria-pressed="@(p.Sex == v ? "true" : "false")" @onclick="() => p.Sex = v">@(v == Sex.Male ? Loc["nut_male"] : Loc["nut_female"])</button>
+                        }
+                    </div>
+                    <div class="mk-nut-form is-three">
+                        <label class="mk-field">
+                            <span class="mk-label">@Loc["nut_weight"]</span>
+                            <span class="mk-input-unit"><input inputmode="decimal" autocomplete="off" value="@Loc.Input(p.WeightKg)" @onchange="e => SetNumber(e, v => p.WeightKg = Math.Clamp(v, 30, 300))" /><span>@Loc["nut_kg"]</span></span>
+                        </label>
+                        <label class="mk-field">
+                            <span class="mk-label">@Loc["nut_height"]</span>
+                            <span class="mk-input-unit"><input inputmode="decimal" autocomplete="off" value="@Loc.Input(p.HeightCm)" @onchange="e => SetNumber(e, v => p.HeightCm = Math.Clamp(v, 100, 230))" /><span>@Loc["nut_cm"]</span></span>
+                        </label>
+                        <label class="mk-field">
+                            <span class="mk-label">@Loc["nut_age"]</span>
+                            <span class="mk-input-unit"><input inputmode="numeric" autocomplete="off" value="@Loc.Input(p.Age)" @onchange="e => SetNumber(e, v => p.Age = (int)Math.Clamp(Math.Round(v), 14, 100))" /><span>@Loc["nut_years"]</span></span>
+                        </label>
+                    </div>
+                    <div class="mk-field">
+                        <span class="mk-label">@Loc["nut_activity"]</span>
+                        <ActivityPicker Value="p.Activity" ValueChanged="v => p.Activity = v" />
+                    </div>
+                    break;
+
+                case 2:
+                    <h2 class="mk-setup-title" tabindex="-1">@Loc["setup_times_q"]</h2>
+                    <p class="mk-subtitle">@Loc["setup_times_body"]</p>
+                    <section class="mk-set-card"><MealTimeRows Prefs="prefs" OnChanged="SavePrefsAsync" /></section>
+                    break;
+
+                default:
+                    var t = TargetCalculator.For(p);
+                    <div class="mk-setup-done">
+                        <span class="mk-setup-done-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" /></svg></span>
+                        <h2 class="mk-setup-title" tabindex="-1">@Loc["setup_done"]</h2>
+                    </div>
+                    <div class="mk-setup-tiles">
+                        <div class="mk-setup-tile"><span>@Loc["nut_calories"]</span><b class="is-kcal">@Loc.Num(t.Kcal)</b><span>@Loc["nut_kcal"]</span></div>
+                        <div class="mk-setup-tile"><span>@Loc["nut_protein"]</span><b class="is-protein">@Loc.Num(t.Protein)</b><span>@Loc["nut_g"]</span></div>
+                    </div>
+                    <p class="mk-subtitle mk-center">@Loc["setup_done_body"]</p>
+                    @if (isGuest)
+                    {
+                        <div class="mk-note">
+                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+                            <span>@Loc["setup_guest_note"]</span>
+                        </div>
+                    }
+                    break;
+            }
+
+            @if (!string.IsNullOrEmpty(error)) { <div class="mk-notice is-error" role="alert">@error</div> }
+        </main>
+
+        <footer class="mk-setup-foot">
+            @if (step is > 0 and < 3)
+            {
+                <button type="button" class="mk-btn is-soft" @onclick="() => step--">@Loc["back"]</button>
+            }
+            @if (step < 3)
+            {
+                <button type="button" class="mk-btn is-grow" @onclick="() => step++">@Loc["next"]</button>
+            }
+            else
+            {
+                <button type="button" class="mk-btn is-grow" disabled="@busy" @onclick="StartAsync">@Loc["setup_start"]</button>
+            }
+        </footer>
+    }
+</div>
+
+<SignInExplainerSheet IsOpen="showSignIn" ReturnPath="/setup?step=1" OnDismiss="ContinueAsGuestAsync" />
+
+@code {
+    private NutritionProfile p = new();
+    private MealPrefs prefs = new();
+    private string uid = "";
+    private bool isGuest = true, isLoading = true, busy, showSignIn;
+    private int step;
+    private string error = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguage;
+        await Loc.InitializeAsync();
+        var user = await Auth.GetCurrentUserAsync();
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) { Nav.NavigateTo("/signin", replace: true); return; }
+        uid = user.Uid;
+        isGuest = user.IsGuest;
+
+        // Back from signing in: the typed body data could not be kept anywhere, so "About you" is asked again.
+        var query = new Uri(Nav.Uri).Query;
+        if (query.Contains("step=1", StringComparison.OrdinalIgnoreCase)) step = 1;
+
+        try
+        {
+            var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
+            var profileTask = isGuest ? Task.FromResult<NutritionProfile?>(null) : NutritionStore.GetProfileAsync(uid);
+            await Task.WhenAll(prefsTask, profileTask);
+            prefs = await prefsTask;
+            p = await profileTask ?? new NutritionProfile();
+        }
+        catch { /* offline: setup still works from the defaults */ }
+        finally { isLoading = false; }
+    }
+
+    private static void SetNumber(ChangeEventArgs e, Action<double> set)
+    {
+        if (NutFormat.Parse(e.Value?.ToString()) is { } v) set(v);
+    }
+
+    private async Task SavePrefsAsync()
+    {
+        error = "";
+        try { await NutritionStore.SaveMealPrefsAsync(uid, prefs); }
+        catch { error = Loc["nut_save_error"]; }
+    }
+
+    private async Task StartAsync()
+    {
+        // Health data needs an account: a guest is asked to sign in, and nothing is stored if they don't.
+        if (isGuest) { showSignIn = true; return; }
+        busy = true;
+        error = "";
+        try
+        {
+            await NutritionStore.SaveProfileAsync(uid, p);
+            await FinishAsync();
+        }
+        catch { error = Loc["nut_save_error"]; busy = false; }
+    }
+
+    private async Task ContinueAsGuestAsync()
+    {
+        showSignIn = false;
+        busy = true;
+        await FinishAsync();
+    }
+
+    // Remembering that setup ran is what stops the Week page from sending the user back here.
+    private async Task FinishAsync()
+    {
+        try
+        {
+            var profile = await UserService.GetProfileAsync(uid) ?? new UserProfile { Uid = uid, DisplayName = uid };
+            if (!profile.FirstWeekAutoFilled)
+            {
+                profile.FirstWeekAutoFilled = true;
+                await UserService.CreateProfileAsync(profile);
+            }
+        }
+        catch { /* the week loads anyway */ }
+        Nav.NavigateTo("/", replace: true);
+    }
+
+    private void OnLanguage() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguage;
+}

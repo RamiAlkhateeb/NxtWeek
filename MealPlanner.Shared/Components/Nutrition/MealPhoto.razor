@@ -1,0 +1,40 @@
+@implements IDisposable
+@inject IMealImageService MealImages
+@inject IMealPhotoService Photos
+
+@* A meal's picture: the user's own photo if they took one, else the shared AI photo when one exists (fetched
+   only now, the illustration shows meanwhile), else the illustration. Photos fill the tile; illustrations sit in it. *@
+<img src="@src" alt="@Alt" class="@(IsPhoto ? "is-photo" : null)" loading="@(Lazy ? "lazy" : null)" />
+
+@code {
+    [Parameter, EditorRequired] public MealCatalogItem? Meal { get; set; }
+    [Parameter] public string Alt { get; set; } = "";
+    [Parameter] public bool Lazy { get; set; } = true;
+
+    private string src = "";
+    private string? loadedFor;
+
+    // Illustrations live under img/; anything else (a data: URL or a user's photo URL) is a photo.
+    private bool IsPhoto => !src.StartsWith("img/", StringComparison.Ordinal);
+
+    protected override void OnInitialized() => Photos.Changed += OnChanged;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        src = MealImages.GetImageUrl(Meal);
+        if (Meal is null || IsPhoto) { loadedFor = Meal?.Id; return; }
+        var id = Meal.Id;
+        loadedFor = id;
+        if (await Photos.GetAsync(id) is { } shared && loadedFor == id && !IsOwn(id)) src = shared;
+    }
+
+    private bool IsOwn(string id) => MealImages.HasPhoto(id) || !string.IsNullOrWhiteSpace(Meal?.PhotoUrl);
+
+    private void OnChanged(string mealId)
+    {
+        if (Meal?.Id != mealId) return;
+        _ = InvokeAsync(async () => { await OnParametersSetAsync(); StateHasChanged(); });
+    }
+
+    public void Dispose() => Photos.Changed -= OnChanged;
+}

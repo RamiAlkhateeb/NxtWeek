@@ -73,6 +73,15 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task PublishShareStatsAsync(string uid, ShareStats stats)
+    {
+        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/shareStats"), stats);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<ShareStats?> GetShareStatsAsync(string uid) =>
+        await http.GetFromJsonAsync<ShareStats?>(Url($"users/{Key(uid)}/shareStats"));
+
     // Merge-only write. Never PUTs the whole document, so sibling weeklyPlan /
     // shopping / favorite nodes already stored under the same uid survive.
     public async Task CreateProfileAsync(UserProfile profile)

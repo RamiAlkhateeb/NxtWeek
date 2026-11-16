@@ -2,7 +2,7 @@ using MealPlanner.Shared.Models;
 
 namespace MealPlanner.Shared.Nutrition;
 
-/// <summary>Daily targets for one day type, in whole kcal and grams.</summary>
+/// <summary>Daily targets, in whole kcal and grams.</summary>
 public sealed record DailyTargets(int Kcal, int Protein, int Carbs, int Fat, int Fibre);
 
 /// <summary>Every intermediate value, for the "How we calculate" card on the profile screen.</summary>
@@ -11,19 +11,16 @@ public sealed record TargetBreakdown(
     double Tdee,
     int GoalDeltaKcal,
     int WeeklyAdjustKcal,
-    DailyTargets CalculatedTraining,
-    DailyTargets CalculatedRest,
+    DailyTargets Calculated,
     double ProteinPerKg);
 
 /// <summary>
-/// Pure target maths (no I/O). Mifflin-St Jeor BMR × activity factor, plus the goal and the
-/// weekly-check adjustment, rounded to 50 kcal. Protein is the larger of 28% of calories and
-/// 1.9 g per kg; fat is 30% of calories; carbs take the rest. A rest day is 200 kcal less,
-/// taken from carbs only.
+/// Pure target maths (no I/O). Mifflin-St Jeor BMR × activity factor (daily movement, not workouts),
+/// plus the goal and the weekly-check adjustment, rounded to 50 kcal. Protein is the larger of 28% of
+/// calories and 1.9 g per kg; fat is 30% of calories; carbs take the rest. One target for every day.
 /// </summary>
 public static class TargetCalculator
 {
-    public const int RestDayKcalReduction = 200;
     public const int FibreTarget = 30;
     public static readonly double[] ActivityFactors = [1.2, 1.375, 1.55, 1.725];
 
@@ -48,8 +45,6 @@ public static class TargetCalculator
         var protein = Round5(Math.Max(kcal * 0.28 / 4, 1.9 * p.WeightKg));
         var fat = Round5(kcal * 0.30 / 9);
         var carbs = CarbsFor(kcal, protein, fat);
-        var restKcal = kcal - RestDayKcalReduction;
-        var restCarbs = CarbsFor(restKcal, protein, fat);
 
         return new TargetBreakdown(
             Bmr(p),
@@ -57,22 +52,20 @@ public static class TargetCalculator
             delta,
             p.WeeklyAdjustKcal,
             new DailyTargets(kcal, protein, carbs, fat, FibreTarget),
-            new DailyTargets(restKcal, protein, restCarbs, fat, FibreTarget),
             p.WeightKg > 0 ? protein / p.WeightKg : 0);
     }
 
-    /// <summary>Targets for a day type, with the user's overrides for that type applied.</summary>
-    public static DailyTargets For(NutritionProfile p, DayType type)
+    /// <summary>The daily targets, with the user's overrides applied.</summary>
+    public static DailyTargets For(NutritionProfile p)
     {
-        var calc = Calculate(p);
-        var baseTargets = type == DayType.Rest ? calc.CalculatedRest : calc.CalculatedTraining;
-        var o = p.Overrides.For(type);
+        var calc = Calculate(p).Calculated;
+        var o = p.Overrides?.Daily ?? new TargetOverride();
         return new DailyTargets(
-            o.Kcal ?? baseTargets.Kcal,
-            o.Protein ?? baseTargets.Protein,
-            o.Carbs ?? baseTargets.Carbs,
-            o.Fat ?? baseTargets.Fat,
-            baseTargets.Fibre);
+            o.Kcal ?? calc.Kcal,
+            o.Protein ?? calc.Protein,
+            o.Carbs ?? calc.Carbs,
+            o.Fat ?? calc.Fat,
+            calc.Fibre);
     }
 
     private static int CarbsFor(int kcal, int protein, int fat) =>

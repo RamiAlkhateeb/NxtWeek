@@ -1,0 +1,74 @@
+@page "/settings/meals"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject INutritionStore NutritionStore
+@inject ILocalizationService Loc
+@implements IDisposable
+
+@* Which meals the day has and when. Preferences, not health data: they save at once, for guests too. *@
+<div class="mk-page mk-profile" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/settings" />
+            <div class="mk-title-block"><h1 class="mk-title">@Loc["nut_meal_times"]</h1></div>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (loadError)
+    {
+        <div class="mk-stack">
+            <div class="mk-notice is-error" role="alert">@Loc["nut_load_error"]</div>
+            <button class="mk-btn is-block" @onclick="LoadAsync">@Loc["nut_retry"]</button>
+        </div>
+    }
+    else
+    {
+        <main class="mk-stack">
+            <p class="mk-subtitle">@Loc["nut_meal_times_hint"]</p>
+            <section class="mk-set-card"><MealTimeRows Prefs="prefs" OnChanged="SaveAsync" /></section>
+            @if (!string.IsNullOrEmpty(saveError)) { <div class="mk-notice is-error" role="alert">@saveError</div> }
+        </main>
+    }
+</div>
+
+@code {
+    private MealPrefs prefs = new();
+    private string uid = "";
+    private bool isLoading = true, loadError;
+    private string saveError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguageChanged;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = false;
+        try
+        {
+            uid = (await Auth.GetCurrentUserAsync())?.Uid ?? "";
+            if (!string.IsNullOrEmpty(uid)) prefs = await NutritionStore.GetMealPrefsAsync(uid);
+        }
+        catch { loadError = true; }
+        finally { isLoading = false; }
+    }
+
+    private async Task SaveAsync()
+    {
+        saveError = "";
+        if (string.IsNullOrEmpty(uid)) return;
+        try { await NutritionStore.SaveMealPrefsAsync(uid, prefs); }
+        catch { saveError = Loc["nut_save_error"]; }
+    }
+
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguageChanged;
+}

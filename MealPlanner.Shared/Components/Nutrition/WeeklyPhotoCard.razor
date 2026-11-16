@@ -1,0 +1,74 @@
+@inject ILocalizationService Loc
+@inject IJSRuntime JS
+@inject ToastService Toasts
+
+@* The private weekly photo: the last three weeks and this one. Only the owner sees them; they are stored in
+   the account (never on the device) and never shared with friends. A guest is asked to sign in first. *@
+<section class="mk-card mk-photo-card">
+    <div class="mk-note">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        <span>@Loc["nut_photo_private"]</span>
+    </div>
+    <div class="mk-photo-grid">
+        @foreach (var monday in Weeks)
+        {
+            var m = monday;
+            var label = Loc.T("nut_day_month", m.Day, Loc.GetMonthName(m.Month));
+            var current = m == ThisMonday;
+            <div class="mk-photo-cell">
+                @if (Photos.TryGetValue(m, out var url))
+                {
+                    @if (current)
+                    {
+                        <button type="button" class="mk-photo-frame is-button" aria-label="@Loc.T("nut_photo_replace", label)" disabled="@busy" @onclick="PickAsync">
+                            <img src="@url" alt="@Loc.T("nut_photo_alt", label)" />
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="mk-photo-frame"><img src="@url" alt="@Loc.T("nut_photo_alt", label)" /></span>
+                    }
+                }
+                else if (current)
+                {
+                    <button type="button" class="mk-photo-frame is-add" disabled="@busy" @onclick="PickAsync">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                        <span>@(busy ? Loc["nut_photo_saving"] : Loc["nut_photo_add"])</span>
+                    </button>
+                }
+                else
+                {
+                    <span class="mk-photo-frame is-empty">@Loc["nut_photo_none"]</span>
+                }
+                <span class="mk-photo-date">@label</span>
+            </div>
+        }
+    </div>
+    <p class="mk-set-hint">@Loc.T("nut_photo_compare", Loc.Num(Photos.Count(p => Weeks.Contains(p.Key))))</p>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyDictionary<DateOnly, string> Photos { get; set; } = new Dictionary<DateOnly, string>();
+    [Parameter] public DateOnly ThisMonday { get; set; }
+    /// <summary>A guest gets the sign-in prompt instead of the photo picker.</summary>
+    [Parameter] public bool NeedsAccount { get; set; }
+    [Parameter] public EventCallback OnNeedAccount { get; set; }
+    /// <summary>Saves the picked photo for this week; the owner updates <see cref="Photos"/>.</summary>
+    [Parameter] public Func<string, Task> OnSave { get; set; } = _ => Task.CompletedTask;
+
+    private bool busy;
+    private IReadOnlyList<DateOnly> Weeks => Enumerable.Range(0, 4).Select(i => ThisMonday.AddDays(-7 * (3 - i))).ToList();
+
+    private async Task PickAsync()
+    {
+        if (NeedsAccount) { await OnNeedAccount.InvokeAsync(); return; }
+        busy = true;
+        try
+        {
+            var dataUrl = await JS.InvokeAsync<string?>("nxtweek.pickPhoto", 720);
+            if (!string.IsNullOrEmpty(dataUrl)) await OnSave(dataUrl);
+        }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { busy = false; }
+    }
+}

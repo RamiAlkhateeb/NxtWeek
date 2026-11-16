@@ -10,6 +10,7 @@
         <a href="" class="mk-nav-item @(IsActive("") ? "is-active" : "")" aria-current="@(IsActive("") ? "page" : null)">
             <span class="mk-nav-icon" aria-hidden="true">
                 <svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+                @if (pendingRequests > 0) { <span class="mk-nav-badge" aria-label="@Loc.T("nav_friends_requests", pendingRequests)">@pendingRequests</span> }
             </span>
             <span class="mk-nav-label">@Loc["nav_week"]</span>
         </a>
@@ -22,7 +23,6 @@
         <a href="settings" class="mk-nav-item @(IsActive("settings") ? "is-active" : "")" aria-current="@(IsActive("settings") ? "page" : null)">
             <span class="mk-nav-icon" aria-hidden="true">
                 <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-                @if (pendingRequests > 0) { <span class="mk-nav-badge" aria-label="@Loc.T("nav_friends_requests", pendingRequests)">@pendingRequests</span> }
             </span>
             <span class="mk-nav-label">@Loc["nav_settings"]</span>
         </a>
@@ -51,7 +51,7 @@
 
     private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
 
-    // The badge on Friends counts requests waiting for an answer. Failing to load it is cosmetic.
+    // Friends opens from the Week header, so the Week tab carries the count of requests waiting for an answer. Failing to load it is cosmetic.
     private async Task RefreshRequestsAsync()
     {
         if (loadingRequests) return;
@@ -80,15 +80,15 @@
         var path = RelativePath();
         return path.StartsWith("onboarding", StringComparison.OrdinalIgnoreCase)
             || path.Equals("welcome", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("setup", StringComparison.OrdinalIgnoreCase)
             || path.Equals("signin", StringComparison.OrdinalIgnoreCase);
     }
 
-    // Month, Shopping and the Assistant open from Week; Profile and Friends from Settings.
+    // Month, Shopping, Progress, Friends and the Assistant open from Week; Profile and Meal times from Settings.
     private static readonly Dictionary<string, string[]> TabChildren = new()
     {
-        [""] = ["month", "shopping", "ai-plan", "progress"],
-        ["meals"] = ["meal"],
-        ["settings"] = ["friends"]
+        [""] = ["month", "shopping", "ai-plan", "progress", "review", "friends"],
+        ["meals"] = ["meal"]
     };
 
     private bool IsActive(string path)

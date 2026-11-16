@@ -53,3 +53,42 @@ public class GeminiClientTests
     public void Errors_say_what_to_do(int status, string? reason, string? statusText, string message, GeminiErrorKind expected) =>
         Assert.Equal(expected, GeminiClient.ClassifyError(status, reason, statusText, message));
 }
+
+public class GeminiImageTests
+{
+    [Theory]
+    [InlineData("gemini-2.5-flash-image", true)]
+    [InlineData("gemini-3-pro-image-preview", true)]
+    [InlineData("gemini-2.0-flash-preview-image-generation", true)]
+    [InlineData("imagen-4.0-generate-001", false)]
+    [InlineData("gemini-2.5-flash", false)]
+    [InlineData("gemini-2.5-flash-preview-tts", false)]
+    public void Only_gemini_image_models_draw(string name, bool expected) =>
+        Assert.Equal(expected, GeminiClient.IsImageModel(name));
+
+    [Fact]
+    public void Stable_flash_image_models_come_first()
+    {
+        var ranked = GeminiClient.RankImageModels(["gemini-3-pro-image-preview", "gemini-2.5-flash-image-preview", "gemini-2.5-flash-image", "gemini-2.5-flash"]);
+
+        Assert.Equal(["gemini-2.5-flash-image", "gemini-2.5-flash-image-preview"], ranked);
+    }
+
+    [Fact]
+    public void The_first_image_part_is_read()
+    {
+        var json = """{"candidates":[{"content":{"parts":[{"text":"Here you go"},{"inlineData":{"mimeType":"image/png","data":"AQID"}}]},"finishReason":"STOP"}]}""";
+
+        var image = GeminiClient.ImageFrom(json, "gemini-2.5-flash-image");
+
+        Assert.Equal([1, 2, 3], image.Data);
+        Assert.Equal("image/png", image.MimeType);
+    }
+
+    [Theory]
+    [InlineData("""{"candidates":[{"content":{"parts":[{"text":"I can't draw that"}]},"finishReason":"STOP"}]}""", GeminiErrorKind.Other)]
+    [InlineData("""{"candidates":[{"finishReason":"IMAGE_SAFETY"}]}""", GeminiErrorKind.Blocked)]
+    [InlineData("""{"promptFeedback":{"blockReason":"SAFETY"}}""", GeminiErrorKind.Blocked)]
+    public void A_reply_without_a_picture_is_an_error(string json, GeminiErrorKind kind) =>
+        Assert.Equal(kind, Assert.Throws<GeminiApiException>(() => GeminiClient.ImageFrom(json, "m")).Kind);
+}

@@ -9,6 +9,8 @@
 @inject IDayPlanService DayPlan
 @inject INutritionStore NutritionStore
 @inject IMealImageService MealImages
+@inject IMealPhotoService Photos
+@inject NxtText Text
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject ToastService Toasts
@@ -29,10 +31,9 @@
     }
     else
     {
-        var imageUrl = MealImages.GetImageUrl(meal);
         var hasOwnPhoto = MealImages.HasPhoto(meal.Id);
-        <section class="mk-details-hero mk-tile @MealTypeStyle.T(meal.MealType)">
-            <img src="@imageUrl" alt="@meal.Name" />
+        <section class="mk-details-hero mk-tile @MealTypeStyle.T(meal.MealType)" aria-busy="@(isGenerating ? "true" : "false")">
+            <MealPhoto Meal="meal" Alt="@meal.Name" Lazy="false" />
             <button class="mk-icon-btn mk-hero-float is-start" aria-label="@Loc["meal_close"]" @onclick="Close">
                 <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
             </button>
@@ -40,6 +41,17 @@
                 <svg viewBox="0 0 24 24" fill="@(isFavorite ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-8-5-9.5-10A5 5 0 0 1 12 7a5 5 0 0 1 9.5 4C20 16 12 21 12 21z"/></svg>
             </button>
             <div class="mk-hero-photo">
+                @if (!hasOwnPhoto && canGenerate)
+                {
+                    <button class="mk-pill-btn" disabled="@isGenerating" @onclick="GeneratePhotoAsync">
+                        @if (isGenerating) { <span class="nxt-dots" aria-hidden="true"><i></i><i></i><i></i></span> @Loc["nut_photo_making"] }
+                        else
+                        {
+                            <svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                            @(hasSharedPhoto ? Loc["nut_photo_remake"] : Loc["nut_photo_make"])
+                        }
+                    </button>
+                }
                 @if (hasOwnPhoto)
                 {
                     <button class="mk-pill-btn" aria-label="@Loc["meal_remove_photo"]" @onclick="RemovePhoto">
@@ -53,6 +65,10 @@
             </div>
         </section>
 
+        @if (photoError is { Length: > 0 })
+        {
+            <div class="mk-notice is-error mk-photo-error" role="alert">@Loc.T("nut_photo_failed", photoError)</div>
+        }
         <div class="mk-details-body">
             <div class="mk-details-titleblock">
                 <div class="mk-details-title-row">
@@ -97,7 +113,7 @@
             @if (pickSlot is { } ps)
             {
                 <button class="mk-btn is-lg is-block" disabled="@isAdding" @onclick="() => AddToSlot(ps)">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc.T("nut_add_to", Loc["nut_slot_" + ps])
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc.T("nut_add_to", Loc[mealPrefs.NameKey(ps)])
                 </button>
             }
             else
@@ -114,7 +130,7 @@
                         {
                             var sl = slot;
                             <button class="mk-btn" disabled="@isAdding" @onclick="() => AddToSlot(sl)">
-                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["nut_slot_" + sl]
+                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc[mealPrefs.NameKey(sl)]
                             </button>
                         }
                     </div>
@@ -148,12 +164,13 @@
     private bool isFavorite;
     private bool isLoading = true;
     private bool isAdding;
-    private bool isSavingPhoto;
+    private bool isSavingPhoto, isGenerating, canGenerate, hasSharedPhoto;
+    private string? photoError;
     private string uid = "";
     private List<DateOnly> days = new();
     private HashSet<DateOnly> planned = new();
     private Dictionary<DateOnly, PlanDay> plan = new();
-    private NutritionProfile nutritionProfile = new();
+    private MealPrefs mealPrefs = new();
     // Pick mode from an empty slot on Week: ?day=...&slot=Meal1
     private MealSlot? pickSlot;
     private DateOnly selectedDay;
@@ -180,12 +197,18 @@
         {
             var profile = await UserService.GetProfileAsync(uid);
             isFavorite = profile?.FavoriteMealIds?.Contains(meal.Id) ?? false;
+            try
+            {
+                canGenerate = await Photos.CanGenerateAsync();
+                hasSharedPhoto = await Photos.GetAsync(meal.Id) is not null;
+            }
+            catch { canGenerate = false; }
 
             var today = DateOnly.FromDateTime(DateTime.Today);
             days = Enumerable.Range(0, 14).Select(i => today.AddDays(i)).ToList();
             plan = await DayPlan.GetDaysAsync(uid, days[0], days[^1]);
             planned = plan.Where(d => d.Value.Slots.Count > 0).Select(d => d.Key).ToHashSet();
-            nutritionProfile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
+            mealPrefs = await NutritionStore.GetMealPrefsAsync(uid);
             var slotQuery = QueryValue("slot=");
             if (slotQuery is not null && Enum.TryParse<MealSlot>(slotQuery, out var slot)) pickSlot = slot;
 
@@ -213,7 +236,7 @@
     private IReadOnlyList<MealSlot> EmptySlotsOf(DateOnly date)
     {
         var day = plan.GetValueOrDefault(date);
-        return DayMath.EmptySlots(day, DayMath.TypeOf(day, date, nutritionProfile), nutritionProfile);
+        return DayMath.EmptySlots(day, mealPrefs);
     }
 
     private async Task Close() => await JS.InvokeVoidAsync("nxtweek.goBack", "/");
@@ -232,7 +255,7 @@
         try
         {
             await Assigner.AssignAsync(uid, selectedDay, meal, slot);
-            var message = Uri.EscapeDataString(Loc.T("nut_added_toast", Loc["nut_slot_" + slot]));
+            var message = Uri.EscapeDataString(Loc.T("nut_added_toast", Loc[mealPrefs.NameKey(slot)]));
             Nav.NavigateTo($"/?day={selectedDay:yyyy-MM-dd}&toast={message}");
         }
         catch (Exception ex)
@@ -240,6 +263,22 @@
             Toasts.Show(ex.Message, isError: true);
         }
         finally { isAdding = false; }
+    }
+
+    // An AI photo for everyone, with the user's own Gemini key. Shown as the meal's picture wherever it appears.
+    private async Task GeneratePhotoAsync()
+    {
+        if (meal is null || isGenerating) return;
+        isGenerating = true;
+        photoError = null;
+        try
+        {
+            await Photos.GenerateAsync(meal);
+            hasSharedPhoto = true;
+            Toasts.Show(Loc["nut_photo_made"]);
+        }
+        catch (Exception ex) { photoError = Text.AiError(ex); }
+        finally { isGenerating = false; }
     }
 
     private async Task AddPhoto()

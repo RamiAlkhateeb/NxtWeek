@@ -63,7 +63,7 @@
         <div class="mk-month-preview">
             @if (chosen is not null)
             {
-                <div class="mk-tile mk-preview-tile @MealTypeStyle.T(chosen.Meal.MealType)"><img src="@MealImages.GetImageUrl(chosen.Meal)" alt="" /></div>
+                <div class="mk-tile mk-preview-tile @MealTypeStyle.T(chosen.Meal.MealType)"><MealPhoto Meal="chosen.Meal" Lazy="false" /></div>
                 <div class="mk-preview-text">
                     <span class="mk-row-date">@PreviewDate(selected.Value)</span>
                     <span class="mk-preview-name">@chosen.Meal.Name</span>
@@ -132,7 +132,7 @@
 
         var plan = await DayPlan.GetDaysAsync(uid, gridStart, gridStart.AddDays(cellCount - 1));
         var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id);
-        // A cell shows the day's first planned meal (Meal 1, then post-workout, dinner, snack).
+        // A cell shows the day's first planned meal (Meal 1, then afternoon snack, dinner, evening snack).
         foreach (var (date, day) in plan)
         {
             var first = day.Slots.OrderBy(s => s.Key).Select(s => s.Value.MealId).FirstOrDefault(id => !string.IsNullOrWhiteSpace(id));

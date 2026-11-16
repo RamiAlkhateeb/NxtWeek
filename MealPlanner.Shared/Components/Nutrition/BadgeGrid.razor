@@ -1,0 +1,36 @@
+@inject ILocalizationService Loc
+
+@* Badges: earned ones get a tick and "Earned"; the rest show how far along they are. *@
+<div class="mk-badges" role="list">
+    @foreach (var badge in Items)
+    {
+        <div class="mk-badge @(badge.Earned ? "is-earned" : "")" role="listitem">
+            <span class="mk-badge-icon" aria-hidden="true">
+                <svg class="i" viewBox="0 0 24 24">
+                    @switch (badge.Kind)
+                    {
+                        case BadgeKind.FirstFullWeek: <rect x="4" y="5" width="16" height="15" rx="3" /><path d="M4 10h16M9 15l2 2 4-4" /> break;
+                        case BadgeKind.Protein7: <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /> break;
+                        case BadgeKind.TenMeals: <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10" /><path d="M17 21V3c-2.5 1.5-3.5 4-3.5 8H17" /> break;
+                        case BadgeKind.FirstBatch: <rect x="9" y="9" width="11" height="11" rx="2.5" /><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15" /> break;
+                        default: <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /> break;
+                    }
+                </svg>
+            </span>
+            <span class="mk-badge-name">@Loc["nut_badge_" + badge.Kind]</span>
+            @if (badge.Earned)
+            {
+                <span class="mk-tag is-ok">@Loc["nut_badge_earned"]</span>
+            }
+            else
+            {
+                <span class="mk-badge-progress">@Loc.T("nut_badge_progress", Loc.Num(badge.Progress), Loc.Num(badge.Goal))</span>
+                <MacroBar Eaten="badge.Progress" Target="badge.Goal" Colour="var(--nxt-accent)" Thin="true" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<Badge> Items { get; set; } = [];
+}

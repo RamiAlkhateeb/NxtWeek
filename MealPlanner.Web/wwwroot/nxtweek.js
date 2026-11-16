@@ -169,3 +169,61 @@ async function updateServiceWorker() {
   };
   new MutationObserver(focusNewSheets).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+// Live updates without polling: Firebase's REST streaming (Server-Sent Events) on one narrow path.
+// The callback runs when the data there changes (not for the first snapshot, nor for a reconnect that
+// brings the same data), and when the tab becomes visible again after being hidden.
+(function liveWatch() {
+  const watches = new Map();
+  let next = 1;
+  window.nxtweek.watch = (url, dotnetRef, method) => {
+    const id = next++;
+    const w = { last: undefined, timer: 0, source: null };
+    const fire = () => { clearTimeout(w.timer); w.timer = setTimeout(() => dotnetRef.invokeMethodAsync(method).catch(() => {}), 250); };
+    const onPut = e => {
+      let msg; try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.path === '/') {
+        const text = JSON.stringify(msg.data);
+        const first = w.last === undefined;
+        const same = text === w.last;
+        w.last = text;
+        if (first || same) return;
+      } else {
+        w.last = null;
+      }
+      fire();
+    };
+    try {
+      w.source = new EventSource(url);
+      w.source.addEventListener('put', onPut);
+      w.source.addEventListener('patch', () => { w.last = null; fire(); });
+    } catch { /* no streaming: the visibility reload below still works */ }
+    w.visible = () => { if (document.visibilityState === 'visible') fire(); };
+    document.addEventListener('visibilitychange', w.visible);
+    watches.set(id, w);
+    return id;
+  };
+  window.nxtweek.unwatch = id => {
+    const w = watches.get(id);
+    if (!w) return;
+    clearTimeout(w.timer);
+    w.source?.close();
+    document.removeEventListener('visibilitychange', w.visible);
+    watches.delete(id);
+  };
+})();
+
+// A square JPEG of at most `size` px from any image data URL: the centre is kept, the rest cropped.
+window.nxtweek.squareJpeg = (dataUrl, size) => new Promise(resolve => {
+  const img = new Image();
+  img.onload = () => {
+    const side = Math.min(img.width, img.height);
+    const out = Math.max(1, Math.min(size, side));
+    const canvas = document.createElement('canvas');
+    canvas.width = out; canvas.height = out;
+    canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, out, out);
+    resolve(canvas.toDataURL('image/jpeg', 0.8));
+  };
+  img.onerror = () => resolve(null);
+  img.src = dataUrl;
+});

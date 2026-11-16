@@ -25,21 +25,21 @@ public sealed class MealAssignService(IDayPlanService plan, INutritionStore stor
 
     public async Task<MealSlot?> FindFreeSlotAsync(string uid, DateOnly date, MealCatalogItem meal)
     {
-        var (day, profile) = await LoadAsync(uid, date);
-        return SlotPicker.FreeSlotFor(day, DayMath.TypeOf(day, date, profile), profile, meal);
+        var (day, prefs) = await LoadAsync(uid, date);
+        return SlotPicker.FreeSlotFor(day, prefs, meal);
     }
 
     private async Task<MealSlot> PickSlotAsync(string uid, DateOnly date, MealCatalogItem meal)
     {
-        var (day, profile) = await LoadAsync(uid, date);
-        return SlotPicker.FirstEmptyFor(day, DayMath.TypeOf(day, date, profile), profile, meal);
+        var (day, prefs) = await LoadAsync(uid, date);
+        return SlotPicker.FirstEmptyFor(day, prefs, meal);
     }
 
-    private async Task<(PlanDay? Day, NutritionProfile Profile)> LoadAsync(string uid, DateOnly date)
+    private async Task<(PlanDay? Day, MealPrefs Prefs)> LoadAsync(string uid, DateOnly date)
     {
-        var profile = await store.GetProfileAsync(uid) ?? new NutritionProfile();
+        var prefs = await store.GetMealPrefsAsync(uid);
         var days = await plan.GetDaysAsync(uid, date, date);
         days.TryGetValue(date, out var day);
-        return (day, profile);
+        return (day, prefs);
     }
 }

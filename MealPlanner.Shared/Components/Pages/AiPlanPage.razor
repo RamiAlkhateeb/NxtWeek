@@ -1,35 +1,29 @@
 @page "/ai-plan"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
-@using Nxt.UI.Ai
+@implements IDisposable
 @inject IAuthService Auth
-@inject IGeminiPlannerService GeminiPlanner
-@inject GeminiClient Gemini
 @inject IMealCatalogService CatalogService
-@inject IUserService UserService
 @inject IMealAssignService Assigner
 @inject IDayPlanService DayPlan
-@inject IShoppingListService ShoppingListService
-@inject IAisleService Aisles
+@inject INutritionStore NutritionStore
 @inject IMealImageService MealImages
 @inject ILocalizationService Loc
 @inject NavigationManager Nav
 @inject IJSRuntime JS
-@inject INutritionStore NutritionStore
-@inject IMealDetailsService MealDetails
-@inject NxtText L
 
-@* The family AI assistant. It discusses first: concrete changes arrive as an editable proposal card and are only
-   saved when the user taps "Apply". *@
+@* The assistant: two ready-made asks that run on the device from the user's own targets and meals
+   ("Plan my protein for today", "Snack under 250 kcal with protein"). Each answer is a proposal card
+   whose items can be removed before it is applied; nothing is saved until "Apply". *@
 <div class="mk-page mk-ai" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row">
             <BackButton Fallback="/" />
             <div class="mk-ai-heading">
                 <span class="mk-ai-badge" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg></span>
-                <h1 class="mk-title is-md">@Loc["ai_plan_title"]</h1>
+                <h1 class="mk-title is-md">@Loc["nut_assistant"]</h1>
             </div>
-            <button class="mk-icon-btn" aria-label="@Loc["ai_new_chat"]" disabled="@(entries.Count == 0 || isBusy)" @onclick="NewChat">
+            <button class="mk-icon-btn" aria-label="@Loc["ai_new_chat"]" disabled="@(entries.Count == 0 || isBusy)" @onclick="() => entries.Clear()">
                 <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             </button>
         </div>
@@ -39,154 +33,62 @@
         @if (entries.Count == 0 && !isBusy)
         {
             <div class="mk-ai-empty">
-                <div class="nxt-orb" aria-hidden="true">
-                    <span class="nxt-orb-ring ring-1"></span>
-                    <span class="nxt-orb-ring ring-2"></span>
-                    <span class="nxt-orb-orbit"><i></i></span>
-                    <span class="nxt-orb-core"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
-                    <svg class="nxt-spark spark-1" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
-                    <svg class="nxt-spark spark-2" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
-                    <svg class="nxt-spark spark-3" viewBox="0 0 24 24"><path d="M12 2l1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4z"/></svg>
-                </div>
-                <p>@Loc["ai_plan_chat_empty"]</p>
+                <span class="mk-ai-empty-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
+                <b>@Loc["nut_assistant"]</b>
+                <p>@Loc.T("nut_assistant_for", Loc.FormatDayDate(askDate))</p>
             </div>
         }
 
         @foreach (var entry in entries)
         {
-            @switch (entry.Kind)
+            @if (entry.IsUser)
             {
-                case EntryKind.User:
-                    <div class="mk-bubble is-user">@entry.Text</div>
-                    break;
-
-                case EntryKind.Assistant:
-                    <div class="mk-bubble is-ai @(entry.IsError ? "is-error" : "") @(entry.IsNote ? "is-note" : "")" role="@(entry.IsError ? "alert" : null)">
-                        @entry.Text
-                        @if (entry.ShowSettingsLink) { <a class="mk-bubble-link" href="settings?advanced=1">@L["ai_go_settings"]</a> }
-                    </div>
-                    break;
-
-                case EntryKind.SlotPlan:
-                    <div class="mk-bubble is-ai">@entry.Text</div>
-                    @if (entry.State == ProposalState.Applied)
-                    {
-                        <div class="mk-applied" role="status">
-                            <span class="mk-applied-check" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12l5 5 9-10"/></svg></span>
-                            <span>@entry.Summary</span>
-                        </div>
-                    }
-                    else if (entry.State == ProposalState.Open && entry.SlotItems.Count > 0)
-                    {
-                        <section class="mk-proposal" aria-label="@Loc["nut_proposal"]">
-                            <div class="mk-proposal-head"><span class="mk-proposal-badge"><i></i>@Loc["nut_proposal"]</span></div>
-                            <div class="mk-proposal-body">
-                                @foreach (var pick in entry.SlotItems.ToList())
-                                {
-                                    <div class="mk-proposal-row">
-                                        <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(pick.Meal.MealType)"><img src="@MealImages.GetImageUrl(pick.Meal)" alt="" /></div>
-                                        <div class="mk-proposal-text-col">
-                                            <span class="mk-row-date">@Loc["nut_slot_" + pick.Slot]</span>
-                                            <span class="mk-proposal-name">@pick.Meal.Name</span>
-                                            <span class="mk-row-date">@Loc.T("nut_pick_line", pick.Meal.Name, Loc.Num(pick.Nutrition.Kcal), Loc.Num(pick.Nutrition.Protein))</span>
-                                        </div>
-                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("nut_slot_entry", Loc["nut_proposal_remove"], pick.Meal.Name)" @onclick="() => { entry.SlotItems.Remove(pick); if (entry.SlotItems.Count == 0) entry.State = ProposalState.Cancelled; }">
-                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                                        </button>
-                                    </div>
-                                }
-                                <div class="mk-plan-total">@Loc.T("nut_plan_total", Loc.Num(entry.SlotItems.Sum(x => x.Nutrition.Protein)), Loc.Num(entry.SlotItems.Sum(x => x.Nutrition.Kcal)))</div>
-                            </div>
-                            <div class="mk-proposal-actions">
-                                <button class="mk-btn" disabled="@isBusy" @onclick="() => ApplySlotPlanAsync(entry)">
-                                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["nut_apply"]
-                                </button>
-                            </div>
-                        </section>
-                    }
-                    break;
-
-                case EntryKind.Proposal when entry.State == ProposalState.Open:
-                    <section class="mk-proposal" aria-label="@Loc["ai_proposal_badge"]">
-                        <div class="mk-proposal-head">
-                            <span class="mk-proposal-badge"><i></i>@Loc["ai_proposal_badge"]</span>
-                            <span class="mk-subtitle">@Loc.T("ai_proposal_changes", entry.ChangeCount)</span>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(entry.Text)) { <p class="mk-proposal-text">@entry.Text</p> }
-
-                        <div class="mk-proposal-body">
-                            @if (entry.Meals.Count > 0)
-                            {
-                                <div class="mk-proposal-label">@Loc["ai_plan_preview_meals_heading"]</div>
-                                @foreach (var meal in entry.Meals.ToList())
-                                {
-                                    <div class="mk-proposal-row">
-                                        <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(meal.MealType)"><img src="@MealImages.GetImageUrl(meal.Name, meal.MealType)" alt="" /></div>
-                                        <div class="mk-proposal-text-col">
-                                            <span class="mk-proposal-name">@meal.Name</span>
-                                            <span class="mk-row-date">@Loc.FormatDayDate(meal.Date)</span>
-                                        </div>
-                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("ai_remove_named", meal.Name)" @onclick="() => { entry.Meals.Remove(meal); AfterEdit(entry); }">
-                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                                        </button>
-                                    </div>
-                                }
-                            }
-                            @if (entry.AddItems.Count > 0)
-                            {
-                                <div class="mk-proposal-label">@Loc["ai_proposal_add_heading"]</div>
-                                @foreach (var item in entry.AddItems.ToList())
-                                {
-                                    <div class="mk-proposal-row">
-                                        <span class="mk-proposal-sign is-add" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg></span>
-                                        <span class="mk-proposal-name is-item">@item</span>
-                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("ai_remove_named", item)" @onclick="() => { entry.AddItems.Remove(item); AfterEdit(entry); }">
-                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                                        </button>
-                                    </div>
-                                }
-                            }
-                            @if (entry.RemoveItems.Count > 0)
-                            {
-                                <div class="mk-proposal-label">@Loc["ai_proposal_remove_heading"]</div>
-                                @foreach (var item in entry.RemoveItems.ToList())
-                                {
-                                    <div class="mk-proposal-row">
-                                        <span class="mk-proposal-sign is-remove" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12h14"/></svg></span>
-                                        <span class="mk-proposal-name is-item">@item</span>
-                                        <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("ai_remove_named", item)" @onclick="() => { entry.RemoveItems.Remove(item); AfterEdit(entry); }">
-                                            <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                                        </button>
-                                    </div>
-                                }
-                            }
-                        </div>
-
-                        <div class="mk-proposal-actions">
-                            <button class="mk-btn" disabled="@(isBusy || entry.ChangeCount == 0)" @onclick="() => ApplyAsync(entry)">
-                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["ai_proposal_apply"]
-                            </button>
-                            <button class="mk-btn is-soft" disabled="@isBusy" @onclick="() => CancelProposal(entry)">@Loc["cancel"]</button>
-                        </div>
-                    </section>
-                    break;
-
-                case EntryKind.Proposal when entry.State == ProposalState.Applied:
+                <div class="mk-bubble is-user">@entry.Text</div>
+            }
+            else
+            {
+                <div class="mk-bubble is-ai @(entry.IsError ? "is-error" : "")" role="@(entry.IsError ? "alert" : null)">@entry.Text</div>
+                @if (entry.Applied)
+                {
                     <div class="mk-applied" role="status">
                         <span class="mk-applied-check" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M5 12l5 5 9-10"/></svg></span>
-                        <span><b>@Loc["ai_applied_title"]</b> — @entry.Summary</span>
+                        <span>@entry.Summary</span>
                     </div>
-                    break;
-
-                case EntryKind.Proposal:
-                    <div class="mk-bubble is-muted">@(entry.State == ProposalState.Cancelled ? Loc["ai_proposal_cancelled"] : Loc["ai_proposal_replaced"])</div>
-                    break;
+                }
+                else if (entry.Picks.Count > 0)
+                {
+                    <section class="mk-proposal" aria-label="@Loc["nut_proposal"]">
+                        <div class="mk-proposal-head"><span class="mk-proposal-badge"><i></i>@Loc["nut_proposal"]</span></div>
+                        <div class="mk-proposal-body">
+                            @foreach (var pick in entry.Picks.ToList())
+                            {
+                                <div class="mk-proposal-row">
+                                    <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(pick.Meal.MealType)"><MealPhoto Meal="pick.Meal" Lazy="false" /></div>
+                                    <div class="mk-proposal-text-col">
+                                        <span class="mk-row-date">@Loc[prefs.NameKey(pick.Slot)]</span>
+                                        <span class="mk-proposal-name">@pick.Meal.Name</span>
+                                        <span class="mk-row-date">@Loc.T("nut_pick_line", pick.Meal.Name, Loc.Num(pick.Nutrition.Kcal), Loc.Num(pick.Nutrition.Protein))</span>
+                                    </div>
+                                    <button class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("nut_slot_entry", Loc["nut_proposal_remove"], pick.Meal.Name)" @onclick="() => entry.Picks.Remove(pick)">
+                                        <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                                    </button>
+                                </div>
+                            }
+                            <div class="mk-plan-total">@Loc.T("nut_plan_total", Loc.Num(entry.Picks.Sum(x => x.Nutrition.Protein)), Loc.Num(entry.Picks.Sum(x => x.Nutrition.Kcal)))</div>
+                        </div>
+                        <div class="mk-proposal-actions">
+                            <button class="mk-btn" disabled="@isBusy" @onclick="() => ApplyAsync(entry)">
+                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["nut_apply"]
+                            </button>
+                        </div>
+                    </section>
+                }
             }
         }
 
         @if (isBusy)
         {
-            <div class="mk-bubble is-ai is-typing"><span class="nxt-dots"><i></i><i></i><i></i></span> @Loc["ai_thinking_label"]</div>
+            <div class="mk-bubble is-ai is-typing" role="status"><span class="nxt-dots"><i></i><i></i><i></i></span> @Loc["ai_thinking_label"]</div>
         }
 
         <div id="mk-ai-end" class="mk-ai-end"></div>
@@ -194,87 +96,53 @@
 </div>
 
 <div class="mk-ai-composer" dir="@Loc.Direction">
-    <div class="mk-chip-row">
-        <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunLocalAsync(LocalAsk.Protein)">@Loc["nut_plan_protein"]</button>
+    <div class="mk-chip-row is-wrap">
+        <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunAsync(Ask.Protein)">@Loc["nut_plan_protein"]</button>
         @if (snackOn)
         {
-            <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunLocalAsync(LocalAsk.Snack)">@Loc["nut_chip_snack"]</button>
-        }
-        @foreach (var suggestion in Suggestions)
-        {
-            <button class="mk-chip is-outline" disabled="@isBusy" @onclick="() => SendAsync(suggestion)">@suggestion</button>
+            <button class="mk-chip is-outline is-accent" disabled="@isBusy" @onclick="() => RunAsync(Ask.Snack)">@Loc["nut_chip_snack"]</button>
         }
     </div>
-    <NxtComposer @bind-Value="promptText" OnSubmit="SendAsync" Disabled="isBusy" Placeholder="@Loc["ai_plan_placeholder_short"]" ShowMic="true" CssClass="mk-composer" />
 </div>
 
 @code {
-    private enum EntryKind { User, Assistant, Proposal, SlotPlan }
-    private enum LocalAsk { Protein, Snack }
-    private enum ProposalState { Open, Applied, Cancelled, Replaced }
+    private enum Ask { Protein, Snack }
 
     private sealed class Entry
     {
-        public EntryKind Kind { get; init; }
-        public string Text { get; set; } = "";
+        public bool IsUser { get; init; }
         public bool IsError { get; init; }
-        public bool ShowSettingsLink { get; init; }
-        public bool IsNote { get; init; }
-        public ProposalState State { get; set; } = ProposalState.Open;
-        public string Summary { get; set; } = "";
-        public List<ParsedMealEntry> Meals { get; init; } = new();
-        public List<string> AddItems { get; init; } = new();
-        public List<string> RemoveItems { get; init; } = new();
-        // A slot plan computed on the device (no AI needed): "Plan my protein for today".
+        public string Text { get; init; } = "";
         public DateOnly Date { get; init; }
-        public List<PlannedPick> SlotItems { get; init; } = new();
-        public int ChangeCount => Meals.Count + AddItems.Count + RemoveItems.Count;
-        // What Apply already saved (it leaves the card), and what it could not do (a full day, an item not on the list).
-        public List<string> Saved { get; } = new();
-        public List<string> SavedMeals { get; } = new();
-        public List<string> Notes { get; } = new();
-        public PlanChanges ToChanges() => new(Meals, AddItems, RemoveItems);
+        public List<PlannedPick> Picks { get; init; } = new();
+        public bool Applied { get; set; }
+        public string Summary { get; set; } = "";
     }
 
+    private sealed record DayState(PlanDay? Day, IReadOnlyList<MealSlot> Slots, DayTotals Totals, MealPrefs Prefs, List<MealCatalogItem> Candidates);
+
     private readonly List<Entry> entries = new();
-    private readonly List<ChatTurn> history = new();
     private string uid = "";
-    private string promptText = "";
-    private bool isBusy;
-    private bool scrollPending;
-    private string planContext = "";
+    private bool isBusy, scrollPending, snackOn = true;
+    private MealPrefs prefs = new();
     private DateOnly askDate = DateOnly.FromDateTime(DateTime.Today);
-
-    private IReadOnlyList<string> Suggestions =>
-        [Loc["ai_chat_chip_plan"], Loc["ai_chat_chip_ingredients"], Loc["ai_chat_chip_shopping"]];
-
-    private Entry? OpenProposal => entries.LastOrDefault(e => e.Kind == EntryKind.Proposal && e.State == ProposalState.Open);
-
-    private bool snackOn = true;
 
     protected override async Task OnInitializedAsync()
     {
+        Loc.OnLanguageChanged += OnLanguage;
         var user = await Auth.GetCurrentUserAsync();
-        if (user is null || string.IsNullOrWhiteSpace(user.Uid))
-        {
-            Nav.NavigateTo("/signin");
-            return;
-        }
-
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) { Nav.NavigateTo("/signin"); return; }
         uid = user.Uid;
-        await RefreshPlanContextAsync();
+
         // No snack chip for someone who turned the evening snack off.
-        try { snackOn = (await NutritionStore.GetProfileAsync(uid))?.IsOn(MealSlot.Snack) ?? true; }
+        try { prefs = await NutritionStore.GetMealPrefsAsync(uid); snackOn = prefs.IsOn(MealSlot.Snack); }
         catch { /* keep the chip */ }
 
-        // From Week: ai-plan?ask=protein&day=yyyy-MM-dd
+        // From Week's "Plan my day": ai-plan?ask=protein&day=yyyy-MM-dd
         var query = new Uri(Nav.Uri).Query;
-        if (query.Contains("ask=protein", StringComparison.OrdinalIgnoreCase))
-        {
-            var i = query.IndexOf("day=", StringComparison.OrdinalIgnoreCase);
-            if (i >= 0 && DateOnly.TryParse(query[(i + 4)..].Split('&')[0], out var d)) askDate = d;
-            await RunLocalAsync(LocalAsk.Protein);
-        }
+        var i = query.IndexOf("day=", StringComparison.OrdinalIgnoreCase);
+        if (i >= 0 && DateOnly.TryParse(query[(i + 4)..].Split('&')[0], out var d)) askDate = d;
+        if (query.Contains("ask=protein", StringComparison.OrdinalIgnoreCase)) await RunAsync(Ask.Protein);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -287,395 +155,84 @@
 
     private void Add(Entry entry) { entries.Add(entry); scrollPending = true; }
 
-    private void NewChat()
-    {
-        entries.Clear();
-        history.Clear();
-        promptText = "";
-    }
-
-    private void AfterEdit(Entry entry)
-    {
-        // Removing the last change leaves nothing to apply; treat it as cancelled.
-        if (entry.ChangeCount == 0) { entry.State = ProposalState.Cancelled; history.Add(new ChatTurn(false, "[The user removed every change from the proposal]")); }
-    }
-
-    private void CancelProposal(Entry entry)
-    {
-        entry.State = ProposalState.Cancelled;
-        history.Add(new ChatTurn(false, "[The user cancelled the proposal]"));
-    }
-
-    private async Task SendAsync(string input)
-    {
-        var text = (input ?? "").Trim();
-        if (text.Length == 0 || isBusy) return;
-
-        Add(new Entry { Kind = EntryKind.User, Text = text });
-        promptText = "";
-        isBusy = true;
-        StateHasChanged();
-
-        try
-        {
-            if (!await Gemini.HasKeyAsync())
-            {
-                Add(new Entry { Kind = EntryKind.Assistant, Text = Loc["ai_plan_no_key_error"], IsError = true, ShowSettingsLink = true });
-                return;
-            }
-
-            // The model needs the current list to resolve "remove the milk" to the exact stored item.
-            var shops = await ShoppingListService.GetShopsAsync(uid);
-            var currentItems = shops.SelectMany(s => s.Items.Values).Select(i => i.Name).ToList();
-
-            history.Add(new ChatTurn(true, text));
-            AssistantReply reply;
-            try
-            {
-                reply = await GeminiPlanner.ChatAsync(history, OpenProposal?.ToChanges(), planContext, currentItems);
-            }
-            catch
-            {
-                history.RemoveAt(history.Count - 1);   // keep the transcript free of an unanswered turn
-                throw;
-            }
-
-            // Never ignore the chosen model silently: say so when another one answered.
-            if (L.AiFallbackNote(Gemini.LastFallback) is { } fallbackNote)
-                Add(new Entry { Kind = EntryKind.Assistant, Text = fallbackNote, IsNote = true });
-
-            var open = OpenProposal;
-            // "Apply" with nothing pending can't be honoured; if it carries changes, show them as a proposal instead,
-            // with our own wording since the model's text would claim it was already done.
-            var applyWithoutPending = reply.Action == AssistantAction.Apply && open is null && !reply.Changes.IsEmpty;
-            var action = applyWithoutPending ? AssistantAction.Propose : reply.Action;
-            var message = applyWithoutPending ? Loc["ai_chat_propose_intro"] : reply.Message;
-
-            switch (action)
-            {
-                case AssistantAction.Propose:
-                    if (open is not null) open.State = ProposalState.Replaced;
-                    Add(new Entry
-                    {
-                        Kind = EntryKind.Proposal,
-                        Text = message,
-                        Meals = reply.Changes.Meals.ToList(),
-                        AddItems = reply.Changes.ShoppingItems.ToList(),
-                        RemoveItems = reply.Changes.RemoveShoppingItems.ToList()
-                    });
-                    history.Add(new ChatTurn(false, $"{message}\n[Proposed, waiting for the user to confirm]"));
-                    break;
-
-                case AssistantAction.Apply when open is not null && open.ChangeCount > 0:
-                    history.Add(new ChatTurn(false, message));
-                    await ApplyCoreAsync(open, shops);
-                    break;
-
-                case AssistantAction.Cancel:
-                    if (open is not null) open.State = ProposalState.Cancelled;
-                    history.Add(new ChatTurn(false, $"{message}\n[Proposal cancelled]"));
-                    Add(new Entry { Kind = EntryKind.Assistant, Text = message });
-                    break;
-
-                default:
-                    history.Add(new ChatTurn(false, message));
-                    Add(new Entry { Kind = EntryKind.Assistant, Text = message });
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            AddError(ex);
-        }
-        finally
-        {
-            isBusy = false;
-            scrollPending = true;
-        }
-    }
-
-    // Gemini failures in the user's language with Google's own reason; key and model problems link to Settings.
-    private void AddError(Exception ex)
-    {
-        var fixable = ex is AiKeyMissingException || ex is GeminiApiException { Kind: GeminiErrorKind.InvalidKey or GeminiErrorKind.ModelUnavailable };
-        var text = ex is GeminiApiException or AiKeyMissingException ? L.AiError(ex) : ex.Message;
-        Add(new Entry { Kind = EntryKind.Assistant, Text = text, IsError = true, ShowSettingsLink = fixable });
-    }
-
-    private async Task ApplyAsync(Entry entry)
-    {
-        if (isBusy || entry.State != ProposalState.Open) return;
-        isBusy = true;
-        try
-        {
-            var shops = await ShoppingListService.GetShopsAsync(uid);
-            await ApplyCoreAsync(entry, shops);
-        }
-        catch (Exception ex)
-        {
-            AddError(ex);
-        }
-        finally { isBusy = false; scrollPending = true; }
-    }
-
-    // Saves exactly what the user saw (and trimmed) on the card, not whatever the model repeated.
-    // Each change leaves the card as soon as it is saved, so a failure halfway keeps only the rest on the card
-    // and tapping Apply again never saves anything twice.
-    private async Task ApplyCoreAsync(Entry entry, List<ShoppingShop> shops)
-    {
-        var toFill = new List<MealCatalogItem>();
-        try
-        {
-            // Removals run before additions so "replace milk with oat milk" can't delete the new item.
-            if (entry.RemoveItems.Count > 0)
-            {
-                var (removed, missing) = await RemoveItemsAsync(shops, entry.RemoveItems);
-                entry.RemoveItems.Clear();
-                var names = removed.SelectMany(r => r.Names).ToList();
-                if (names.Count > 0) entry.Saved.Add(Loc.T("ai_applied_removed", string.Join(Loc["list_and"], names)));
-                if (missing.Count > 0) entry.Notes.Add(Loc.T("ai_applied_not_found", string.Join(Loc["list_and"], missing)));
-            }
-
-            if (entry.Meals.Count > 0)
-            {
-                var catalog = (await CatalogService.GetAllMealsAsync()).Where(m => !m.IsArchived).ToList();
-                foreach (var meal in entry.Meals.ToList())
-                {
-                    var day = Loc.GetDayName(meal.Date.DayOfWeek);
-                    var existing = FindCatalogMeal(catalog, meal.Name);
-                    var draft = existing ?? new MealCatalogItem
-                    {
-                        Name = meal.Name.Trim(),
-                        MealType = meal.MealType,
-                        Ingredients = meal.Ingredients.ToList(),
-                        Language = Loc.CurrentLanguage,
-                        CreatedBy = uid
-                    };
-                    // Only an empty meal of the day is used; a full day is reported, never overwritten.
-                    var slot = await Assigner.FindFreeSlotAsync(uid, meal.Date, draft);
-                    if (slot is null)
-                    {
-                        entry.Notes.Add(Loc.T("ai_applied_day_full", meal.Name, day));
-                    }
-                    else
-                    {
-                        // Reuse the catalog meal of the same name instead of adding a copy to the shared catalog.
-                        var catalogItem = existing ?? await CatalogService.CreateMealAsync(draft);
-                        if (existing is null) catalog.Add(catalogItem);
-                        await Assigner.AssignAsync(uid, meal.Date, catalogItem, slot);
-                        entry.SavedMeals.Add(Loc.T("ai_applied_meal_in", catalogItem.Name, Loc["nut_slot_" + slot], day));
-                        if (MealDetailsMapper.NeedsDetails(catalogItem) && !toFill.Contains(catalogItem)) toFill.Add(catalogItem);
-                    }
-                    entry.Meals.Remove(meal);
-                }
-            }
-
-            if (entry.AddItems.Count > 0)
-            {
-                var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
-                var added = new List<string>();
-                foreach (var item in entry.AddItems.ToList())
-                {
-                    await ShoppingListService.AddItemAsync(uid, shop.Id, item, new ShoppingItemOptions(Aisle: Aisles.For(item).Key));
-                    entry.AddItems.Remove(item);
-                    added.Add(item);
-                }
-                entry.Saved.Add(Loc.T("ai_applied_items", string.Join(Loc["list_and"], added)));
-            }
-        }
-        catch (Exception ex)
-        {
-            if (toFill.Count > 0) _ = FillDetailsAsync(entry, toFill);
-            var saved = SavedSummary(entry);
-            // Firebase errors read as browser resource keys in WebAssembly; say what happened instead.
-            var reason = ex is HttpRequestException or TaskCanceledException ? Loc["ai_apply_network"] : ex.Message;
-            throw new InvalidOperationException(Loc.T("ai_apply_partial", saved.Count > 0 ? string.Join(Loc["ai_applied_sep"], saved) : Loc["ai_apply_nothing_saved"], reason), ex);
-        }
-
-        entry.State = ProposalState.Applied;
-        entry.Summary = string.Join(Loc["ai_applied_sep"], SavedSummary(entry).Concat(entry.Notes));
-        history.Add(new ChatTurn(false, "[Saved the proposal]"));
-        await RefreshPlanContextAsync();
-
-        // The plan is saved; ingredients and nutrition arrive in the background, all meals at once.
-        if (toFill.Count > 0) _ = FillDetailsAsync(entry, toFill);
-    }
-
-    // Meals first, in the order they were saved, then the shopping changes.
-    private List<string> SavedSummary(Entry entry)
-    {
-        var parts = new List<string>();
-        if (entry.SavedMeals.Count > 0) parts.Add(Loc.T("ai_applied_meals", string.Join(Loc["list_and"], entry.SavedMeals)));
-        parts.AddRange(entry.Saved);
-        return parts;
-    }
-
-    private static MealCatalogItem? FindCatalogMeal(List<MealCatalogItem> catalog, string name)
-    {
-        var wanted = name.Trim();
-        return catalog.FirstOrDefault(m => string.Equals(m.Name?.Trim(), wanted, StringComparison.CurrentCultureIgnoreCase));
-    }
-
-    private async Task FillDetailsAsync(Entry entry, List<MealCatalogItem> meals)
-    {
-        try
-        {
-            var results = await Task.WhenAll(meals.Select(MealDetails.FillMissingAsync));
-            var failed = meals.Where((_, i) => results[i] == MealDetailsResult.Failed).Select(m => m.Name).ToList();
-            if (failed.Count == 0) return;
-            var note = Loc.T("nut_details_failed_for", string.Join(Loc["list_and"], failed));
-            entry.Summary = string.IsNullOrEmpty(entry.Summary) ? note : entry.Summary + Loc["ai_applied_sep"] + note;
-            await InvokeAsync(StateHasChanged);
-        }
-        catch { /* the meals are saved; details can still be filled from the meal page */ }
-    }
-
-    private sealed record DayState(PlanDay? Day, DayType Type, IReadOnlyList<MealSlot> Slots, DayTotals Totals, NutritionProfile Profile, List<MealCatalogItem> Candidates);
-
     private async Task<DayState> LoadDayAsync(DateOnly date)
     {
         var profileTask = NutritionStore.GetProfileAsync(uid);
+        var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
         var daysTask = DayPlan.GetDaysAsync(uid, date, date);
         var catalogTask = CatalogService.GetAllMealsAsync();
-        await Task.WhenAll(profileTask, daysTask, catalogTask);
+        await Task.WhenAll(profileTask, prefsTask, daysTask, catalogTask);
         var profile = await profileTask ?? new NutritionProfile();
+        var prefs = await prefsTask;
         var day = (await daysTask).GetValueOrDefault(date);
         var catalog = (await catalogTask).Where(m => !m.IsArchived).ToList();
-        var nutrition = catalog.ToDictionary(m => m.Id, m => m.Nutrition);
-        var type = DayMath.TypeOf(day, date, profile);
-        var totals = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile);
+        var nutrition = new Dictionary<string, NutritionInfo?>();
+        foreach (var m in catalog) nutrition.TryAdd(m.Id, m.Nutrition);
+        var totals = DayMath.Totals(day, TargetCalculator.For(profile), id => nutrition.GetValueOrDefault(id), prefs);
         var inLanguage = catalog.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase)).ToList();
-        return new DayState(day, type, DayMath.SlotsFor(type, profile), totals, profile, inLanguage.Count > 0 ? inLanguage : catalog);
+        return new DayState(day, DayMath.SlotsFor(prefs), totals, prefs, inLanguage.Count > 0 ? inLanguage : catalog);
     }
 
-    // The protein plan and the snack pick run on the device from the user's own targets; no Gemini key needed.
-    private async Task RunLocalAsync(LocalAsk ask)
+    private async Task RunAsync(Ask ask)
     {
         if (isBusy) return;
-        Add(new Entry { Kind = EntryKind.User, Text = ask == LocalAsk.Protein ? Loc["nut_plan_protein"] : Loc["nut_chip_snack"] });
+        Add(new Entry { IsUser = true, Text = ask == Ask.Protein ? Loc["nut_plan_protein"] : Loc["nut_chip_snack"] });
         isBusy = true;
         StateHasChanged();
         try
         {
             var date = askDate;
             var st = await LoadDayAsync(date);
-            var empty = DayMath.EmptySlots(st.Day, st.Type, st.Profile);
-            var used = MealPlanner.Shared.Nutrition.Suggestions.UsedMealIds(st.Day, st.Slots);
-            if (ask == LocalAsk.Protein)
+            var empty = DayMath.EmptySlots(st.Day, st.Prefs);
+            var used = Suggestions.UsedMealIds(st.Day, st.Slots);
+            if (ask == Ask.Protein)
             {
-                var plan = MealPlanner.Shared.Nutrition.Suggestions.PlanProtein(empty, st.Totals.OpenKcal, st.Totals.OpenProtein, used, st.Candidates);
+                var plan = Suggestions.PlanProtein(empty, st.Totals.OpenKcal, st.Totals.OpenProtein, used, st.Candidates);
                 if (plan is null)
-                    Add(new Entry { Kind = EntryKind.Assistant, Text = empty.Count == 0 ? Loc["nut_nothing_open"] : Loc["nut_no_fit"] });
+                    Add(new Entry { Text = empty.Count == 0 ? Loc["nut_nothing_open"] : Loc["nut_no_fit"] });
                 else
                     Add(new Entry
                     {
-                        Kind = EntryKind.SlotPlan, Date = date, SlotItems = plan.Picks.ToList(),
+                        Date = date, Picks = plan.Picks.ToList(),
                         Text = Loc.T("nut_assistant_intro", Loc.Num(Math.Max(0, st.Totals.OpenKcal)), Loc.Num(Math.Max(0, st.Totals.OpenProtein)))
                     });
             }
             else if (!empty.Contains(MealSlot.Snack))
             {
-                Add(new Entry { Kind = EntryKind.Assistant, Text = Loc["nut_nothing_open"] });
+                Add(new Entry { Text = Loc["nut_nothing_open"] });
             }
-            else if (MealPlanner.Shared.Nutrition.Suggestions.Snack(st.Totals.OpenKcal, used, st.Candidates) is { } snack)
+            else if (Suggestions.Snack(st.Totals.OpenKcal, used, st.Candidates) is { } snack)
             {
-                Add(new Entry { Kind = EntryKind.SlotPlan, Date = date, Text = Loc["nut_assistant_snack"], SlotItems = [new PlannedPick(MealSlot.Snack, snack.Meal, snack.Nutrition)] });
+                Add(new Entry { Date = date, Text = Loc["nut_assistant_snack"], Picks = [new PlannedPick(MealSlot.Snack, snack.Meal, snack.Nutrition)] });
             }
             else
             {
-                Add(new Entry { Kind = EntryKind.Assistant, Text = Loc["nut_no_fit"] });
+                Add(new Entry { Text = Loc["nut_no_fit"] });
             }
         }
-        catch (Exception ex) { AddError(ex); }
+        catch { Add(new Entry { Text = Loc["nut_load_error"], IsError = true }); }
         finally { isBusy = false; scrollPending = true; }
     }
 
-    private async Task ApplySlotPlanAsync(Entry entry)
+    private async Task ApplyAsync(Entry entry)
     {
-        if (isBusy || entry.State != ProposalState.Open) return;
+        if (isBusy || entry.Applied) return;
         isBusy = true;
         try
         {
             // Only slots that are still empty: the day may have changed since the plan was made.
             var before = await LoadDayAsync(entry.Date);
-            foreach (var pick in entry.SlotItems)
+            foreach (var pick in entry.Picks)
                 if (before.Day is null || !before.Day.Slots.ContainsKey(pick.Slot))
                     await Assigner.AssignAsync(uid, entry.Date, pick.Meal, pick.Slot);
-            var after = await LoadDayAsync(entry.Date);
-            var t = after.Totals;
+            var t = (await LoadDayAsync(entry.Date)).Totals;
             entry.Summary = Loc.T("nut_applied", Loc.Num(t.Eaten.Protein + t.Planned.Protein), Loc.Num(t.Eaten.Kcal + t.Planned.Kcal));
-            entry.State = ProposalState.Applied;
-            await RefreshPlanContextAsync();
+            entry.Applied = true;
         }
-        catch (Exception ex) { AddError(ex); }
+        catch { Add(new Entry { Text = Loc["nut_save_error"], IsError = true }); }
         finally { isBusy = false; scrollPending = true; }
     }
 
-    /// <summary>Deletes list items matching the requested names (case-insensitive; exact match first,
-    /// then a contains match as a fallback for a slightly different wording).</summary>
-    private async Task<(List<(string Shop, List<string> Names)> Removed, List<string> NotFound)> RemoveItemsAsync(
-        List<ShoppingShop> shops, List<string> requested)
-    {
-        var removed = new Dictionary<string, List<string>>();
-        var notFound = new List<string>();
-        var deleted = new HashSet<string>();
-
-        foreach (var name in requested)
-        {
-            var all = shops.SelectMany(s => s.Items.Values.Select(i => (Shop: s, Item: i)))
-                .Where(x => !deleted.Contains(x.Item.Id)).ToList();
-            var matches = all.Where(x => string.Equals(x.Item.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)).ToList();
-            if (matches.Count == 0)
-                matches = all.Where(x => x.Item.Name.Contains(name, StringComparison.OrdinalIgnoreCase)
-                                      || name.Contains(x.Item.Name.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
-            if (matches.Count == 0) { notFound.Add(name); continue; }
-
-            foreach (var (shop, item) in matches)
-            {
-                await ShoppingListService.DeleteItemAsync(uid, shop.Id, item.Id);
-                deleted.Add(item.Id);
-                if (!removed.TryGetValue(shop.Name, out var list)) removed[shop.Name] = list = new();
-                list.Add(item.Name);
-            }
-        }
-
-        return (removed.Select(kv => (kv.Key, kv.Value)).ToList(), notFound);
-    }
-
-    /// <summary>Gives the assistant the next two weeks of the plan so it can prefer free days.</summary>
-    // English names for the prompt only; the model never shows them.
-    private static readonly Dictionary<MealSlot, string> SlotNames = new()
-    {
-        [MealSlot.Meal1] = "Meal 1", [MealSlot.PostWorkout] = "Post-workout", [MealSlot.Dinner] = "Dinner", [MealSlot.Snack] = "Snack"
-    };
-
-    private async Task RefreshPlanContextAsync()
-    {
-        try
-        {
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            var plan = await DayPlan.GetDaysAsync(uid, today, today.AddDays(13));
-            var profile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
-            var names = new Dictionary<string, string>();
-            foreach (var m in await CatalogService.GetAllMealsAsync()) names.TryAdd(m.Id, m.Name);
-
-            // One line per day with each meal the user eats, so the model sees which meals are still open.
-            planContext = string.Join('\n', Enumerable.Range(0, 14).Select(offset =>
-            {
-                var date = today.AddDays(offset);
-                plan.TryGetValue(date, out var day);
-                var slots = DayMath.SlotsFor(DayMath.TypeOf(day, date, profile), profile).Select(slot =>
-                {
-                    var entry = day?.Slots.GetValueOrDefault(slot);
-                    var what = entry is null ? "FREE" : entry.Quick?.Name ?? names.GetValueOrDefault(entry.MealId ?? "", "(a meal)");
-                    return $"{SlotNames[slot]}: {what}";
-                });
-                return $"{date:yyyy-MM-dd} {date.DayOfWeek}: {string.Join("; ", slots)}";
-            }));
-        }
-        catch
-        {
-            planContext = "";
-        }
-    }
+    private void OnLanguage() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguage;
 }

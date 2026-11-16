@@ -82,8 +82,9 @@ public static class WeeklySummary
 
     /// <param name="upTo">Days on or after this date are "future" (this week so far: today).</param>
     public static WeekSummary For(DateOnly monday, DateOnly upTo, IReadOnlyDictionary<DateOnly, PlanDay> days,
-        NutritionProfile profile, Func<string, NutritionInfo?> nutritionFor)
+        NutritionProfile profile, Func<string, NutritionInfo?> nutritionFor, MealPrefs? prefs = null)
     {
+        var target = TargetCalculator.For(profile);
         var states = new List<SummaryDay>();
         double kcal = 0, protein = 0, targetKcal = 0;
         int logged = 0, within = 0;
@@ -92,9 +93,7 @@ public static class WeeklySummary
             var date = monday.AddDays(i);
             if (date >= upTo) { states.Add(SummaryDay.Future); continue; }
             var day = days.GetValueOrDefault(date);
-            var type = DayMath.TypeOf(day, date, profile);
-            var target = TargetCalculator.For(profile, type);
-            var totals = DayMath.Totals(day, type, target, nutritionFor, profile);
+            var totals = DayMath.Totals(day, target, nutritionFor, prefs);
             // A day with nothing ticked as eaten is "not logged", not a 0 kcal day.
             if (totals.Eaten.Kcal <= 0) { states.Add(SummaryDay.NoData); continue; }
             logged++;
@@ -109,7 +108,7 @@ public static class WeeklySummary
             logged == 0 ? 0 : kcal / logged,
             logged == 0 ? 0 : protein / logged,
             logged == 0 ? 0 : targetKcal / logged,
-            TargetCalculator.For(profile, DayType.Training).Protein,
+            target.Protein,
             within);
     }
 }

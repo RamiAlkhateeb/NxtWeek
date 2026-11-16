@@ -7,6 +7,10 @@ public sealed record ShoppingItemOptions(int Quantity = 1, string? Unit = null, 
 public interface IShoppingListService
 {
     Task<List<ShoppingShop>> GetShopsAsync(string uid);
+    /// <summary>Whose list this user shops from: their own key, or the sync partner hosting the shared list.</summary>
+    Task<string> GetListOwnerAsync(string uid);
+    /// <summary>Forgets the remembered list owner after a sync starts or stops.</summary>
+    void ForgetListOwner(string uid);
     Task<ShoppingShop> AddShopAsync(string uid, string name);
     Task DeleteShopAsync(string uid, string shopId);
     Task<ShoppingItem> AddItemAsync(string uid, string shopId, string name, ShoppingItemOptions? options = null);
