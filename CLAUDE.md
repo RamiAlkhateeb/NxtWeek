@@ -170,10 +170,12 @@ photo (`IMealImageService`, `users/{key}/mealPhotos`), then the shared AI photo,
 
 AI photos (`IMealPhotoService`) are shared by everyone at `MealPhotos/{mealId}`: one 480 px square JPEG data URL,
 kept out of `MealCatalog` so the catalog download stays small. A shallow read says which meals have one; each photo is
-fetched only when shown. They are drawn with the user's own Gemini key (`GeminiClient.GenerateImageAsync` in Nxt.UI):
-in the background when a meal is added, from "Make a photo" on the meal's page, and for every meal without one from
-Settings → Advanced → Meal photos (`MealPhotosBulk`). Most free keys cannot generate
-images; that error is shown with `NxtText.AiError` and the illustration stays.
+fetched only when shown. They are drawn for free, without any user key, by the photo worker in `photo-worker/`
+(Cloudflare Workers AI, Flux; deployed by `.github/workflows/photo-worker.yml`, tests with
+`node --test photo-worker/test/*.test.js`): in the background when a meal is added, from "Make a photo" on the meal's
+page, and for every meal without one from Settings → Advanced → Meal photos (`MealPhotosBulk`). The worker only draws
+catalog meals without a photo, from the app's own sites, with a per-visitor and a daily limit; its errors become
+`MealPhotoException` and are shown with `MealPhotoException.MessageKey`. The illustration stays when no photo can be made.
 
 `IMealImageService` resolves a flat SVG illustration from
 `wwwroot/img/meals/` for every meal — user-supplied `PhotoUrl` first, then an

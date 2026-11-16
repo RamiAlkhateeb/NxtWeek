@@ -1,0 +1,20 @@
+# Draws AI meal photos for Makdous with Cloudflare Workers AI (free daily allowance).
+# Deployed by .github/workflows/photo-worker.yml; see README.md in this folder.
+name = "makdous-photos"
+main = "src/index.js"
+compatibility_date = "2026-08-10"
+
+[ai]
+binding = "AI"
+
+[vars]
+FIREBASE_URL = "https://meal-planner-af799-default-rtdb.europe-west1.firebasedatabase.app"
+
+# Per visitor: at most 30 pictures a minute, enough for "Meal photos" in Settings, too few to drain the allowance.
+[[ratelimits]]
+name = "PER_VISITOR"
+namespace_id = "7101"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60

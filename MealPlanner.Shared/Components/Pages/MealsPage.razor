@@ -8,7 +8,6 @@
 @inject IDayPlanService DayPlan
 @inject IMealDetailsService MealDetails
 @inject IMealPhotoService Photos
-@inject NxtText Text
 @inject ToastService Toasts
 @inject INutritionStore NutritionStore
 @inject IMealService MealService
@@ -467,15 +466,11 @@
         catch (Exception ex) { newMealError = ex.Message; }
     }
 
-    // A new meal gets an AI photo in the background (with the user's key); the meal never waits for it.
+    // A new meal gets an AI photo in the background (free, from the photo worker); the meal never waits for it.
     private async Task MakePhotoAsync(MealCatalogItem meal)
     {
-        try
-        {
-            if (!await Photos.CanGenerateAsync()) return;
-            await Photos.GenerateAsync(meal);
-        }
-        catch (Exception ex) { Toasts.Show(Loc.T("nut_photo_failed", Text.AiError(ex)), isError: true); }
+        try { await Photos.GenerateAsync(meal); }
+        catch (Exception ex) { Toasts.Show(Loc.T("nut_photo_failed", Loc[MealPhotoException.MessageKey(ex)]), isError: true); }
     }
 
         private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)

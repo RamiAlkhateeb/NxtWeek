@@ -2,7 +2,6 @@ using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using MealPlanner.Shared.Models;
 using Microsoft.JSInterop;
-using Nxt.UI.Ai;
 
 namespace MealPlanner.Shared.Services;
 
@@ -10,6 +9,7 @@ namespace MealPlanner.Shared.Services;
 /// AI-generated meal photos, shared by everyone: one small JPEG data URL per meal at MealPhotos/{mealId}, kept
 /// apart from the catalog so the catalog download stays small. Which meals have a photo is read once with a
 /// shallow request; each photo is fetched only when a meal is shown, and kept in memory for the session.
+/// New photos are drawn by the Makdous photo worker (Cloudflare Workers AI, free, no key; see photo-worker/).
 /// A user's own private photo (<see cref="IMealImageService"/>) always wins over the shared one.
 /// </summary>
 public interface IMealPhotoService
@@ -18,15 +18,47 @@ public interface IMealPhotoService
     Task<string?> GetAsync(string mealId);
     /// <summary>Whether a shared photo exists for the meal (from the one-request index; nothing is downloaded).</summary>
     Task<bool> HasAsync(string mealId);
-    /// <summary>Whether this user can generate photos at all (a Gemini key is saved).</summary>
-    Task<bool> CanGenerateAsync();
-    /// <summary>Draws a photo with the user's Gemini key, shrinks it to 480 px and shares it. Throws GeminiApiException.</summary>
+    /// <summary>Draws a photo with the photo worker, shrinks it to 480 px and shares it. Throws <see cref="MealPhotoException"/>.</summary>
     Task<string> GenerateAsync(MealCatalogItem meal);
     /// <summary>Raised with the meal id when a photo was generated, so every picture of that meal updates.</summary>
     event Action<string>? Changed;
 }
 
-public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, GeminiClient gemini, IJSRuntime js) : IMealPhotoService
+public enum MealPhotoProblem
+{
+    /// <summary>Today's free allowance is used up; try again tomorrow.</summary>
+    DailyLimit,
+    /// <summary>Too many photos asked for in a minute.</summary>
+    Busy,
+    /// <summary>The model could not draw this dish.</summary>
+    Failed,
+    /// <summary>The photo service could not be reached (offline, not deployed yet).</summary>
+    Unavailable
+}
+
+public sealed class MealPhotoException(MealPhotoProblem problem, string? detail = null)
+    : Exception(detail ?? problem.ToString())
+{
+    public MealPhotoProblem Problem { get; } = problem;
+
+    /// <summary>The translation key that explains the problem to the user.</summary>
+    public static string MessageKey(Exception ex) => ex is MealPhotoException p
+        ? p.Problem switch
+        {
+            MealPhotoProblem.DailyLimit => "nut_photo_err_daily",
+            MealPhotoProblem.Busy => "nut_photo_err_busy",
+            MealPhotoProblem.Failed => "nut_photo_err_failed",
+            _ => "nut_photo_err_unavailable"
+        }
+        : "nut_photo_err_unavailable";
+}
+
+public sealed class MealPhotoOptions
+{
+    public string WorkerUrl { get; set; } = "https://makdous-photos.rami13195.workers.dev";
+}
+
+public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, MealPhotoOptions photoOptions, IJSRuntime js) : IMealPhotoService
 {
     public const int Size = 480;
 
@@ -79,32 +111,53 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, G
         finally { loading.Remove(mealId); }
     }
 
-    public Task<bool> CanGenerateAsync() => gemini.HasKeyAsync();
-
     public async Task<string> GenerateAsync(MealCatalogItem meal)
     {
-        var image = await gemini.GenerateImageAsync(Prompt(meal));
-        var raw = $"data:{image.MimeType};base64,{Convert.ToBase64String(image.Data)}";
+        string raw;
+        try
+        {
+            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id });
+            var body = await ReadAsync(response);
+            var image = Text(body, "image");
+            var status = (int)response.StatusCode;
+            if (status == 200 && string.IsNullOrEmpty(image)) status = 502;
+            switch (status)
+            {
+                case 200:
+                    raw = image!;
+                    break;
+                case 409:
+                    // Someone else drew it a moment ago: show theirs.
+                    photos.Remove(meal.Id);
+                    index = null;
+                    return await GetAsync(meal.Id) ?? throw new MealPhotoException(MealPhotoProblem.Failed);
+                case 429:
+                    throw new MealPhotoException(Text(body, "error") == "daily_limit" ? MealPhotoProblem.DailyLimit : MealPhotoProblem.Busy);
+                case 502:
+                    throw new MealPhotoException(MealPhotoProblem.Failed, Text(body, "detail"));
+                default:
+                    throw new MealPhotoException(MealPhotoProblem.Unavailable, $"{status} {Text(body, "error")}");
+            }
+        }
+        catch (HttpRequestException ex) { throw new MealPhotoException(MealPhotoProblem.Unavailable, ex.Message); }
+        catch (TaskCanceledException ex) { throw new MealPhotoException(MealPhotoProblem.Unavailable, ex.Message); }
+
         var small = await js.InvokeAsync<string?>("nxtweek.squareJpeg", raw, Size)
-            ?? throw new GeminiApiException(GeminiErrorKind.Other, image.Model, null, "The picture could not be read.");
-        using var response = await http.PutAsJsonAsync(Url($"MealPhotos/{Uri.EscapeDataString(meal.Id)}"), small);
-        response.EnsureSuccessStatusCode();
+            ?? throw new MealPhotoException(MealPhotoProblem.Failed, "The picture could not be read.");
+        using (var saved = await http.PutAsJsonAsync(Url($"MealPhotos/{Uri.EscapeDataString(meal.Id)}"), small))
+            saved.EnsureSuccessStatusCode();
         photos[meal.Id] = small;
         (await IndexAsync()).Add(meal.Id);
         Changed?.Invoke(meal.Id);
         return small;
     }
 
-    /// <summary>One plated serving, photographed from above, nothing else in the picture.</summary>
-    public static string Prompt(MealCatalogItem meal)
+    private static string? Text(JsonObject? body, string name) =>
+        body is not null && body.TryGetPropertyValue(name, out var node) && node is JsonValue v && v.TryGetValue<string>(out var text) ? text : null;
+
+    private static async Task<JsonObject?> ReadAsync(HttpResponseMessage response)
     {
-        var ingredients = meal.IngredientLines.Count > 0
-            ? string.Join(", ", meal.IngredientLines.Select(l => l.Name).Where(n => !string.IsNullOrWhiteSpace(n)).Take(8))
-            : string.Join(", ", meal.Ingredients.Where(i => !string.IsNullOrWhiteSpace(i)).Take(8));
-        return $"A realistic, appetising food photograph of the dish \"{meal.Name.Trim()}\""
-            + (ingredients.Length > 0 ? $" (made with {ingredients})" : "")
-            + ". One serving, plated as it is usually served, seen from slightly above, soft natural daylight, "
-            + "plain light background, square framing with the dish in the centre. "
-            + "No text, no labels, no logos, no hands, no people.";
+        try { return await response.Content.ReadFromJsonAsync<JsonObject>(); }
+        catch { return null; }
     }
 }
