@@ -75,7 +75,7 @@
             {
                 <a class="mk-stamp-line" href="progress">
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-                    @Loc.T("nut_stamp_line", Loc.Num(logged.Count))
+                    @Loc.T("nut_stamp_line", Loc.Num(DayStatus.Stamps(StartOfWeek(Today), days, prefs)))
                 </a>
             }
             @if (weekOffset == 0 && reviewMonday is { } rm)
