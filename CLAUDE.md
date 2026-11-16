@@ -75,6 +75,9 @@ nxtweek.theme
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 | Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
+| Sync with one friend: partner and whose list is shared (both sides) | `users/{key}/sync` |
+| Waiting sync request (with the person asked) / the one I sent | `users/{key}/syncRequest`, `users/{key}/syncOutgoing` |
+| Protein-challenge count, only while sharing nutrition | `users/{key}/shareStats` |
 | Week shared from the Sunday review: Monday, days logged, most eaten meal (never calories or weight) | `users/{key}/sharedReview` |
 
 Makdous is about meals only: there are no training or rest days, and one daily target. The afternoon snack is
@@ -118,6 +121,16 @@ leftover) with their servings and meal prep, and one list grouped by aisle that 
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
 (`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
 and ones the plan no longer needs. Old accounts with several stores see all their items together.
+
+Friends: each friend's week shows their meals (tap one to add it to your favourites) and, only when they share, calories
+and protein. The protein challenge shows when you and a friend both share; each side publishes just its protein-day count
+(`FriendShare.ProteinDays`). Sync (`ISyncService`) links one friend at a time: the one asked accepts after a confirmation, and
+their meals from today on become the requester's (`SyncMerge.Adopt`). From then on `DayPlanService` mirrors every change to a
+catalog meal on a day from today on into the partner's day (`SyncMerge.Mirror`). Servings, eaten, skipped, meal prep,
+leftovers and quick adds stay personal, and an answered entry is never changed. Both use the requester's shopping list
+(`IShoppingListService.GetListOwnerAsync`), and its amounts count both people's servings. Stopping gives the other side a copy
+of the list. Live updates use `LiveWatch` (Firebase REST streaming on one narrow path, plus a reload when the tab is shown
+again): Week watches this week's days, Shopping watches the shared list and both plans.
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.

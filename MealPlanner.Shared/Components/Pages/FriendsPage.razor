@@ -6,33 +6,55 @@
 @inject IUserService UserService
 @inject IMealCatalogService CatalogService
 @inject IDayPlanService DayPlan
+@inject INutritionStore NutritionStore
+@inject ISyncService Sync
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ILocalizationService Loc
 @inject ToastService Toasts
 
+@* Friends: add by username, requests, sharing calories and protein (off by default), the protein challenge
+   when both share, and each friend's week (their meals always; calories and protein only when they share).
+   Sync: one friend at a time keeps meals and one shopping list in step, live (ISyncService, SyncMerge). *@
 <div class="mk-page mk-friends" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row is-start">
-            <BackButton Fallback="/settings" />
+            <BackButton Fallback="/" />
             <div class="mk-title-block">
                 <h1 class="mk-title">@Loc["friends_title"]</h1>
                 <p class="mk-subtitle">@Loc["friends_subtitle"]</p>
             </div>
         </div>
+    </header>
 
-        @if (!isLoading && hasUsername)
+    <main class="mk-stack">
+        @if (isLoading)
         {
-            <div class="mk-add-friend">
+            <NxtSkeleton /><NxtSkeleton /><NxtSkeleton />
+        }
+        else if (loadError)
+        {
+            <div class="mk-notice is-error" role="alert">@Loc["nut_load_error"]</div>
+            <button class="mk-btn is-block" @onclick="ReloadAsync">@Loc["nut_retry"]</button>
+        }
+        else if (!hasUsername)
+        {
+            <NxtEmptyState Icon="🔒" Title="@Loc["friends_need_username"]" Message="">
+                <a class="mk-btn" href="settings">@Loc["friends_go_settings"]</a>
+            </NxtEmptyState>
+        }
+        else
+        {
+            <form class="mk-add-friend" @onsubmit="SendRequest" @onsubmit:preventDefault>
                 <label class="mk-search">
                     <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-                    <input dir="ltr" @bind="friendUsername" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="@Loc["friends_add_placeholder"]" aria-label="@Loc["friends_add_placeholder"]" disabled="@isSendingRequest" />
+                    <input dir="ltr" @bind="friendUsername" @bind:event="oninput" placeholder="@Loc["friends_add_placeholder"]" aria-label="@Loc["friends_add_placeholder"]" disabled="@isBusy" autocomplete="off" />
                 </label>
-                <button class="mk-icon-btn is-ink is-lg" @onclick="SendRequest" disabled="@(isSendingRequest || string.IsNullOrWhiteSpace(friendUsername))" aria-label="@Loc["friends_send_request"]">
+                <button type="submit" class="mk-icon-btn is-ink is-lg" disabled="@(isBusy || string.IsNullOrWhiteSpace(friendUsername))" aria-label="@Loc["friends_send_request"]">
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                 </button>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(feedback)) { <div class="mk-notice @(isError ? "is-error" : "")">@feedback</div> }
+            </form>
+            @if (!string.IsNullOrWhiteSpace(feedback)) { <div class="mk-notice @(isError ? "is-error" : "")" role="status">@feedback</div> }
 
             <div class="mk-username-card">
                 <div class="mk-username-text">
@@ -44,22 +66,55 @@
                     @Loc["copy"]
                 </button>
             </div>
-        }
-    </header>
 
-    <main class="mk-stack">
-        @if (isLoading)
-        {
-            <NxtSkeleton /><NxtSkeleton />
-        }
-        else if (!hasUsername)
-        {
-            <NxtEmptyState Icon="🔒" Title="@Loc["friends_need_username"]" Message="">
-                <a class="mk-btn" href="settings">@Loc["friends_go_settings"]</a>
-            </NxtEmptyState>
-        }
-        else
-        {
+            @foreach (var request in incomingRequests)
+            {
+                <article class="mk-request">
+                    <span class="mk-avatar is-pink" aria-hidden="true">@Initial(request.SenderDisplayName)</span>
+                    <div class="mk-person-copy">
+                        <strong>@request.SenderDisplayName</strong>
+                        <span class="mk-subtitle">@Loc["friends_wants_to_add"]</span>
+                    </div>
+                    <button class="mk-icon-btn is-ink is-lg" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="@Loc.T("nut_slot_entry", Loc["friends_accept"], request.SenderDisplayName)">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+                    </button>
+                    <button class="mk-icon-btn is-outline is-lg" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="@Loc.T("nut_slot_entry", Loc["friends_decline"], request.SenderDisplayName)">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </article>
+            }
+
+            @if (syncRequest is { } sr)
+            {
+                <article class="mk-request">
+                    <span class="mk-avatar is-pink" aria-hidden="true">@SyncIcon()</span>
+                    <div class="mk-person-copy">
+                        <strong>@NameOf(sr.From, sr.FromName)</strong>
+                        <span class="mk-subtitle">@Loc["nut_sync_request_body"]</span>
+                    </div>
+                    <button class="mk-icon-btn is-ink is-lg" disabled="@isBusy" @onclick="OpenAcceptAsync" aria-label="@Loc.T("nut_slot_entry", Loc["friends_accept"], NameOf(sr.From, sr.FromName))">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+                    </button>
+                    <button class="mk-icon-btn is-outline is-lg" disabled="@isBusy" @onclick="DeclineSyncAsync" aria-label="@Loc.T("nut_slot_entry", Loc["friends_decline"], NameOf(sr.From, sr.FromName))">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </article>
+            }
+
+            @if (link is { } l)
+            {
+                <section class="mk-card mk-sync-card">
+                    <div class="mk-sync-head">
+                        <span class="mk-sync-icon" aria-hidden="true">@SyncIcon()</span>
+                        <span class="mk-set-link-copy">
+                            <b>@Loc.T("nut_syncing_with", NameOf(l.Partner))</b>
+                            <span>@Loc["nut_syncing_body"]</span>
+                        </span>
+                    </div>
+                    <button class="mk-btn is-soft is-block" disabled="@isBusy" @onclick="() => showStop = true">@Loc["nut_sync_stop"]</button>
+                </section>
+            }
+
             <section class="mk-set-card">
                 <div class="mk-sheet-row">
                     <span class="mk-sheet-row-copy">
@@ -70,40 +125,41 @@
                 </div>
             </section>
 
-            @foreach (var request in incomingRequests)
+            @if (shareNutrition && challengeFriend is { } cf)
             {
-                <article class="mk-request">
-                    <span class="mk-avatar is-pink" aria-hidden="true">@Initial(request.SenderDisplayName)</span>
-                    <div class="mk-person-copy">
-                        <strong>@request.SenderDisplayName</strong>
-                        <span class="mk-subtitle">@Loc["friends_wants_to_add"]</span>
-                    </div>
-                    <button class="mk-icon-btn is-ink is-lg" @onclick="() => AcceptRequest(request.SenderUid)" aria-label="@Loc["friends_accept"]">
-                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
-                    </button>
-                    <button class="mk-icon-btn is-outline is-lg" @onclick="() => DeclineRequest(request.SenderUid)" aria-label="@Loc["friends_decline"]">
-                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                    </button>
-                </article>
+                <section class="mk-card mk-challenge" aria-labelledby="challenge-h">
+                    <b id="challenge-h" class="mk-challenge-title">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
+                        @Loc["nut_challenge"] · <bdi>@cf.DisplayName</bdi>
+                    </b>
+                    <span class="mk-subtitle">@Loc.T("nut_challenge_body", Loc.Num(FriendShare.ChallengeDays))</span>
+                    @ChallengeRow(Loc["nut_you"], myProteinDays)
+                    @ChallengeRow(cf.DisplayName, friendProteinDays)
+                </section>
             }
 
             @if (friends.Count == 0)
             {
-                <p class="mk-empty-line">@Loc["friends_empty"]</p>
+                <div class="mk-note">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/></svg>
+                    <span><b>@Loc["nut_no_friends"]</b> @Loc["friends_empty"]</span>
+                </div>
             }
 
             @for (var index = 0; index < friends.Count; index++)
             {
                 var friend = friends[index];
-                var open = selectedFriend?.Uid == friend.Uid;
-                var tone = index % 4;
+                var open = openFriend == friend.Uid;
+                var week = friendWeeks.GetValueOrDefault(friend.Uid);
                 <section class="mk-friend @(open ? "is-open" : "")">
-                    <button class="mk-friend-head" @onclick="() => SelectFriend(friend)" aria-expanded="@open">
-                        <span class="mk-avatar tone-@tone @(open ? "is-ink" : "")" aria-hidden="true">@Initial(friend.DisplayName)</span>
+                    <button class="mk-friend-head" @onclick="() => openFriend = open ? null : friend.Uid" aria-expanded="@(open ? "true" : "false")">
+                        <span class="mk-avatar is-ink" aria-hidden="true">@Initial(friend.DisplayName)</span>
                         <span class="mk-person-copy">
                             <strong>@friend.DisplayName</strong>
-                            @if (open && !isLoadingFriendWeek) { <span class="mk-subtitle">@Loc.T("friends_planned_days", PlannedDays)</span> }
-                            else { <span class="mk-subtitle" dir="ltr">@friend.Uid</span> }
+                            <span class="mk-subtitle">
+                                @(week is null ? friend.Uid : Loc.T("friends_planned_days", Loc.Num(PlannedDays(week))))
+                                @if (link?.Partner == friend.Uid) { <span class="mk-tag is-ok">@Loc["nut_synced"]</span> }
+                            </span>
                         </span>
                         <svg class="i mk-past-chev @(open ? "is-open" : "")" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
@@ -111,65 +167,74 @@
                     @if (open)
                     {
                         <div class="mk-friend-body">
-                            <div class="mk-weeknav">
-                                <button class="mk-icon-btn is-plain" @onclick="PreviousWeek" disabled="@isLoadingFriendWeek" aria-label="@Loc["friends_prev_week"]">
-                                    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-                                </button>
-                                <span class="mk-weeknav-label">@WeekRangeLabel</span>
-                                <button class="mk-icon-btn is-plain" @onclick="NextWeek" disabled="@isLoadingFriendWeek" aria-label="@Loc["friends_next_week"]">
-                                    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-                                </button>
-                            </div>
-
-                            <div class="mk-friend-days @(isLoadingFriendWeek ? "is-loading" : "")">
+                            <span class="mk-proposal-label">@Loc["nut_friend_week"]</span>
+                            @if (!friend.ShareNutrition)
+                            {
+                                <div class="mk-note">
+                                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                                    <span>@Loc["nut_not_shared"]</span>
+                                </div>
+                            }
+                            @if (week is null)
+                            {
+                                <div class="mk-note">@Loc["nut_load_error"]</div>
+                            }
+                            else
+                            {
+                                <span class="mk-subtitle">@Loc["nut_their_meals_hint"]</span>
                                 @foreach (var date in WeekDates)
                                 {
-                                    var theirs = FriendShare.MealIds(friendDays.GetValueOrDefault(date)).Select(MealFor).OfType<MealCatalogItem>().ToList();
-                                    var mine = FriendShare.MealIds(myDays.GetValueOrDefault(date)).Select(MealFor).OfType<MealCatalogItem>().ToList();
-                                    <div class="mk-friend-day @(theirs.Count == 0 ? "is-empty" : "")">
-                                        <span class="mk-friend-dayname">@Loc.GetShortDayName(date.DayOfWeek)</span>
-                                        @if (theirs.Count == 0)
-                                        {
-                                            <span class="mk-friend-meal is-none">—</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="mk-dot @MealTypeStyle.T(theirs[0].MealType)" aria-hidden="true"></span>
-                                            <span class="mk-friend-meal">@string.Join(" · ", theirs.Select(m => m.Name))</span>
-                                            @if (mine.Count == 0) { <span class="mk-diff is-ok">@Loc["friends_empty_day"]</span> }
-                                            else if (!mine.Select(m => m.Id).SequenceEqual(theirs.Select(m => m.Id))) { <span class="mk-diff">@Loc.T("friends_replaces", string.Join(" · ", mine.Select(m => m.Name)))</span> }
-                                        }
-                                    </div>
-                                }
-                            </div>
-
-                            <div class="mk-friend-share">
-                                <span class="mk-proposal-label">@Loc["nut_friend_week"]</span>
-                                @if (selectedFriend.ShareNutrition)
-                                {
-                                    @foreach (var date in WeekDates)
-                                    {
-                                        var eaten = FriendShare.EatenOn(friendDays.GetValueOrDefault(date), id => MealFor(id)?.Nutrition);
-                                        <div class="mk-friend-share-row">
+                                    var meals = FriendShare.MealIds(week.GetValueOrDefault(date)).Distinct().Select(MealFor).OfType<MealCatalogItem>().ToList();
+                                    var eaten = friend.ShareNutrition ? FriendShare.EatenOn(week.GetValueOrDefault(date), id => MealFor(id)?.Nutrition) : null;
+                                    <div class="mk-fday">
+                                        <div class="mk-fday-row">
                                             <b>@Loc.GetShortDayName(date.DayOfWeek)</b>
-                                            <span class="mk-num">@(eaten is { } e1 ? $"{Loc.Num(e1.Kcal)} {Loc["nut_kcal"]}" : "–")</span>
-                                            <span class="mk-num mk-friend-share-p">@(eaten is { } e2 ? $"{Loc.Num(e2.Protein)} {Loc["nut_g"]}" : "")</span>
+                                            @if (friend.ShareNutrition)
+                                            {
+                                                <span class="mk-num">@(eaten is { } e1 ? $"{Loc.Num(e1.Kcal)} {Loc["nut_kcal"]}" : "–")</span>
+                                                <span class="mk-num mk-fday-p">@(eaten is { } e2 ? $"{Loc.Num(e2.Protein)} {Loc["nut_g"]}" : "")</span>
+                                            }
+                                            else if (meals.Count == 0)
+                                            {
+                                                <span class="mk-subtitle">–</span>
+                                            }
                                         </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="mk-note">
-                                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-                                        <span>@Loc["nut_not_shared"]</span>
+                                        @if (meals.Count > 0)
+                                        {
+                                            <div class="mk-fday-meals">
+                                                @foreach (var meal in meals)
+                                                {
+                                                    var fav = favorites.Contains(meal.Id);
+                                                    <button type="button" class="mk-fmeal @(fav ? "is-fav" : "")" aria-pressed="@(fav ? "true" : "false")"
+                                                            aria-label="@Loc.T("nut_slot_entry", Loc["nut_their_meals_hint"], meal.Name)" @onclick="() => ToggleFavoriteAsync(meal)">
+                                                        @meal.Name
+                                                        @if (fav) { <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> }
+                                                        else { <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> }
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
                                     </div>
                                 }
-                            </div>
+                            }
 
-                            <div class="mk-friend-actions">
-                                <button class="mk-btn is-pink" disabled="@(isLoadingFriendWeek || isSyncing)" @onclick="ReplaceWeek">@Loc["friends_replace_week"]</button>
-                                <button class="mk-btn" disabled="@(isLoadingFriendWeek || isSyncing)" @onclick="CopyEmptyDays">@Loc["friends_copy_empty"]</button>
-                            </div>
+                            @if (link is null && syncRequest is null)
+                            {
+                                @if (outgoing == friend.Uid)
+                                {
+                                    <div class="mk-sync-pending">
+                                        <span class="mk-subtitle">@Loc["nut_sync_sent"]</span>
+                                        <button class="mk-btn is-soft is-sm" disabled="@isBusy" @onclick="CancelSyncAsync">@Loc["nut_sync_cancel"]</button>
+                                    </div>
+                                }
+                                else if (outgoing is null)
+                                {
+                                    <button class="mk-btn is-block" disabled="@isBusy" @onclick="() => RequestSyncAsync(friend)">
+                                        @SyncIcon() @Loc["nut_sync_button"]
+                                    </button>
+                                    <span class="mk-subtitle">@Loc["nut_sync_hint"]</span>
+                                }
+                            }
                         </div>
                     }
                 </section>
@@ -186,7 +251,7 @@
                             <strong>@user.DisplayName</strong>
                             <span class="mk-subtitle" dir="ltr">@@@user.Username</span>
                         </div>
-                        <button class="mk-icon-btn is-ink is-lg" @onclick="() => AddDiscovered(user)" disabled="@isSendingRequest" aria-label="@Loc.T("friends_add_named", user.Username)">
+                        <button class="mk-icon-btn is-ink is-lg" @onclick="() => AddDiscovered(user)" disabled="@isBusy" aria-label="@Loc.T("friends_add_named", user.Username)">
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
                     </article>
@@ -196,31 +261,47 @@
     </main>
 </div>
 
+<NxtBottomSheet IsOpen="preview is not null" Title="@(preview is { } p0 ? Loc.T("nut_sync_accept_title", NameOf(p0.Request.From, p0.Request.FromName)) : "")" OnDismiss="() => preview = null">
+    @if (preview is { } p)
+    {
+        var name = NameOf(p.Request.From, p.Request.FromName);
+        <div class="mk-sheet-body" dir="@Loc.Direction">
+            <p>@(p.DaysChanged > 0 ? Loc.T("nut_sync_accept_body", Loc.Num(p.DaysChanged), name) : Loc.T("nut_sync_accept_none", name))</p>
+            <p class="mk-subtitle">@Loc.T("nut_sync_accept_list", name)</p>
+            <button class="mk-btn is-lg is-block" disabled="@isBusy" @onclick="AcceptSyncAsync">@Loc["nut_sync_start"]</button>
+            <button class="mk-btn is-soft is-block" @onclick="() => preview = null">@Loc["cancel"]</button>
+        </div>
+    }
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="showStop" Title="@(link is { } sl ? Loc.T("nut_sync_stop_title", NameOf(sl.Partner)) : "")" OnDismiss="() => showStop = false">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <p>@Loc["nut_sync_stop_body"]</p>
+        <button class="mk-btn is-lg is-block is-danger-fill" disabled="@isBusy" @onclick="StopSyncAsync">@Loc["nut_sync_stop"]</button>
+        <button class="mk-btn is-soft is-block" @onclick="() => showStop = false">@Loc["cancel"]</button>
+    </div>
+</NxtBottomSheet>
+
 @code {
-    private string uid = "";
-    private bool isLoading = true;
-    private bool isSendingRequest;
-    private bool isError;
-    private string friendUsername = "";
-    private string feedback = "";
+    private string uid = "", displayName = "";
+    private bool isLoading = true, loadError, isBusy, isError, hasUsername, shareNutrition, showStop;
+    private string friendUsername = "", feedback = "";
+    private string? openFriend, outgoing;
     private List<FriendRequest> incomingRequests = new();
     private List<UserProfile> friends = new();
     private List<UserProfile> discoverable = new();
-    private HashSet<string> alreadyConnected = new(StringComparer.OrdinalIgnoreCase);
-    private UserProfile? selectedFriend;
-    private Dictionary<DateOnly, PlanDay> friendDays = new();
-    private Dictionary<DateOnly, PlanDay> myDays = new();
-    private bool shareNutrition;
+    private Dictionary<string, Dictionary<DateOnly, PlanDay>?> friendWeeks = new();
     private Dictionary<string, MealCatalogItem> catalog = new();
-    private DateOnly displayedWeekStart;
-    private bool isSyncing;
-    private bool isLoadingFriendWeek;
-    private int friendWeekRequestId;
-    private bool hasUsername;
-    private string WeekRangeLabel => $"{displayedWeekStart.Day} {Loc.GetMonthName(displayedWeekStart.Month)} – {displayedWeekStart.AddDays(6).Day} {Loc.GetMonthName(displayedWeekStart.AddDays(6).Month)}";
+    private HashSet<string> favorites = new();
+    private SyncLink? link;
+    private SyncRequest? syncRequest;
+    private SyncPreview? preview;
+    private UserProfile? challengeFriend;
+    private int myProteinDays, friendProteinDays;
 
-    private int PlannedDays => WeekDates.Count(d => FriendShare.MealIds(friendDays.GetValueOrDefault(d)).Count > 0);
-    private IReadOnlyList<DateOnly> WeekDates => Enumerable.Range(0, 7).Select(i => displayedWeekStart.AddDays(i)).ToList();
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly Monday => Badges.MondayOf(Today);
+    private static IReadOnlyList<DateOnly> WeekDates => Enumerable.Range(0, 7).Select(i => Monday.AddDays(i)).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -231,49 +312,106 @@
             Nav.NavigateTo("/signin");
             return;
         }
-
         uid = user.Uid;
-        displayedWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
-        catalog = (await CatalogService.GetAllMealsAsync()).GroupBy(meal => meal.Id).ToDictionary(g => g.Key, g => g.First());
-        await LoadProfileAsync();
-        isLoading = false;
+        await ReloadAsync();
     }
 
-    private async Task LoadProfileAsync()
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = false;
+        try
+        {
+            if (catalog.Count == 0)
+                catalog = (await CatalogService.GetAllMealsAsync()).GroupBy(m => m.Id).ToDictionary(g => g.Key, g => g.First());
+            await LoadAsync();
+        }
+        catch { loadError = true; }
+        finally { isLoading = false; }
+    }
+
+    private async Task LoadAsync()
     {
         var profile = await UserService.GetProfileAsync(uid);
         hasUsername = !string.IsNullOrWhiteSpace(profile?.Username);
+        displayName = string.IsNullOrWhiteSpace(profile?.DisplayName) ? uid : profile.DisplayName;
         shareNutrition = profile?.ShareNutrition ?? false;
-        incomingRequests = profile?.IncomingFriendRequests?.Values.OrderByDescending(request => request.SentAtUtc).ToList() ?? new();
+        favorites = (profile?.FavoriteMealIds ?? new()).ToHashSet();
+        incomingRequests = profile?.IncomingFriendRequests?.Values.OrderByDescending(r => r.SentAtUtc).ToList() ?? new();
         var friendIds = profile?.FriendIds?.Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new();
         var profiles = await Task.WhenAll(friendIds.Select(UserService.GetProfileAsync));
-        friends = profiles.Where(profile => profile is not null).Cast<UserProfile>().OrderBy(profile => profile.DisplayName).ToList();
+        friends = profiles.OfType<UserProfile>().OrderBy(p => p.DisplayName).ToList();
 
-        // People already friends, or with a request in-flight either way.
-        alreadyConnected = new HashSet<string>(friendIds, StringComparer.OrdinalIgnoreCase);
-        foreach (var incoming in profile?.IncomingFriendRequests?.Keys ?? Enumerable.Empty<string>())
-            alreadyConnected.Add(incoming);
-        foreach (var outgoing in profile?.OutgoingFriendRequestIds ?? new List<string>())
-            alreadyConnected.Add(outgoing);
+        var connected = new HashSet<string>(friendIds, StringComparer.OrdinalIgnoreCase);
+        foreach (var incoming in profile?.IncomingFriendRequests?.Keys ?? Enumerable.Empty<string>()) connected.Add(incoming);
+        foreach (var sent in profile?.OutgoingFriendRequestIds ?? new()) connected.Add(sent);
+        // "People you may know" is a bonus: the page works without it.
+        try { discoverable = (await UserService.GetRegisteredUsersAsync(uid)).Where(p => !connected.Contains(p.Uid)).OrderBy(p => p.DisplayName).ToList(); }
+        catch { discoverable = new(); }
 
-        var all = await UserService.GetRegisteredUsersAsync(uid);
-        discoverable = all
-            .Where(p => !alreadyConnected.Contains(p.Uid))
-            .OrderBy(p => p.DisplayName)
-            .ToList();
+        var linkTask = Sync.GetLinkAsync(uid);
+        var requestTask = Sync.GetIncomingAsync(uid);
+        var outgoingTask = Sync.GetOutgoingAsync(uid);
+        await Task.WhenAll(linkTask, requestTask, outgoingTask);
+        link = await linkTask;
+        syncRequest = await requestTask;
+        outgoing = await outgoingTask;
 
-        if (selectedFriend is not null)
+        // This week of every friend: their meals; calories and protein only for those who share.
+        var weeks = await Task.WhenAll(friends.Select(async f =>
         {
-            selectedFriend = friends.FirstOrDefault(friend => friend.Uid == selectedFriend.Uid);
-            if (selectedFriend is not null) await LoadSelectedFriendWeekAsync();
-        }
+            try { return (f.Uid, Days: (Dictionary<DateOnly, PlanDay>?)await DayPlan.GetDaysAsync(f.Uid, Monday, Monday.AddDays(6))); }
+            catch { return (f.Uid, Days: (Dictionary<DateOnly, PlanDay>?)null); }
+        }));
+        friendWeeks = weeks.ToDictionary(w => w.Uid, w => w.Days);
+
+        await LoadChallengeAsync();
     }
+
+    // The protein challenge needs both sides to share: me, and the sync partner or else the first friend who shares.
+    private async Task LoadChallengeAsync()
+    {
+        challengeFriend = friends.FirstOrDefault(f => f.Uid == link?.Partner && f.ShareNutrition) ?? friends.FirstOrDefault(f => f.ShareNutrition);
+        if (!shareNutrition || challengeFriend is null) return;
+        try
+        {
+            var mineTask = DayPlan.GetDaysAsync(uid, Monday, Today);
+            var profileTask = NutritionStore.GetProfileAsync(uid);
+            var statsTask = UserService.GetShareStatsAsync(challengeFriend.Uid);
+            await Task.WhenAll(mineTask, profileTask, statsTask);
+            var target = TargetCalculator.For(await profileTask ?? new NutritionProfile()).Protein;
+            myProteinDays = FriendShare.ProteinDays(await mineTask, Monday, Today, target, id => MealFor(id)?.Nutrition);
+            var stats = await statsTask;
+            friendProteinDays = stats?.Monday == Monday ? stats.ProteinDays : 0;
+            await UserService.PublishShareStatsAsync(uid, new ShareStats { Monday = Monday, ProteinDays = myProteinDays });
+        }
+        catch { /* the card shows zeros */ }
+    }
+
+    private RenderFragment ChallengeRow(string name, int days) => __builder =>
+    {
+        var shown = Math.Min(days, FriendShare.ChallengeDays);
+        <div class="mk-challenge-row">
+            <span class="mk-challenge-name"><bdi>@name</bdi></span>
+            <span class="mk-bar" role="img" aria-label="@($"{name}: {Loc.T("nut_badge_progress", Loc.Num(shown), Loc.Num(FriendShare.ChallengeDays))}")"><i style="width:@(shown * 100 / FriendShare.ChallengeDays)%"></i></span>
+            <b class="mk-num">@NutFormat.Isolate(Loc.T("nut_badge_progress", Loc.Num(shown), Loc.Num(FriendShare.ChallengeDays)))</b>
+        </div>
+    };
+
+    private static RenderFragment SyncIcon() => __builder =>
+    {
+        <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
+    };
+
+    private int PlannedDays(Dictionary<DateOnly, PlanDay> week) => WeekDates.Count(d => FriendShare.MealIds(week.GetValueOrDefault(d)).Count > 0);
+
+    private string NameOf(string key, string? fallback = null) =>
+        friends.FirstOrDefault(f => f.Uid == key)?.DisplayName is { Length: > 0 } n ? n : string.IsNullOrWhiteSpace(fallback) ? key : fallback;
 
     private async Task SendRequest()
     {
-        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_short"]; return; }
-        if (string.IsNullOrWhiteSpace(friendUsername)) return;
-        isSendingRequest = true;
+        if (string.IsNullOrWhiteSpace(friendUsername) || isBusy) return;
+        isBusy = true;
         feedback = "";
         try
         {
@@ -281,124 +419,133 @@
             friendUsername = "";
             isError = false;
             feedback = Loc["friends_request_sent"];
-            await LoadProfileAsync();
+            await LoadAsync();
         }
-        catch (Exception ex)
-        {
-            isError = true;
-            feedback = ex.Message;
-        }
-        finally { isSendingRequest = false; }
+        catch (Exception ex) { isError = true; feedback = ex.Message; }
+        finally { isBusy = false; }
     }
 
     private async Task AddDiscovered(UserProfile user)
     {
-        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_short"]; return; }
-        isSendingRequest = true;
+        isBusy = true;
         feedback = "";
         try
         {
             await UserService.SendFriendRequestAsync(uid, user.Uid);
             isError = false;
             feedback = Loc.T("friends_request_sent_to", user.Username);
-            await LoadProfileAsync();
+            await LoadAsync();
         }
-        catch (Exception ex)
-        {
-            isError = true;
-            feedback = ex.Message;
-        }
-        finally { isSendingRequest = false; }
+        catch (Exception ex) { isError = true; feedback = ex.Message; }
+        finally { isBusy = false; }
     }
 
     private async Task AcceptRequest(string senderUid)
     {
-        if (!hasUsername) { isError = true; feedback = Loc["friends_need_username_short"]; return; }
         try
         {
             await UserService.AcceptFriendRequestAsync(uid, senderUid);
             isError = false;
             feedback = Loc["friends_now_friends"];
-            await LoadProfileAsync();
+            await LoadAsync();
         }
         catch (Exception ex) { isError = true; feedback = ex.Message; }
     }
 
     private async Task DeclineRequest(string senderUid)
     {
-        try { await UserService.DeclineFriendRequestAsync(uid, senderUid); await LoadProfileAsync(); }
+        try { await UserService.DeclineFriendRequestAsync(uid, senderUid); await LoadAsync(); }
         catch (Exception ex) { isError = true; feedback = ex.Message; }
     }
 
-    private async Task SelectFriend(UserProfile friend)
+    private async Task ToggleFavoriteAsync(MealCatalogItem meal)
     {
-        if (string.Equals(selectedFriend?.Uid, friend.Uid, StringComparison.OrdinalIgnoreCase))
-        {
-            selectedFriend = null;
-            friendDays.Clear();
-            friendWeekRequestId++;
-            isLoadingFriendWeek = false;
-            return;
-        }
-
-        selectedFriend = friend;
-        // Always start on the current week for a newly opened friend, rather than
-        // silently keeping whatever week was last navigated to for a different friend.
-        displayedWeekStart = StartOfWeek(DateOnly.FromDateTime(DateTime.Today));
-        await LoadSelectedFriendWeekAsync();
-    }
-
-    private async Task PreviousWeek() { displayedWeekStart = displayedWeekStart.AddDays(-7); await LoadSelectedFriendWeekAsync(); }
-    private async Task NextWeek() { displayedWeekStart = displayedWeekStart.AddDays(7); await LoadSelectedFriendWeekAsync(); }
-    private async Task LoadSelectedFriendWeekAsync()
-    {
-        if (selectedFriend is null) return;
-        // Tag this fetch with a request id: if the user navigates again (or
-        // picks a different friend) before this one resolves, its result must
-        // not land after a newer request's, or the grid — and a sync started
-        // from it — would silently use the wrong week's data.
-        var requestId = ++friendWeekRequestId;
-        var requestedWeekStart = displayedWeekStart;
-        var requestedFriendUid = selectedFriend.Uid;
-        isLoadingFriendWeek = true;
+        var adding = favorites.Add(meal.Id);
+        if (!adding) favorites.Remove(meal.Id);
         try
         {
-            var fetchedTask = DayPlan.GetDaysAsync(requestedFriendUid, requestedWeekStart, requestedWeekStart.AddDays(6));
-            var mineTask = DayPlan.GetDaysAsync(uid, requestedWeekStart, requestedWeekStart.AddDays(6));
-            var fetched = await fetchedTask;
-            var mine = await mineTask;
-            if (requestId != friendWeekRequestId) return;
-            friendDays = fetched;
-            myDays = mine;
+            await UserService.ToggleFavoriteMealAsync(uid, meal.Id);
+            Toasts.Show(Loc.T(adding ? "nut_fav_added" : "nut_fav_removed", meal.Name));
         }
-        finally { if (requestId == friendWeekRequestId) isLoadingFriendWeek = false; }
+        catch
+        {
+            if (adding) favorites.Remove(meal.Id); else favorites.Add(meal.Id);
+            Toasts.Show(Loc["nut_save_error"], isError: true);
+        }
     }
 
-    // Every day of the week becomes the friend's meals; a day they left empty clears mine too.
-    private Task ReplaceWeek() => ApplyWeekAsync(WeekDates, "friends_sync_success");
-
-    // Fills only the days I left empty and the friend has planned; the rest of my week is untouched.
-    private async Task CopyEmptyDays()
+    private async Task RequestSyncAsync(UserProfile friend)
     {
-        var dates = WeekDates.Where(d => FriendShare.CopyableSlots(friendDays.GetValueOrDefault(d)).Count > 0
-                                      && (myDays.GetValueOrDefault(d)?.Slots.Count ?? 0) == 0).ToList();
-        if (dates.Count == 0) { Toasts.Show(Loc["friends_nothing_to_copy"]); return; }
-        await ApplyWeekAsync(dates, "friends_copy_empty_success");
-    }
-
-    private async Task ApplyWeekAsync(IReadOnlyList<DateOnly> dates, string successKey)
-    {
-        if (selectedFriend is null || isLoadingFriendWeek) return;
-        isSyncing = true;
+        isBusy = true;
         try
         {
-            foreach (var date in dates)
-                await DayPlan.ReplaceSlotsAsync(uid, date, FriendShare.CopyableSlots(friendDays.GetValueOrDefault(date)));
-            Toasts.Show(Loc.T(successKey, selectedFriend.DisplayName));
-            await LoadSelectedFriendWeekAsync();
+            await Sync.RequestAsync(uid, displayName, friend.Uid);
+            outgoing = friend.Uid;
+            Toasts.Show(Loc["nut_sync_sent"]);
         }
-        catch (Exception ex) { isError = true; feedback = ex.Message; }
-        finally { isSyncing = false; }
+        catch (SyncException ex) when (ex.Problem == SyncProblem.PartnerSyncing) { Toasts.Show(Loc.T("nut_sync_partner_busy", friend.DisplayName), isError: true); }
+        catch (SyncException) { Toasts.Show(Loc["nut_sync_already"], isError: true); await LoadAsync(); }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    private async Task CancelSyncAsync()
+    {
+        isBusy = true;
+        try { await Sync.CancelAsync(uid); outgoing = null; }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    private async Task DeclineSyncAsync()
+    {
+        isBusy = true;
+        try { await Sync.DeclineAsync(uid); syncRequest = null; }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    // Accepting first says how many of my days will take the friend's meals.
+    private async Task OpenAcceptAsync()
+    {
+        isBusy = true;
+        try
+        {
+            preview = await Sync.PreviewAcceptAsync(uid, Today);
+            if (preview is null) { syncRequest = null; Toasts.Show(Loc["nut_load_error"], isError: true); }
+        }
+        catch { Toasts.Show(Loc["nut_load_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    private async Task AcceptSyncAsync()
+    {
+        if (preview is not { } p) return;
+        isBusy = true;
+        try
+        {
+            await Sync.AcceptAsync(uid, Today);
+            preview = null;
+            Toasts.Show(Loc.T("nut_sync_started", NameOf(p.Request.From, p.Request.FromName)));
+            await LoadAsync();
+        }
+        catch (SyncException) { preview = null; Toasts.Show(Loc["nut_sync_already"], isError: true); await LoadAsync(); }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    private async Task StopSyncAsync()
+    {
+        isBusy = true;
+        try
+        {
+            await Sync.StopAsync(uid);
+            showStop = false;
+            link = null;
+            Toasts.Show(Loc["nut_sync_stopped"]);
+        }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
     }
 
     private async Task SetShareAsync(bool share)
@@ -408,8 +555,9 @@
         {
             await UserService.SetShareNutritionAsync(uid, share);
             Toasts.Show(share ? Loc["nut_shared_on"] : Loc["nut_not_shared"]);
+            if (share) await LoadChallengeAsync();
         }
-        catch (Exception ex) { shareNutrition = !share; isError = true; feedback = ex.Message; }
+        catch { shareNutrition = !share; Toasts.Show(Loc["nut_save_error"], isError: true); }
     }
 
     private async Task CopyUsername()
@@ -419,14 +567,12 @@
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", uid);
             Toasts.Show(Loc["friends_username_copied"]);
         }
-        catch { isError = true; feedback = Loc["friends_copy_failed"]; }
+        catch { Toasts.Show(Loc["friends_copy_failed"], isError: true); }
     }
 
-    private async Task HandleKeyDown(KeyboardEventArgs e) { if (e.Key == "Enter") await SendRequest(); }
     private MealCatalogItem? MealFor(string? mealId) => !string.IsNullOrEmpty(mealId) && catalog.TryGetValue(mealId, out var meal) ? meal : null;
     private static string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim()[0].ToString().ToUpperInvariant();
 
     private void OnLanguage() => InvokeAsync(StateHasChanged);
     public void Dispose() => Loc.OnLanguageChanged -= OnLanguage;
-    private static DateOnly StartOfWeek(DateOnly date) => date.AddDays(-(7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7);
 }

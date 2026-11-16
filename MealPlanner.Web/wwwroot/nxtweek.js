@@ -169,3 +169,46 @@ async function updateServiceWorker() {
   };
   new MutationObserver(focusNewSheets).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+// Live updates without polling: Firebase's REST streaming (Server-Sent Events) on one narrow path.
+// The callback runs when the data there changes (not for the first snapshot, nor for a reconnect that
+// brings the same data), and when the tab becomes visible again after being hidden.
+(function liveWatch() {
+  const watches = new Map();
+  let next = 1;
+  window.nxtweek.watch = (url, dotnetRef, method) => {
+    const id = next++;
+    const w = { last: undefined, timer: 0, source: null };
+    const fire = () => { clearTimeout(w.timer); w.timer = setTimeout(() => dotnetRef.invokeMethodAsync(method).catch(() => {}), 250); };
+    const onPut = e => {
+      let msg; try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.path === '/') {
+        const text = JSON.stringify(msg.data);
+        const first = w.last === undefined;
+        const same = text === w.last;
+        w.last = text;
+        if (first || same) return;
+      } else {
+        w.last = null;
+      }
+      fire();
+    };
+    try {
+      w.source = new EventSource(url);
+      w.source.addEventListener('put', onPut);
+      w.source.addEventListener('patch', () => { w.last = null; fire(); });
+    } catch { /* no streaming: the visibility reload below still works */ }
+    w.visible = () => { if (document.visibilityState === 'visible') fire(); };
+    document.addEventListener('visibilitychange', w.visible);
+    watches.set(id, w);
+    return id;
+  };
+  window.nxtweek.unwatch = id => {
+    const w = watches.get(id);
+    if (!w) return;
+    clearTimeout(w.timer);
+    w.source?.close();
+    document.removeEventListener('visibilitychange', w.visible);
+    watches.delete(id);
+  };
+})();

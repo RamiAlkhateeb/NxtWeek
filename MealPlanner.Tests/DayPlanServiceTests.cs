@@ -16,12 +16,21 @@ public class DayPlanServiceTests
         public Task<Dictionary<DateOnly, PlanDay>> GetDaysAsync(string uid, DateOnly start, DateOnly end)
         {
             var result = new Dictionary<DateOnly, PlanDay>();
+            if (Others.TryGetValue(uid, out var other))
+            {
+                foreach (var (date, day) in other) if (date >= start && date <= end) result[date] = Clone(day);
+                return Task.FromResult(result);
+            }
             foreach (var (date, legacy) in Legacy) if (date >= start && date <= end) result[date] = DayMath.FromLegacy(legacy);
             foreach (var (date, day) in Days) if (date >= start && date <= end) result[date] = Clone(day);
             return Task.FromResult(result);
         }
 
-        public Task SaveDayAsync(string uid, PlanDay day) { Days[day.Date] = Clone(day); Saves++; return Task.CompletedTask; }
+        public Task SaveDayAsync(string uid, PlanDay day)
+        {
+            if (Others.TryGetValue(uid, out var other)) { other[day.Date] = Clone(day); return Task.CompletedTask; }
+            Days[day.Date] = Clone(day); Saves++; return Task.CompletedTask;
+        }
 
         private static PlanDay Clone(PlanDay d) => System.Text.Json.JsonSerializer.Deserialize<PlanDay>(System.Text.Json.JsonSerializer.Serialize(d))!;
 
@@ -34,6 +43,9 @@ public class DayPlanServiceTests
         public Task SaveBodyLogAsync(string uid, BodyLog log) => Task.CompletedTask;
         public Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid) => Task.FromResult(new Dictionary<DateOnly, string>());
         public Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl) => Task.CompletedTask;
+        public Dictionary<string, SyncLink> Links { get; } = new();
+        public Dictionary<string, Dictionary<DateOnly, PlanDay>> Others { get; } = new();
+        public Task<SyncLink?> GetSyncLinkAsync(string uid) => Task.FromResult(Links.GetValueOrDefault(uid));
         public SharedReview? Shared;
         public Task<SharedReview?> GetSharedReviewAsync(string uid) => Task.FromResult(Shared);
         public Task ShareReviewAsync(string uid, SharedReview review) { Shared = review; return Task.CompletedTask; }

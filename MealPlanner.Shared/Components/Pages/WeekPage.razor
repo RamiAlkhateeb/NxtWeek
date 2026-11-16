@@ -13,6 +13,7 @@
 @inject ILocalizationService Loc
 @inject IMealImageService MealImages
 @inject ToastService Toasts
+@inject LiveWatch Live
 @implements IAsyncDisposable
 
 @* One day at a time: the day strip, the day's targets and its slots (the meals the user
@@ -211,7 +212,8 @@
     private bool showSurpriseConfirm;
     private bool isFilling;
     private bool onboardingDone;
-    private DotNetObjectReference<WeekPage>? jsRef;
+    private IAsyncDisposable? watch;
+    private bool shareNutrition;
     private Timer? clock;
     private DateOnly? reviewMonday;
     private bool thisWeekHasMeals, startEmpty, isCopying;
@@ -290,6 +292,7 @@
             var userProfile = await UserService.GetProfileAsync(uid);
             onboardingDone = userProfile?.FirstWeekAutoFilled ?? false;
             friendRequests = userProfile?.IncomingFriendRequests?.Count ?? 0;
+            shareNutrition = userProfile?.ShareNutrition ?? false;
         }
         catch { /* offline: the week still loads below or shows its error */ }
 
@@ -303,11 +306,23 @@
         }
 
         await CheckReviewAsync();
+        await PublishShareStatsAsync();
         // Keeps the iftar countdown and the "Did you eat this?" prompts current while the page stays open.
         clock = new Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 
-        jsRef = DotNetObjectReference.Create(this);
-        try { await JS.InvokeAsync<bool>("nxtweek.emailAuth.subscribeToUser", uid, jsRef); } catch { /* Firebase sync is optional */ }
+        await WatchWeekAsync();
+    }
+
+    // While sharing nutrition, friends see one number for the protein challenge: this week's protein days.
+    private async Task PublishShareStatsAsync()
+    {
+        if (!shareNutrition || weekOffset != 0 || loadError) return;
+        try
+        {
+            var count = FriendShare.ProteinDays(days, StartOfWeek(Today), Today, TargetCalculator.For(profile).Protein, NutritionFor);
+            await UserService.PublishShareStatsAsync(uid, new ShareStats { Monday = StartOfWeek(Today), ProteinDays = count });
+        }
+        catch { /* the challenge shows the last count */ }
     }
 
     // The Sunday review banner: Sunday evening and Monday, until that review is opened.
@@ -376,6 +391,14 @@
         weekOffset = offset;
         selectedDate = offset == 0 ? Today : WeekStart;
         await LoadAsync();
+        await WatchWeekAsync();
+    }
+
+    // Live: a sync partner's change (mirrored into my days) or a change on another device shows without a reload.
+    private async Task WatchWeekAsync()
+    {
+        if (watch is not null) await watch.DisposeAsync();
+        watch = disposed ? null : await Live.WatchAsync($"users/{LiveWatch.Key(uid)}/days", OnRemoteUserChanged, WeekStart.ToString("yyyy-MM-dd"));
     }
 
     private void SelectDay(DateOnly date) => selectedDate = date;
@@ -389,6 +412,7 @@
             days[saved.Date] = saved;
             RefreshDots();
             if (toast is not null) Toasts.Show(toast);
+            await PublishShareStatsAsync();
         }
         catch (Exception ex)
         {
@@ -623,7 +647,6 @@
         return null;
     }
 
-    [JSInvokable]
     public async Task OnRemoteUserChanged()
     {
         if (disposed || isLoading) return;
@@ -646,7 +669,6 @@
         Loc.OnLanguageChanged -= HandleLanguageChanged;
         disposed = true;
         clock?.Dispose();
-        try { await JS.InvokeVoidAsync("nxtweek.emailAuth.unsubscribe"); } catch { }
-        jsRef?.Dispose();
+        if (watch is not null) await watch.DisposeAsync();
     }
 }

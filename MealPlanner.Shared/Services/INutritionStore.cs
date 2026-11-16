@@ -33,4 +33,7 @@ public interface INutritionStore
     // What the user chose to share from a Sunday review (users/{key}/sharedReview); null when never shared.
     Task<SharedReview?> GetSharedReviewAsync(string uid);
     Task ShareReviewAsync(string uid, SharedReview review);
+
+    // The friend this user syncs meals and shopping with (users/{key}/sync); null when not syncing.
+    Task<SyncLink?> GetSyncLinkAsync(string uid);
 }

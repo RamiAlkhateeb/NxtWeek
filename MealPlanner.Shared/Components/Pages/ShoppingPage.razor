@@ -12,11 +12,15 @@
 @inject ToastService Toasts
 @inject INutritionStore NutritionStore
 @inject IMealImageService MealImages
+@inject IUserService UserService
+@inject LiveWatch Live
 
 @* Shopping by servings: the meals still to cook from today to Sunday (servings and meal prep change the plan
    itself), and one list grouped by aisle that follows them. The list is brought in line with the plan on
    every visit and after every change here (ShoppingAggregator.Sync): only items it made itself and that are
-   not bought are changed. Items typed by hand stay as they are. Bought items stay in place, struck through. *@
+   not bought are changed. Items typed by hand stay as they are. Bought items stay in place, struck through.
+   While syncing with a friend the list is shared (it lives with the friend who asked), its amounts count both
+   people's servings, and it updates live when either of you changes it. *@
 <div class="mk-page mk-shopping" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row">
@@ -24,6 +28,13 @@
             <div class="mk-title-block">
                 <h1 class="mk-title">@Loc["shopping_title"]</h1>
                 <p class="mk-subtitle">@Loc["nut_shop_sub"]</p>
+                @if (partnerName is { Length: > 0 })
+                {
+                    <span class="mk-tag is-ok mk-shared-tag">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
+                        @Loc.T("nut_shop_shared_with", partnerName)
+                    </span>
+                }
             </div>
             <button class="mk-icon-btn is-ink" aria-label="@Loc["shopping_add_item"]" disabled="@isLoading" @onclick="OpenAddItem">
                 <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -174,6 +185,11 @@
     private readonly SemaphoreSlim syncLock = new(1, 1);
     private List<ShoppingShop> shops = new();
     private List<PlannedEntry> planned = new();
+    // The sync partner's meals still to cook: they count in the shared list's amounts but are not shown above.
+    private List<PlannedEntry> partnerPlanned = new();
+    private SyncLink? link;
+    private string? partnerName;
+    private readonly List<IAsyncDisposable> watches = new();
     private Dictionary<string, MealCatalogItem> catalog = new();
     private MealPrefs slotPrefs = new();
     private string uid = "";
@@ -202,27 +218,75 @@
         }
         uid = user.Uid;
         await ReloadAsync();
+        await WatchAsync();
+    }
+
+    // Live: the shared list changing (a tick on the other phone), or the plan changing (here or by the partner).
+    private async Task WatchAsync()
+    {
+        foreach (var w in watches) await w.DisposeAsync();
+        watches.Clear();
+        if (loadError) return;
+        try
+        {
+            var owner = await ShoppingListService.GetListOwnerAsync(uid);
+            watches.Add(await Live.WatchAsync($"users/{LiveWatch.Key(owner)}/shopping", RefreshAsync));
+            watches.Add(await Live.WatchAsync($"users/{LiveWatch.Key(uid)}/days", RefreshAsync, Today.ToString("yyyy-MM-dd")));
+            if (link is { Partner.Length: > 0 } l)
+                watches.Add(await Live.WatchAsync($"users/{LiveWatch.Key(l.Partner)}/days", RefreshAsync, Today.ToString("yyyy-MM-dd")));
+        }
+        catch { /* live updates are a bonus; the page works without them */ }
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (isLoading || syncLock.CurrentCount == 0) return;
+        try
+        {
+            await LoadAsync();
+            await SyncAsync();
+        }
+        catch { /* keep what is shown */ }
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ReloadAsync()
     {
         isLoading = true;
         loadError = false;
-        try
-        {
-            var shopsTask = ShoppingListService.GetShopsAsync(uid);
-            var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
-            var daysTask = DayPlan.GetDaysAsync(uid, Today, Sunday);
-            var catalogTask = CatalogService.GetAllMealsAsync();
-            await Task.WhenAll(shopsTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
-            shops = await shopsTask;
-            catalog = (await catalogTask).ToDictionary(m => m.Id);
-            slotPrefs = await prefsTask;
-            planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, slotPrefs);
-        }
+        try { await LoadAsync(); }
         catch { loadError = true; }
         finally { isLoading = false; }
         if (!loadError) await SyncAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try { link = await NutritionStore.GetSyncLinkAsync(uid); }
+        catch { link = null; }
+        var shopsTask = ShoppingListService.GetShopsAsync(uid);
+        var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
+        var daysTask = DayPlan.GetDaysAsync(uid, Today, Sunday);
+        var catalogTask = CatalogService.GetAllMealsAsync();
+        await Task.WhenAll(shopsTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
+        shops = await shopsTask;
+        catalog = (await catalogTask).ToDictionary(m => m.Id);
+        slotPrefs = await prefsTask;
+        planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, slotPrefs);
+        partnerPlanned = new();
+        partnerName = null;
+        if (link is { Partner.Length: > 0 } l)
+        {
+            try
+            {
+                // Their meal times are theirs to read; every slot counts here.
+                var everySlot = new MealPrefs { On = Enum.GetValues<MealSlot>().ToList() };
+                partnerPlanned = ShoppingAggregator.PlannedEntries(await DayPlan.GetDaysAsync(l.Partner, Today, Sunday), catalog, Today, Sunday, everySlot);
+                var profile = await UserService.GetProfileAsync(l.Partner);
+                partnerName = string.IsNullOrWhiteSpace(profile?.DisplayName) ? l.Partner : profile.DisplayName;
+            }
+            catch { partnerName = l.Partner; }
+        }
     }
 
     // Brings the list in line with the planned meals, servings and meal prep. One run at a time.
@@ -231,7 +295,7 @@
         await syncLock.WaitAsync();
         try
         {
-            var lines = ShoppingAggregator.Merge(planned);
+            var lines = ShoppingAggregator.Merge(planned.Concat(partnerPlanned));
             var all = AllItems;
             var sync = ShoppingAggregator.Sync(all.Select(x => x.Item), lines);
             if (sync.IsEmpty) return;
@@ -313,7 +377,7 @@
     }
 
     // Ingredient keys the planned meals still need.
-    private HashSet<string> Needed => ShoppingAggregator.Merge(planned).Select(l => l.Key).ToHashSet();
+    private HashSet<string> Needed => ShoppingAggregator.Merge(planned.Concat(partnerPlanned)).Select(l => l.Key).ToHashSet();
 
     // Bought items that can go: typed by hand, or no longer needed by the plan. A bought item the plan still
     // needs stays ticked, so it does not come back as "to buy".
@@ -375,5 +439,9 @@
     }
 
     private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
-    public void Dispose() { Loc.OnLanguageChanged -= OnLanguageChanged; syncLock.Dispose(); }
+    public void Dispose()
+    {
+        Loc.OnLanguageChanged -= OnLanguageChanged;
+        foreach (var w in watches) _ = w.DisposeAsync().AsTask();
+    }
 }

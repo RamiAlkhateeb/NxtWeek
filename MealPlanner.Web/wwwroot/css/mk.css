@@ -1127,3 +1127,32 @@ html, body { background: var(--nxt-page); }
 .mk-shop-item.is-bought .mk-shop-amount { color: var(--mk-muted); text-decoration: line-through; font-weight: 600; }
 .mk-shop-item-name { min-height: 44px; justify-content: center; }
 .mk-shop-list-head .mk-tag:not(.is-ok) { color: var(--nxt-text); font-size: 12px; }
+
+/* ---- Step 8: friends and sync ---- */
+.mk-sync-card { padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--mk-ok-wash, var(--nxt-card)); border-color: var(--mk-ok-line, var(--nxt-border)); }
+.mk-sync-head { display: flex; gap: 12px; align-items: flex-start; }
+.mk-sync-head .mk-set-link-copy span { font-size: 13px; color: var(--mk-muted); }
+.mk-sync-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--mk-ok-soft); color: var(--mk-ok-ink); display: grid; place-items: center; flex: none; }
+.mk-sync-pending { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+.mk-friend-body > .mk-btn svg { width: 18px; height: 18px; }
+.mk-challenge { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.mk-challenge-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mk-challenge-title svg { width: 18px; height: 18px; color: var(--mk-pro); }
+.mk-challenge-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.mk-challenge-name { width: 96px; flex: none; overflow-wrap: anywhere; }
+.mk-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--nxt-inset); overflow: hidden; }
+.mk-bar i { display: block; height: 100%; background: var(--mk-pro); border-radius: inherit; }
+.mk-fday { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 14px; background: var(--nxt-inset); }
+.mk-fday-row { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 14px; }
+.mk-fday-row > b { width: 44px; flex: none; }
+.mk-fday-row > .mk-num:first-of-type { flex: 1; }
+.mk-fday-p { color: var(--mk-pro-ink); font-weight: 700; }
+.mk-fday-meals { display: flex; flex-wrap: wrap; gap: 6px; }
+.mk-fmeal { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 0;
+  background: var(--nxt-card); color: var(--nxt-text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: start; }
+.mk-fmeal svg { width: 14px; height: 14px; flex: none; }
+.mk-fmeal.is-fav { background: var(--mk-ok-soft); color: var(--mk-ok-ink); }
+.mk-shared-tag { gap: 4px; margin-top: 4px; align-self: flex-start; }
+.mk-shared-tag svg { width: 12px; height: 12px; }
+.mk-add-friend { display: flex; gap: 8px; align-items: center; }
+.mk-add-friend .mk-search { flex: 1; margin: 0; }
