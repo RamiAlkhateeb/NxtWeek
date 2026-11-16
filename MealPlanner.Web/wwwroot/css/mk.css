@@ -1113,3 +1113,17 @@ html, body { background: var(--nxt-page); }
 .mk-week-top:empty { display: none; }
 .mk-week-top > :last-child { margin-bottom: 0; }
 .mk-week-top .mk-stamp-line { margin: 4px 0 0; }
+
+/* ---- Step 7: shopping by servings ---- */
+.mk-shop-h { margin: 0; font-size: 15px; font-weight: 800; }
+.mk-planned { display: flex; flex-direction: column; gap: 8px; }
+.mk-shop-list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 4px; font-variant-numeric: tabular-nums; }
+.mk-aisle-head { margin: 0 0 4px; font-size: 13px; font-weight: 800; flex-wrap: wrap; }
+.mk-aisle-count { font-size: 12px; font-weight: 600; color: var(--mk-muted); }
+.mk-shopping .mk-shop-item { min-height: 52px; }
+.mk-shopping .mk-check { position: relative; }
+.mk-shopping .mk-check::after { content: ""; position: absolute; inset: -8px; }
+.mk-shop-amount { flex: none; font-size: 14px; font-variant-numeric: tabular-nums; }
+.mk-shop-item.is-bought .mk-shop-amount { color: var(--mk-muted); text-decoration: line-through; font-weight: 600; }
+.mk-shop-item-name { min-height: 44px; justify-content: center; }
+.mk-shop-list-head .mk-tag:not(.is-ok) { color: var(--nxt-text); font-size: 12px; }

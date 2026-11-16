@@ -426,10 +426,10 @@ public class LocalizationService : ILocalizationService
         ["shopping_week_no_meals"] = new() { ["ar"] = "لا توجد وجبات مخططة لبقية هذا الأسبوع.", ["en"] = "No meals planned for the rest of this week.", ["de"] = "Für den Rest der Woche sind keine Gerichte geplant." },
         ["shopping_week_nothing_new"] = new() { ["ar"] = "كل المكونات موجودة في قوائمك بالفعل.", ["en"] = "Every ingredient is already on your lists.", ["de"] = "Alle Zutaten stehen schon auf deinen Listen." },
         // {0} = number added, {1} = store name
-        ["aisle_produce"] = new() { ["ar"] = "خضار وفواكه", ["en"] = "Produce", ["de"] = "Obst & Gemüse" },
+        ["aisle_produce"] = new() { ["ar"] = "خضار وفواكه", ["en"] = "Fruit and vegetables", ["de"] = "Obst und Gemüse" },
         ["aisle_bakery"] = new() { ["ar"] = "مخبوزات", ["en"] = "Bakery", ["de"] = "Backwaren" },
-        ["aisle_dairy"] = new() { ["ar"] = "ألبان وبيض", ["en"] = "Dairy & eggs", ["de"] = "Milch & Eier" },
-        ["aisle_meat"] = new() { ["ar"] = "لحوم ودواجن وأسماك", ["en"] = "Meat & fish", ["de"] = "Fleisch & Fisch" },
+        ["aisle_dairy"] = new() { ["ar"] = "ألبان وبيض", ["en"] = "Dairy and eggs", ["de"] = "Milch und Eier" },
+        ["aisle_meat"] = new() { ["ar"] = "لحوم وأسماك", ["en"] = "Meat and fish", ["de"] = "Fleisch und Fisch" },
         ["aisle_pantry"] = new() { ["ar"] = "مواد جافة", ["en"] = "Pantry", ["de"] = "Vorrat" },
         ["aisle_other"] = new() { ["ar"] = "أخرى", ["en"] = "Other", ["de"] = "Sonstiges" },
 
@@ -790,6 +790,14 @@ public class LocalizationService : ILocalizationService
         ["nut_dur"] = new() { ["ar"] = "{0} س {1} د", ["en"] = "{0} h {1} min", ["de"] = "{0} Std. {1} Min." },
         ["nut_dur_min"] = new() { ["ar"] = "{0} د", ["en"] = "{0} min", ["de"] = "{0} Min." },
         ["nut_last_review"] = new() { ["ar"] = "ملخص الأسبوع الماضي", ["en"] = "Last week in review", ["de"] = "Rückblick letzte Woche" },
+        ["nut_shopping_list"] = new() { ["ar"] = "قائمة المشتريات", ["en"] = "Shopping list", ["de"] = "Einkaufsliste" },
+        ["nut_shop_left"] = new() { ["ar"] = "بقي {0} من {1} للشراء", ["en"] = "{0} of {1} left to buy", ["de"] = "{0} von {1} noch zu kaufen" },
+        ["nut_aisle_items"] = new() { ["ar"] = "{0} عناصر", ["en"] = "{0} items", ["de"] = "{0} Artikel" },
+        ["nut_clear_bought"] = new() { ["ar"] = "احذف ما اشتريته ({0})", ["en"] = "Clear bought items ({0})", ["de"] = "Gekauftes entfernen ({0})" },
+        ["nut_shop_empty"] = new() { ["ar"] = "خطّط وجبات في صفحة الأسبوع وستظهر مكوّناتها هنا. يمكنك أيضاً إضافة عناصرك الخاصة.", ["en"] = "Plan meals on Week and their ingredients appear here. You can also add your own items.", ["de"] = "Plane Gerichte auf der Wochenseite, dann erscheinen ihre Zutaten hier. Du kannst auch eigene Artikel hinzufügen." },
+        ["nut_shop_auto_note"] = new() { ["ar"] = "الكمية تتبع حصص وجباتك المخططة. حدّدها عندما تكون لديك.", ["en"] = "The amount follows your planned servings. Tick it when you have it.", ["de"] = "Die Menge folgt deinen geplanten Portionen. Hake sie ab, wenn du sie hast." },
+        ["nut_edit_item"] = new() { ["ar"] = "تعديل", ["en"] = "Edit", ["de"] = "Bearbeiten" },
+        ["nut_aisle_item_one"] = new() { ["ar"] = "عنصر واحد", ["en"] = "1 item", ["de"] = "1 Artikel" },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

@@ -113,6 +113,12 @@ Ramadan mode (`mealPrefs.ramadan`) renames Meal 1, Dinner and the evening snack 
 their own `ramadanTimes`: show slot names with `Loc[prefs.NameKey(slot)]` and times with `prefs.TimeOf(slot)`, never
 `"nut_slot_" + slot` directly.
 
+Shopping (`/shopping`) is shopping by servings: the meals still to cook from today to Sunday (not eaten, skipped or
+leftover) with their servings and meal prep, and one list grouped by aisle that follows them. The page brings the list in
+line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
+(`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
+and ones the plan no longer needs. Old accounts with several stores see all their items together.
+
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
 Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.
