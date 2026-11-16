@@ -170,6 +170,54 @@ async function updateServiceWorker() {
   new MutationObserver(focusNewSheets).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
+// Swipe a bottom sheet down to close it, as on a phone. The drag only starts when the sheet (and whatever
+// inside it is being touched) is scrolled to the top, so scrolling long content still works. Horizontal
+// swipes (day strips, chip rows) and form fields are left alone.
+(function sheetSwipeToClose() {
+  let drag = null;
+  const scrolledToTop = (el, sheet) => {
+    for (let n = el; n && n !== sheet.parentElement; n = n.parentElement)
+      if (n.scrollTop > 0) return false;
+    return true;
+  };
+  document.addEventListener('touchstart', e => {
+    const sheet = e.target.closest?.('.nxt-sheet');
+    if (!sheet || e.touches.length !== 1 || e.target.closest('input, textarea, select, [role="slider"]')) return;
+    if (!scrolledToTop(e.target, sheet)) return;
+    drag = { sheet, x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), dy: 0, active: false };
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!drag) return;
+    const dx = e.touches[0].clientX - drag.x, dy = e.touches[0].clientY - drag.y;
+    if (!drag.active) {
+      if (Math.abs(dx) > Math.abs(dy) || dy < 6) { if (Math.abs(dx) > 8 || dy < -6) drag = null; return; }
+      drag.active = true;
+      drag.sheet.style.transition = 'none';
+    }
+    drag.dy = Math.max(0, dy);
+    drag.sheet.style.transform = `translateY(${drag.dy}px)`;
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+  const end = () => {
+    if (!drag) return;
+    const { sheet, dy, t, active } = drag;
+    drag = null;
+    if (!active) return;
+    const fast = dy / Math.max(1, Date.now() - t) > 0.6;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (dy > Math.min(140, sheet.offsetHeight * 0.3) || (fast && dy > 40)) {
+      sheet.style.transition = reduce ? 'none' : 'transform .18s ease-in';
+      sheet.style.transform = `translateY(${sheet.offsetHeight}px)`;
+      setTimeout(() => sheet.closest('.nxt-sheet-backdrop')?.click(), reduce ? 0 : 170);
+    } else {
+      sheet.style.transition = reduce ? 'none' : 'transform .2s ease-out';
+      sheet.style.transform = '';
+    }
+  };
+  document.addEventListener('touchend', end);
+  document.addEventListener('touchcancel', end);
+})();
+
 // Live updates without polling: Firebase's REST streaming (Server-Sent Events) on one narrow path.
 // The callback runs when the data there changes (not for the first snapshot, nor for a reconnect that
 // brings the same data), and when the tab becomes visible again after being hidden.
@@ -227,3 +275,38 @@ window.nxtweek.squareJpeg = (dataUrl, size) => new Promise(resolve => {
   img.onerror = () => resolve(null);
   img.src = dataUrl;
 });
+
+// The Week day strip: one page per week in a horizontal scroller that snaps. Reports which week is showing
+// once a swipe settles; scrolls to a week when the page changes it. RTL scrollers count leftwards (negative).
+window.nxtweek.weekPager = (() => {
+  const watched = new Map();
+  let next = 1;
+  const index = el => Math.round(Math.abs(el.scrollLeft) / Math.max(1, el.clientWidth));
+  return {
+    watch(el, dotnetRef) {
+      const id = next++;
+      let timer = 0, last = -1;
+      const settle = () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const i = index(el);
+          if (i !== last && el.dataset.programmatic !== '1') dotnetRef.invokeMethodAsync('WeekSettled', i).catch(() => {});
+          last = i;
+          el.dataset.programmatic = '';
+        }, 120);
+      };
+      el.addEventListener('scroll', settle, { passive: true });
+      watched.set(id, () => { el.removeEventListener('scroll', settle); clearTimeout(timer); });
+      return id;
+    },
+    show(el, i, smooth) {
+      const rtl = getComputedStyle(el).direction === 'rtl';
+      const left = (rtl ? -1 : 1) * i * el.clientWidth;
+      if (Math.abs(el.scrollLeft - left) < 2) return;
+      el.dataset.programmatic = '1';
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollTo({ left, behavior: smooth && !reduce ? 'smooth' : 'auto' });
+    },
+    unwatch(id) { watched.get(id)?.(); watched.delete(id); }
+  };
+})();

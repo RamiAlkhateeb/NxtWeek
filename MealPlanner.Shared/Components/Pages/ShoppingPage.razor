@@ -36,9 +36,6 @@
                     </span>
                 }
             </div>
-            <button class="mk-icon-btn is-ink" aria-label="@Loc["shopping_add_item"]" disabled="@isLoading" @onclick="OpenAddItem">
-                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
         </div>
     </header>
 
@@ -62,73 +59,70 @@
                 <h2 id="planned-h" class="mk-shop-h">@Loc["nut_planned_meals"]</h2>
                 @if (planned.Count == 0)
                 {
-                    <div class="mk-note">
-                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-                        <span>@Loc["nut_nothing_planned"]</span>
-                    </div>
+                    <p class="mk-subtitle">@Loc["nut_nothing_planned"]</p>
                 }
                 else
                 {
-                    <div class="mk-card mk-planned-list">
+                    @* Two rows of small chips that scroll sideways; a chip opens servings and meal prep. *@
+                    <div class="mk-plan-chips" role="list">
                         @foreach (var p in planned)
                         {
                             var entry = p;
-                            <div class="mk-planned-row">
-                                <span class="mk-slot-tile mk-tile @MealTypeStyle.T(entry.Meal.MealType)" aria-hidden="true"><MealPhoto Meal="entry.Meal" /></span>
-                                <span class="mk-slot-body">
-                                    <b class="mk-planned-name">@entry.Meal.Name</b>
-                                    <span class="mk-subtitle">@Loc.GetShortDayName(entry.Date.DayOfWeek) · @Loc[slotPrefs.NameKey(entry.Slot)]@if (entry.Entry.PrepBatches > 1) { <text> · @Loc.T("nut_prep_times", entry.Entry.PrepBatches)</text> }</span>
-                                </span>
-                                <ServingsStepper Value="entry.Entry.Servings" ValueChanged="v => UpdatePlannedAsync(entry, e => e.Servings = v)" />
-                                <div class="mk-seg is-inset mk-planned-prep" role="group" aria-label="@Loc["nut_prep"]">
-                                    <span class="mk-planned-prep-label" aria-hidden="true">@Loc["nut_prep"]</span>
-                                    @foreach (var n in new[] { 1, 2, 3 })
-                                    {
-                                        var batches = n;
-                                        <button type="button" class="@(entry.Entry.PrepBatches == batches ? "is-active" : "")" aria-pressed="@(entry.Entry.PrepBatches == batches ? "true" : "false")" @onclick="() => UpdatePlannedAsync(entry, e => e.PrepBatches = batches)">@(batches == 1 ? Loc["nut_off"] : NutFormat.Times(batches.ToString()))</button>
-                                    }
-                                </div>
-                            </div>
+                            <button type="button" role="listitem" class="mk-plan-chip" @onclick="() => editing2 = entry"
+                                    aria-label="@Loc.T("nut_plan_chip_label", entry.Meal.Name, Loc.GetDayName(entry.Date.DayOfWeek), Loc.Servings(entry.Entry.Servings))">
+                                <b>@Loc.GetShortDayName(entry.Date.DayOfWeek)</b>
+                                <span class="mk-plan-chip-name">@entry.Meal.Name</span>
+                                @if (entry.Entry.Servings != 1) { <span class="mk-plan-chip-x">@NutFormat.Times(Loc.Servings(entry.Entry.Servings))</span> }
+                                @if (entry.Entry.PrepBatches > 1)
+                                {
+                                    <span class="mk-plan-chip-prep" title="@Loc.T("nut_prep_times", entry.Entry.PrepBatches)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM3 11h18M9 7c0-1.5 1-2.5 3-2.5S15 5.5 15 7"/></svg>@NutFormat.Times(entry.Entry.PrepBatches.ToString())</span>
+                                }
+                            </button>
                         }
                     </div>
                 }
             </section>
 
-            <div class="mk-shop-list-head">
-                <h2 class="mk-shop-h">@Loc["nut_shopping_list"]</h2>
-                @if (all.Count > 0)
-                {
-                    <span class="mk-tag @(left == 0 ? "is-ok" : "")" aria-label="@Loc.T("nut_shop_left", Loc.Num(left), Loc.Num(all.Count))">@Loc.T("nut_days_on_count", Loc.Num(left), Loc.Num(all.Count))</span>
-                }
-            </div>
-
-            @if (all.Count == 0)
-            {
-                <div class="mk-note">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
-                    <span>@Loc["nut_shop_empty"]</span>
+            <section class="mk-card mk-shop-card" aria-labelledby="list-h">
+                <div class="mk-shop-list-head">
+                    <h2 id="list-h" class="mk-shop-h">@Loc["nut_shopping_list"]</h2>
+                    @if (all.Count > 0)
+                    {
+                        <span class="mk-tag @(left == 0 ? "is-ok" : "")" aria-label="@Loc.T("nut_shop_left", Loc.Num(left), Loc.Num(all.Count))">@Loc.T("nut_days_on_count", Loc.Num(left), Loc.Num(all.Count))</span>
+                    }
                 </div>
-            }
 
-            @foreach (var aisle in Aisles.All)
-            {
-                var group = all.Where(x => Aisles.For(x.Item.Name, x.Item.Aisle).Key == aisle.Key)
-                               .OrderBy(x => x.Item.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
-                if (group.Count == 0) { continue; }
-                <section class="mk-aisle" aria-labelledby="aisle-@aisle.Key">
-                    <h3 class="mk-aisle-head" id="aisle-@aisle.Key">
-                        <span class="mk-aisle-dot" style="background:@aisle.Color" aria-hidden="true"></span>
-                        <span class="mk-aisle-name">@Loc[aisle.LabelKey]</span>
-                        <span class="mk-aisle-count">· @(group.Count == 1 ? Loc["nut_aisle_item_one"] : Loc.T("nut_aisle_items", Loc.Num(group.Count)))</span>
-                    </h3>
-                    @foreach (var (shop, item) in group) { @ItemRow(shop, item) }
-                </section>
-            }
+                @* A real form: Enter on mobile keyboards submits it too. *@
+                <form class="mk-quickadd" @onsubmit="QuickAddAsync" @onsubmit:preventDefault>
+                    <svg class="i" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    <input placeholder="@Loc["shopping_add_item"]" aria-label="@Loc["shopping_add_item"]" @bind="newItemName" @bind:event="oninput" enterkeyhint="done" autocomplete="off" />
+                    <button type="submit" class="mk-quickadd-add" disabled="@(string.IsNullOrWhiteSpace(newItemName) || isSaving)">@Loc["add"]</button>
+                </form>
 
-            @if (Clearable.Count > 0)
-            {
-                <button class="mk-btn is-soft is-block" disabled="@isClearing" @onclick="ClearBoughtAsync">@Loc.T("nut_clear_bought", Loc.Num(Clearable.Count))</button>
-            }
+                @if (all.Count == 0)
+                {
+                    <p class="mk-subtitle mk-shop-empty">@Loc["nut_shop_empty"]</p>
+                }
+
+                @foreach (var (shop, item) in Ordered(all.Where(x => !x.Item.IsBought))) { @ItemRow(shop, item) }
+
+                @{ var bought = all.Where(x => x.Item.IsBought).ToList(); }
+                @if (bought.Count > 0)
+                {
+                    <button class="mk-bought-toggle" aria-expanded="@(showBought ? "true" : "false")" @onclick="() => showBought = !showBought">
+                        <span>@Loc.T("shopping_bought_n", Loc.Num(bought.Count))</span>
+                        <svg class="i mk-past-chev @(showBought ? "is-open" : "")" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    @if (showBought)
+                    {
+                        @foreach (var (shop, item) in Ordered(bought)) { @ItemRow(shop, item) }
+                        @if (Clearable.Count > 0)
+                        {
+                            <button class="mk-btn is-soft is-sm is-block" disabled="@isClearing" @onclick="ClearBoughtAsync">@Loc.T("nut_clear_bought", Loc.Num(Clearable.Count))</button>
+                        }
+                    }
+                }
+            </section>
         </main>
     }
 </div>
@@ -146,12 +140,28 @@
     </div>;
 }
 
-<NxtBottomSheet IsOpen="showAddItem" Title="@Loc["shopping_add_item"]" OnDismiss="() => showAddItem = false">
-    <form class="mk-sheet-body" dir="@Loc.Direction" @onsubmit="AddItemAsync" @onsubmit:preventDefault>
-        <label class="mk-search"><input placeholder="@Loc["shopping_item_placeholder"]" aria-label="@Loc["shopping_item_placeholder"]" enterkeyhint="done" autocomplete="off" @bind="newItemName" @bind:event="oninput" /></label>
-        <button type="submit" class="mk-btn is-lg is-block" disabled="@(string.IsNullOrWhiteSpace(newItemName) || isSaving)">@Loc["add"]</button>
-    </form>
+<NxtBottomSheet IsOpen="editing2 is not null" Eyebrow="@(editing2 is { } pe ? $"{Loc.GetDayName(pe.Date.DayOfWeek)} · {Loc[slotPrefs.NameKey(pe.Slot)]}" : null)" Title="@editing2?.Meal.Name" OnDismiss="() => editing2 = null">
+    @if (editing2 is { } entry)
+    {
+        <div class="mk-sheet-body" dir="@Loc.Direction">
+            <div class="mk-sheet-row">
+                <span class="mk-sheet-row-title">@Loc["nut_servings_label"]</span>
+                <ServingsStepper Value="entry.Entry.Servings" ValueChanged="v => UpdatePlannedAsync(entry, e => e.Servings = v)" />
+            </div>
+            <div class="mk-sheet-group">
+                <span class="mk-sheet-row-copy"><span class="mk-sheet-row-title">@Loc["nut_prep"]</span><span class="mk-sheet-row-hint">@Loc["nut_prep_hint"]</span></span>
+                <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_prep"]">
+                    @foreach (var n in new[] { 1, 2, 3 })
+                    {
+                        var batches = n;
+                        <button type="button" class="@(entry.Entry.PrepBatches == batches ? "is-active" : "")" aria-pressed="@(entry.Entry.PrepBatches == batches ? "true" : "false")" @onclick="() => UpdatePlannedAsync(entry, e => e.PrepBatches = batches)">@(batches == 1 ? Loc["nut_off"] : NutFormat.Times(batches.ToString()))</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 </NxtBottomSheet>
+
 
 <NxtBottomSheet IsOpen="@(editing is not null)" Title="@editName" OnDismiss="CloseEdit">
     @if (editing is not null)
@@ -193,8 +203,24 @@
     private Dictionary<string, MealCatalogItem> catalog = new();
     private MealPrefs slotPrefs = new();
     private string uid = "";
-    private bool isLoading = true, loadError, isSaving, isClearing, showAddItem;
+    private bool isLoading = true, loadError, isSaving, isClearing;
     private string newItemName = "";
+    private PlannedEntry? editing2;
+    private bool showBought;
+
+    // Open items read in shop order: by aisle, then by name.
+    private IEnumerable<(ShoppingShop Shop, ShoppingItem Item)> Ordered(IEnumerable<(ShoppingShop Shop, ShoppingItem Item)> items)
+    {
+        var order = Aisles.All.Select((a, i) => (a.Key, i)).ToDictionary(x => x.Key, x => x.i);
+        return items.OrderBy(x => order.GetValueOrDefault(Aisles.For(x.Item.Name, x.Item.Aisle).Key, 99))
+                    .ThenBy(x => x.Item.Name, StringComparer.CurrentCultureIgnoreCase);
+    }
+
+    private async Task QuickAddAsync()
+    {
+        await AddItemAsync();
+        newItemName = "";
+    }
     private ShoppingItem? editing;
     private ShoppingShop? editingShop;
     private string editName = "", editUnit = "";
@@ -346,7 +372,6 @@
 
     private static string UnitKey(string unit) => unit switch { "kg" => "nut_kg", "g" => "nut_g", "l" => "nut_l", "ml" => "nut_ml", _ => "nut_pc" };
 
-    private void OpenAddItem() { newItemName = ""; showAddItem = true; }
 
     private async Task AddItemAsync()
     {
@@ -357,7 +382,6 @@
         {
             var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
             await ShoppingListService.AddItemAsync(uid, shop.Id, name, new ShoppingItemOptions(Aisle: Aisles.For(name).Key));
-            showAddItem = false;
             shops = await ShoppingListService.GetShopsAsync(uid);
         }
         catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
