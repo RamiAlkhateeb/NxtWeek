@@ -80,6 +80,11 @@ stored under its first name, `PostWorkout`. Fields from before 3.1 (`days/*/type
 `trainingDays`, `overrides/rest` in `nutritionProfile`) are still read but never written; `INutritionStore.GetMealPrefsAsync`
 builds `mealPrefs` from them once. A slot entry is planned, eaten or skipped; skipped counts nowhere.
 
+Three bottom tabs: Week, Meals, Settings. Friends, Shopping and Progress open from icons in the Week header.
+A new user starts at `/setup` (goal, about you, meal times, targets; `/welcome` is the same page). Meal times
+save for everyone; goal and body data are saved only for a signed-in user, so a guest who declines to sign in
+continues with the default targets. Settings is grouped as You, App and Account.
+
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
 Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.

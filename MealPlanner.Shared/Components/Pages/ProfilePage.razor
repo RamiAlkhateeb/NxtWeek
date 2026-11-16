@@ -62,15 +62,10 @@
                         <span class="mk-input-unit"><input inputmode="decimal" autocomplete="off" value="@Loc.Input(p.WeightKg)" @onchange="e => SetNumber(e, v => p.WeightKg = Math.Clamp(v, 30, 300))" /><span>@Loc["nut_kg"]</span></span>
                     </label>
                 </div>
-                <label class="mk-field">
+                <div class="mk-field">
                     <span class="mk-label">@Loc["nut_activity"]</span>
-                    <select class="mk-input" value="@p.Activity" @onchange="e => p.Activity = int.TryParse(e.Value?.ToString(), out var a) ? a : p.Activity">
-                        @for (var i = 0; i < 4; i++)
-                        {
-                            <option value="@i" selected="@(p.Activity == i)">@Loc["nut_activity_" + i]</option>
-                        }
-                    </select>
-                </label>
+                    <ActivityPicker Value="p.Activity" ValueChanged="v => p.Activity = v" />
+                </div>
                 <div class="mk-field">
                     <span class="mk-label">@Loc["nut_goal"]</span>
                     <div class="mk-seg is-inset" role="group" aria-label="@Loc["nut_goal"]">
@@ -81,25 +76,6 @@
                         }
                     </div>
                 </div>
-            </section>
-
-            <section class="mk-set-card">
-                <h2>@Loc["nut_meals_in_day"]</h2>
-                <p class="mk-set-hint">@Loc["nut_meals_in_day_hint"]</p>
-                @foreach (var slot in Enum.GetValues<MealSlot>())
-                {
-                    var s = slot;
-                    var on = prefs.IsOn(s);
-                    var always = s == MealSlot.Meal1;
-                    <div class="mk-set-row mk-meal-row @(on ? "" : "is-off")">
-                        <label for="tm-@s" class="mk-meal-row-name">
-                            @Loc["nut_slot_" + s]
-                            @if (always) { <small id="always-@s" class="mk-set-hint">@Loc["nut_always_on"]</small> }
-                        </label>
-                        <input id="tm-@s" class="mk-input mk-time" type="time" dir="ltr" disabled="@(!on)" value="@prefs.Times.GetValueOrDefault(s)" aria-label="@Loc.T("nut_time_for", Loc["nut_slot_" + s])" @onchange="e => SetTime(s, e.Value?.ToString())" />
-                        <ToggleSwitch Checked="on" Disabled="always" DescribedBy="@(always ? $"always-{s}" : null)" Label="@Loc.T("nut_meal_on_for", Loc["nut_slot_" + s])" CheckedChanged="v => SetOn(s, v)" />
-                    </div>
-                }
             </section>
 
             <section class="mk-set-card mk-calc">
@@ -123,7 +99,6 @@
 
 @code {
     private NutritionProfile p = new();
-    private MealPrefs prefs = new();
     private string uid = "";
     private bool isGuest = true;
     private bool isLoading = true, loadError, isSaving, showSignIn;
@@ -145,7 +120,6 @@
             uid = user?.Uid ?? "";
             isGuest = user is null || user.IsGuest;
             p = (string.IsNullOrEmpty(uid) ? null : await NutritionStore.GetProfileAsync(uid)) ?? new NutritionProfile();
-            if (!string.IsNullOrEmpty(uid)) prefs = await NutritionStore.GetMealPrefsAsync(uid);
         }
         catch { loadError = true; }
         finally { isLoading = false; }
@@ -154,27 +128,6 @@
     private static void SetNumber(ChangeEventArgs e, Action<double> set)
     {
         if (NutFormat.Parse(e.Value?.ToString()) is { } v) set(v);
-    }
-
-    // Meal times are preferences, not health data: they save at once, for guests too.
-    private async Task SetTime(MealSlot slot, string? value)
-    {
-        if (!TimeOnly.TryParse(value, out var t)) return;
-        prefs.Times[slot] = t.ToString("HH:mm");
-        await SavePrefsAsync();
-    }
-
-    private async Task SetOn(MealSlot slot, bool on)
-    {
-        prefs.SetOn(slot, on);
-        await SavePrefsAsync();
-    }
-
-    private async Task SavePrefsAsync()
-    {
-        if (string.IsNullOrEmpty(uid)) return;
-        try { await NutritionStore.SaveMealPrefsAsync(uid, prefs); }
-        catch (Exception ex) { saveError = ex.Message; }
     }
 
     private string Signed(int kcal) => $"{NutFormat.Isolate($"{(kcal > 0 ? "+" : kcal < 0 ? "−" : "")}{Loc.Num(Math.Abs(kcal))}")} {Loc["nut_kcal"]}";

@@ -1,0 +1,18 @@
+@inject ILocalizationService Loc
+
+@* Daily movement, four choices. A list rather than a dropdown, so long German labels wrap instead of being cut off. *@
+<div class="mk-choices" role="radiogroup" aria-label="@Loc["nut_activity"]">
+    @for (var i = 0; i < 4; i++)
+    {
+        var level = i;
+        <button type="button" role="radio" aria-checked="@(Value == level ? "true" : "false")" class="mk-choice @(Value == level ? "is-active" : "")" @onclick="() => ValueChanged.InvokeAsync(level)">
+            <span class="mk-choice-dot" aria-hidden="true"></span>
+            <span>@Loc["nut_activity_" + level]</span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+}

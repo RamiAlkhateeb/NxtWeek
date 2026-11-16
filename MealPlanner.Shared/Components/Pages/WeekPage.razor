@@ -25,6 +25,10 @@
                 <span class="mk-subtitle">@Loc.T("nut_day_month", selectedDate.Day, Loc.GetMonthName(selectedDate.Month))@if (selectedDate == Today) { <text> · @Loc["nut_today"]</text> }</span>
             </div>
             <div class="mk-header-actions">
+                <a class="mk-icon-btn mk-has-dot" href="friends" aria-label="@(friendRequests > 0 ? Loc.T("nut_friends_requests", friendRequests) : Loc["nut_friends"])">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2.1.6 3.5 2.3 3.5 5.2"/></svg>
+                    @if (friendRequests > 0) { <span class="mk-dot" aria-hidden="true"></span> }
+                </a>
                 <a class="mk-icon-btn" href="shopping" aria-label="@Loc["nut_shopping"]">
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
                 </a>
@@ -180,6 +184,7 @@
     private Dictionary<DateOnly, DayDot> dots = new();
     private NutritionProfile profile = new();
     private MealPrefs prefs = new();
+    private int friendRequests;
     private MealSlot? openSlot;
     private MealSlot? quickSlot;
     private MealSlot? suggestSlot;
@@ -234,6 +239,7 @@
             await MealService.SeedAsync(new List<Meal>());
             var userProfile = await UserService.GetProfileAsync(uid);
             onboardingDone = userProfile?.FirstWeekAutoFilled ?? false;
+            friendRequests = userProfile?.IncomingFriendRequests?.Count ?? 0;
         }
         catch { /* offline: the week still loads below or shows its error */ }
 
@@ -242,7 +248,7 @@
         // A brand-new user (never onboarded, nothing planned) chooses how to start.
         if (!loadError && !onboardingDone && days.Count == 0 && !await SafeHasLegacyPlanAsync())
         {
-            Nav.NavigateTo("/welcome", replace: true);
+            Nav.NavigateTo("/setup", replace: true);
             return;
         }
 
