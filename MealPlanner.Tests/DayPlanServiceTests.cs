@@ -114,6 +114,41 @@ public class DayPlanServiceTests
     }
 
     [Fact]
+    public async Task Moving_a_meal_to_another_day_saves_both_days()
+    {
+        var store = new MemoryStore();
+        var plan = new DayPlanService(store);
+        await plan.SetEntryAsync("u", Monday, MealSlot.Dinner, new SlotEntry { MealId = "a", Servings = 2 });
+        await plan.SetEntryAsync("u", Monday.AddDays(1), MealSlot.Dinner, new SlotEntry { MealId = "b" });
+
+        var changed = await plan.MoveEntryAsync("u", Monday, MealSlot.Dinner, Monday.AddDays(1), MealSlot.Dinner);
+
+        Assert.Equal(2, changed.Count);
+        Assert.Equal("b", store.Days[Monday].Slots[MealSlot.Dinner].MealId);
+        Assert.Equal("a", store.Days[Monday.AddDays(1)].Slots[MealSlot.Dinner].MealId);
+        Assert.Equal(2, store.Days[Monday.AddDays(1)].Slots[MealSlot.Dinner].Servings);
+    }
+
+    [Fact]
+    public async Task Moving_within_a_day_and_copying_save_one_day()
+    {
+        var store = new MemoryStore();
+        var plan = new DayPlanService(store);
+        await plan.SetEntryAsync("u", Monday, MealSlot.Meal1, new SlotEntry { MealId = "a" });
+
+        Assert.Single(await plan.MoveEntryAsync("u", Monday, MealSlot.Meal1, Monday, MealSlot.Dinner));
+        Assert.Equal("a", store.Days[Monday].Slots[MealSlot.Dinner].MealId);
+        Assert.False(store.Days[Monday].Slots.ContainsKey(MealSlot.Meal1));
+
+        var copy = await plan.CopyEntryAsync("u", Monday, MealSlot.Dinner, Monday.AddDays(3), MealSlot.Meal1);
+        Assert.Equal("a", copy!.Slots[MealSlot.Meal1].MealId);
+        Assert.Equal("a", store.Days[Monday].Slots[MealSlot.Dinner].MealId);
+
+        Assert.Empty(await plan.MoveEntryAsync("u", Monday, MealSlot.Snack, Monday.AddDays(1), MealSlot.Snack));
+        Assert.Null(await plan.CopyEntryAsync("u", Monday, MealSlot.Snack, Monday.AddDays(1), MealSlot.Snack));
+    }
+
+    [Fact]
     public void First_empty_slot_skips_filled_ones_and_respects_suitable_slots()
     {
         var day = new PlanDay { Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "a" } } };

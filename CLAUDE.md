@@ -85,6 +85,14 @@ A new user starts at `/setup` (goal, about you, meal times, targets; `/welcome` 
 save for everyone; goal and body data are saved only for a signed-in user, so a guest who declines to sign in
 continues with the default targets. Settings is grouped as You, App and Account.
 
+The Week page shows calories and protein with what is left; carbs and fat appear under Details only when
+`mealPrefs.trackMacros` is on. An empty slot is one "Add a meal" target that opens `AddMealSheet` (search,
+suggestions with a reason, Rediscover, Browse all meals, Quick add). Slot cards have no tick button: once today's
+planned meal is past its time the card asks "Did you eat this?" (`DayStatus.NeedsCheckIn`); No marks it skipped.
+A meal is moved or copied to another slot or day through `IDayPlanService.MoveEntryAsync` / `CopyEntryAsync`
+(rules in `PlanMoves`: a move onto a taken slot swaps, a copy replaces). The assistant (`/ai-plan`) only has the
+two on-device asks; there is no free-text Gemini chat.
+
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
 Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.
@@ -101,7 +109,7 @@ exists; otherwise the guest's key is kept.
 
 ## Meal details from Gemini
 
-When a meal is added (Meals "New meal", or the Assistant's Apply), `IMealDetailsService` asks Gemini with the
+When a meal is added (Meals "New meal"), `IMealDetailsService` asks Gemini with the
 user's own key for ingredient lines (amount per serving, unit, aisle, English camelCase `id` so shopping merges)
 and nutrition per serving. `MealDetailsMapper` (pure, tested) rejects implausible replies and only fills what the
 meal lacks, always as an estimate. Without a key the meal is added as before with a hint; a Gemini failure never
@@ -109,9 +117,7 @@ loses the meal. "Estimate from ingredients" uses the same call (`GeminiNutrition
 
 All Gemini calls go through Nxt.UI's `GeminiClient`: it tries the model chosen in Settings (saved as soon as it is
 picked), then up to three chat models the key can reach, and reports a switch in `LastFallback`. Failures are
-`GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`. The
-Assistant's Apply only fills empty meals (`IMealAssignService.FindFreeSlotAsync`), never replaces one, and reuses a
-catalog meal of the same name.
+`GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`.
 
 ## Meal pictures
 

@@ -1,0 +1,95 @@
+@inject ILocalizationService Loc
+
+@* Move or copy a planned meal: pick a day (this week and next), then one of that day's meals.
+   A taken slot is marked: a move swaps the two meals, a copy replaces the one there. *@
+<NxtBottomSheet IsOpen="IsOpen" Eyebrow="@MealName" Title="@(Copying ? Loc["nut_copy_title"] : Loc["nut_move_title"])" OnDismiss="OnDismiss">
+    <div class="mk-sheet-body mk-move-sheet" dir="@Loc.Direction">
+        @if (IsLoading)
+        {
+            <NxtSkeleton /><NxtSkeleton />
+        }
+        else if (LoadFailed)
+        {
+            <div class="mk-notice is-error" role="alert">@Loc["nut_load_error"]</div>
+            <button type="button" class="mk-btn is-block" @onclick="OnRetry">@Loc["nut_retry"]</button>
+        }
+        else
+        {
+            @foreach (var week in Dates.Chunk(7).Select((d, i) => (Days: d, Index: i)))
+            {
+                <div class="mk-field">
+                    <span class="mk-label">@(week.Index == 0 ? Loc["nut_move_this_week"] : Loc["nut_next_week"])</span>
+                    <div class="mk-move-days" role="radiogroup" aria-label="@(week.Index == 0 ? Loc["nut_move_this_week"] : Loc["nut_next_week"])">
+                        @foreach (var date in week.Days)
+                        {
+                            var d = date;
+                            <button type="button" role="radio" aria-checked="@(d == day ? "true" : "false")" aria-label="@Loc.FormatDayDate(d)"
+                                    class="mk-dchip @(d == day ? "is-on" : "") @(d == Today ? "is-today" : "")" @onclick="() => day = d">
+                                <span class="mk-dchip-name">@Loc.GetDayAbbr(d.DayOfWeek)</span>
+                                <span class="mk-dchip-num">@d.Day</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="mk-field">
+                <span class="mk-label">@Loc.FormatDayDate(day)</span>
+                <div class="mk-move-slots">
+                    @foreach (var slot in Slots)
+                    {
+                        var s = slot;
+                        var here = day == FromDate && s == FromSlot;
+                        var taken = Days.GetValueOrDefault(day)?.Slots.GetValueOrDefault(s);
+                        var takenName = taken is null ? null : taken.Quick?.Name ?? NameOf(taken.MealId) ?? Loc["nut_a_meal"];
+                        <button type="button" class="mk-move-slot" disabled="@(here || IsBusy)" @onclick="() => OnPick.InvokeAsync((day, s))">
+                            <span class="mk-slot-body">
+                                <span class="mk-slot-label">@SlotLabel(s)</span>
+                                <span class="mk-move-what">
+                                    @if (here) { @Loc["nut_move_here"] }
+                                    else if (takenName is null) { @Loc["nut_move_free"] }
+                                    else { @Loc.T(Copying ? "nut_copy_replaces" : "nut_move_swaps", takenName) }
+                                </span>
+                            </span>
+                            @if (!here)
+                            {
+                                <svg class="i mk-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</NxtBottomSheet>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool Copying { get; set; }
+    [Parameter] public string MealName { get; set; } = "";
+    [Parameter] public DateOnly FromDate { get; set; }
+    [Parameter] public MealSlot FromSlot { get; set; }
+    [Parameter] public DateOnly Today { get; set; }
+    /// <summary>This week's and next week's dates, Monday first.</summary>
+    [Parameter] public IReadOnlyList<DateOnly> Dates { get; set; } = [];
+    [Parameter] public IReadOnlyDictionary<DateOnly, PlanDay> Days { get; set; } = new Dictionary<DateOnly, PlanDay>();
+    [Parameter] public IReadOnlyList<MealSlot> Slots { get; set; } = [];
+    [Parameter] public Func<MealSlot, string> SlotLabel { get; set; } = s => s.ToString();
+    [Parameter] public Func<string?, string?> NameOf { get; set; } = _ => null;
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool LoadFailed { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public EventCallback<(DateOnly Date, MealSlot Slot)> OnPick { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private DateOnly day;
+    private bool wasOpen;
+
+    protected override void OnParametersSet()
+    {
+        // Each opening starts on the meal's own day.
+        if (IsOpen && !wasOpen) day = FromDate;
+        wasOpen = IsOpen;
+    }
+}

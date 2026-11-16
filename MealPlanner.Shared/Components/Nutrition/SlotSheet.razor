@@ -2,7 +2,7 @@
 @inject IMealImageService MealImages
 
 @* What is in one slot: nutrition for the servings eaten, servings, meal prep, leftover,
-   remove, mark as eaten and change meal. *@
+   move or copy to another day, remove, mark as eaten (or undo an answer) and change meal. *@
 <NxtBottomSheet IsOpen="IsOpen && Entry is not null" Eyebrow="@SlotLabel" Title="@Name" OnDismiss="OnDismiss">
     @if (Entry is not null)
     {
@@ -52,18 +52,23 @@
                 </div>
             }
 
-            <button type="button" class="mk-btn is-sm is-danger-text mk-self-start" @onclick="OnRemove">
-                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>@Loc["nut_remove"]
-            </button>
+            <div class="mk-sheet-actions">
+                <button type="button" class="mk-btn is-sm is-soft" @onclick="OnMove">
+                    <svg class="i mk-flip-rtl" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>@Loc["nut_move"]
+                </button>
+                <button type="button" class="mk-btn is-sm is-soft" @onclick="OnCopy">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>@Loc["nut_copy_to_day"]
+                </button>
+                <button type="button" class="mk-btn is-sm is-danger-text" @onclick="OnRemove">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>@Loc["nut_remove"]
+                </button>
+            </div>
 
             <div class="mk-btn-row">
-                <button type="button" class="mk-btn @(Entry.Eaten ? "is-soft" : "")" style="flex:2 1 auto" @onclick="OnToggleEaten">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@(Entry.Eaten ? Loc["nut_undo"] : Loc["nut_mark_eaten"])
+                <button type="button" class="mk-btn @(Entry.Eaten || Entry.Skipped ? "is-soft" : "")" style="flex:2 1 auto" @onclick="OnToggleEaten">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@(Entry.Eaten || Entry.Skipped ? Loc["nut_undo"] : Loc["nut_mark_eaten"])
                 </button>
-                @if (!Entry.IsQuick)
-                {
-                    <button type="button" class="mk-btn is-soft" @onclick="OnChangeMeal">@Loc["nut_replace"]</button>
-                }
+                <button type="button" class="mk-btn is-soft" @onclick="OnChangeMeal">@Loc["nut_replace"]</button>
             </div>
         </div>
     }
@@ -83,9 +88,13 @@
     [Parameter] public EventCallback OnRemove { get; set; }
     [Parameter] public EventCallback OnToggleEaten { get; set; }
     [Parameter] public EventCallback OnChangeMeal { get; set; }
+    [Parameter] public EventCallback OnMove { get; set; }
+    [Parameter] public EventCallback OnCopy { get; set; }
+    /// <summary>The slot's name as shown (Ramadan mode renames slots).</summary>
+    [Parameter] public string? SlotName { get; set; }
     [Parameter] public EventCallback OnMealSaved { get; set; }
     [Parameter] public EventCallback OnDismiss { get; set; }
 
     private string Name => Entry?.Quick?.Name ?? Meal?.Name ?? "";
-    private string SlotLabel => string.IsNullOrEmpty(Time) ? Loc["nut_slot_" + Slot] : $"{Loc["nut_slot_" + Slot]} · {Time}";
+    private string SlotLabel => string.IsNullOrEmpty(Time) ? (SlotName ?? Loc["nut_slot_" + Slot]) : Loc.T("nut_slot_time", SlotName ?? Loc["nut_slot_" + Slot], Time);
 }

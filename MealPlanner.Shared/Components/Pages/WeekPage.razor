@@ -35,31 +35,21 @@
                 <a class="mk-icon-btn" href="progress" aria-label="@Loc["nut_progress"]">
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
                 </a>
-                <a class="mk-icon-btn is-pink" href="ai-plan" aria-label="@Loc["nut_assistant"]">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg>
-                </a>
             </div>
         </div>
 
-        <div class="mk-week-nav">
-            <button class="mk-icon-btn is-plain" aria-label="@Loc["week_prev"]" disabled="@(weekOffset == 0)" @onclick="() => GoToWeekAsync(0)">
-                <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-            </button>
+        <div class="mk-week-nav is-simple">
             <div class="mk-week-range">
                 <span class="mk-week-range-text">@WeekRangeLabel</span>
                 @if (weekOffset == 1) { <span class="mk-subtitle">@Loc["nut_next_week"]</span> }
             </div>
-            <div class="mk-week-nav-end">
-                <a class="mk-icon-btn is-plain is-muted" href="month" aria-label="@Loc["week_month_view"]">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
-                </a>
-                <button class="mk-icon-btn is-plain" aria-label="@Loc["week_next"]" disabled="@(weekOffset == 1)" @onclick="() => GoToWeekAsync(1)">
-                    <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-                </button>
-            </div>
+            <a class="mk-icon-btn is-plain is-muted" href="month" aria-label="@Loc["week_month_view"]">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+            </a>
         </div>
 
-        <DayStrip Dates="WeekDates" Selected="selectedDate" Today="Today" Dots="dots" OnSelect="SelectDay" />
+        <DayStrip Dates="WeekDates" Selected="selectedDate" Today="Today" Dots="dots" Logged="logged" OnSelect="SelectDay"
+                  CanGoPrev="weekOffset == 1" CanGoNext="weekOffset == 0" OnPrev="() => GoToWeekAsync(0)" OnNext="() => GoToWeekAsync(1)" />
     </header>
 
     @if (isLoading)
@@ -76,57 +66,29 @@
     else
     {
         var totals = Totals;
-        <div class="mk-tp-sticky @(compact ? "is-visible" : "")" aria-hidden="@(compact ? "false" : "true")">
-            <TargetsPanel Totals="totals" Compact="true" />
-        </div>
-        <div id="mk-targets-panel">
-            <TargetsPanel Totals="totals">
-                <FootContent>
-                    @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, prefs).Count > 0)
-                    {
-                        <a class="mk-ask" href="@($"ai-plan?ask=protein&day={selectedDate:yyyy-MM-dd}")">
-                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_plan_protein"]
-                        </a>
-                    }
-                </FootContent>
-            </TargetsPanel>
-        </div>
+        var now = TimeOnly.FromDateTime(DateTime.Now);
+        <TargetsPanel Totals="totals" TrackMacros="prefs.TrackMacros">
+            <FootContent>
+                @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, prefs).Count > 0)
+                {
+                    <a class="mk-ask" href="@($"ai-plan?ask=protein&day={selectedDate:yyyy-MM-dd}")">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_plan_day"]
+                    </a>
+                }
+            </FootContent>
+        </TargetsPanel>
 
         <div class="mk-stack mk-slots">
-            @if (SelectedDay is not { Slots.Count: > 0 } || Slots.All(s => !SelectedDay.Slots.ContainsKey(s)))
-            {
-                <div class="mk-note">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-                    <span><b>@Loc["nut_empty_day"]</b><br />@Loc["nut_week_empty"]</span>
-                </div>
-            }
-
             @foreach (var slot in Slots)
             {
                 var s = slot;
                 var entry = SelectedDay?.Slots.GetValueOrDefault(s);
                 <SlotCard Slot="s" Time="@TimeOf(s)" Entry="entry" Meal="MealFor(entry)"
-                          OpenKcal="totals.OpenKcal" OpenProtein="totals.OpenProtein"
+                          AskEaten="DayStatus.NeedsCheckIn(entry, TimeOf(s), now, selectedDate == Today)"
                           OnOpen="() => openSlot = s"
-                          OnToggleEaten="() => ToggleEatenAsync(s)"
-                          OnQuickAdd="() => quickSlot = s"
-                          OnAddMeal="() => PickMeal(s, false)">
-                    <EmptyActions>
-                        <button type="button" class="mk-mini is-ink" @onclick="() => suggestSlot = s">
-                            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_suggest"]
-                        </button>
-                    </EmptyActions>
-                </SlotCard>
+                          OnAdd="() => OpenAddAsync(s, false)"
+                          OnAnswer="ate => AnswerAsync(s, ate)" />
             }
-
-            <div class="mk-card mk-gauge-card">
-                <div class="mk-gauge-row"><ProteinGauge Protein="35" /><b>@Loc["nut_aim"]</b></div>
-                <div class="mk-legend">
-                    <span><i style="background:var(--mk-warn)"></i>@Loc["nut_gauge_legend_low"]</span>
-                    <span><i style="background:var(--mk-ok)"></i>@Loc["nut_gauge_legend_aim"]</span>
-                    <span><i style="background:var(--mk-pro)"></i>@Loc["nut_gauge_legend_high"]</span>
-                </div>
-            </div>
 
             @if (EmptyUpcomingMeal1.Count > 0)
             {
@@ -150,17 +112,27 @@
            OnLeftover="v => UpdateOpenAsync(e => { e.Leftover = v; if (v) e.PrepBatches = 1; })"
            OnRemove="RemoveOpenAsync"
            OnToggleEaten="ToggleOpenEatenAsync"
-           OnChangeMeal="() => { if (openSlot is { } s) PickMeal(s, true); }"
+           OnChangeMeal="() => { if (openSlot is { } s) _ = OpenAddAsync(s, true); }"
+           OnMove="() => OpenMoveAsync(false)"
+           OnCopy="() => OpenMoveAsync(true)"
            OnMealSaved="StateHasChanged"
            OnDismiss="() => openSlot = null" />
 
 @if (!isLoading && !loadError)
 {
-    <SuggestSheet IsOpen="suggestSlot is not null" Slot="suggestSlot ?? MealSlot.Meal1" Totals="Totals" Items="SuggestionsFor(suggestSlot)"
-                  OnAdd="AddSuggestionAsync"
-                  OnBrowse="() => { if (suggestSlot is { } s) PickMeal(s, false); }"
-                  OnQuickAdd="() => { quickSlot = suggestSlot; suggestSlot = null; }"
-                  OnDismiss="() => suggestSlot = null" />
+    <AddMealSheet IsOpen="addSlot is not null" Slot="addSlot ?? MealSlot.Meal1" Replacing="addReplacing" Totals="AddTotals"
+                  Items="SuggestionsFor(addSlot)" RediscoverItem="RediscoverFor(addSlot)" Catalog="Candidates"
+                  OnAdd="AddMealAsync"
+                  OnBrowse="() => { if (addSlot is { } s) PickMeal(s, addReplacing); }"
+                  OnQuickAdd="() => { quickSlot = addSlot; addSlot = null; }"
+                  OnDismiss="() => addSlot = null" />
+
+    <MoveMealSheet IsOpen="moveSlot is not null" Copying="moveCopying" MealName="@moveName"
+                   FromDate="moveFromDate" FromSlot="moveSlot ?? MealSlot.Meal1" Today="Today"
+                   Dates="TwoWeeks" Days="moveDays" Slots="Slots" SlotLabel="LabelOf"
+                   NameOf="id => id is null ? null : catalog.GetValueOrDefault(id)?.Name"
+                   IsLoading="moveLoading" LoadFailed="moveFailed" IsBusy="moveBusy"
+                   OnPick="MoveToAsync" OnRetry="LoadMoveDaysAsync" OnDismiss="() => moveSlot = null" />
 }
 
 <QuickAddSheet IsOpen="quickSlot is not null" Slot="quickSlot ?? MealSlot.Meal1" OnAdd="AddQuickAsync" OnDismiss="() => quickSlot = null" />
@@ -176,7 +148,6 @@
     private string uid = "";
     private bool isLoading = true;
     private bool loadError;
-    private bool compact;
     private int weekOffset;
     private DateOnly selectedDate = Today;
     private Dictionary<DateOnly, PlanDay> days = new();
@@ -187,13 +158,19 @@
     private int friendRequests;
     private MealSlot? openSlot;
     private MealSlot? quickSlot;
-    private MealSlot? suggestSlot;
+    private MealSlot? addSlot;
+    private bool addReplacing;
+    private Dictionary<DateOnly, PlanDay>? history;
+    private HashSet<DateOnly> logged = new();
+    private MealSlot? moveSlot;
+    private DateOnly moveFromDate;
+    private bool moveCopying, moveLoading, moveFailed, moveBusy;
+    private string moveName = "";
+    private Dictionary<DateOnly, PlanDay> moveDays = new();
     private bool showSurpriseConfirm;
     private bool isFilling;
     private bool onboardingDone;
     private DotNetObjectReference<WeekPage>? jsRef;
-    private bool observing;
-    private int observerId;
     private bool disposed;
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
@@ -213,6 +190,19 @@
     private NutritionInfo? NutritionFor(string mealId) => catalog.GetValueOrDefault(mealId)?.Nutrition;
     private MealCatalogItem? MealFor(SlotEntry? entry) => entry?.MealId is { } id ? catalog.GetValueOrDefault(id) : null;
     private string TimeOf(MealSlot slot) => prefs.TimeOf(slot);
+    private string LabelOf(MealSlot slot) => Loc.T("nut_slot_time", Loc["nut_slot_" + slot], TimeOf(slot));
+    private IReadOnlyList<DateOnly> TwoWeeks => Enumerable.Range(0, 14).Select(i => StartOfWeek(Today).AddDays(i)).ToList();
+
+    // When a meal is being changed, the budget shown in the sheet is the day without that meal.
+    private DayTotals AddTotals
+    {
+        get
+        {
+            if (!addReplacing || addSlot is not { } slot || SelectedDay is not { } day || !day.Slots.ContainsKey(slot)) return Totals;
+            var without = new PlanDay { Date = day.Date, Slots = day.Slots.Where(kv => kv.Key != slot).ToDictionary(kv => kv.Key, kv => kv.Value) };
+            return DayMath.Totals(without, TargetCalculator.For(profile), NutritionFor, prefs);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -256,15 +246,6 @@
         try { await JS.InvokeAsync<bool>("nxtweek.emailAuth.subscribeToUser", uid, jsRef); } catch { /* Firebase sync is optional */ }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (observing || isLoading || loadError || jsRef is null) return;
-        observing = true;
-        // The panel is re-created after every load, so the previous observer would watch a detached element.
-        try { if (observerId != 0) await JS.InvokeVoidAsync("nxtweek.unobserveCompact", observerId); } catch { }
-        try { observerId = await JS.InvokeAsync<int>("nxtweek.observeCompact", "mk-targets-panel", jsRef); } catch { }
-    }
-
     private async Task<bool> SafeHasLegacyPlanAsync()
     {
         try { return await UserService.HasAnyPlanEntryAsync(uid); } catch { return true; }
@@ -273,8 +254,6 @@
     private async Task LoadAsync()
     {
         isLoading = true;
-        observing = false;
-        compact = false;
         loadError = false;
         try
         {
@@ -302,8 +281,11 @@
 
     private Task ReloadAsync() => LoadAsync();
 
-    private void RefreshDots() =>
+    private void RefreshDots()
+    {
         dots = WeekDates.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), prefs));
+        logged = WeekDates.Where(d => DayStatus.DayLogged(days.GetValueOrDefault(d), prefs)).ToHashSet();
+    }
 
     private async Task GoToWeekAsync(int offset)
     {
@@ -332,12 +314,24 @@
         }
     }
 
+    // "Did you eat this?" Yes = eaten, No = skipped. A skipped meal is counted nowhere.
+    private Task AnswerAsync(MealSlot slot, bool ate)
+    {
+        var date = selectedDate;
+        void Apply(SlotEntry e) { e.Eaten = ate; e.Skipped = !ate; }
+        if (SelectedDay?.Slots.GetValueOrDefault(slot) is { } local) Apply(local);
+        return SaveAsync(() => DayPlan.UpdateEntryAsync(uid, date, slot, Apply), ate ? Loc["nut_eaten_toast"] : Loc["nut_skipped_toast"]);
+    }
+
+    // From the sheet: mark as eaten, or undo an earlier answer (eaten or skipped) back to planned.
     private Task ToggleEatenAsync(MealSlot slot)
     {
         var date = selectedDate;
-        var nowEaten = !(SelectedDay?.Slots.GetValueOrDefault(slot)?.Eaten ?? false);
-        if (SelectedDay?.Slots.GetValueOrDefault(slot) is { } local) local.Eaten = nowEaten;
-        return SaveAsync(() => DayPlan.UpdateEntryAsync(uid, date, slot, e => e.Eaten = nowEaten), nowEaten ? Loc["nut_eaten_toast"] : null);
+        var entry = SelectedDay?.Slots.GetValueOrDefault(slot);
+        var answered = entry is { Eaten: true } or { Skipped: true };
+        void Apply(SlotEntry e) { e.Eaten = !answered; e.Skipped = false; }
+        if (entry is not null) Apply(entry);
+        return SaveAsync(() => DayPlan.UpdateEntryAsync(uid, date, slot, Apply), answered ? null : Loc["nut_eaten_toast"]);
     }
 
     private Task UpdateOpenAsync(Action<SlotEntry> change)
@@ -386,22 +380,90 @@
     private IReadOnlyList<Suggestion> SuggestionsFor(MealSlot? slot)
     {
         if (slot is not { } s) return [];
-        var empty = DayMath.EmptySlots(SelectedDay, prefs);
-        return Suggestions.ForSlot(s, Totals.OpenKcal, empty.Count, Suggestions.UsedMealIds(SelectedDay, Slots), Candidates);
+        var totals = AddTotals;
+        var empty = DayMath.EmptySlots(SelectedDay, prefs).Count + (addReplacing ? 1 : 0);
+        return Suggestions.ForSlot(s, totals.OpenKcal, empty, UsedToday(s), Candidates);
     }
 
-    private async Task AddSuggestionAsync(MealCatalogItem meal)
+    private Suggestion? RediscoverFor(MealSlot? slot)
     {
-        if (suggestSlot is not { } slot) return;
+        if (slot is not { } s || history is null) return null;
+        var shown = SuggestionsFor(slot).Select(x => x.Meal.Id).ToHashSet();
+        return Suggestions.Rediscover(s, AddTotals.OpenKcal, UsedToday(s), Candidates, history, Today, shown);
+    }
+
+    // Meals already on the day, except the one being changed.
+    private HashSet<string> UsedToday(MealSlot adding) =>
+        Suggestions.UsedMealIds(SelectedDay, addReplacing ? Slots.Where(x => x != adding).ToList() : Slots);
+
+    private async Task OpenAddAsync(MealSlot slot, bool replacing)
+    {
+        openSlot = null;
+        addReplacing = replacing;
+        addSlot = slot;
+        if (history is not null) return;
+        // "Rediscover" needs what was eaten before; loaded once, and the sheet works without it.
+        try { history = await DayPlan.GetDaysAsync(uid, Today.AddDays(-120), Today.AddDays(-1)); }
+        catch { history = new(); }
+    }
+
+    private async Task AddMealAsync(MealCatalogItem meal)
+    {
+        if (addSlot is not { } slot) return;
         var date = selectedDate;
-        suggestSlot = null;
+        addSlot = null;
         await SaveAsync(() => DayPlan.SetEntryAsync(uid, date, slot, new SlotEntry { MealId = meal.Id }), Loc.T("nut_added_toast", Loc["nut_slot_" + slot]));
+    }
+
+    private async Task OpenMoveAsync(bool copying)
+    {
+        if (openSlot is not { } slot || SelectedDay?.Slots.GetValueOrDefault(slot) is not { } entry) return;
+        moveName = entry.Quick?.Name ?? MealFor(entry)?.Name ?? "";
+        moveFromDate = selectedDate;
+        moveCopying = copying;
+        openSlot = null;
+        moveSlot = slot;
+        await LoadMoveDaysAsync();
+    }
+
+    // The picker shows what is already planned in both weeks, so a swap or a replacement is never a surprise.
+    private async Task LoadMoveDaysAsync()
+    {
+        moveLoading = true;
+        moveFailed = false;
+        try { moveDays = await DayPlan.GetDaysAsync(uid, TwoWeeks[0], TwoWeeks[^1]); }
+        catch { moveFailed = true; }
+        finally { moveLoading = false; }
+    }
+
+    private async Task MoveToAsync((DateOnly Date, MealSlot Slot) target)
+    {
+        if (moveSlot is not { } fromSlot || moveBusy) return;
+        moveBusy = true;
+        try
+        {
+            var changed = moveCopying
+                ? (await DayPlan.CopyEntryAsync(uid, moveFromDate, fromSlot, target.Date, target.Slot) is { } copy ? new List<PlanDay> { copy } : [])
+                : await DayPlan.MoveEntryAsync(uid, moveFromDate, fromSlot, target.Date, target.Slot);
+            foreach (var day in changed)
+                if (WeekDates.Contains(day.Date)) days[day.Date] = day;
+            RefreshDots();
+            moveSlot = null;
+            var where = Loc.T("nut_slot_on_day", Loc["nut_slot_" + target.Slot], Loc.GetDayName(target.Date.DayOfWeek));
+            Toasts.Show(Loc.T(moveCopying ? "nut_copied_toast" : "nut_moved_toast", where));
+        }
+        catch
+        {
+            Toasts.Show(Loc["nut_save_error"], isError: true);
+            await LoadAsync();
+        }
+        finally { moveBusy = false; }
     }
 
     private void PickMeal(MealSlot slot, bool replace)
     {
         openSlot = null;
-        suggestSlot = null;
+        addSlot = null;
         Nav.NavigateTo($"/meals?day={selectedDate:yyyy-MM-dd}&slot={slot}{(replace ? "&replace=1" : "")}");
     }
 
@@ -430,14 +492,6 @@
     }
 
     [JSInvokable]
-    public void SetCompact(bool value)
-    {
-        if (compact == value || disposed) return;
-        compact = value;
-        InvokeAsync(StateHasChanged);
-    }
-
-    [JSInvokable]
     public async Task OnRemoteUserChanged()
     {
         if (disposed || isLoading) return;
@@ -459,7 +513,6 @@
     {
         Loc.OnLanguageChanged -= HandleLanguageChanged;
         disposed = true;
-        try { await JS.InvokeVoidAsync("nxtweek.unobserveCompact", observerId); } catch { }
         try { await JS.InvokeVoidAsync("nxtweek.emailAuth.unsubscribe"); } catch { }
         jsRef?.Dispose();
     }

@@ -33,7 +33,6 @@ builder.Services.AddScoped<INutritionStore, FirebaseNutritionStore>();
 builder.Services.AddScoped<IDayPlanService, DayPlanService>();
 builder.Services.AddScoped<IMealDetailsService, GeminiMealDetailsService>();
 builder.Services.AddScoped<INutritionEstimator, GeminiNutritionEstimator>();
-builder.Services.AddScoped<IGeminiPlannerService, GeminiPlannerService>();
 builder.Services.AddScoped<IAuthService, LocalAuthService>();
 builder.Services.AddScoped<IDataExportService, LocalDataExportService>();
 builder.Services.AddScoped<IDataImportService, LocalDataImportService>();

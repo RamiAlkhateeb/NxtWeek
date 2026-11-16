@@ -212,7 +212,6 @@ public class LocalizationService : ILocalizationService
         // {0} = number of pending friend requests
         ["nav_friends_requests"] = new() { ["ar"] = "{0} طلبات صداقة", ["en"] = "{0} friend requests", ["de"] = "{0} Freundschaftsanfragen" },
         ["nav_settings"] = new() { ["ar"] = "الإعدادات", ["en"] = "Settings", ["de"] = "Einstellungen" },
-        ["ai_plan_nav_label"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
 
         // Settings
         ["settings_title"] = new() { ["ar"] = "الإعدادات", ["en"] = "Settings", ["de"] = "Einstellungen" },
@@ -560,62 +559,18 @@ public class LocalizationService : ILocalizationService
         ["signin_failed"] = new() { ["ar"] = "حدث خطأ أثناء تسجيل الدخول: {0}", ["en"] = "Sign-in failed: {0}", ["de"] = "Anmeldung fehlgeschlagen: {0}" },
 
         // AI assistant (a chat that discusses first, then proposes changes and saves them once the user agrees)
-        ["ai_plan_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
-        ["ai_plan_subtitle"] = new() { ["ar"] = "أخبرني بما في مطبخك أو بما تريد تخطيطه", ["en"] = "Tell me what's in your kitchen or what you'd like to plan", ["de"] = "Erzähl mir, was du in der Küche hast oder was du planen möchtest" },
-        ["ai_plan_chat_empty"] = new() { ["ar"] = "أخبرني بالمكونات المتوفرة لديك وسأقترح عليك أطباقاً، أو بما تريد تخطيطه لهذا الأسبوع. لن أضيف شيئاً قبل أن نتفق.", ["en"] = "Tell me which ingredients you have and I'll suggest dishes, or what you'd like to plan this week. I won't add anything until we agree.", ["de"] = "Sag mir, welche Zutaten du hast, und ich schlage dir Gerichte vor – oder was du diese Woche planen möchtest. Ich füge nichts hinzu, bevor wir uns einig sind." },
-        ["ai_plan_placeholder_short"] = new() { ["ar"] = "ماذا لديك في المطبخ؟", ["en"] = "What's in your kitchen?", ["de"] = "Was hast du in der Küche?" },
-        ["ai_chat_chip_ingredients"] = new() { ["ar"] = "لدي بيض وبطاطا وبصل، ماذا أطبخ؟", ["en"] = "I have eggs, potatoes and onions — what can I cook?", ["de"] = "Ich habe Eier, Kartoffeln und Zwiebeln – was kann ich kochen?" },
-        ["ai_chat_chip_plan"] = new() { ["ar"] = "ساعدني في تخطيط بقية الأسبوع", ["en"] = "Help me plan the rest of the week", ["de"] = "Hilf mir, den Rest der Woche zu planen" },
-        ["ai_chat_chip_shopping"] = new() { ["ar"] = "أضف حليب وبيض وخبز إلى قائمتي", ["en"] = "Add milk, eggs and bread to my list", ["de"] = "Setz Milch, Eier und Brot auf meine Liste" },
-        ["ai_chat_confirm_hint"] = new() { ["ar"] = "قل «نعم» لأنفّذ ذلك، أو أخبرني بما تريد تغييره.", ["en"] = "Say “yes” and I'll do it, or tell me what to change.", ["de"] = "Sag „ja“, dann erledige ich das – oder sag mir, was ich ändern soll." },
-        ["ai_chat_propose_intro"] = new() { ["ar"] = "هذا ما يمكنني فعله:", ["en"] = "Here's what I can do:", ["de"] = "Das kann ich für dich tun:" },
-        ["ai_plan_preview_meals_heading"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
-        ["ai_plan_proposal_add_heading"] = new() { ["ar"] = "إضافة إلى قائمة التسوق", ["en"] = "Add to shopping list", ["de"] = "Auf die Einkaufsliste" },
-        ["ai_plan_proposal_remove_heading"] = new() { ["ar"] = "حذف من قائمة التسوق", ["en"] = "Remove from shopping list", ["de"] = "Von der Einkaufsliste entfernen" },
         ["ai_plan_default_shop_name"] = new() { ["ar"] = "قائمة التسوق", ["en"] = "Shopping List", ["de"] = "Einkaufsliste" },
         ["ai_new_chat"] = new() { ["ar"] = "محادثة جديدة", ["en"] = "New chat", ["de"] = "Neuer Chat" },
         ["ai_thinking_label"] = new() { ["ar"] = "جارٍ التفكير…", ["en"] = "Thinking…", ["de"] = "Denke nach …" },
-        ["ai_proposal_badge"] = new() { ["ar"] = "اقتراح — لم يُحفظ بعد", ["en"] = "Proposal — not saved yet", ["de"] = "Vorschlag – noch nicht gespeichert" },
         // {0} = number of changes
-        ["ai_proposal_changes"] = new() { ["ar"] = "{0} تغييرات", ["en"] = "{0} changes", ["de"] = "{0} Änderungen" },
-        ["ai_proposal_add_heading"] = new() { ["ar"] = "أضف إلى المشتريات", ["en"] = "Add to shopping", ["de"] = "Zum Einkauf hinzufügen" },
-        ["ai_proposal_remove_heading"] = new() { ["ar"] = "احذف من المشتريات", ["en"] = "Remove from shopping", ["de"] = "Vom Einkauf entfernen" },
-        ["ai_proposal_apply"] = new() { ["ar"] = "تطبيق التغييرات", ["en"] = "Apply changes", ["de"] = "Änderungen übernehmen" },
-        ["ai_proposal_cancelled"] = new() { ["ar"] = "أُلغي الاقتراح", ["en"] = "Proposal cancelled", ["de"] = "Vorschlag verworfen" },
-        ["ai_proposal_replaced"] = new() { ["ar"] = "استُبدل باقتراح جديد", ["en"] = "Replaced by a newer proposal", ["de"] = "Durch einen neuen Vorschlag ersetzt" },
         // {0} = meal or item name
-        ["ai_remove_named"] = new() { ["ar"] = "إزالة {0}", ["en"] = "Remove {0}", ["de"] = "{0} entfernen" },
-        ["ai_applied_title"] = new() { ["ar"] = "تم التطبيق", ["en"] = "Applied", ["de"] = "Übernommen" },
-        ["ai_applied_sep"] = new() { ["ar"] = "، ", ["en"] = ". ", ["de"] = ". " },
         // {0} = meals with their days
-        ["ai_applied_meals"] = new() { ["ar"] = "أُضيف {0}", ["en"] = "Added {0}", ["de"] = "{0} hinzugefügt" },
         // {0} = meal, {1} = weekday
-        ["ai_applied_meal_in"] = new() { ["ar"] = "{0} في {1} يوم {2}", ["en"] = "{0} for {1} on {2}", ["de"] = "{0} als {1} am {2}" },
-        ["ai_applied_day_full"] = new() { ["ar"] = "لم يُضف {0}: كل وجبات يوم {1} مخطّطة", ["en"] = "{0} wasn't added: every meal on {1} is already planned", ["de"] = "{0} wurde nicht hinzugefügt: Alle Mahlzeiten am {1} sind schon geplant" },
-        ["ai_apply_partial"] = new() { ["ar"] = "حُفظ: {0}. بقيت التغييرات الأخرى في البطاقة، اضغط «تطبيق» للمحاولة مجددًا. ({1})", ["en"] = "Saved: {0}. The other changes are still on the card; tap Apply to try again. ({1})", ["de"] = "Gespeichert: {0}. Die übrigen Änderungen sind noch auf der Karte; tippe auf Übernehmen, um es erneut zu versuchen. ({1})" },
-        ["ai_apply_network"] = new() { ["ar"] = "تعذّر الحفظ، تحقّق من الاتصال", ["en"] = "couldn't save, check your connection", ["de"] = "Speichern fehlgeschlagen, prüfe deine Verbindung" },
-        ["ai_apply_nothing_saved"] = new() { ["ar"] = "لا شيء بعد", ["en"] = "nothing yet", ["de"] = "noch nichts" },
         // {0} = items
-        ["ai_applied_items"] = new() { ["ar"] = "أُضيف {0} إلى المشتريات", ["en"] = "Added {0} to shopping", ["de"] = "{0} zum Einkauf hinzugefügt" },
-        ["ai_applied_removed"] = new() { ["ar"] = "حُذف {0} من المشتريات", ["en"] = "Removed {0} from shopping", ["de"] = "{0} vom Einkauf entfernt" },
-        ["ai_applied_not_found"] = new() { ["ar"] = "لم أجد {0} في قائمتك", ["en"] = "Couldn't find {0} on your list", ["de"] = "{0} nicht auf deiner Liste gefunden" },
-        ["ai_plan_reply_done"] = new() { ["ar"] = "تم! هذا ما قمت به:", ["en"] = "Done! Here's what I did:", ["de"] = "Erledigt! Das habe ich gemacht:" },
         // {0} = shopping list name
-        ["ai_plan_reply_removed_heading"] = new() { ["ar"] = "حُذف من {0}", ["en"] = "Removed from {0}", ["de"] = "Entfernt aus {0}" },
-        ["ai_plan_reply_not_found_heading"] = new() { ["ar"] = "غير موجود في قائمتك", ["en"] = "Not on your list", ["de"] = "Nicht auf deiner Liste" },
-        ["ai_plan_reply_nothing_found"] = new() { ["ar"] = "لم أجد ذلك في قائمة التسوق.", ["en"] = "I couldn't find that on your shopping list.", ["de"] = "Das habe ich auf deiner Einkaufsliste nicht gefunden." },
         // {0} = shopping list name
-        ["ai_plan_reply_items_heading"] = new() { ["ar"] = "أضيف إلى {0}", ["en"] = "Added to {0}", ["de"] = "Hinzugefügt zu {0}" },
 
         // AI assistant settings card
-        ["settings_ai_title"] = new() { ["ar"] = "المساعد الذكي", ["en"] = "AI Assistant", ["de"] = "KI-Assistent" },
-        ["settings_ai_desc"] = new() { ["ar"] = "ألصق مفتاح Gemini المجاني الخاص بك لتفعيل المساعد الذكي.", ["en"] = "Paste your own free Gemini API key to enable the AI assistant.", ["de"] = "Füge deinen eigenen kostenlosen Gemini-API-Schlüssel ein, um den KI-Assistenten zu aktivieren." },
-        ["settings_ai_key_label"] = new() { ["ar"] = "مفتاح Gemini API", ["en"] = "Gemini API key", ["de"] = "Gemini-API-Schlüssel" },
-        ["settings_ai_key_placeholder"] = new() { ["ar"] = "ألصق مفتاح API الخاص بك", ["en"] = "Paste your API key", ["de"] = "API-Schlüssel einfügen" },
-        ["settings_ai_key_hint_link"] = new() { ["ar"] = "احصل على مفتاح API مجاني من Google AI Studio", ["en"] = "Get a free API key from Google AI Studio", ["de"] = "Hol dir einen kostenlosen API-Schlüssel von Google AI Studio" },
-        ["settings_ai_model_label"] = new() { ["ar"] = "النموذج", ["en"] = "Model", ["de"] = "Modell" },
-        ["settings_ai_refresh_models"] = new() { ["ar"] = "تحديث قائمة النماذج", ["en"] = "Refresh model list", ["de"] = "Modellliste aktualisieren" },
-        ["settings_ai_saved"] = new() { ["ar"] = "تم حفظ إعدادات الذكاء الاصطناعي.", ["en"] = "AI settings saved.", ["de"] = "KI-Einstellungen gespeichert." },
 
         // Nutrition on meals (3.0): values are per serving; estimates always show their badge
         ["nut_kcal"] = new() { ["ar"] = "سعرة", ["en"] = "kcal", ["de"] = "kcal" },
@@ -651,8 +606,6 @@ public class LocalizationService : ILocalizationService
         ["nut_slot_Dinner"] = new() { ["ar"] = "العشاء", ["en"] = "Dinner", ["de"] = "Abendessen" },
         ["nut_slot_Snack"] = new() { ["ar"] = "سناك المساء", ["en"] = "Evening snack", ["de"] = "Abendsnack" },
         ["nut_today"] = new() { ["ar"] = "اليوم", ["en"] = "Today", ["de"] = "Heute" },
-        ["nut_left"] = new() { ["ar"] = "متبقي", ["en"] = "left", ["de"] = "übrig" },
-        ["nut_left_today"] = new() { ["ar"] = "المتبقي اليوم", ["en"] = "left today", ["de"] = "heute übrig" },
         ["nut_eaten"] = new() { ["ar"] = "تم تناوله", ["en"] = "eaten", ["de"] = "gegessen" },
         ["nut_planned"] = new() { ["ar"] = "مخطط", ["en"] = "planned", ["de"] = "geplant" },
         ["nut_open"] = new() { ["ar"] = "غير مخطط", ["en"] = "open", ["de"] = "offen" },
@@ -664,13 +617,8 @@ public class LocalizationService : ILocalizationService
         ["nut_leftover"] = new() { ["ar"] = "بقايا", ["en"] = "Leftover", ["de"] = "Reste" },
         ["nut_quick_tag"] = new() { ["ar"] = "إضافة سريعة", ["en"] = "Quick add", ["de"] = "Schnell erfasst" },
         // {0} = kcal still open, {1} = grams of protein still open
-        ["nut_open_line"] = new() { ["ar"] = "غير مخطط بعد: {0} سعرة و{1} غ بروتين", ["en"] = "Still open: {0} kcal and {1} g protein", ["de"] = "Noch offen: {0} kcal und {1} g Eiweiß" },
         ["nut_aim"] = new() { ["ar"] = "الهدف: 30–40 غ بروتين لكل وجبة", ["en"] = "Aim for 30–40 g protein per meal", ["de"] = "Ziel: 30–40 g Eiweiß pro Mahlzeit" },
-        ["nut_empty_day"] = new() { ["ar"] = "لا شيء مخطط بعد", ["en"] = "Nothing planned yet", ["de"] = "Noch nichts geplant" },
-        ["nut_week_empty"] = new() { ["ar"] = "ابدأ باقتراح غني بالبروتين أو أضف عنصراً سريعاً.", ["en"] = "Start with a high-protein suggestion or add a quick item.", ["de"] = "Starte mit einem eiweißreichen Vorschlag oder einem schnellen Eintrag." },
         ["nut_next_week"] = new() { ["ar"] = "الأسبوع القادم", ["en"] = "Next week", ["de"] = "Nächste Woche" },
-        ["nut_carbs_short"] = new() { ["ar"] = "كربو", ["en"] = "Carbs", ["de"] = "KH" },
-        ["nut_fat_short"] = new() { ["ar"] = "دهون", ["en"] = "Fat", ["de"] = "Fett" },
         ["nut_quick_title"] = new() { ["ar"] = "إضافة سريعة", ["en"] = "Quick add", ["de"] = "Schnell erfassen" },
         ["nut_what_is"] = new() { ["ar"] = "ما هو؟", ["en"] = "What is it?", ["de"] = "Was ist es?" },
         ["nut_amount"] = new() { ["ar"] = "الكمية", ["en"] = "Amount", ["de"] = "Menge" },
@@ -689,7 +637,6 @@ public class LocalizationService : ILocalizationService
         // {0} = slot name
         ["nut_added_toast"] = new() { ["ar"] = "تمت الإضافة إلى {0}", ["en"] = "Added to {0}", ["de"] = "Zu {0} hinzugefügt" },
         ["nut_removed_toast"] = new() { ["ar"] = "تمت الإزالة", ["en"] = "Removed", ["de"] = "Entfernt" },
-        ["nut_close"] = new() { ["ar"] = "إغلاق", ["en"] = "Close", ["de"] = "Schließen" },
         // {0} = slot name
         ["nut_time_for"] = new() { ["ar"] = "وقت {0}", ["en"] = "Time for {0}", ["de"] = "Zeit für {0}" },
         // {0} = slot name
@@ -750,6 +697,40 @@ public class LocalizationService : ILocalizationService
         ["setup_done_body"] = new() { ["ar"] = "خطط وجبات تصل إلى هذه الأرقام. يعدّلها مكدوس كل أسبوع حسب اتجاه وزنك.", ["en"] = "Plan meals that add up to these numbers. Makdous adjusts them each week from your weight trend.", ["de"] = "Plane Gerichte, die zu diesen Werten passen. Makdous passt sie jede Woche an deinen Gewichtstrend an." },
         ["setup_start"] = new() { ["ar"] = "ابدأ التخطيط", ["en"] = "Start planning", ["de"] = "Mit der Planung beginnen" },
         ["setup_guest_note"] = new() { ["ar"] = "لحفظ هذه الأهداف تحتاج إلى حساب. بدون حساب تعمل الأهداف بالقيم الافتراضية.", ["en"] = "Saving these targets needs an account. Without one, the targets use the default values.", ["de"] = "Zum Speichern dieser Ziele brauchst du ein Konto. Ohne Konto gelten die Standardwerte." },
+        ["nut_details"] = new() { ["ar"] = "التفاصيل", ["en"] = "Details", ["de"] = "Details" },
+        ["nut_less"] = new() { ["ar"] = "أقل", ["en"] = "Less", ["de"] = "Weniger" },
+        ["nut_plan_day"] = new() { ["ar"] = "خطّط يومي", ["en"] = "Plan my day", ["de"] = "Meinen Tag planen" },
+        ["nut_unit_left"] = new() { ["ar"] = "{0} متبقية", ["en"] = "{0} left", ["de"] = "{0} übrig" },
+        ["nut_unit_over"] = new() { ["ar"] = "{0} فوق الهدف", ["en"] = "{0} over", ["de"] = "{0} darüber" },
+        ["nut_eaten_of"] = new() { ["ar"] = "تم تناول {0} من {1} {2}", ["en"] = "{0} / {1} {2} eaten", ["de"] = "{0} / {1} {2} gegessen" },
+        ["nut_of_target"] = new() { ["ar"] = "{0}: {1} / {2} {3}", ["en"] = "{0} {1} / {2} {3}", ["de"] = "{0} {1} / {2} {3}" },
+        ["nut_slot_time"] = new() { ["ar"] = "{0} · {1}", ["en"] = "{0} · {1}", ["de"] = "{0} · {1}" },
+        ["nut_did_eat"] = new() { ["ar"] = "هل أكلت هذه الوجبة؟", ["en"] = "Did you eat this?", ["de"] = "Hast du das gegessen?" },
+        ["nut_yes"] = new() { ["ar"] = "نعم", ["en"] = "Yes", ["de"] = "Ja" },
+        ["nut_no"] = new() { ["ar"] = "لا", ["en"] = "No", ["de"] = "Nein" },
+        ["nut_skipped"] = new() { ["ar"] = "تم تخطيها", ["en"] = "Skipped", ["de"] = "Ausgelassen" },
+        ["nut_eaten_tag"] = new() { ["ar"] = "تم الأكل", ["en"] = "Eaten", ["de"] = "Gegessen" },
+        ["nut_skipped_toast"] = new() { ["ar"] = "سُجّلت كوجبة تم تخطيها ولن تُحتسب", ["en"] = "Marked as skipped. It is not counted.", ["de"] = "Als ausgelassen markiert. Wird nicht gezählt." },
+        ["nut_day_logged"] = new() { ["ar"] = "{0}، تم تسجيل اليوم كاملاً", ["en"] = "{0}, day logged", ["de"] = "{0}, Tag eingetragen" },
+        ["nut_change_for"] = new() { ["ar"] = "غيّر وجبة {0}", ["en"] = "Change {0}", ["de"] = "{0} ändern" },
+        ["nut_open_title"] = new() { ["ar"] = "غير مخطط", ["en"] = "Open", ["de"] = "Offen" },
+        ["nut_search_none"] = new() { ["ar"] = "لا توجد وجبة تطابق «{0}». جرّب إضافة سريعة.", ["en"] = "No meal matches \"{0}\". Try a quick add.", ["de"] = "Kein Gericht passt zu „{0}“. Versuche Schnell erfassen." },
+        ["nut_rediscover"] = new() { ["ar"] = "أعد اكتشافها", ["en"] = "Rediscover", ["de"] = "Wiederentdecken" },
+        ["nut_not_had"] = new() { ["ar"] = "لم تتناولها منذ 3 أسابيع", ["en"] = "Not had in 3 weeks", ["de"] = "Seit 3 Wochen nicht gegessen" },
+        ["nut_move"] = new() { ["ar"] = "انقل", ["en"] = "Move", ["de"] = "Verschieben" },
+        ["nut_copy_to_day"] = new() { ["ar"] = "انسخ إلى يوم آخر", ["en"] = "Copy to another day", ["de"] = "In anderen Tag kopieren" },
+        ["nut_move_title"] = new() { ["ar"] = "انقل إلى…", ["en"] = "Move to…", ["de"] = "Verschieben nach …" },
+        ["nut_copy_title"] = new() { ["ar"] = "انسخ إلى…", ["en"] = "Copy to…", ["de"] = "Kopieren nach …" },
+        ["nut_move_this_week"] = new() { ["ar"] = "هذا الأسبوع", ["en"] = "This week", ["de"] = "Diese Woche" },
+        ["nut_move_here"] = new() { ["ar"] = "الوجبة هنا الآن", ["en"] = "The meal is here now", ["de"] = "Das Gericht ist gerade hier" },
+        ["nut_move_free"] = new() { ["ar"] = "فارغة", ["en"] = "Free", ["de"] = "Frei" },
+        ["nut_move_swaps"] = new() { ["ar"] = "تبديل مع {0}", ["en"] = "Swaps with {0}", ["de"] = "Tauscht mit {0}" },
+        ["nut_copy_replaces"] = new() { ["ar"] = "تستبدل {0}", ["en"] = "Replaces {0}", ["de"] = "Ersetzt {0}" },
+        ["nut_a_meal"] = new() { ["ar"] = "وجبة", ["en"] = "a meal", ["de"] = "ein Gericht" },
+        ["nut_slot_on_day"] = new() { ["ar"] = "{0} يوم {1}", ["en"] = "{0} on {1}", ["de"] = "{0} am {1}" },
+        ["nut_moved_toast"] = new() { ["ar"] = "تم النقل إلى {0}", ["en"] = "Moved to {0}", ["de"] = "Verschoben nach: {0}" },
+        ["nut_copied_toast"] = new() { ["ar"] = "تم النسخ إلى {0}", ["en"] = "Copied to {0}", ["de"] = "Kopiert nach: {0}" },
+        ["nut_assistant_for"] = new() { ["ar"] = "اختر طلبًا في الأسفل لتخطيط {0}.", ["en"] = "Choose a request below to plan {0}.", ["de"] = "Wähle unten eine Anfrage, um {0} zu planen." },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg
@@ -784,9 +765,6 @@ public class LocalizationService : ILocalizationService
         ["nut_profile_saved"] = new() { ["ar"] = "تم حفظ الملف والأهداف", ["en"] = "Profile and targets saved", ["de"] = "Profil und Ziele gespeichert" },
         ["nut_profile_guest"] = new() { ["ar"] = "تعمل الأهداف بالقيم الافتراضية حتى تسجّل الدخول وتحفظ ملفك.", ["en"] = "Targets use these values until you sign in and save your profile.", ["de"] = "Bis du dich anmeldest und dein Profil speicherst, gelten diese Werte." },
         ["nut_years"] = new() { ["ar"] = "سنة", ["en"] = "years", ["de"] = "Jahre" },
-        ["nut_gauge_legend_low"] = new() { ["ar"] = "أقل من 30 غ", ["en"] = "< 30 g", ["de"] = "< 30 g" },
-        ["nut_gauge_legend_aim"] = new() { ["ar"] = "30–40 غ", ["en"] = "30–40 g", ["de"] = "30–40 g" },
-        ["nut_gauge_legend_high"] = new() { ["ar"] = "أكثر من 40 غ", ["en"] = "> 40 g", ["de"] = "> 40 g" },
         // {0} = grams of protein in this meal
         ["nut_gauge_value"] = new() { ["ar"] = "{0} غ بروتين. الهدف 30–40 غ لكل وجبة", ["en"] = "{0} g protein. Aim for 30–40 g per meal", ["de"] = "{0} g Eiweiß. Ziel: 30–40 g pro Mahlzeit" },
         ["nut_surprise_meal1"] = new() { ["ar"] = "يملأ الوجبة 1 الفارغة في الأيام القادمة من هذا الأسبوع بأطباق عشوائية.", ["en"] = "Fills each empty Meal 1 in the rest of this week with a random dish.", ["de"] = "Füllt jede leere Mahlzeit 1 im Rest der Woche mit einem zufälligen Gericht." },
@@ -862,7 +840,6 @@ public class LocalizationService : ILocalizationService
         // Suggestions, Meals filters and the protein plan (3.0)
         ["nut_suggest"] = new() { ["ar"] = "اقتراحات", ["en"] = "Suggestions", ["de"] = "Vorschläge" },
         // {0} = slot name
-        ["nut_suggest_for"] = new() { ["ar"] = "اقتراحات: {0}", ["en"] = "Suggestions for {0}", ["de"] = "Vorschläge für {0}" },
         // {0} = grams of protein, {1} = kcal still open
         ["nut_reason"] = new() { ["ar"] = "{0} غ بروتين، تناسب ما تبقى لك: {1} سعرة", ["en"] = "{0} g protein, fits your remaining {1} kcal", ["de"] = "{0} g Eiweiß, passt zu deinen restlichen {1} kcal" },
         ["nut_browse"] = new() { ["ar"] = "تصفح كل الوجبات", ["en"] = "Browse all meals", ["de"] = "Alle Gerichte ansehen" },
@@ -920,6 +897,5 @@ public class LocalizationService : ILocalizationService
         ["nut_details_no_key"] = new() { ["ar"] = "أُضيفت الوجبة. أضف مفتاح Gemini في الإعدادات لتُملأ المكوّنات والقيم الغذائية تلقائياً.", ["en"] = "Meal added. Add your Gemini key in Settings to fill in ingredients and nutrition automatically.", ["de"] = "Gericht hinzugefügt. Hinterlege deinen Gemini-Schlüssel in den Einstellungen, damit Zutaten und Nährwerte automatisch ergänzt werden." },
         ["nut_details_failed"] = new() { ["ar"] = "أُضيفت الوجبة، لكن تعذّر ملء المكوّنات والقيم الغذائية.", ["en"] = "Meal added, but its ingredients and nutrition couldn't be filled in.", ["de"] = "Gericht hinzugefügt, aber Zutaten und Nährwerte konnten nicht ergänzt werden." },
         // {0} = meal names
-        ["nut_details_failed_for"] = new() { ["ar"] = "تعذّر ملء المكوّنات والقيم الغذائية لـ: {0}", ["en"] = "Couldn't fill in ingredients and nutrition for {0}", ["de"] = "Zutaten und Nährwerte für {0} konnten nicht ergänzt werden" }
     };
 }

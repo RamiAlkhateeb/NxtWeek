@@ -1,31 +1,24 @@
 @inject ILocalizationService Loc
 @inject IMealImageService MealImages
 
-@* One slot of the day. Empty: what is still open and how to fill it. Filled: the meal or
-   quick add, its tags and nutrition, and a round "eaten" check. *@
+@* One meal of the day. Empty: a single "Add a meal" target. Filled: the meal or quick add with its
+   tags and nutrition; tapping it opens the slot sheet. Once today's planned meal is past its time,
+   the card asks "Did you eat this?" — there is no tick button. *@
 @if (Entry is null)
 {
-    <div class="mk-slot is-empty">
-        <div class="mk-slot-body">
+    <button type="button" class="mk-slot is-empty" aria-label="@Loc.T("nut_slot_entry", SlotLabel, Loc["nut_add_meal"])" @onclick="OnAdd">
+        <span class="mk-slot-body">
             <span class="mk-slot-label">@SlotLabel</span>
-            <span class="mk-slot-hint">@Loc.T("nut_open_line", Loc.Num(Math.Max(0, OpenKcal)), Loc.Num(Math.Max(0, OpenProtein)))</span>
-            <div class="mk-slot-actions">
-                @EmptyActions
-                <button type="button" class="mk-mini" @onclick="OnQuickAdd">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>@Loc["nut_quick_add"]
-                </button>
-                <button type="button" class="mk-mini" @onclick="OnAddMeal">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10"/><path d="M17 21V3c-2.5 1.5-3.5 4-3.5 8H17"/></svg>@Loc["nut_add_meal"]
-                </button>
-            </div>
-        </div>
-    </div>
+            <span class="mk-slot-add">@Loc["nut_add_meal"]</span>
+        </span>
+        <span class="mk-slot-plus" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+    </button>
 }
 else
 {
     var n = DayMath.Of(Entry, _ => Meal?.Nutrition);
     var name = Entry.Quick?.Name ?? Meal?.Name ?? "";
-    <div class="mk-slot @(Entry.Eaten ? "is-eaten" : "")">
+    <div class="mk-slot is-filled @(Entry.Eaten || Entry.Skipped ? "is-eaten" : "")">
         <button type="button" class="mk-slot-open" aria-label="@Loc.T("nut_slot_entry", Loc["nut_slot_" + Slot], name)" @onclick="OnOpen">
             @if (Entry.IsQuick || Meal is null)
             {
@@ -38,12 +31,14 @@ else
             <span class="mk-slot-body">
                 <span class="mk-slot-label">
                     @SlotLabel
+                    @if (Entry.Eaten) { <span class="mk-tag is-ok">@Loc["nut_eaten_tag"]</span> }
+                    else if (Entry.Skipped) { <span class="mk-tag">@Loc["nut_skipped"]</span> }
                     @if (Entry.Leftover) { <span class="mk-tag is-warn">@Loc["nut_leftover"]</span> }
                     @if (Entry.IsQuick) { <span class="mk-tag is-accent">@Loc["nut_quick_tag"]</span> }
                     @if (Entry.Servings != 1) { <span class="mk-tag">@NutFormat.Times(Loc.Servings(Entry.Servings))</span> }
                     @if (Entry.PrepBatches > 1) { <span class="mk-tag is-ok">@Loc["nut_prep"] @NutFormat.Times(Entry.PrepBatches.ToString())</span> }
                 </span>
-                <span class="mk-slot-name">@name</span>
+                <span class="mk-slot-name @(Entry.Skipped ? "is-struck" : "")">@name</span>
                 @if (n.Missing)
                 {
                     <NutritionChips Nutrition="null" />
@@ -51,29 +46,37 @@ else
                 else
                 {
                     var shown = new NutritionInfo { Kcal = n.Totals.Kcal, Protein = n.Totals.Protein, Source = n.Source ?? NutritionSource.Manual };
-                    <NutritionChips Nutrition="shown"><ProteinGauge Protein="@(n.Totals.Protein / Math.Max(0.5, Entry.Servings))" /></NutritionChips>
+                    <NutritionChips Nutrition="shown" />
                 }
             </span>
         </button>
-        <button type="button" class="mk-eat @(Entry.Eaten ? "is-on" : "")" aria-pressed="@(Entry.Eaten ? "true" : "false")" aria-label="@Loc.T("nut_slot_entry", Entry.Eaten ? Loc["nut_undo"] : Loc["nut_mark_eaten"], name)" @onclick="OnToggleEaten">
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
-        </button>
+        @if (AskEaten)
+        {
+            <div class="mk-checkin" role="group" aria-label="@Loc.T("nut_slot_entry", Loc["nut_did_eat"], name)">
+                <span class="mk-checkin-q">@Loc["nut_did_eat"]</span>
+                <button type="button" class="mk-btn is-sm" @onclick="() => OnAnswer.InvokeAsync(true)">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["nut_yes"]
+                </button>
+                <button type="button" class="mk-btn is-sm is-card" @onclick="() => OnAnswer.InvokeAsync(false)">@Loc["nut_no"]</button>
+            </div>
+        }
     </div>
 }
 
 @code {
     [Parameter] public MealSlot Slot { get; set; }
     [Parameter] public string Time { get; set; } = "";
+    /// <summary>The slot's name; differs from the default in Ramadan mode.</summary>
+    [Parameter] public string? Name { get; set; }
     [Parameter] public SlotEntry? Entry { get; set; }
     [Parameter] public MealCatalogItem? Meal { get; set; }
-    [Parameter] public double OpenKcal { get; set; }
-    [Parameter] public double OpenProtein { get; set; }
+    /// <summary>Today's planned meal whose time has passed: show "Did you eat this?".</summary>
+    [Parameter] public bool AskEaten { get; set; }
     [Parameter] public EventCallback OnOpen { get; set; }
-    [Parameter] public EventCallback OnToggleEaten { get; set; }
-    [Parameter] public EventCallback OnQuickAdd { get; set; }
-    [Parameter] public EventCallback OnAddMeal { get; set; }
-    /// <summary>Extra actions before Quick add (step 5: Suggest).</summary>
-    [Parameter] public RenderFragment? EmptyActions { get; set; }
+    [Parameter] public EventCallback OnAdd { get; set; }
+    /// <summary>True = eaten, false = skipped.</summary>
+    [Parameter] public EventCallback<bool> OnAnswer { get; set; }
 
-    private string SlotLabel => string.IsNullOrEmpty(Time) ? Loc["nut_slot_" + Slot] : $"{Loc["nut_slot_" + Slot]} · {Time}";
+    private string SlotName => Name ?? Loc["nut_slot_" + Slot];
+    private string SlotLabel => string.IsNullOrEmpty(Time) ? SlotName : Loc.T("nut_slot_time", SlotName, Time);
 }

@@ -15,6 +15,10 @@ public interface IDayPlanService
     Task<PlanDay> RemoveEntryAsync(string uid, DateOnly date, MealSlot slot);
     /// <summary>Replaces every slot of the day (copying a friend's day).</summary>
     Task<PlanDay> ReplaceSlotsAsync(string uid, DateOnly date, Dictionary<MealSlot, SlotEntry> slots);
+    /// <summary>Moves a meal to another slot or day (swapping with what is there). Returns the days that changed.</summary>
+    Task<List<PlanDay>> MoveEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot);
+    /// <summary>Copies a meal to another slot or day, replacing what is there. Returns the day that changed, or null.</summary>
+    Task<PlanDay?> CopyEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot);
 }
 
 public sealed class DayPlanService(INutritionStore store) : IDayPlanService
@@ -33,6 +37,35 @@ public sealed class DayPlanService(INutritionStore store) : IDayPlanService
 
     public Task<PlanDay> ReplaceSlotsAsync(string uid, DateOnly date, Dictionary<MealSlot, SlotEntry> slots) =>
         ChangeAsync(uid, date, day => day.Slots = new Dictionary<MealSlot, SlotEntry>(slots));
+
+    public async Task<List<PlanDay>> MoveEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot)
+    {
+        var from = await LoadAsync(uid, fromDate);
+        var to = fromDate == toDate ? from : await LoadAsync(uid, toDate);
+        if (!PlanMoves.Move(from, fromSlot, to, toSlot)) return [];
+        // The target is saved first: if the second save fails the meal exists twice rather than nowhere.
+        await store.SaveDayAsync(uid, to);
+        if (fromDate == toDate) return [to];
+        await store.SaveDayAsync(uid, from);
+        return [to, from];
+    }
+
+    public async Task<PlanDay?> CopyEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot)
+    {
+        var from = await LoadAsync(uid, fromDate);
+        var to = fromDate == toDate ? from : await LoadAsync(uid, toDate);
+        if (!PlanMoves.Copy(from, fromSlot, to, toSlot)) return null;
+        await store.SaveDayAsync(uid, to);
+        return to;
+    }
+
+    private async Task<PlanDay> LoadAsync(string uid, DateOnly date)
+    {
+        var days = await store.GetDaysAsync(uid, date, date);
+        var day = days.TryGetValue(date, out var existing) ? existing : new PlanDay { Date = date };
+        day.Date = date;
+        return day;
+    }
 
     private async Task<PlanDay> ChangeAsync(string uid, DateOnly date, Action<PlanDay> change)
     {
