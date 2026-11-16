@@ -1,0 +1,115 @@
+@implements IDisposable
+@inject IMealPhotoService Photos
+@inject IMealCatalogService Catalog
+@inject IMealImageService MealImages
+@inject ILocalizationService Loc
+@inject NxtText Text
+
+@* Settings → Advanced: AI photos for every meal (in the app's language) that has none yet, one after another,
+   with the user's own Gemini key. Shows progress, can be stopped, and stops by itself on a key or quota error.
+   The photos are shared with everyone, so each meal only ever needs one. *@
+<div class="mk-bulk-photos" dir="@Loc.Direction">
+    <span class="mk-sheet-row-copy">
+        <span class="mk-sheet-row-title">@Loc["nut_photos_bulk_title"]</span>
+        <span class="mk-sheet-row-hint">@Loc["nut_photos_bulk_hint"]</span>
+    </span>
+
+    @if (missing is null)
+    {
+        @if (message is { Length: > 0 }) { <p class="mk-subtitle" role="status">@message</p> }
+        <button class="mk-btn is-soft is-sm" disabled="@isCounting" @onclick="CountAsync">@Loc["nut_photos_bulk_check"]</button>
+    }
+    else if (running)
+    {
+        <div class="mk-bulk-progress" role="status" aria-live="polite">
+            <span>@Loc.T("nut_photos_bulk_progress", Loc.Num(done), Loc.Num(total), current)</span>
+            <span class="mk-bar"><i style="width:@(total == 0 ? 0 : done * 100 / total)%"></i></span>
+        </div>
+        <button class="mk-btn is-soft is-sm" @onclick="() => cancel?.Cancel()">@Loc["nut_photos_bulk_stop"]</button>
+    }
+    else
+    {
+        @if (message is { Length: > 0 }) { <p class="mk-subtitle" role="status">@message</p> }
+        @if (missing.Count == 0)
+        {
+            <p class="mk-subtitle">@Loc["nut_photos_bulk_none"]</p>
+        }
+        else
+        {
+            <button class="mk-btn is-sm" @onclick="RunAsync">@Loc.T("nut_photos_bulk_start", Loc.Num(missing.Count))</button>
+        }
+    }
+</div>
+
+@code {
+    private bool isCounting, running;
+    private List<MealCatalogItem>? missing;
+    private int done, total;
+    private string current = "", message = "";
+    private CancellationTokenSource? cancel;
+
+    // Meals in the app's language without their own private photo or a shared one.
+    private async Task CountAsync()
+    {
+        isCounting = true;
+        message = "";
+        try
+        {
+            // Checked now, not on load: the key may have just been added in the section above.
+            if (!await Photos.CanGenerateAsync()) { message = Loc["nut_photos_bulk_no_key"]; return; }
+            await MealImages.EnsureLoadedAsync();
+            var meals = (await Catalog.GetAllMealsAsync())
+                .Where(m => !m.IsArchived && string.IsNullOrWhiteSpace(m.PhotoUrl) && !MealImages.HasPhoto(m.Id)
+                         && string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var list = new List<MealCatalogItem>();
+            foreach (var m in meals) if (!await Photos.HasAsync(m.Id)) list.Add(m);
+            missing = list;
+        }
+        catch { message = Loc["nut_load_error"]; missing = new(); }
+        finally { isCounting = false; }
+    }
+
+    private async Task RunAsync()
+    {
+        if (missing is not { Count: > 0 }) return;
+        running = true;
+        message = "";
+        done = 0;
+        total = missing.Count;
+        cancel = new CancellationTokenSource();
+        var left = new List<MealCatalogItem>(missing);
+        try
+        {
+            foreach (var meal in missing)
+            {
+                if (cancel.IsCancellationRequested) break;
+                current = meal.Name;
+                StateHasChanged();
+                try
+                {
+                    await Photos.GenerateAsync(meal);
+                    left.Remove(meal);
+                }
+                catch (Exception ex) when (ex is Nxt.UI.Ai.GeminiApiException { Kind: Nxt.UI.Ai.GeminiErrorKind.Blocked or Nxt.UI.Ai.GeminiErrorKind.Other })
+                {
+                    // One dish Google would not draw: skip it and carry on.
+                }
+                catch (Exception ex)
+                {
+                    message = Loc.T("nut_photo_failed", Text.AiError(ex));
+                    break;
+                }
+                done++;
+            }
+            if (message.Length == 0) message = Loc.T("nut_photos_bulk_done", Loc.Num(total - left.Count));
+        }
+        finally
+        {
+            missing = left;
+            running = false;
+        }
+    }
+
+    public void Dispose() => cancel?.Cancel();
+}

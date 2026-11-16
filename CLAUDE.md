@@ -93,7 +93,10 @@ continues with the default targets. Settings is grouped as You, App and Account.
 
 The Week page shows calories and protein with what is left; carbs and fat appear under Details only when
 `mealPrefs.trackMacros` is on. An empty slot is one "Add a meal" target that opens `AddMealSheet` (search,
-suggestions with a reason, Rediscover, Browse all meals, Quick add). Slot cards have no tick button: once today's
+suggestions with a reason, Rediscover, Browse all meals, Quick add). The day strip swipes a whole week at a time from 8 weeks back to next week (one `GetDaysAsync` for the range;
+older weeks are in Month view). The slot sheet puts Mark as eaten / Change meal first, nutrition as one line that opens,
+and has no leftover switch any more (the `Leftover` field is still read). Every bottom sheet closes with a swipe down
+(`nxtweek.js`). Slot cards have no tick button: once today's
 planned meal is past its time the card asks "Did you eat this?" (`DayStatus.NeedsCheckIn`); No marks it skipped.
 A meal is moved or copied to another slot or day through `IDayPlanService.MoveEntryAsync` / `CopyEntryAsync`
 (rules in `PlanMoves`: a move onto a taken slot swaps, a copy replaces). The assistant (`/ai-plan`) only has the
@@ -118,7 +121,8 @@ their own `ramadanTimes`: show slot names with `Loc[prefs.NameKey(slot)]` and ti
 `"nut_slot_" + slot` directly.
 
 Shopping (`/shopping`) is shopping by servings: the meals still to cook from today to Sunday (not eaten, skipped or
-leftover) with their servings and meal prep, and one list grouped by aisle that follows them. The page brings the list in
+leftover) as small chips in two scrolling rows (a chip opens servings and meal prep), and one simple list in shop order
+with quick add and a collapsed "Bought" part, that follows them. The page brings the list in
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
 (`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
 and ones the plan no longer needs. Old accounts with several stores see all their items together.
@@ -167,7 +171,8 @@ photo (`IMealImageService`, `users/{key}/mealPhotos`), then the shared AI photo,
 AI photos (`IMealPhotoService`) are shared by everyone at `MealPhotos/{mealId}`: one 480 px square JPEG data URL,
 kept out of `MealCatalog` so the catalog download stays small. A shallow read says which meals have one; each photo is
 fetched only when shown. They are drawn with the user's own Gemini key (`GeminiClient.GenerateImageAsync` in Nxt.UI):
-in the background when a meal is added, and from "Make a photo" on the meal's page. Most free keys cannot generate
+in the background when a meal is added, from "Make a photo" on the meal's page, and for every meal without one from
+Settings → Advanced → Meal photos (`MealPhotosBulk`). Most free keys cannot generate
 images; that error is shown with `NxtText.AiError` and the illustration stays.
 
 `IMealImageService` resolves a flat SVG illustration from

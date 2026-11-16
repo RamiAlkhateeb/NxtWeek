@@ -56,10 +56,10 @@ public class MealNutritionTests
     {
         var all = NutritionSeedMeals.All();
 
-        Assert.Equal(30, all.Count);
+        Assert.Equal(90, all.Count);
         Assert.Equal(all.Count, all.Select(m => m.Id).Distinct().Count());
         foreach (var lang in new[] { "ar", "en", "de" })
-            Assert.Equal(10, all.Count(m => m.Language == lang));
+            Assert.Equal(30, all.Count(m => m.Language == lang));
     }
 
     [Fact]
@@ -77,5 +77,15 @@ public class MealNutritionTests
         }
         // Koshari ships without nutrition so the "No nutrition yet" state is reachable.
         Assert.Null(NutritionSeedMeals.All().First(m => m.Id == "n10").Nutrition);
+    }
+
+    [Fact]
+    public void Seed_meal_calories_agree_with_their_macros()
+    {
+        foreach (var meal in NutritionSeedMeals.All().Where(m => m.Nutrition is not null))
+        {
+            var n = meal.Nutrition!;
+            Assert.False(MacroCheck.IsOff(n.Kcal, n.Protein, n.Carbs, n.Fat), meal.Id);
+        }
     }
 }

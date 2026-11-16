@@ -43,14 +43,16 @@
             <div class="mk-week-range">
                 <span class="mk-week-range-text">@WeekRangeLabel</span>
                 @if (weekOffset == 1) { <span class="mk-subtitle">@Loc["nut_next_week"]</span> }
+                else if (weekOffset == -1) { <span class="mk-subtitle">@Loc["nut_last_week"]</span> }
+                else if (weekOffset < -1) { <button type="button" class="mk-link-btn" @onclick="() => GoToWeekAsync(StartOfWeek(Today))">@Loc["nut_back_to_today"]</button> }
             </div>
             <a class="mk-icon-btn is-plain is-muted" href="month" aria-label="@Loc["week_month_view"]">
                 <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
             </a>
         </div>
 
-        <DayStrip Dates="WeekDates" Selected="selectedDate" Today="Today" Dots="dots" Logged="logged" OnSelect="SelectDay"
-                  CanGoPrev="weekOffset == 1" CanGoNext="weekOffset == 0" OnPrev="() => GoToWeekAsync(0)" OnNext="() => GoToWeekAsync(1)" />
+        <DayStrip Weeks="StripWeeks" Current="WeekStart" Selected="selectedDate" Today="Today" Dots="dots" Logged="logged"
+                  OnSelect="SelectDay" OnWeek="GoToWeekAsync" />
     </header>
 
     @if (isLoading)
@@ -148,7 +150,6 @@
            ShowPrep="weekOffset == 0"
            OnServings="v => UpdateOpenAsync(e => e.Servings = v)"
            OnPrep="v => UpdateOpenAsync(e => e.PrepBatches = v)"
-           OnLeftover="v => UpdateOpenAsync(e => { e.Leftover = v; if (v) e.PrepBatches = 1; })"
            OnRemove="RemoveOpenAsync"
            OnToggleEaten="ToggleOpenEatenAsync"
            OnChangeMeal="() => { if (openSlot is { } s) _ = OpenAddAsync(s, true); }"
@@ -216,7 +217,8 @@
     private bool shareNutrition;
     private Timer? clock;
     private DateOnly? reviewMonday;
-    private bool thisWeekHasMeals, startEmpty, isCopying;
+    private bool startEmpty, isCopying;
+    private bool ThisWeekHasMeals => Enumerable.Range(0, 7).Any(i => (days.GetValueOrDefault(StartOfWeek(Today).AddDays(i))?.Slots.Count ?? 0) > 0);
     private Celebration celebration;
     private string celeTitle = "", celeBody = "";
     private int celeToken;
@@ -225,6 +227,13 @@
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private static DateOnly StartOfWeek(DateOnly d) => d.AddDays(-(((int)d.DayOfWeek + 6) % 7));
     private DateOnly WeekStart => StartOfWeek(Today).AddDays(7 * weekOffset);
+
+    // The strip reaches back 8 weeks and forward to next week; older weeks are in Month view. All of it is
+    // loaded at once, so moving between weeks needs no reload and every week shows its dots and stamps.
+    private const int WeeksBack = 8;
+    private static DateOnly RangeStart => StartOfWeek(Today).AddDays(-7 * WeeksBack);
+    private static DateOnly RangeEnd => StartOfWeek(Today).AddDays(13);
+    private static IReadOnlyList<DateOnly> StripWeeks => Enumerable.Range(0, WeeksBack + 2).Select(i => RangeStart.AddDays(7 * i)).ToList();
     private IReadOnlyList<DateOnly> WeekDates => Enumerable.Range(0, 7).Select(i => WeekStart.AddDays(i)).ToList();
     private string WeekRangeLabel => $"{WeekStart.Day} – {WeekStart.AddDays(6).Day} {Loc.GetMonthName(WeekStart.AddDays(6).Month)}";
 
@@ -252,7 +261,7 @@
         : Loc.T("nut_dur_min", Loc.Num(minutes));
 
     // An empty next week, while this week has meals to take over.
-    private bool ShowCopyCard => weekOffset == 1 && !startEmpty && thisWeekHasMeals && WeekDates.All(d => (days.GetValueOrDefault(d)?.Slots.Count ?? 0) == 0);
+    private bool ShowCopyCard => weekOffset == 1 && !startEmpty && ThisWeekHasMeals && WeekDates.All(d => (days.GetValueOrDefault(d)?.Slots.Count ?? 0) == 0);
     private IReadOnlyList<DateOnly> TwoWeeks => Enumerable.Range(0, 14).Select(i => StartOfWeek(Today).AddDays(i)).ToList();
 
     // When a meal is being changed, the budget shown in the sheet is the day without that meal.
@@ -282,7 +291,7 @@
         if (QueryValue("day") is { } dayText && DateOnly.TryParse(dayText, out var requested))
         {
             var offset = (StartOfWeek(requested).DayNumber - StartOfWeek(Today).DayNumber) / 7;
-            if (offset is 0 or 1) { weekOffset = offset; selectedDate = requested; }
+            if (offset >= -WeeksBack && offset <= 1) { weekOffset = offset; selectedDate = requested; }
         }
         if (QueryValue("toast") is { } toast) Toasts.Show(toast);
 
@@ -333,7 +342,7 @@
         if (!ComeBack.ShowReviewBanner(now, prefs.ReviewSeen, 1)) return;
         try
         {
-            var week = monday == StartOfWeek(Today) && weekOffset == 0 ? days : await DayPlan.GetDaysAsync(uid, monday, monday.AddDays(6));
+            var week = monday >= RangeStart ? days : await DayPlan.GetDaysAsync(uid, monday, monday.AddDays(6));
             if (ComeBack.ShowReviewBanner(now, prefs.ReviewSeen, DayStatus.Stamps(monday, week, prefs))) reviewMonday = monday;
         }
         catch { /* no banner offline */ }
@@ -352,7 +361,7 @@
         {
             var profileTask = NutritionStore.GetProfileAsync(uid);
             var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
-            var daysTask = DayPlan.GetDaysAsync(uid, WeekStart, WeekStart.AddDays(6));
+            var daysTask = DayPlan.GetDaysAsync(uid, RangeStart, RangeEnd);
             var catalogTask = CatalogService.GetAllMealsAsync();
             await Task.WhenAll(profileTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
             profile = await profileTask ?? new NutritionProfile();
@@ -361,11 +370,6 @@
             catalog = (await catalogTask).ToDictionary(m => m.Id);
             if (!WeekDates.Contains(selectedDate)) selectedDate = weekOffset == 0 ? Today : WeekStart;
             RefreshDots();
-            if (weekOffset == 1)
-            {
-                var thisWeek = await DayPlan.GetDaysAsync(uid, StartOfWeek(Today), StartOfWeek(Today).AddDays(6));
-                thisWeekHasMeals = thisWeek.Values.Any(d => d.Slots.Count > 0);
-            }
         }
         catch
         {
@@ -381,24 +385,27 @@
 
     private void RefreshDots()
     {
-        dots = WeekDates.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), prefs));
-        logged = WeekDates.Where(d => DayStatus.DayLogged(days.GetValueOrDefault(d), prefs)).ToHashSet();
+        var all = Enumerable.Range(0, RangeEnd.DayNumber - RangeStart.DayNumber + 1).Select(i => RangeStart.AddDays(i)).ToList();
+        dots = all.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), prefs));
+        logged = all.Where(d => DayStatus.DayLogged(days.GetValueOrDefault(d), prefs)).ToHashSet();
     }
 
-    private async Task GoToWeekAsync(int offset)
+    // Moving to another week keeps the same weekday selected (today when it is this week).
+    private Task GoToWeekAsync(DateOnly monday)
     {
-        if (offset == weekOffset) return;
+        var offset = (monday.DayNumber - StartOfWeek(Today).DayNumber) / 7;
+        if (offset < -WeeksBack || offset > 1 || offset == weekOffset) return Task.CompletedTask;
+        var weekday = selectedDate.DayNumber - WeekStart.DayNumber;
         weekOffset = offset;
-        selectedDate = offset == 0 ? Today : WeekStart;
-        await LoadAsync();
-        await WatchWeekAsync();
+        selectedDate = offset == 0 ? Today : WeekStart.AddDays(weekday);
+        return Task.CompletedTask;
     }
 
     // Live: a sync partner's change (mirrored into my days) or a change on another device shows without a reload.
     private async Task WatchWeekAsync()
     {
         if (watch is not null) await watch.DisposeAsync();
-        watch = disposed ? null : await Live.WatchAsync($"users/{LiveWatch.Key(uid)}/days", OnRemoteUserChanged, WeekStart.ToString("yyyy-MM-dd"));
+        watch = disposed ? null : await Live.WatchAsync($"users/{LiveWatch.Key(uid)}/days", OnRemoteUserChanged, RangeStart.ToString("yyyy-MM-dd"));
     }
 
     private void SelectDay(DateOnly date) => selectedDate = date;
@@ -602,7 +609,7 @@
                 ? (await DayPlan.CopyEntryAsync(uid, moveFromDate, fromSlot, target.Date, target.Slot) is { } copy ? new List<PlanDay> { copy } : [])
                 : await DayPlan.MoveEntryAsync(uid, moveFromDate, fromSlot, target.Date, target.Slot);
             foreach (var day in changed)
-                if (WeekDates.Contains(day.Date)) days[day.Date] = day;
+                if (day.Date >= RangeStart && day.Date <= RangeEnd) days[day.Date] = day;
             RefreshDots();
             moveSlot = null;
             var where = Loc.T("nut_slot_on_day", SlotName(target.Slot), Loc.GetDayName(target.Date.DayOfWeek));
@@ -654,7 +661,7 @@
         {
             try
             {
-                days = await DayPlan.GetDaysAsync(uid, WeekStart, WeekStart.AddDays(6));
+                days = await DayPlan.GetDaysAsync(uid, RangeStart, RangeEnd);
                 RefreshDots();
                 StateHasChanged();
             }

@@ -16,6 +16,8 @@ public interface IMealPhotoService
 {
     /// <summary>The shared photo of a meal, or null when there is none (or it cannot be read).</summary>
     Task<string?> GetAsync(string mealId);
+    /// <summary>Whether a shared photo exists for the meal (from the one-request index; nothing is downloaded).</summary>
+    Task<bool> HasAsync(string mealId);
     /// <summary>Whether this user can generate photos at all (a Gemini key is saved).</summary>
     Task<bool> CanGenerateAsync();
     /// <summary>Draws a photo with the user's Gemini key, shrinks it to 480 px and shares it. Throws GeminiApiException.</summary>
@@ -45,6 +47,8 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, G
         if (!loading.TryGetValue(mealId, out var task)) loading[mealId] = task = FetchAsync(mealId);
         return await task;
     }
+
+    public async Task<bool> HasAsync(string mealId) => photos.TryGetValue(mealId, out var p) && p is not null || (await IndexAsync()).Contains(mealId);
 
     private Task<HashSet<string>> IndexAsync() => index ??= LoadIndexAsync();
 

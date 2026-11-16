@@ -1,44 +1,112 @@
+@implements IAsyncDisposable
 @inject ILocalizationService Loc
+@inject IJSRuntime JS
 
-@* Monday-based week with an arrow at each end. A logged day (every meal eaten or skipped) shows a tick. *@
-<div class="mk-dstrip has-arrows" role="group">
-    <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_prev"]" disabled="@(!CanGoPrev)" @onclick="OnPrev">
+@* Monday-based weeks side by side: swipe sideways (or use the arrows) to move a whole week back or forward.
+   Each week snaps into place; the page is told which week is showing. A logged day (every meal eaten or
+   skipped) shows a tick. In right-to-left languages earlier weeks lie to the right, as time reads there. *@
+<div class="mk-dstrip has-arrows" role="group" aria-label="@Loc.T("nut_week_of", WeekLabel(Current))">
+    <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_prev"]" disabled="@(Index(Current) <= 0)" @onclick="() => ShowAsync(Index(Current) - 1)">
         <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
     </button>
-    @foreach (var date in Dates)
-    {
-        var d = date;
-        var on = d == Selected;
-        var dot = Dots.GetValueOrDefault(d);
-        var logged = Logged.Contains(d);
-        <button type="button" class="mk-dchip @(on ? "is-on" : "") @(d == Today ? "is-today" : "")" aria-pressed="@(on ? "true" : "false")"
-                aria-label="@(logged ? Loc.T("nut_day_logged", Loc.FormatDayDate(d)) : Loc.FormatDayDate(d))" @onclick="() => OnSelect.InvokeAsync(d)">
-            <span class="mk-dchip-name">@Loc.GetDayAbbr(d.DayOfWeek)</span>
-            <span class="mk-dchip-num">@d.Day</span>
-            @if (logged)
-            {
-                <span class="mk-dchip-stamp" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
-            }
-            else
-            {
-                <span class="mk-dchip-dot is-@dot.ToString().ToLowerInvariant()"></span>
-            }
-        </button>
-    }
-    <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_next"]" disabled="@(!CanGoNext)" @onclick="OnNext">
+    <div class="mk-dstrip-scroll" @ref="scroller" dir="@Loc.Direction">
+        @foreach (var monday in Weeks)
+        {
+            var visible = monday == Current;
+            <div class="mk-dstrip-week" aria-hidden="@(visible ? null : "true")" inert="@(!visible)">
+                @for (var i = 0; i < 7; i++)
+                {
+                    var d = monday.AddDays(i);
+                    var on = d == Selected;
+                    var dot = Dots.GetValueOrDefault(d);
+                    var logged = Logged.Contains(d);
+                    <button type="button" class="mk-dchip @(on ? "is-on" : "") @(d == Today ? "is-today" : "")" aria-pressed="@(on ? "true" : "false")"
+                            aria-label="@(logged ? Loc.T("nut_day_logged", Loc.FormatDayDate(d)) : Loc.FormatDayDate(d))" @onclick="() => OnSelect.InvokeAsync(d)">
+                        <span class="mk-dchip-name">@Loc.GetDayAbbr(d.DayOfWeek)</span>
+                        <span class="mk-dchip-num">@d.Day</span>
+                        @if (logged)
+                        {
+                            <span class="mk-dchip-stamp" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
+                        }
+                        else
+                        {
+                            <span class="mk-dchip-dot is-@dot.ToString().ToLowerInvariant()"></span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+    </div>
+    <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_next"]" disabled="@(Index(Current) >= Weeks.Count - 1)" @onclick="() => ShowAsync(Index(Current) + 1)">
         <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
     </button>
 </div>
 
 @code {
-    [Parameter, EditorRequired] public IReadOnlyList<DateOnly> Dates { get; set; } = [];
+    /// <summary>The Mondays of the weeks that can be shown, oldest first.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<DateOnly> Weeks { get; set; } = [];
+    /// <summary>The Monday of the week on screen.</summary>
+    [Parameter] public DateOnly Current { get; set; }
     [Parameter] public DateOnly Selected { get; set; }
     [Parameter] public DateOnly Today { get; set; }
     [Parameter] public IReadOnlyDictionary<DateOnly, DayDot> Dots { get; set; } = new Dictionary<DateOnly, DayDot>();
     [Parameter] public IReadOnlySet<DateOnly> Logged { get; set; } = new HashSet<DateOnly>();
-    [Parameter] public bool CanGoPrev { get; set; }
-    [Parameter] public bool CanGoNext { get; set; }
     [Parameter] public EventCallback<DateOnly> OnSelect { get; set; }
-    [Parameter] public EventCallback OnPrev { get; set; }
-    [Parameter] public EventCallback OnNext { get; set; }
+    /// <summary>Raised with a week's Monday when the user swipes or steps to it.</summary>
+    [Parameter] public EventCallback<DateOnly> OnWeek { get; set; }
+
+    private ElementReference scroller;
+    private DotNetObjectReference<DayStrip>? self;
+    private DateOnly? scrolledTo;
+    private int watchId;
+
+    private int Index(DateOnly monday)
+    {
+        for (var i = 0; i < Weeks.Count; i++) if (Weeks[i] == monday) return i;
+        return 0;
+    }
+
+    private string WeekLabel(DateOnly monday) => Loc.T("nut_day_month", monday.Day, Loc.GetMonthName(monday.Month));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (firstRender)
+            {
+                self = DotNetObjectReference.Create(this);
+                watchId = await JS.InvokeAsync<int>("nxtweek.weekPager.watch", scroller, self);
+            }
+            // Follow the page: on first show jump without animation, later glide.
+            if (scrolledTo != Current)
+            {
+                await JS.InvokeVoidAsync("nxtweek.weekPager.show", scroller, Index(Current), scrolledTo is not null);
+                scrolledTo = Current;
+            }
+        }
+        catch (JSException) { /* the arrows still work */ }
+        catch (JSDisconnectedException) { }
+    }
+
+    private async Task ShowAsync(int index)
+    {
+        if (index < 0 || index >= Weeks.Count) return;
+        await OnWeek.InvokeAsync(Weeks[index]);
+    }
+
+    [JSInvokable]
+    public Task WeekSettled(int index)
+    {
+        if (index < 0 || index >= Weeks.Count || Weeks[index] == Current) return Task.CompletedTask;
+        scrolledTo = Weeks[index]; // already there: no need to scroll again
+        return InvokeAsync(() => OnWeek.InvokeAsync(Weeks[index]));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { if (watchId > 0) await JS.InvokeVoidAsync("nxtweek.weekPager.unwatch", watchId); }
+        catch (JSException) { }
+        catch (JSDisconnectedException) { }
+        self?.Dispose();
+    }
 }
