@@ -1,3 +1,4 @@
+using MealPlanner.Shared.Components.Nutrition;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using MealPlanner.Shared.Models;
@@ -20,12 +21,29 @@ public interface IMealPhotoService
     Task<bool> HasAsync(string mealId);
     /// <summary>Draws a photo with the photo worker, shrinks it to 480 px and shares it. Throws <see cref="MealPhotoException"/>.</summary>
     Task<string> GenerateAsync(MealCatalogItem meal);
+    /// <summary>How many photos this account has had drawn this week (Monday to Sunday, UTC), of <see cref="MealPhotoService.WeeklyLimit"/>.</summary>
+    Task<PhotoQuota> GetQuotaAsync();
     /// <summary>Raised with the meal id when a photo was generated, so every picture of that meal updates.</summary>
     event Action<string>? Changed;
 }
 
+/// <summary>This week's photos: <see cref="Used"/> of <see cref="Limit"/>, counting again from <see cref="ResetsOn"/> (a Monday, UTC).</summary>
+public sealed record PhotoQuota(int Used, int Limit, DateOnly ResetsOn)
+{
+    public int Left => Math.Max(0, Limit - Used);
+
+    /// <summary>The Monday (UTC) of the week that contains <paramref name="utcNow"/>; the worker counts the same weeks.</summary>
+    public static DateOnly MondayOf(DateTime utcNow)
+    {
+        var day = DateOnly.FromDateTime(utcNow);
+        return day.AddDays(-(((int)day.DayOfWeek + 6) % 7));
+    }
+}
+
 public enum MealPhotoProblem
 {
+    /// <summary>This account has had this week's photos; more from Monday.</summary>
+    WeeklyLimit,
     /// <summary>Today's free allowance is used up; try again tomorrow.</summary>
     DailyLimit,
     /// <summary>Too many photos asked for in a minute.</summary>
@@ -41,10 +59,17 @@ public sealed class MealPhotoException(MealPhotoProblem problem, string? detail 
 {
     public MealPhotoProblem Problem { get; } = problem;
 
+    /// <summary>The problem in the user's words.</summary>
+    public static string Describe(ILocalizationService loc, Exception ex) =>
+        ex is MealPhotoException { Problem: MealPhotoProblem.WeeklyLimit }
+            ? loc.T("nut_photo_err_weekly", loc.Num(MealPhotoService.WeeklyLimit))
+            : loc[MessageKey(ex)];
+
     /// <summary>The translation key that explains the problem to the user.</summary>
     public static string MessageKey(Exception ex) => ex is MealPhotoException p
         ? p.Problem switch
         {
+            MealPhotoProblem.WeeklyLimit => "nut_photo_err_weekly",
             MealPhotoProblem.DailyLimit => "nut_photo_err_daily",
             MealPhotoProblem.Busy => "nut_photo_err_busy",
             MealPhotoProblem.Failed => "nut_photo_err_failed",
@@ -58,8 +83,11 @@ public sealed class MealPhotoOptions
     public string WorkerUrl { get; set; } = "https://makdous-photos.rami13195.workers.dev";
 }
 
-public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, MealPhotoOptions photoOptions, IJSRuntime js) : IMealPhotoService
+public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, MealPhotoOptions photoOptions, IJSRuntime js, IAuthService auth) : IMealPhotoService
 {
+    /// <summary>Photos each account may have drawn per week. The worker enforces it (WEEKLY_LIMIT in photo-worker/wrangler.toml).</summary>
+    public const int WeeklyLimit = 10;
+
     public const int Size = 480;
 
     private readonly string baseUrl = options.DatabaseUrl.TrimEnd('/');
@@ -116,7 +144,9 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         string raw;
         try
         {
-            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id });
+            var user = (await auth.GetCurrentUserAsync())?.Uid;
+            if (string.IsNullOrWhiteSpace(user)) throw new MealPhotoException(MealPhotoProblem.Unavailable, "Not signed in.");
+            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id, user });
             var body = await ReadAsync(response);
             var image = Text(body, "image");
             var status = (int)response.StatusCode;
@@ -132,7 +162,12 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
                     index = null;
                     return await GetAsync(meal.Id) ?? throw new MealPhotoException(MealPhotoProblem.Failed);
                 case 429:
-                    throw new MealPhotoException(Text(body, "error") == "daily_limit" ? MealPhotoProblem.DailyLimit : MealPhotoProblem.Busy);
+                    throw new MealPhotoException(Text(body, "error") switch
+                    {
+                        "weekly_limit" => MealPhotoProblem.WeeklyLimit,
+                        "daily_limit" => MealPhotoProblem.DailyLimit,
+                        _ => MealPhotoProblem.Busy
+                    });
                 case 502:
                     throw new MealPhotoException(MealPhotoProblem.Failed, Text(body, "detail"));
                 default:
@@ -150,6 +185,19 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         (await IndexAsync()).Add(meal.Id);
         Changed?.Invoke(meal.Id);
         return small;
+    }
+
+    public async Task<PhotoQuota> GetQuotaAsync()
+    {
+        var monday = PhotoQuota.MondayOf(DateTime.UtcNow);
+        var used = 0;
+        var user = (await auth.GetCurrentUserAsync())?.Uid;
+        if (!string.IsNullOrWhiteSpace(user))
+        {
+            try { used = await http.GetFromJsonAsync<int?>(Url($"PhotoQuota/{Uri.EscapeDataString(user)}/{monday:yyyy-MM-dd}")) ?? 0; }
+            catch { /* shown as unused; the worker still counts */ }
+        }
+        return new PhotoQuota(used, WeeklyLimit, monday.AddDays(7));
     }
 
     private static string? Text(JsonObject? body, string name) =>

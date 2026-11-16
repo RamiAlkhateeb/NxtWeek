@@ -835,7 +835,7 @@ public class LocalizationService : ILocalizationService
         ["nut_back_to_today"] = new() { ["ar"] = "عودة إلى اليوم", ["en"] = "Back to today", ["de"] = "Zurück zu heute" },
         ["nut_plan_chip_label"] = new() { ["ar"] = "{0}، {1}، الحصص: {2}", ["en"] = "{0}, {1}, servings: {2}", ["de"] = "{0}, {1}, Portionen: {2}" },
         ["nut_photos_bulk_title"] = new() { ["ar"] = "صور الوجبات", ["en"] = "Meal photos", ["de"] = "Fotos der Gerichte" },
-        ["nut_photos_bulk_hint"] = new() { ["ar"] = "اصنع صوراً بالذكاء الاصطناعي للوجبات التي ليس لها صورة. مجانية ومشتركة مع الجميع، ولها حد يومي.", ["en"] = "Make AI photos for meals that have none yet. They are free and shared with everyone, with a daily limit.", ["de"] = "Erstelle KI-Fotos für Gerichte, die noch keins haben. Sie sind kostenlos, für alle sichtbar und haben ein Tageslimit." },
+        ["nut_photos_bulk_hint"] = new() { ["ar"] = "اصنع صوراً بالذكاء الاصطناعي للوجبات التي ليس لها صورة. مجانية ومشتركة مع الجميع؛ لكل حساب 10 صور في الأسبوع.", ["en"] = "Make AI photos for meals that have none yet. They are free and shared with everyone; each account can make 10 a week.", ["de"] = "Erstelle KI-Fotos für Gerichte, die noch keins haben. Sie sind kostenlos und für alle sichtbar; jedes Konto kann 10 pro Woche erstellen." },
         ["nut_photos_bulk_check"] = new() { ["ar"] = "ابحث عن الوجبات بلا صور", ["en"] = "Find meals without a photo", ["de"] = "Gerichte ohne Foto suchen" },
         ["nut_photos_bulk_start"] = new() { ["ar"] = "اصنع {0} صورة", ["en"] = "Make {0} photos", ["de"] = "{0} Fotos erstellen" },
         ["nut_photos_bulk_progress"] = new() { ["ar"] = "{0} من {1}: {2}", ["en"] = "{0} of {1}: {2}", ["de"] = "{0} von {1}: {2}" },
@@ -846,6 +846,8 @@ public class LocalizationService : ILocalizationService
         ["nut_photo_err_busy"] = new() { ["ar"] = "صور كثيرة دفعة واحدة. انتظر دقيقة وحاول مجدداً.", ["en"] = "Too many photos at once. Wait a minute and try again.", ["de"] = "Zu viele Fotos auf einmal. Warte eine Minute und versuch es erneut." },
         ["nut_photo_err_failed"] = new() { ["ar"] = "تعذّر رسم هذا الطبق. حاول لاحقاً.", ["en"] = "This dish could not be drawn. Try again later.", ["de"] = "Dieses Gericht konnte nicht gezeichnet werden. Versuch es später." },
         ["nut_photo_err_unavailable"] = new() { ["ar"] = "خدمة الصور غير متاحة الآن.", ["en"] = "The photo service can't be reached right now.", ["de"] = "Der Fotodienst ist gerade nicht erreichbar." },
+        ["nut_photo_err_weekly"] = new() { ["ar"] = "استخدمت صور هذا الأسبوع ({0}). يمكنك صنع المزيد من يوم الاثنين.", ["en"] = "You've used this week's {0} photos. You can make more from Monday.", ["de"] = "Du hast die {0} Fotos dieser Woche verbraucht. Ab Montag kannst du wieder welche erstellen." },
+        ["nut_photos_left_week"] = new() { ["ar"] = "بقي لك {0} من {1} صور هذا الأسبوع.", ["en"] = "{0} of {1} photos left this week.", ["de"] = "Diese Woche noch {0} von {1} Fotos." },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

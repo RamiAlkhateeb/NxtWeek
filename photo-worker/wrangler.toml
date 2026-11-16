@@ -9,6 +9,8 @@ binding = "AI"
 
 [vars]
 FIREBASE_URL = "https://meal-planner-af799-default-rtdb.europe-west1.firebasedatabase.app"
+# Photos each account may have drawn per week (Monday to Sunday, UTC). Keep MealPhotoService.WeeklyLimit in step.
+WEEKLY_LIMIT = "10"
 
 # Per visitor: at most 30 pictures a minute, enough for "Meal photos" in Settings, too few to drain the allowance.
 [[ratelimits]]

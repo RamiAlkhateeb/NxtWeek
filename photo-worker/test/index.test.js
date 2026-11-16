@@ -1,7 +1,7 @@
 // Run with: node --test photo-worker/test/*.test.js   (Node 20+, no packages)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import worker, { englishDish, ingredientWords, prompt, isAllowedOrigin } from "../src/index.js";
+import worker, { englishDish, ingredientWords, prompt, isAllowedOrigin, isUserKey, mondayOf, addDays } from "../src/index.js";
 
 const DB = "https://db.test";
 const catalog = {
@@ -12,23 +12,31 @@ const catalog = {
   done: { name: "Soup", language: "en" }
 };
 const photos = { done: "data:image/jpeg;base64,xx" };
+const users = { rami: { username: "rami" }, guest_1: {} };
 
-function setup() {
+function setup(quota = {}) {
   const calls = [];
-  globalThis.fetch = async url => {
-    const m = String(url).match(/\/(MealCatalog|MealPhotos)\/([^.]+)\.json/);
-    const value = m ? (m[1] === "MealCatalog" ? catalog : photos)[m[2]] ?? null : null;
-    return new Response(JSON.stringify(m && m[1] === "MealPhotos" && value ? true : value), { status: 200 });
+  const writes = [];
+  globalThis.fetch = async (url, init) => {
+    const u = decodeURIComponent(String(url));
+    if (init?.method === "PUT") { writes.push({ u, body: JSON.parse(init.body) }); quota[u] = JSON.parse(init.body); return new Response("null"); }
+    let value = null;
+    const m = u.match(/\/(MealCatalog|MealPhotos|users)\/([^/.]+)\.json/);
+    if (m) value = ({ MealCatalog: catalog, MealPhotos: photos, users })[m[1]][m[2]] ?? null;
+    if (m && m[1] !== "MealCatalog" && value) value = true; // shallow reads
+    if (u.includes("/PhotoQuota/")) value = quota[u] ?? null;
+    return new Response(JSON.stringify(value), { status: 200 });
   };
   const env = {
     FIREBASE_URL: DB,
     AI: { run: async (model, input) => { calls.push({ model, input }); return model.includes("m2m100") ? { translated_text: "Molokhia; chicken" } : { image: "QUJD" }; } },
     PER_VISITOR: { limit: async () => ({ success: true }) }
   };
-  return { env, calls };
+  return { env, calls, writes, quota };
 }
 
-const post = (body, origin = "https://meal-planner-af799.web.app") =>
+const post = (body, origin = "https://meal-planner-af799.web.app") => req({ user: "rami", ...body }, origin);
+const req = (body, origin) =>
   new Request("https://w.test/photo", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 test("draws a catalog meal without a photo and returns a JPEG data URL", async () => {
@@ -47,6 +55,36 @@ test("refuses unknown, archived and already pictured meals, odd ids and foreign 
   assert.equal((await worker.fetch(post({ mealId: "done" }), env)).status, 409);
   assert.equal((await worker.fetch(post({ mealId: "../x" }), env)).status, 400);
   assert.equal((await worker.fetch(post({ mealId: "en_n12" }, "https://evil.example"), env)).status, 403);
+});
+
+test("each account gets ten photos a week; only drawn pictures count", async () => {
+  const monday = mondayOf(new Date());
+  const { env, writes } = setup();
+  const res = await worker.fetch(post({ mealId: "en_n12" }), env);
+  const body = await res.json();
+  assert.equal(body.used, 1);
+  assert.equal(body.limit, 10);
+  assert.deepEqual(writes, [{ u: `${DB}/PhotoQuota/rami/${monday}.json`, body: 1 }]);
+
+  const full = setup({ [`${DB}/PhotoQuota/rami/${monday}.json`]: 10 });
+  const refused = await worker.fetch(post({ mealId: "en_n12" }), full.env);
+  assert.equal(refused.status, 429);
+  assert.deepEqual(await refused.json(), { error: "weekly_limit", used: 10, limit: 10, resetsOn: addDays(monday, 7) });
+  assert.equal(full.calls.length, 0);
+  assert.equal(full.writes.length, 0);
+
+  const failing = setup();
+  failing.env.AI.run = async () => ({});
+  assert.equal((await worker.fetch(post({ mealId: "en_n12" }), failing.env)).status, 502);
+  assert.equal(failing.writes.length, 0);
+});
+
+test("the account must exist and be sent", async () => {
+  const { env } = setup();
+  assert.equal((await worker.fetch(post({ mealId: "en_n12", user: "nobody" }), env)).status, 403);
+  assert.equal((await worker.fetch(req({ mealId: "en_n12" }, "https://meal-planner-af799.web.app"), env)).status, 400);
+  assert.equal((await worker.fetch(post({ mealId: "en_n12", user: "a/b" }), env)).status, 400);
+  assert.equal((await worker.fetch(post({ mealId: "en_n12", user: "guest_1" }), env)).status, 200);
 });
 
 test("a busy visitor and a spent daily allowance read as 429", async () => {
@@ -76,4 +114,7 @@ test("helpers", () => {
   assert.match(prompt({ name: "Foul", ingredients: [] }), /^A realistic.*"Foul"\. One serving.*No text/);
   assert.ok(isAllowedOrigin("https://meal-planner-af799--pr23-claude-x.web.app"));
   assert.ok(!isAllowedOrigin("https://meal-planner-af799.web.app.evil.com"));
+  assert.ok(isUserKey("rami13195_at_gmail_dot_com") && isUserKey("guest_3f2a-1b") && !isUserKey("a.b") && !isUserKey(""));
+  assert.equal(mondayOf(new Date("2026-11-22T23:30:00Z")), "2026-11-16"); // Sunday night still counts for that week
+  assert.equal(mondayOf(new Date("2026-11-23T00:10:00Z")), "2026-11-23");
 });

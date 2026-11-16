@@ -30,13 +30,21 @@
     else
     {
         @if (message is { Length: > 0 }) { <p class="mk-subtitle" role="status">@message</p> }
+        @if (quota is { } q)
+        {
+            <p class="mk-subtitle">@Loc.T("nut_photos_left_week", Loc.Num(q.Left), Loc.Num(q.Limit))</p>
+        }
         @if (missing.Count == 0)
         {
             <p class="mk-subtitle">@Loc["nut_photos_bulk_none"]</p>
         }
+        else if (quota is { Left: 0 })
+        {
+            <p class="mk-subtitle">@Loc.T("nut_photo_err_weekly", Loc.Num(MealPhotoService.WeeklyLimit))</p>
+        }
         else
         {
-            <button class="mk-btn is-sm" @onclick="RunAsync">@Loc.T("nut_photos_bulk_start", Loc.Num(missing.Count))</button>
+            <button class="mk-btn is-sm" @onclick="RunAsync">@Loc.T("nut_photos_bulk_start", Loc.Num(Batch))</button>
         }
     }
 </div>
@@ -44,6 +52,10 @@
 @code {
     private bool isCounting, running;
     private List<MealCatalogItem>? missing;
+    private PhotoQuota? quota;
+
+    // Never more than this week's photos left.
+    private int Batch => Math.Min(missing?.Count ?? 0, quota?.Left ?? MealPhotoService.WeeklyLimit);
     private int done, total;
     private string current = "", message = "";
     private CancellationTokenSource? cancel;
@@ -63,6 +75,7 @@
             var list = new List<MealCatalogItem>();
             foreach (var m in meals) if (!await Photos.HasAsync(m.Id)) list.Add(m);
             missing = list;
+            quota = await Photos.GetQuotaAsync();
         }
         catch { message = Loc["nut_load_error"]; missing = new(); }
         finally { isCounting = false; }
@@ -74,12 +87,13 @@
         running = true;
         message = "";
         done = 0;
-        total = missing.Count;
+        total = Batch;
         cancel = new CancellationTokenSource();
         var left = new List<MealCatalogItem>(missing);
+        var made = 0;
         try
         {
-            foreach (var meal in missing)
+            foreach (var meal in missing.Take(total))
             {
                 if (cancel.IsCancellationRequested) break;
                 current = meal.Name;
@@ -94,6 +108,7 @@
                         await Photos.GenerateAsync(meal);
                     }
                     left.Remove(meal);
+                    made++;
                 }
                 catch (MealPhotoException failed) when (failed.Problem == MealPhotoProblem.Failed)
                 {
@@ -102,17 +117,18 @@
                 catch (TaskCanceledException) { break; }
                 catch (Exception ex)
                 {
-                    message = Loc[MealPhotoException.MessageKey(ex)];
+                    message = MealPhotoException.Describe(Loc, ex);
                     break;
                 }
                 done++;
             }
-            if (message.Length == 0) message = Loc.T("nut_photos_bulk_done", Loc.Num(total - left.Count));
+            if (message.Length == 0) message = Loc.T("nut_photos_bulk_done", Loc.Num(made));
         }
         finally
         {
             missing = left;
             running = false;
+            try { quota = await Photos.GetQuotaAsync(); } catch { /* keep the last count */ }
         }
     }
 
