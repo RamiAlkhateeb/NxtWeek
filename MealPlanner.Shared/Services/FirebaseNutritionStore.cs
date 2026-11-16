@@ -47,19 +47,48 @@ public sealed class FirebaseNutritionStore(HttpClient http, FirebaseOptions opti
         if (profile is null) return null;
         profile.Overrides ??= new();
         profile.Overrides.Training ??= new();
-        profile.Overrides.Rest ??= new();
-        profile.MealTimes ??= NutritionProfile.DefaultMealTimes();
-        foreach (var (slot, time) in NutritionProfile.DefaultMealTimes())
-            profile.MealTimes.TryAdd(slot, time);
-        // Firebase drops an empty list, so "all meals on" reads back as null.
-        profile.OffSlots ??= new();
-        if (profile.TrainingDays is not { Count: 7 }) profile.TrainingDays = new NutritionProfile().TrainingDays;
+        // Meal times and switched-off meals moved to mealPrefs in 3.1; drop them so a save does not write them back.
+        profile.MealTimes = null;
+        profile.OffSlots = null;
         return profile;
+    }
+
+    private MealPrefs? cachedPrefs;
+    private string? cachedPrefsUid;
+
+    public async Task<MealPrefs> GetMealPrefsAsync(string uid)
+    {
+        if (cachedPrefs is not null && cachedPrefsUid == uid) return cachedPrefs;
+        var prefs = await http.GetFromJsonAsync<MealPrefs>(Url($"users/{Key(uid)}/mealPrefs"));
+        if (prefs is null)
+        {
+            // First run on 3.1: carry the old meal times over, and keep the afternoon snack only if it is in use.
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var legacyTask = http.GetFromJsonAsync<NutritionProfile>(Url($"users/{Key(uid)}/nutritionProfile"));
+            var upcomingTask = http.GetFromJsonAsync<Dictionary<string, PlanDay>>(
+                $"{Url($"users/{Key(uid)}/days")}?orderBy=%22$key%22&startAt=%22{today:yyyy-MM-dd}%22");
+            await Task.WhenAll(legacyTask, upcomingTask);
+            var afternoon = (await upcomingTask ?? []).Values.Any(d => d.Slots?.ContainsKey(MealSlot.PostWorkout) == true);
+            prefs = MealPrefs.FromLegacy(await legacyTask, afternoon);
+            await SaveMealPrefsAsync(uid, prefs);
+        }
+        cachedPrefs = prefs.Normalize();
+        cachedPrefsUid = uid;
+        return cachedPrefs;
+    }
+
+    public async Task SaveMealPrefsAsync(string uid, MealPrefs prefs)
+    {
+        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/mealPrefs"), prefs);
+        response.EnsureSuccessStatusCode();
+        cachedPrefs = prefs;
+        cachedPrefsUid = uid;
     }
 
     public async Task SaveProfileAsync(string uid, NutritionProfile profile)
     {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/nutritionProfile"), profile);
+        // PATCH, not PUT: the fields from before 3.1 (mealTimes, offSlots, trainingDays) stay in the database untouched.
+        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(uid)}/nutritionProfile"), profile);
         response.EnsureSuccessStatusCode();
     }
 

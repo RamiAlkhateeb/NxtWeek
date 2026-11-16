@@ -654,12 +654,10 @@ public class LocalizationService : ILocalizationService
 
         // Slots, targets panel, slot and quick-add sheets, profile and account (3.0)
         ["nut_slot_Meal1"] = new() { ["ar"] = "الوجبة 1", ["en"] = "Meal 1", ["de"] = "Mahlzeit 1" },
-        ["nut_slot_PostWorkout"] = new() { ["ar"] = "بعد التمرين", ["en"] = "Post-workout", ["de"] = "Nach dem Training" },
+        ["nut_slot_PostWorkout"] = new() { ["ar"] = "سناك العصر", ["en"] = "Afternoon snack", ["de"] = "Nachmittagssnack" },
         ["nut_slot_Dinner"] = new() { ["ar"] = "العشاء", ["en"] = "Dinner", ["de"] = "Abendessen" },
         ["nut_slot_Snack"] = new() { ["ar"] = "سناك المساء", ["en"] = "Evening snack", ["de"] = "Abendsnack" },
         ["nut_today"] = new() { ["ar"] = "اليوم", ["en"] = "Today", ["de"] = "Heute" },
-        ["nut_day_training"] = new() { ["ar"] = "يوم تمرين", ["en"] = "Training day", ["de"] = "Trainingstag" },
-        ["nut_day_rest"] = new() { ["ar"] = "يوم راحة", ["en"] = "Rest day", ["de"] = "Ruhetag" },
         ["nut_left"] = new() { ["ar"] = "متبقي", ["en"] = "left", ["de"] = "übrig" },
         ["nut_left_today"] = new() { ["ar"] = "المتبقي اليوم", ["en"] = "left today", ["de"] = "heute übrig" },
         ["nut_eaten"] = new() { ["ar"] = "تم تناوله", ["en"] = "eaten", ["de"] = "gegessen" },
@@ -675,7 +673,6 @@ public class LocalizationService : ILocalizationService
         // {0} = kcal still open, {1} = grams of protein still open
         ["nut_open_line"] = new() { ["ar"] = "غير مخطط بعد: {0} سعرة و{1} غ بروتين", ["en"] = "Still open: {0} kcal and {1} g protein", ["de"] = "Noch offen: {0} kcal und {1} g Eiweiß" },
         ["nut_aim"] = new() { ["ar"] = "الهدف: 30–40 غ بروتين لكل وجبة", ["en"] = "Aim for 30–40 g protein per meal", ["de"] = "Ziel: 30–40 g Eiweiß pro Mahlzeit" },
-        ["nut_no_post"] = new() { ["ar"] = "يوم راحة: لا توجد خانة بعد التمرين", ["en"] = "Rest day: no post-workout slot", ["de"] = "Ruhetag: kein Slot nach dem Training" },
         ["nut_empty_day"] = new() { ["ar"] = "لا شيء مخطط بعد", ["en"] = "Nothing planned yet", ["de"] = "Noch nichts geplant" },
         ["nut_week_empty"] = new() { ["ar"] = "ابدأ باقتراح غني بالبروتين أو أضف عنصراً سريعاً.", ["en"] = "Start with a high-protein suggestion or add a quick item.", ["de"] = "Starte mit einem eiweißreichen Vorschlag oder einem schnellen Eintrag." },
         ["nut_next_week"] = new() { ["ar"] = "الأسبوع القادم", ["en"] = "Next week", ["de"] = "Nächste Woche" },
@@ -714,10 +711,10 @@ public class LocalizationService : ILocalizationService
         ["nut_height"] = new() { ["ar"] = "الطول", ["en"] = "Height", ["de"] = "Größe" },
         ["nut_weight"] = new() { ["ar"] = "الوزن", ["en"] = "Weight", ["de"] = "Gewicht" },
         ["nut_activity"] = new() { ["ar"] = "مستوى النشاط", ["en"] = "Activity level", ["de"] = "Aktivitätslevel" },
-        ["nut_activity_0"] = new() { ["ar"] = "قليل الحركة", ["en"] = "Sedentary", ["de"] = "Kaum aktiv" },
-        ["nut_activity_1"] = new() { ["ar"] = "خفيف: 1–3 تمارين أسبوعياً", ["en"] = "Light: 1–3 workouts a week", ["de"] = "Leicht: 1–3 Trainings pro Woche" },
-        ["nut_activity_2"] = new() { ["ar"] = "متوسط: 3–5 تمارين", ["en"] = "Moderate: 3–5 workouts", ["de"] = "Mäßig: 3–5 Trainings" },
-        ["nut_activity_3"] = new() { ["ar"] = "نشيط جداً: 6–7 تمارين", ["en"] = "Very active: 6–7 workouts", ["de"] = "Sehr aktiv: 6–7 Trainings" },
+        ["nut_activity_0"] = new() { ["ar"] = "جلوس معظم الوقت", ["en"] = "Mostly sitting", ["de"] = "Meist sitzend" },
+        ["nut_activity_1"] = new() { ["ar"] = "نشاط خفيف: تتحرك أحياناً", ["en"] = "Lightly active: on your feet sometimes", ["de"] = "Leicht aktiv: ab und zu auf den Beinen" },
+        ["nut_activity_2"] = new() { ["ar"] = "نشط: على قدميك معظم اليوم", ["en"] = "Active: on your feet most of the day", ["de"] = "Aktiv: meist auf den Beinen" },
+        ["nut_activity_3"] = new() { ["ar"] = "نشط جداً: عمل بدني", ["en"] = "Very active: physical work", ["de"] = "Sehr aktiv: körperliche Arbeit" },
         ["nut_goal"] = new() { ["ar"] = "الهدف", ["en"] = "Goal", ["de"] = "Ziel" },
         ["nut_goal_Lose"] = new() { ["ar"] = "خسارة الدهون", ["en"] = "Lose fat", ["de"] = "Fett verlieren" },
         ["nut_goal_Keep"] = new() { ["ar"] = "الحفاظ", ["en"] = "Maintain", ["de"] = "Halten" },
@@ -730,10 +727,8 @@ public class LocalizationService : ILocalizationService
         ["nut_custom"] = new() { ["ar"] = "مخصص", ["en"] = "Custom", ["de"] = "Eigener Wert" },
         ["nut_calculated"] = new() { ["ar"] = "محسوب", ["en"] = "Calculated", ["de"] = "Berechnet" },
         ["nut_reset"] = new() { ["ar"] = "استرجاع المحسوب", ["en"] = "Reset to calculated", ["de"] = "Auf berechnet zurücksetzen" },
-        ["nut_rest_note"] = new() { ["ar"] = "يوم الراحة: أقل بـ200 سعرة من الكربوهيدرات. البروتين والدهون كما هي.", ["en"] = "Rest day: 200 kcal less, taken from carbs. Protein and fat stay the same.", ["de"] = "Ruhetag: 200 kcal weniger, aus Kohlenhydraten. Eiweiß und Fett bleiben gleich." },
         // {0} = grams of protein per kg
         ["nut_per_kg"] = new() { ["ar"] = "{0} غ لكل كغ من وزن الجسم", ["en"] = "{0} g per kg body weight", ["de"] = "{0} g pro kg Körpergewicht" },
-        ["nut_training_days"] = new() { ["ar"] = "أيام التمرين", ["en"] = "Training days", ["de"] = "Trainingstage" },
         ["nut_meals_in_day"] = new() { ["ar"] = "الوجبات في اليوم", ["en"] = "Meals in a day", ["de"] = "Mahlzeiten am Tag" },
         ["nut_meals_in_day_hint"] = new() { ["ar"] = "أطفئ الوجبات التي لا تتناولها. الوجبة 1 مفعّلة دائمًا. يبقى ما خطّطته في وجبة تطفئها محفوظًا. تُرتَّب الوجبات حسب الوقت.", ["en"] = "Turn off the meals you don't eat. Meal 1 is always on. Food planned in a meal you turn off is kept. Meals are sorted by time.", ["de"] = "Schalte die Mahlzeiten aus, die du nicht isst. Mahlzeit 1 ist immer an. Geplantes Essen in einer ausgeschalteten Mahlzeit bleibt erhalten. Die Mahlzeiten werden nach Zeit sortiert." },
         ["nut_meal_on_for"] = new() { ["ar"] = "تضمين {0}", ["en"] = "Include {0}", ["de"] = "{0} einbeziehen" },
@@ -770,9 +765,6 @@ public class LocalizationService : ILocalizationService
         ["nut_servings_more"] = new() { ["ar"] = "حصص أكثر", ["en"] = "More servings", ["de"] = "Mehr Portionen" },
         // {0} = slot name, {1} = meal name
         ["nut_slot_entry"] = new() { ["ar"] = "{0}: {1}", ["en"] = "{0}: {1}", ["de"] = "{0}: {1}" },
-        // {0} = day type ("Training day"), {1} = that day's calorie target
-        ["nut_day_type_button"] = new() { ["ar"] = "{0} · {1}", ["en"] = "{0} · {1}", ["de"] = "{0} · {1}" },
-        ["nut_day_type_switch"] = new() { ["ar"] = "بدّل بين يوم تمرين ويوم راحة", ["en"] = "Switch between training and rest day", ["de"] = "Zwischen Trainings- und Ruhetag wechseln" },
         ["nut_profile_saved"] = new() { ["ar"] = "تم حفظ الملف والأهداف", ["en"] = "Profile and targets saved", ["de"] = "Profil und Ziele gespeichert" },
         ["nut_profile_guest"] = new() { ["ar"] = "تعمل الأهداف بالقيم الافتراضية حتى تسجّل الدخول وتحفظ ملفك.", ["en"] = "Targets use these values until you sign in and save your profile.", ["de"] = "Bis du dich anmeldest und dein Profil speicherst, gelten diese Werte." },
         ["nut_years"] = new() { ["ar"] = "سنة", ["en"] = "years", ["de"] = "Jahre" },

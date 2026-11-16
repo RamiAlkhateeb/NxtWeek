@@ -97,7 +97,7 @@
     {
         var lastWeek = sumLast;
         var monday = lastWeek ? ThisMonday.AddDays(-7) : ThisMonday;
-        var s = WeeklySummary.For(monday, lastWeek ? ThisMonday : Today, days, profile, id => catalog.GetValueOrDefault(id)?.Nutrition);
+        var s = WeeklySummary.For(monday, lastWeek ? ThisMonday : Today, days, profile, id => catalog.GetValueOrDefault(id)?.Nutrition, prefs);
         var period = s.Days.Count(d => d != SummaryDay.Future);
         <main class="mk-stack">
             <div class="mk-seg is-inset" role="group">
@@ -170,6 +170,7 @@
     private bool isLoading = true, loadError, isGuest = true, isAdjusting;
     private string uid = "";
     private NutritionProfile profile = new();
+    private MealPrefs prefs = new();
     private List<BodyLog> logs = new();
     private Dictionary<DateOnly, PlanDay> days = new();
     private Dictionary<string, MealCatalogItem> catalog = new();
@@ -202,6 +203,7 @@
             var logsTask = isGuest ? Task.FromResult(new List<BodyLog>()) : NutritionStore.GetBodyLogsAsync(uid);
             await Task.WhenAll(profileTask, daysTask, catalogTask, logsTask);
             profile = await profileTask ?? new NutritionProfile();
+            prefs = await NutritionStore.GetMealPrefsAsync(uid);
             days = await daysTask;
             catalog = (await catalogTask).ToDictionary(m => m.Id);
             logs = await logsTask;
@@ -217,7 +219,7 @@
         {
             profile.WeeklyAdjustKcal += delta;
             await NutritionStore.SaveProfileAsync(uid, profile);
-            Toasts.Show(Loc.T("nut_adjust_done", Loc.Num(TargetCalculator.For(profile, DayType.Training).Kcal)));
+            Toasts.Show(Loc.T("nut_adjust_done", Loc.Num(TargetCalculator.For(profile).Kcal)));
         }
         catch (Exception ex)
         {

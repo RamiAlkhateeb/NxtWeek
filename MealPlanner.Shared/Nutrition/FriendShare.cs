@@ -11,7 +11,7 @@ public static class FriendShare
         if (day is null) return null;
         double kcal = 0, protein = 0;
         var any = false;
-        foreach (var entry in day.Slots.Values.Where(e => e.Eaten))
+        foreach (var entry in day.Slots.Values.Where(e => e.Eaten && !e.Skipped))
         {
             var n = DayMath.Of(entry, nutritionFor);
             kcal += n.Totals.Kcal;

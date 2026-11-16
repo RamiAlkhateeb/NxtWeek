@@ -24,16 +24,16 @@ public sealed record ShoppingSync(
 /// </summary>
 public static class ShoppingAggregator
 {
-    /// <summary>Planned meals still to cook: today to Sunday, not eaten yet and not leftovers.</summary>
-    public static List<PlannedEntry> PlannedEntries(IReadOnlyDictionary<DateOnly, PlanDay> days, IReadOnlyDictionary<string, MealCatalogItem> catalog, DateOnly today, DateOnly sunday, NutritionProfile profile)
+    /// <summary>Planned meals still to cook: today to Sunday, not eaten, not skipped and not leftovers.</summary>
+    public static List<PlannedEntry> PlannedEntries(IReadOnlyDictionary<DateOnly, PlanDay> days, IReadOnlyDictionary<string, MealCatalogItem> catalog, DateOnly today, DateOnly sunday, MealPrefs? prefs = null)
     {
         var result = new List<PlannedEntry>();
         for (var date = today; date <= sunday; date = date.AddDays(1))
         {
             if (!days.TryGetValue(date, out var day)) continue;
-            foreach (var slot in DayMath.SlotsFor(DayMath.TypeOf(day, date, profile), profile))
+            foreach (var slot in DayMath.SlotsFor(prefs))
             {
-                if (!day.Slots.TryGetValue(slot, out var entry) || entry.Eaten || entry.Leftover) continue;
+                if (!day.Slots.TryGetValue(slot, out var entry) || entry.Eaten || entry.Skipped || entry.Leftover) continue;
                 if (entry.MealId is null || !catalog.TryGetValue(entry.MealId, out var meal)) continue;
                 result.Add(new PlannedEntry(date, slot, entry, meal));
             }

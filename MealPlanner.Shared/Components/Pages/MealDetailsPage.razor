@@ -153,7 +153,7 @@
     private List<DateOnly> days = new();
     private HashSet<DateOnly> planned = new();
     private Dictionary<DateOnly, PlanDay> plan = new();
-    private NutritionProfile nutritionProfile = new();
+    private MealPrefs mealPrefs = new();
     // Pick mode from an empty slot on Week: ?day=...&slot=Meal1
     private MealSlot? pickSlot;
     private DateOnly selectedDay;
@@ -185,7 +185,7 @@
             days = Enumerable.Range(0, 14).Select(i => today.AddDays(i)).ToList();
             plan = await DayPlan.GetDaysAsync(uid, days[0], days[^1]);
             planned = plan.Where(d => d.Value.Slots.Count > 0).Select(d => d.Key).ToHashSet();
-            nutritionProfile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
+            mealPrefs = await NutritionStore.GetMealPrefsAsync(uid);
             var slotQuery = QueryValue("slot=");
             if (slotQuery is not null && Enum.TryParse<MealSlot>(slotQuery, out var slot)) pickSlot = slot;
 
@@ -213,7 +213,7 @@
     private IReadOnlyList<MealSlot> EmptySlotsOf(DateOnly date)
     {
         var day = plan.GetValueOrDefault(date);
-        return DayMath.EmptySlots(day, DayMath.TypeOf(day, date, nutritionProfile), nutritionProfile);
+        return DayMath.EmptySlots(day, mealPrefs);
     }
 
     private async Task Close() => await JS.InvokeVoidAsync("nxtweek.goBack", "/");

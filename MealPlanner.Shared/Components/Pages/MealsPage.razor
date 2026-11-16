@@ -313,9 +313,9 @@
             var profile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
             var days = await DayPlan.GetDaysAsync(uid, selectedDate, selectedDate);
             var day = days.GetValueOrDefault(selectedDate);
-            var type = DayMath.TypeOf(day, selectedDate, profile);
+            var prefs = await NutritionStore.GetMealPrefsAsync(uid);
             var nutrition = allMeals.ToDictionary(m => m.Id, m => m.Nutrition);
-            pickBudget = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile);
+            pickBudget = DayMath.Totals(day, TargetCalculator.For(profile), id => nutrition.GetValueOrDefault(id), prefs);
         }
         catch { pickBudget = null; }
     }

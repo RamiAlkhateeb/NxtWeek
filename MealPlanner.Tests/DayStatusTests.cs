@@ -9,20 +9,81 @@ public class DayStatusTests
         return day;
     }
 
+    private static readonly DateOnly Monday = new(2026, 10, 19);
+
     [Fact]
     public void Dot_reflects_how_much_of_the_day_is_eaten()
     {
-        Assert.Equal(DayDot.None, DayStatus.DotFor(null, DayType.Training));
-        Assert.Equal(DayDot.None, DayStatus.DotFor(new PlanDay(), DayType.Training));
-        Assert.Equal(DayDot.Planned, DayStatus.DotFor(Day((MealSlot.Meal1, false)), DayType.Training));
-        Assert.Equal(DayDot.PartlyEaten, DayStatus.DotFor(Day((MealSlot.Meal1, true), (MealSlot.Dinner, false)), DayType.Training));
-        Assert.Equal(DayDot.AllEaten, DayStatus.DotFor(Day((MealSlot.Meal1, true), (MealSlot.Dinner, true)), DayType.Training));
+        Assert.Equal(DayDot.None, DayStatus.DotFor(null));
+        Assert.Equal(DayDot.None, DayStatus.DotFor(new PlanDay()));
+        Assert.Equal(DayDot.Planned, DayStatus.DotFor(Day((MealSlot.Meal1, false))));
+        Assert.Equal(DayDot.PartlyEaten, DayStatus.DotFor(Day((MealSlot.Meal1, true), (MealSlot.Dinner, false))));
+        Assert.Equal(DayDot.AllEaten, DayStatus.DotFor(Day((MealSlot.Meal1, true), (MealSlot.Dinner, true))));
     }
 
     [Fact]
-    public void Dot_ignores_a_post_workout_entry_on_a_rest_day()
+    public void Dot_ignores_an_entry_in_a_meal_that_is_off()
     {
-        Assert.Equal(DayDot.AllEaten, DayStatus.DotFor(Day((MealSlot.Meal1, true), (MealSlot.PostWorkout, false)), DayType.Rest));
+        Assert.Equal(DayDot.AllEaten, DayStatus.DotFor(Day((MealSlot.Meal1, true), (MealSlot.PostWorkout, false))));
+    }
+
+    [Fact]
+    public void A_day_is_logged_when_every_meal_is_eaten_or_skipped()
+    {
+        var full = Day((MealSlot.Meal1, true), (MealSlot.Dinner, true), (MealSlot.Snack, true));
+        Assert.True(DayStatus.DayLogged(full));
+
+        var skippedSnack = Day((MealSlot.Meal1, true), (MealSlot.Dinner, true));
+        skippedSnack.Slots[MealSlot.Snack] = new SlotEntry { MealId = "x", Skipped = true };
+        Assert.True(DayStatus.DayLogged(skippedSnack));
+
+        Assert.False(DayStatus.DayLogged(null));
+        Assert.False(DayStatus.DayLogged(new PlanDay()));
+        Assert.False(DayStatus.DayLogged(Day((MealSlot.Meal1, true), (MealSlot.Dinner, true))));                       // snack empty
+        Assert.False(DayStatus.DayLogged(Day((MealSlot.Meal1, true), (MealSlot.Dinner, false), (MealSlot.Snack, true)))); // dinner unanswered
+    }
+
+    [Fact]
+    public void Someone_who_eats_one_meal_a_day_logs_the_day_with_that_meal()
+    {
+        var oneMeal = new MealPrefs { On = [MealSlot.Meal1] };
+
+        Assert.True(DayStatus.DayLogged(Day((MealSlot.Meal1, true)), oneMeal));
+    }
+
+    [Fact]
+    public void Stamps_count_logged_days_and_a_missed_day_does_not_reset_them()
+    {
+        PlanDay Full() => Day((MealSlot.Meal1, true), (MealSlot.Dinner, true), (MealSlot.Snack, true));
+        var days = new Dictionary<DateOnly, PlanDay>
+        {
+            [Monday] = Full(),
+            [Monday.AddDays(1)] = Day((MealSlot.Meal1, true)),   // missed
+            [Monday.AddDays(2)] = Full(),
+            [Monday.AddDays(4)] = Full(),
+            [Monday.AddDays(7)] = Full()                          // next week
+        };
+
+        Assert.Equal(3, DayStatus.Stamps(Monday, days));
+    }
+
+    [Theory]
+    [InlineData("13:00", "15:40", true)]
+    [InlineData("15:40", "15:40", true)]
+    [InlineData("19:00", "15:40", false)]
+    [InlineData("", "15:40", false)]
+    public void Check_in_is_asked_once_the_meals_time_has_passed(string slotTime, string now, bool expected) =>
+        Assert.Equal(expected, DayStatus.NeedsCheckIn(new SlotEntry { MealId = "x" }, slotTime, TimeOnly.Parse(now)));
+
+    [Fact]
+    public void Check_in_is_not_asked_twice_or_on_other_days_or_for_empty_slots()
+    {
+        var now = new TimeOnly(22, 0);
+
+        Assert.False(DayStatus.NeedsCheckIn(new SlotEntry { MealId = "x", Eaten = true }, "13:00", now));
+        Assert.False(DayStatus.NeedsCheckIn(new SlotEntry { MealId = "x", Skipped = true }, "13:00", now));
+        Assert.False(DayStatus.NeedsCheckIn(new SlotEntry { MealId = "x" }, "13:00", now, isToday: false));
+        Assert.False(DayStatus.NeedsCheckIn(null, "13:00", now));
     }
 
     [Theory]

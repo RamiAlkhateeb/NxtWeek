@@ -104,7 +104,6 @@ public class WeeklySummaryTests
     private static PlanDay Eaten(DateOnly date, double servings) => new()
     {
         Date = date,
-        Type = DayType.Training,
         Slots = { [MealSlot.Meal1] = new SlotEntry { MealId = "m", Servings = servings, Eaten = true } }
     };
 
@@ -126,6 +125,19 @@ public class WeeklySummaryTests
         Assert.Equal(1725, s.AverageKcal);
         Assert.Equal(1950, s.AverageTargetKcal);
         Assert.Equal(135, s.ProteinTarget);
+    }
+
+    [Fact]
+    public void A_skipped_meal_is_not_counted_in_the_week()
+    {
+        var day = Eaten(Monday, 1.95);
+        day.Slots[MealSlot.Dinner] = new SlotEntry { MealId = "m", Skipped = true };
+        var days = new Dictionary<DateOnly, PlanDay> { [Monday] = day };
+
+        var s = WeeklySummary.For(Monday, Monday.AddDays(7), days, new NutritionProfile(), id => Meals.GetValueOrDefault(id));
+
+        Assert.Equal(1950, s.AverageKcal);
+        Assert.Equal(1, s.WithinTarget);
     }
 
     [Fact]

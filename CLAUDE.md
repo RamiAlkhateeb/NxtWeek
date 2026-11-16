@@ -9,7 +9,7 @@ There is no mascot; do not add one.
 | Project | What lives there |
 |---|---|
 | `MealPlanner.Shared` | **All** pages, components, models and service interfaces. A Razor class library — this is where nearly every change goes. |
-| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, weight trend, weekly summary, suggestions, shopping amounts). |
+| `MealPlanner.Tests` | xUnit tests for the pure logic in `MealPlanner.Shared/Nutrition` (targets, day totals, slots, stamps and check-in, weight trend, weekly summary, suggestions, shopping amounts). |
 | `MealPlanner.Web` | The WASM host: `Program.cs` (DI), `App.razor`, `MainLayout`, `wwwroot` (CSS, icons, illustrations, service worker), and the browser-specific service implementations. |
 
 ```bash
@@ -69,11 +69,16 @@ nxtweek.theme
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
 | Shopping list | `users/{key}/shopping` |
-| Day slots (Meal 1, post-workout, dinner, snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
-| Nutrition profile and targets | `users/{key}/nutritionProfile` |
-| Meals turned off (Meal 1 is always on; planned food in them is kept, just not shown or counted) | `users/{key}/nutritionProfile/offSlots` |
+| Day slots (Meal 1, afternoon snack, dinner, evening snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
+| Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
+| Body data, goal and target overrides (health data, signed-in only) | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
+
+Makdous is about meals only: there are no training or rest days, and one daily target. The afternoon snack is
+stored under its first name, `PostWorkout`. Fields from before 3.1 (`days/*/type`, and `mealTimes`, `offSlots`,
+`trainingDays`, `overrides/rest` in `nutritionProfile`) are still read but never written; `INutritionStore.GetMealPrefsAsync`
+builds `mealPrefs` from them once. A slot entry is planned, eaten or skipped; skipped counts nowhere.
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.

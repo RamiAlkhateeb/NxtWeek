@@ -48,17 +48,6 @@ else
             <span><i class="is-open"></i>@Loc["nut_open"] @Loc.Num(Math.Max(0, Totals.OpenKcal))</span>
         </div>
         <div class="mk-tp-foot">
-            <button type="button" class="mk-dtype" title="@Loc["nut_day_type_switch"]" @onclick="OnToggleType">
-                @if (Type == DayType.Training)
-                {
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3 4 4.5 4 8.5A4 4 0 0 1 12 15.5 4 4 0 0 1 8 11.5c0-2 1-3 2-4 .3 1.2 1 2 2 2 0-2.5-1-4 0-6.5z"/><path d="M8 18a5 5 0 0 0 8 0"/></svg>
-                }
-                else
-                {
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></svg>
-                }
-                @Loc.T("nut_day_type_button", Type == DayType.Training ? Loc["nut_day_training"] : Loc["nut_day_rest"], Loc.Num(t.Kcal))
-            </button>
             @FootContent
         </div>
     </section>
@@ -66,10 +55,8 @@ else
 
 @code {
     [Parameter, EditorRequired] public DayTotals Totals { get; set; } = default!;
-    [Parameter] public DayType Type { get; set; }
     [Parameter] public bool Compact { get; set; }
-    [Parameter] public EventCallback OnToggleType { get; set; }
-    /// <summary>Extra buttons beside the day type (step 5: "Plan my protein for today").</summary>
+    /// <summary>Extra buttons under the bars ("Plan my day").</summary>
     [Parameter] public RenderFragment? FootContent { get; set; }
 
     private RenderFragment CompactPart(string title, double eaten, double planned, double target, string colour, string unit) =>

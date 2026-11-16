@@ -31,7 +31,7 @@ public class ShoppingAggregatorTests
 
     private static PlanDay Day(DateOnly d, params (MealSlot S, SlotEntry E)[] slots)
     {
-        var day = new PlanDay { Date = d, Type = DayType.Training };
+        var day = new PlanDay { Date = d };
         foreach (var (s, e) in slots) day.Slots[s] = e;
         return day;
     }
@@ -46,9 +46,27 @@ public class ShoppingAggregatorTests
             [Sunday] = Day(Sunday, (MealSlot.Meal1, new SlotEntry { MealId = "cr", Leftover = true }), (MealSlot.Snack, new SlotEntry { Quick = new QuickAddEntry { Name = "Nuts" } }))
         };
 
-        var planned = ShoppingAggregator.PlannedEntries(days, Catalog, Friday, Sunday, new NutritionProfile());
+        var planned = ShoppingAggregator.PlannedEntries(days, Catalog, Friday, Sunday);
 
         Assert.Equal("mj", Assert.Single(planned).Meal.Id);
+    }
+
+    [Fact]
+    public void Planned_entries_skip_skipped_meals_and_meals_that_are_off()
+    {
+        var days = new Dictionary<DateOnly, PlanDay>
+        {
+            [Friday] = Day(Friday,
+                (MealSlot.Meal1, new SlotEntry { MealId = "cr", Skipped = true }),
+                (MealSlot.PostWorkout, new SlotEntry { MealId = "pz" }),
+                (MealSlot.Dinner, new SlotEntry { MealId = "mj" }))
+        };
+
+        Assert.Equal("mj", Assert.Single(ShoppingAggregator.PlannedEntries(days, Catalog, Friday, Sunday)).Meal.Id);
+
+        var withAfternoon = new MealPrefs();
+        withAfternoon.SetOn(MealSlot.PostWorkout, true);
+        Assert.Equal(["pz", "mj"], ShoppingAggregator.PlannedEntries(days, Catalog, Friday, Sunday, withAfternoon).Select(e => e.Meal.Id));
     }
 
     [Fact]

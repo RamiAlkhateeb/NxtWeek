@@ -352,7 +352,6 @@
 
     private List<PlannedEntry> planned = new();
     private Dictionary<string, MealCatalogItem> catalog = new();
-    private NutritionProfile profile = new();
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private static DateOnly Sunday => Today.AddDays((7 - (int)Today.DayOfWeek) % 7);
 
@@ -361,13 +360,12 @@
     {
         try
         {
-            var profileTask = NutritionStore.GetProfileAsync(uid);
+            var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
             var daysTask = DayPlan.GetDaysAsync(uid, Today, Sunday);
             var catalogTask = CatalogService.GetAllMealsAsync();
-            await Task.WhenAll(profileTask, daysTask, catalogTask);
-            profile = await profileTask ?? new NutritionProfile();
+            await Task.WhenAll(prefsTask, daysTask, catalogTask);
             catalog = (await catalogTask).ToDictionary(m => m.Id);
-            planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, profile);
+            planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, await prefsTask);
         }
         catch (Exception ex) { errorMessage = ex.Message; }
     }

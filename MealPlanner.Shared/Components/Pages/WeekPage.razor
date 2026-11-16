@@ -15,8 +15,8 @@
 @inject ToastService Toasts
 @implements IAsyncDisposable
 
-@* One day at a time: the day strip, the day's targets and its slots (Meal 1, post-workout on
-   training days, dinner, evening snack). *@
+@* One day at a time: the day strip, the day's targets and its slots (the meals the user
+   eats, sorted by their times). *@
 <div class="mk-page mk-week" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row">
@@ -73,12 +73,12 @@
     {
         var totals = Totals;
         <div class="mk-tp-sticky @(compact ? "is-visible" : "")" aria-hidden="@(compact ? "false" : "true")">
-            <TargetsPanel Totals="totals" Type="SelectedType" Compact="true" />
+            <TargetsPanel Totals="totals" Compact="true" />
         </div>
         <div id="mk-targets-panel">
-            <TargetsPanel Totals="totals" Type="SelectedType" OnToggleType="ToggleDayTypeAsync">
+            <TargetsPanel Totals="totals">
                 <FootContent>
-                    @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, SelectedType, profile).Count > 0)
+                    @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, prefs).Count > 0)
                     {
                         <a class="mk-ask" href="@($"ai-plan?ask=protein&day={selectedDate:yyyy-MM-dd}")">
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_plan_protein"]
@@ -113,11 +113,6 @@
                         </button>
                     </EmptyActions>
                 </SlotCard>
-            }
-
-            @if (SelectedType == DayType.Rest)
-            {
-                <p class="mk-slot-footnote">@Loc["nut_no_post"]</p>
             }
 
             <div class="mk-card mk-gauge-card">
@@ -184,6 +179,7 @@
     private Dictionary<string, MealCatalogItem> catalog = new();
     private Dictionary<DateOnly, DayDot> dots = new();
     private NutritionProfile profile = new();
+    private MealPrefs prefs = new();
     private MealSlot? openSlot;
     private MealSlot? quickSlot;
     private MealSlot? suggestSlot;
@@ -202,9 +198,8 @@
     private string WeekRangeLabel => $"{WeekStart.Day} – {WeekStart.AddDays(6).Day} {Loc.GetMonthName(WeekStart.AddDays(6).Month)}";
 
     private PlanDay? SelectedDay => days.GetValueOrDefault(selectedDate);
-    private DayType SelectedType => DayMath.TypeOf(SelectedDay, selectedDate, profile);
-    private IReadOnlyList<MealSlot> Slots => DayMath.SlotsFor(SelectedType, profile);
-    private DayTotals Totals => DayMath.Totals(SelectedDay, SelectedType, TargetCalculator.For(profile, SelectedType), NutritionFor, profile);
+    private IReadOnlyList<MealSlot> Slots => DayMath.SlotsFor(prefs);
+    private DayTotals Totals => DayMath.Totals(SelectedDay, TargetCalculator.For(profile), NutritionFor, prefs);
 
     private List<DateOnly> EmptyUpcomingMeal1 => WeekDates
         .Where(d => d >= Today && !(days.GetValueOrDefault(d)?.Slots.ContainsKey(MealSlot.Meal1) ?? false))
@@ -212,7 +207,7 @@
 
     private NutritionInfo? NutritionFor(string mealId) => catalog.GetValueOrDefault(mealId)?.Nutrition;
     private MealCatalogItem? MealFor(SlotEntry? entry) => entry?.MealId is { } id ? catalog.GetValueOrDefault(id) : null;
-    private string TimeOf(MealSlot slot) => profile.MealTimes.GetValueOrDefault(slot, "");
+    private string TimeOf(MealSlot slot) => prefs.TimeOf(slot);
 
     protected override async Task OnInitializedAsync()
     {
@@ -278,10 +273,12 @@
         try
         {
             var profileTask = NutritionStore.GetProfileAsync(uid);
+            var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
             var daysTask = DayPlan.GetDaysAsync(uid, WeekStart, WeekStart.AddDays(6));
             var catalogTask = CatalogService.GetAllMealsAsync();
-            await Task.WhenAll(profileTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
+            await Task.WhenAll(profileTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
             profile = await profileTask ?? new NutritionProfile();
+            prefs = await prefsTask;
             days = await daysTask;
             catalog = (await catalogTask).ToDictionary(m => m.Id);
             if (!WeekDates.Contains(selectedDate)) selectedDate = weekOffset == 0 ? Today : WeekStart;
@@ -300,7 +297,7 @@
     private Task ReloadAsync() => LoadAsync();
 
     private void RefreshDots() =>
-        dots = WeekDates.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), DayMath.TypeOf(days.GetValueOrDefault(d), d, profile), profile));
+        dots = WeekDates.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), prefs));
 
     private async Task GoToWeekAsync(int offset)
     {
@@ -369,15 +366,6 @@
         await SaveAsync(() => DayPlan.SetEntryAsync(uid, date, slot, entry), Loc.T("nut_added_toast", Loc["nut_slot_" + slot]));
     }
 
-    private Task ToggleDayTypeAsync()
-    {
-        var date = selectedDate;
-        var next = SelectedType == DayType.Training ? DayType.Rest : DayType.Training;
-        var day = days.TryGetValue(date, out var existing) ? existing : days[date] = new PlanDay { Date = date };
-        day.Type = next;
-        return SaveAsync(() => DayPlan.SetDayTypeAsync(uid, date, next));
-    }
-
     // Suggestions come from meals in the app language (all meals if that language has none).
     private IEnumerable<MealCatalogItem> Candidates
     {
@@ -392,7 +380,7 @@
     private IReadOnlyList<Suggestion> SuggestionsFor(MealSlot? slot)
     {
         if (slot is not { } s) return [];
-        var empty = DayMath.EmptySlots(SelectedDay, SelectedType, profile);
+        var empty = DayMath.EmptySlots(SelectedDay, prefs);
         return Suggestions.ForSlot(s, Totals.OpenKcal, empty.Count, Suggestions.UsedMealIds(SelectedDay, Slots), Candidates);
     }
 

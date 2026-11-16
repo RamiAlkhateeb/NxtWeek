@@ -149,7 +149,7 @@
   private string themeMode = "system";
   private bool hasUsername => !string.IsNullOrWhiteSpace(currentUsername);
   private NutritionProfile nutrition = new();
-  private DailyTargets trainTargets = TargetCalculator.For(new NutritionProfile(), DayType.Training);
+  private DailyTargets trainTargets = TargetCalculator.For(new NutritionProfile());
   private int requestCount;
   private string? signedInEmail;
 
@@ -172,7 +172,7 @@
       currentUsername = profile?.Username ?? "";
       requestCount = profile?.IncomingFriendRequests?.Count ?? 0;
       nutrition = await nutritionTask ?? new NutritionProfile();
-      trainTargets = TargetCalculator.For(nutrition, DayType.Training);
+      trainTargets = TargetCalculator.For(nutrition);
     }
     catch { /* offline: the cards show the defaults */ }
   }

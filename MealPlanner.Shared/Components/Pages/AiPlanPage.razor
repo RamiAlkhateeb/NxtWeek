@@ -264,7 +264,7 @@
         uid = user.Uid;
         await RefreshPlanContextAsync();
         // No snack chip for someone who turned the evening snack off.
-        try { snackOn = (await NutritionStore.GetProfileAsync(uid))?.IsOn(MealSlot.Snack) ?? true; }
+        try { snackOn = (await NutritionStore.GetMealPrefsAsync(uid)).IsOn(MealSlot.Snack); }
         catch { /* keep the chip */ }
 
         // From Week: ai-plan?ask=protein&day=yyyy-MM-dd
@@ -530,22 +530,23 @@
         catch { /* the meals are saved; details can still be filled from the meal page */ }
     }
 
-    private sealed record DayState(PlanDay? Day, DayType Type, IReadOnlyList<MealSlot> Slots, DayTotals Totals, NutritionProfile Profile, List<MealCatalogItem> Candidates);
+    private sealed record DayState(PlanDay? Day, IReadOnlyList<MealSlot> Slots, DayTotals Totals, MealPrefs Prefs, List<MealCatalogItem> Candidates);
 
     private async Task<DayState> LoadDayAsync(DateOnly date)
     {
         var profileTask = NutritionStore.GetProfileAsync(uid);
+        var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
         var daysTask = DayPlan.GetDaysAsync(uid, date, date);
         var catalogTask = CatalogService.GetAllMealsAsync();
-        await Task.WhenAll(profileTask, daysTask, catalogTask);
+        await Task.WhenAll(profileTask, prefsTask, daysTask, catalogTask);
         var profile = await profileTask ?? new NutritionProfile();
+        var prefs = await prefsTask;
         var day = (await daysTask).GetValueOrDefault(date);
         var catalog = (await catalogTask).Where(m => !m.IsArchived).ToList();
         var nutrition = catalog.ToDictionary(m => m.Id, m => m.Nutrition);
-        var type = DayMath.TypeOf(day, date, profile);
-        var totals = DayMath.Totals(day, type, TargetCalculator.For(profile, type), id => nutrition.GetValueOrDefault(id), profile);
+        var totals = DayMath.Totals(day, TargetCalculator.For(profile), id => nutrition.GetValueOrDefault(id), prefs);
         var inLanguage = catalog.Where(m => string.Equals(string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language, Loc.CurrentLanguage, StringComparison.OrdinalIgnoreCase)).ToList();
-        return new DayState(day, type, DayMath.SlotsFor(type, profile), totals, profile, inLanguage.Count > 0 ? inLanguage : catalog);
+        return new DayState(day, DayMath.SlotsFor(prefs), totals, prefs, inLanguage.Count > 0 ? inLanguage : catalog);
     }
 
     // The protein plan and the snack pick run on the device from the user's own targets; no Gemini key needed.
@@ -559,7 +560,7 @@
         {
             var date = askDate;
             var st = await LoadDayAsync(date);
-            var empty = DayMath.EmptySlots(st.Day, st.Type, st.Profile);
+            var empty = DayMath.EmptySlots(st.Day, st.Prefs);
             var used = MealPlanner.Shared.Nutrition.Suggestions.UsedMealIds(st.Day, st.Slots);
             if (ask == LocalAsk.Protein)
             {
@@ -646,7 +647,7 @@
     // English names for the prompt only; the model never shows them.
     private static readonly Dictionary<MealSlot, string> SlotNames = new()
     {
-        [MealSlot.Meal1] = "Meal 1", [MealSlot.PostWorkout] = "Post-workout", [MealSlot.Dinner] = "Dinner", [MealSlot.Snack] = "Snack"
+        [MealSlot.Meal1] = "Meal 1", [MealSlot.PostWorkout] = "Afternoon snack", [MealSlot.Dinner] = "Dinner", [MealSlot.Snack] = "Snack"
     };
 
     private async Task RefreshPlanContextAsync()
@@ -655,7 +656,7 @@
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
             var plan = await DayPlan.GetDaysAsync(uid, today, today.AddDays(13));
-            var profile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
+            var prefs = await NutritionStore.GetMealPrefsAsync(uid);
             var names = new Dictionary<string, string>();
             foreach (var m in await CatalogService.GetAllMealsAsync()) names.TryAdd(m.Id, m.Name);
 
@@ -664,7 +665,7 @@
             {
                 var date = today.AddDays(offset);
                 plan.TryGetValue(date, out var day);
-                var slots = DayMath.SlotsFor(DayMath.TypeOf(day, date, profile), profile).Select(slot =>
+                var slots = DayMath.SlotsFor(prefs).Select(slot =>
                 {
                     var entry = day?.Slots.GetValueOrDefault(slot);
                     var what = entry is null ? "FREE" : entry.Quick?.Name ?? names.GetValueOrDefault(entry.MealId ?? "", "(a meal)");

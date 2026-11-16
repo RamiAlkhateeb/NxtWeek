@@ -132,7 +132,7 @@
 
         var plan = await DayPlan.GetDaysAsync(uid, gridStart, gridStart.AddDays(cellCount - 1));
         var catalog = (await CatalogService.GetAllMealsAsync()).ToDictionary(m => m.Id);
-        // A cell shows the day's first planned meal (Meal 1, then post-workout, dinner, snack).
+        // A cell shows the day's first planned meal (Meal 1, then afternoon snack, dinner, evening snack).
         foreach (var (date, day) in plan)
         {
             var first = day.Slots.OrderBy(s => s.Key).Select(s => s.Value.MealId).FirstOrDefault(id => !string.IsNullOrWhiteSpace(id));
