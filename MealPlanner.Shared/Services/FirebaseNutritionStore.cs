@@ -105,4 +105,20 @@ public sealed class FirebaseNutritionStore(HttpClient http, FirebaseOptions opti
         using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/body/{log.Date:yyyy-MM-dd}"), log);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid)
+    {
+        var stored = await http.GetFromJsonAsync<Dictionary<string, string>>(Url($"users/{Key(uid)}/progressPhotos")) ?? [];
+        var result = new Dictionary<DateOnly, string>();
+        foreach (var (key, url) in stored)
+            if (DateOnly.TryParseExact(key, "yyyy-MM-dd", out var monday) && url.StartsWith("data:image/", StringComparison.Ordinal))
+                result[monday] = url;
+        return result;
+    }
+
+    public async Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl)
+    {
+        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/progressPhotos/{monday:yyyy-MM-dd}"), dataUrl);
+        response.EnsureSuccessStatusCode();
+    }
 }

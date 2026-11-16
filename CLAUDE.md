@@ -73,6 +73,7 @@ nxtweek.theme
 | Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
 | Body data, goal and target overrides (health data, signed-in only) | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
+| Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
 
 Makdous is about meals only: there are no training or rest days, and one daily target. The afternoon snack is
@@ -97,6 +98,10 @@ Meals: search, High protein / Quick (`PreparationMinutes` ≤ 20) / Favourites c
 Recommended = favourites, then most eaten, then name; Fewest calories; Most protein). Meal type and language live in
 the filter sheet. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
 The Gemini details call also fills a missing cooking time.
+
+Progress is one page: weight and waist with the weekly check, the weekly summary, badges (`Badges`, pure: first full
+week, protein 7 days in a row, 10 different meals, first batch cook, shared a week; computed from eaten meals only, so a
+missed day never takes one away) and the private weekly photo.
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.

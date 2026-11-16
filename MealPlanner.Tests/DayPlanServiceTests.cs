@@ -32,6 +32,8 @@ public class DayPlanServiceTests
         public Task SaveMealPrefsAsync(string uid, MealPrefs prefs) { Prefs = prefs; return Task.CompletedTask; }
         public Task<List<BodyLog>> GetBodyLogsAsync(string uid) => Task.FromResult(new List<BodyLog>());
         public Task SaveBodyLogAsync(string uid, BodyLog log) => Task.CompletedTask;
+        public Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid) => Task.FromResult(new Dictionary<DateOnly, string>());
+        public Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl) => Task.CompletedTask;
     }
 
     [Fact]

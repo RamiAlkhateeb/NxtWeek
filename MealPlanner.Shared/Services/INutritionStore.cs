@@ -25,4 +25,8 @@ public interface INutritionStore
 
     Task<List<BodyLog>> GetBodyLogsAsync(string uid);
     Task SaveBodyLogAsync(string uid, BodyLog log);
+
+    /// <summary>The private weekly photos (JPEG data URLs) keyed by the week's Monday. Health data: account only.</summary>
+    Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid);
+    Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl);
 }
