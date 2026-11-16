@@ -93,6 +93,11 @@ A meal is moved or copied to another slot or day through `IDayPlanService.MoveEn
 (rules in `PlanMoves`: a move onto a taken slot swaps, a copy replaces). The assistant (`/ai-plan`) only has the
 two on-device asks; there is no free-text Gemini chat.
 
+Meals: search, High protein / Quick (`PreparationMinutes` ≤ 20) / Favourites chips and a sort (`MealFiltering.Sort`:
+Recommended = favourites, then most eaten, then name; Fewest calories; Most protein). Meal type and language live in
+the filter sheet. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
+The Gemini details call also fills a missing cooking time.
+
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.
 Direct `weeklyPlan` writes are invisible once a day exists under `days`; nothing writes `weeklyPlan` any more.

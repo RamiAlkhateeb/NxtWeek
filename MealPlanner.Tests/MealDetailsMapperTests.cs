@@ -4,7 +4,7 @@ public class MealDetailsMapperTests
 {
     private static SuggestedMealDetails Biryani() => new()
     {
-        Servings = 4,
+        Servings = 4, Minutes = 45,
         Kcal = 640, Protein = 40, Carbs = 70, Fat = 20, Fibre = 4,   // 4·40 + 4·70 + 9·20 = 620
         Ingredients =
         [
@@ -41,6 +41,7 @@ public class MealDetailsMapperTests
         var meal = new MealCatalogItem
         {
             Nutrition = mine,
+            PreparationMinutes = 20,
             Ingredients = ["My rice"],
             IngredientLines = [new() { Id = "rice", Name = "My rice", QtyPerServing = 90, Unit = "g", Aisle = "pantry" }]
         };
@@ -48,6 +49,7 @@ public class MealDetailsMapperTests
         Assert.False(MealDetailsMapper.Apply(meal, Biryani()));
         Assert.Same(mine, meal.Nutrition);
         Assert.Equal("My rice", Assert.Single(meal.IngredientLines).Name);
+        Assert.Equal(20, meal.PreparationMinutes);
     }
 
     [Fact]
@@ -88,5 +90,23 @@ public class MealDetailsMapperTests
         Assert.True(MealDetailsMapper.NeedsDetails(new MealCatalogItem()));
         Assert.True(MealDetailsMapper.NeedsDetails(new MealCatalogItem { Nutrition = new() }));
         Assert.False(MealDetailsMapper.NeedsDetails(new MealCatalogItem { Nutrition = new(), IngredientLines = [new()] }));
+    }
+
+    [Fact]
+    public void Cooking_time_is_filled_only_when_missing_and_plausible()
+    {
+        var meal = new MealCatalogItem();
+        MealDetailsMapper.Apply(meal, Biryani());
+        Assert.Equal(45, meal.PreparationMinutes);
+
+        var timed = new MealCatalogItem { PreparationMinutes = 15 };
+        MealDetailsMapper.Apply(timed, Biryani());
+        Assert.Equal(15, timed.PreparationMinutes);
+
+        var silly = Biryani();
+        silly.Minutes = 5000;
+        var other = new MealCatalogItem();
+        MealDetailsMapper.Apply(other, silly);
+        Assert.Null(other.PreparationMinutes);
     }
 }

@@ -34,6 +34,7 @@ public sealed class GeminiMealDetailsService(GeminiClient gemini, IMealCatalogSe
             - "unit": "g", "ml" or "pc"; "quantity": amount per serving in that unit.
             - "aisle": one of produce, meat, dairy, pantry, bakery, other.
             - "servings": how many servings the recipe usually makes.
+            - "minutes": total time to cook it at home, preparation included.
             - kcal, protein, carbs, fat, fibre (grams) per serving; 4*protein + 4*carbs + 9*fat should be close to kcal.
             """;
         var schema = new
@@ -59,6 +60,7 @@ public sealed class GeminiMealDetailsService(GeminiClient gemini, IMealCatalogSe
                     }
                 },
                 servings = new { type = "INTEGER" },
+                minutes = new { type = "INTEGER" },
                 kcal = new { type = "NUMBER" },
                 protein = new { type = "NUMBER" },
                 carbs = new { type = "NUMBER" },

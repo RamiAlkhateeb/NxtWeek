@@ -133,6 +133,8 @@ public enum MealFilters
     Favourites = 8
 }
 
+public enum MealSort { Recommended, FewestKcal, MostProtein }
+
 /// <summary>The Meals tab's nutrition filters and the pick-mode order.</summary>
 public static class MealFiltering
 {
@@ -165,6 +167,48 @@ public static class MealFiltering
             .ThenByDescending(m => m.Name?.Contains(q, StringComparison.OrdinalIgnoreCase) ?? false)
             .ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase)
             .Take(max)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Recommended: favourites first, then the meals eaten most, then by name. Fewest calories and most protein put
+    /// meals without nutrition last.
+    /// </summary>
+    public static IEnumerable<MealCatalogItem> Sort(IEnumerable<MealCatalogItem> meals, MealSort sort, ISet<string> favourites,
+        IReadOnlyDictionary<string, int>? eatenCounts = null) => sort switch
+    {
+        MealSort.FewestKcal => meals.OrderBy(m => m.Nutrition is null).ThenBy(m => m.Nutrition?.Kcal ?? 0).ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase),
+        MealSort.MostProtein => meals.OrderBy(m => m.Nutrition is null).ThenByDescending(m => m.Nutrition?.Protein ?? 0).ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase),
+        _ => meals.OrderByDescending(m => favourites.Contains(m.Id))
+                  .ThenByDescending(m => eatenCounts?.GetValueOrDefault(m.Id) ?? 0)
+                  .ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase)
+    };
+
+    /// <summary>How often each meal was eaten (not planned, not skipped) before today.</summary>
+    public static Dictionary<string, int> EatenCounts(IReadOnlyDictionary<DateOnly, PlanDay> days, DateOnly today)
+    {
+        var counts = new Dictionary<string, int>();
+        foreach (var (date, day) in days)
+        {
+            if (date > today) continue;
+            foreach (var entry in day.Slots.Values)
+                if (entry.Eaten && !entry.Skipped && !string.IsNullOrEmpty(entry.MealId))
+                    counts[entry.MealId] = counts.GetValueOrDefault(entry.MealId) + 1;
+        }
+        return counts;
+    }
+
+    /// <summary>"Your top meals": the most eaten meals that are still in the catalog, most first.</summary>
+    public static List<(MealCatalogItem Meal, int Count)> TopMeals(IReadOnlyDictionary<string, int> eatenCounts, IEnumerable<MealCatalogItem> catalog, int max = 5)
+    {
+        var byId = new Dictionary<string, MealCatalogItem>();
+        foreach (var m in catalog) if (!m.IsArchived) byId.TryAdd(m.Id, m);
+        return eatenCounts
+            .Where(kv => kv.Value > 0 && byId.ContainsKey(kv.Key))
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => byId[kv.Key].Name, StringComparer.CurrentCultureIgnoreCase)
+            .Take(max)
+            .Select(kv => (byId[kv.Key], kv.Value))
             .ToList();
     }
 
