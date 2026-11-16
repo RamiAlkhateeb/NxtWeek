@@ -1,0 +1,255 @@
+@page "/review"
+@using MealPlanner.Shared.Models
+@using MealPlanner.Shared.Services
+@inject IAuthService Auth
+@inject INutritionStore NutritionStore
+@inject IDayPlanService DayPlan
+@inject IMealCatalogService CatalogService
+@inject IMealImageService MealImages
+@inject ILocalizationService Loc
+@inject ToastService Toasts
+@inject NavigationManager Nav
+@implements IDisposable
+
+@* The Sunday review of one week (review?week=yyyy-MM-dd, the Monday; default: ComeBack.ReviewWeek).
+   Days logged, days on target, averages, the weight trend (signed-in only), the most eaten meal and any badge
+   earned that week. "Share with friends" shares only the days logged and the most eaten meal;
+   "Plan next week" copies the week's meals into the empty slots of the week after it. *@
+<div class="mk-page mk-review" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="/" />
+            <div class="mk-title-block"><h1 class="mk-title">@Loc["nut_review"]</h1></div>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (loadError)
+    {
+        <div class="mk-stack">
+            <div class="mk-notice is-error" role="alert">@Loc["nut_load_error"]</div>
+            <button class="mk-btn is-block" @onclick="LoadAsync">@Loc["nut_retry"]</button>
+        </div>
+    }
+    else
+    {
+        var summary = WeeklySummary.For(monday, monday.AddDays(7), days, profile, NutritionFor, prefs);
+        var logged = DayStatus.Stamps(monday, days, prefs);
+        <main class="mk-stack">
+            <section class="mk-card mk-review-hero">
+                <span class="mk-subtitle">@Loc.T("nut_review_of", $"{DayMonth(monday)} – {DayMonth(monday.AddDays(6))}")</span>
+                <div class="mk-review-hero-row">
+                    <b>@Loc["nut_days_logged"]</b>
+                    <b>@Loc.T("nut_days_on_count", Loc.Num(logged), Loc.Num(7))</b>
+                </div>
+                <div class="mk-review-strip" role="list">
+                    @for (var i = 0; i < 7; i++)
+                    {
+                        var date = monday.AddDays(i);
+                        var yes = DayStatus.DayLogged(days.GetValueOrDefault(date), prefs);
+                        <div role="listitem" aria-label="@($"{Loc.GetDayName(date.DayOfWeek)}: {(yes ? Loc["nut_days_logged"] : Loc["nut_no_data"])}")">
+                            <i class="@(yes ? "is-yes" : "")" aria-hidden="true">
+                                @if (yes) { <svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg> }
+                            </i>
+                            <span aria-hidden="true">@Loc.GetShortDayName(date.DayOfWeek)</span>
+                        </div>
+                    }
+                </div>
+                <span class="mk-subtitle">@Loc["nut_stamp_hint"]</span>
+            </section>
+
+            @if (summary.LoggedDays == 0)
+            {
+                <div class="mk-note" role="status">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                    <span>@Loc["nut_review_nothing"]</span>
+                </div>
+            }
+            else
+            {
+                <div class="mk-stat-row">
+                    <StatTile Label="@Loc["nut_days_on"]" Value="@Loc.T("nut_days_on_count", Loc.Num(summary.WithinTarget), Loc.Num(7))" />
+                    <StatTile Label="@Loc["nut_avg_protein"]" Value="@Loc.Num(summary.AverageProtein)" Unit="@Loc["nut_g"]" Colour="var(--mk-pro-ink)" />
+                </div>
+                <div class="mk-stat-row">
+                    <StatTile Label="@Loc["nut_avg_kcal"]" Value="@Loc.Num(summary.AverageKcal)" Unit="@Loc["nut_kcal"]" />
+                    @if (!isGuest)
+                    {
+                        var end = monday.AddDays(6);
+                        var a = WeightTrend.SevenDayAverage(logs, end);
+                        var b = WeightTrend.SevenDayAverage(logs, end.AddDays(-7));
+                        <StatTile Label="@Loc["nut_weight_trend"]" Value="@(a is not null && b is not null ? Signed(a.Value - b.Value) : "–")" Unit="@Loc["nut_kg"]" Colour="@(a is not null && b is not null ? "var(--mk-ok-ink)" : "var(--mk-muted)")" />
+                    }
+                </div>
+
+                @if (topMeal is { } top)
+                {
+                    <section class="mk-card mk-review-row">
+                        <span class="mk-tile @MealTypeStyle.T(top.Meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(top.Meal)" alt="" /></span>
+                        <span class="mk-set-link-copy">
+                            <span>@Loc["nut_best_meal"]</span>
+                            <b>@top.Meal.Name</b>
+                            <span>@Loc.T("nut_eaten_x", Loc.Num(top.Count))</span>
+                        </span>
+                    </section>
+                }
+
+                @foreach (var badge in newBadges)
+                {
+                    <section class="mk-card mk-review-row">
+                        <span class="mk-review-icon" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5"/></svg></span>
+                        <span class="mk-set-link-copy">
+                            <span>@Loc["nut_review_new_badge"]</span>
+                            <b>@Loc["nut_badge_" + badge.Kind]</b>
+                        </span>
+                        <span class="mk-tag is-ok">@Loc["nut_badge_earned"]</span>
+                    </section>
+                }
+            }
+
+            <div class="mk-review-foot">
+                @if (summary.LoggedDays > 0)
+                {
+                    <span id="share-note" class="mk-subtitle">@Loc["nut_share_week_note"]</span>
+                }
+                @if (summary.LoggedDays > 0)
+                {
+                    <button class="mk-btn is-soft" disabled="@isBusy" aria-describedby="share-note" @onclick="ShareAsync">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+                        @Loc["nut_share_week"]
+                    </button>
+                }
+                <button class="mk-btn" disabled="@isBusy" @onclick="PlanNextAsync">@Loc["nut_plan_next"]</button>
+            </div>
+        </main>
+    }
+</div>
+
+@code {
+    private sealed record TopMeal(MealCatalogItem Meal, int Count);
+
+    private bool isLoading = true, loadError, isGuest = true, isBusy;
+    private string uid = "";
+    private DateOnly monday;
+    private NutritionProfile profile = new();
+    private MealPrefs prefs = new();
+    private Dictionary<DateOnly, PlanDay> days = new();
+    private Dictionary<string, MealCatalogItem> catalog = new();
+    private List<BodyLog> logs = new();
+    private List<Badge> newBadges = new();
+    private TopMeal? topMeal;
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static DateOnly MondayOf(DateOnly d) => Badges.MondayOf(d);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguageChanged;
+        var query = new Uri(Nav.Uri).Query;
+        var i = query.IndexOf("week=", StringComparison.OrdinalIgnoreCase);
+        monday = i >= 0 && DateOnly.TryParse(query[(i + 5)..].Split('&')[0], out var w) && w <= Today
+            ? MondayOf(w)
+            : ComeBack.ReviewWeek(DateTime.Now);
+        await LoadAsync();
+    }
+
+    private string DayMonth(DateOnly d) => Loc.T("nut_day_month", d.Day, Loc.GetMonthName(d.Month));
+
+    private NutritionInfo? NutritionFor(string id) => catalog.GetValueOrDefault(id)?.Nutrition;
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = false;
+        try
+        {
+            var user = await Auth.GetCurrentUserAsync();
+            if (user is null || string.IsNullOrEmpty(user.Uid)) { Nav.NavigateTo("/signin"); return; }
+            uid = user.Uid;
+            isGuest = user.IsGuest;
+            var profileTask = NutritionStore.GetProfileAsync(uid);
+            var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
+            // Badges look back over 26 weeks so a badge earned this week can be told from one earned before.
+            var daysTask = DayPlan.GetDaysAsync(uid, monday.AddDays(-182), monday.AddDays(6));
+            var catalogTask = CatalogService.GetAllMealsAsync();
+            var logsTask = isGuest ? Task.FromResult(new List<BodyLog>()) : NutritionStore.GetBodyLogsAsync(uid);
+            var sharedTask = NutritionStore.GetSharedReviewAsync(uid);
+            await Task.WhenAll(profileTask, prefsTask, daysTask, catalogTask, logsTask, MealImages.EnsureLoadedAsync());
+            profile = await profileTask ?? new NutritionProfile();
+            prefs = await prefsTask;
+            days = await daysTask;
+            catalog = (await catalogTask).ToDictionary(m => m.Id);
+            logs = await logsTask;
+            var shared = await SafeAsync(sharedTask);
+
+            var end = monday.AddDays(6);
+            var protein = TargetCalculator.For(profile).Protein;
+            var before = Badges.For(days, monday.AddDays(-1), prefs, protein, NutritionFor, shared is not null && shared.Monday < monday);
+            var after = Badges.For(days, end, prefs, protein, NutritionFor, shared is not null && shared.Monday <= end);
+            newBadges = after.Where(b => b.Earned && !before.Single(x => x.Kind == b.Kind).Earned).ToList();
+
+            var week = days.Where(kv => kv.Key >= monday && kv.Key <= end).ToDictionary(kv => kv.Key, kv => kv.Value);
+            topMeal = MealFiltering.EatenCounts(week, end.AddDays(1))
+                .Where(kv => catalog.ContainsKey(kv.Key))
+                .OrderByDescending(kv => kv.Value).ThenBy(kv => catalog[kv.Key].Name, StringComparer.CurrentCulture)
+                .Select(kv => new TopMeal(catalog[kv.Key], kv.Value))
+                .FirstOrDefault();
+
+            // Opening the review is what makes its banner on Week go away.
+            if (prefs.ReviewSeen != monday && monday == ComeBack.ReviewWeek(DateTime.Now))
+            {
+                prefs.ReviewSeen = monday;
+                try { await NutritionStore.SaveMealPrefsAsync(uid, prefs); } catch { /* the banner comes back; harmless */ }
+            }
+        }
+        catch { loadError = true; }
+        finally { isLoading = false; }
+    }
+
+    private static async Task<T?> SafeAsync<T>(Task<T> task) where T : class
+    {
+        try { return await task; } catch { return null; }
+    }
+
+    private async Task ShareAsync()
+    {
+        isBusy = true;
+        try
+        {
+            await NutritionStore.ShareReviewAsync(uid, new SharedReview
+            {
+                Monday = monday,
+                DaysLogged = DayStatus.Stamps(monday, days, prefs),
+                TopMealId = topMeal?.Meal.Id,
+                TopMealName = topMeal?.Meal.Name
+            });
+            Toasts.Show(Loc["nut_shared_toast"]);
+        }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    // The week after the reviewed one; days already gone are left alone.
+    private async Task PlanNextAsync()
+    {
+        isBusy = true;
+        try
+        {
+            var target = monday.AddDays(7);
+            var changed = await DayPlan.CopyWeekAsync(uid, monday, target, Today);
+            var open = changed.Count > 0 ? changed.Min(d => d.Date) : (target < Today ? Today : target);
+            var toast = Uri.EscapeDataString(Loc[changed.Count > 0 ? "nut_week_copied" : "nut_nothing_copied"]);
+            Nav.NavigateTo($"/?day={open:yyyy-MM-dd}&toast={toast}");
+        }
+        catch { Toasts.Show(Loc["nut_save_error"], isError: true); }
+        finally { isBusy = false; }
+    }
+
+    private string Signed(double v) => NutFormat.Isolate((v > 0 ? "+" : v < 0 ? "−" : "") + Loc.Dec1(Math.Abs(v)));
+
+    private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Loc.OnLanguageChanged -= OnLanguageChanged;
+}

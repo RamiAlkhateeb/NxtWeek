@@ -95,6 +95,9 @@ public class SlotEntry
     // Cook this many batches for the shopping list; does not change what is eaten.
     public int PrepBatches { get; set; } = 1;
 
+    /// <summary>A copy that can be changed without touching this entry.</summary>
+    public SlotEntry Clone() => (SlotEntry)MemberwiseClone();
+
     [JsonIgnore]
     public bool IsQuick => Quick is not null;
 }
@@ -107,6 +110,9 @@ public class PlanDay
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DayType? Type { get; set; }
     public Dictionary<MealSlot, SlotEntry> Slots { get; set; } = new();
+
+    /// <summary>A deep copy: changing its entries leaves this day as it was.</summary>
+    public PlanDay Clone() => new() { Date = Date, Type = Type, Slots = Slots.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()) };
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<Sex>))]
@@ -182,6 +188,8 @@ public class MealPrefs
     public bool Ramadan { get; set; }
     // Suhoor (Meal 1), iftar (Dinner) and the late snack; the usual times come back when Ramadan mode is off.
     public Dictionary<MealSlot, string> RamadanTimes { get; set; } = DefaultRamadanTimes();
+    // The Monday of the last Sunday review the user opened, so its banner goes away.
+    public DateOnly? ReviewSeen { get; set; }
 
     public static Dictionary<MealSlot, string> DefaultTimes() => new()
     {
@@ -200,6 +208,12 @@ public class MealPrefs
 
     public bool IsOn(MealSlot slot) => slot == MealSlot.Meal1 || (On?.Contains(slot) ?? false);
 
+    /// <summary>In Ramadan mode Meal 1, Dinner and the evening snack become suhoor, iftar and the late snack.</summary>
+    public bool IsRamadanSlot(MealSlot slot) => Ramadan && slot is MealSlot.Meal1 or MealSlot.Dinner or MealSlot.Snack;
+
+    /// <summary>The translation key of the slot's name: "nut_ramadan_*" for a Ramadan slot, else "nut_slot_*".</summary>
+    public string NameKey(MealSlot slot) => (IsRamadanSlot(slot) ? "nut_ramadan_" : "nut_slot_") + slot;
+
     public void SetOn(MealSlot slot, bool on)
     {
         if (slot == MealSlot.Meal1) return;
@@ -211,7 +225,7 @@ public class MealPrefs
     /// <summary>The slot's time today: its Ramadan time when Ramadan mode is on and it has one.</summary>
     public string TimeOf(MealSlot slot)
     {
-        if (Ramadan && RamadanTimes is not null && RamadanTimes.TryGetValue(slot, out var r) && !string.IsNullOrEmpty(r)) return r;
+        if (IsRamadanSlot(slot) && RamadanTimes is not null && RamadanTimes.TryGetValue(slot, out var r) && !string.IsNullOrEmpty(r)) return r;
         return Times is not null && Times.TryGetValue(slot, out var t) ? t : "";
     }
 
@@ -244,6 +258,18 @@ public class MealPrefs
         if (!off.Contains(MealSlot.Snack)) prefs.On.Add(MealSlot.Snack);
         return prefs;
     }
+}
+
+/// <summary>
+/// What the user chose to share of a week with friends from the Sunday review: how many days were logged and the
+/// most eaten meal. Never calories or weight. Stored at users/{key}/sharedReview.
+/// </summary>
+public class SharedReview
+{
+    public DateOnly Monday { get; set; }
+    public int DaysLogged { get; set; }
+    public string? TopMealId { get; set; }
+    public string? TopMealName { get; set; }
 }
 
 /// <summary>One body measurement day, stored at users/{key}/body/{yyyy-MM-dd}.</summary>

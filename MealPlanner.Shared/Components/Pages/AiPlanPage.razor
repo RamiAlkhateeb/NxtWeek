@@ -65,7 +65,7 @@
                                 <div class="mk-proposal-row">
                                     <div class="mk-tile mk-proposal-tile @MealTypeStyle.T(pick.Meal.MealType)"><img src="@MealImages.GetImageUrl(pick.Meal)" alt="" /></div>
                                     <div class="mk-proposal-text-col">
-                                        <span class="mk-row-date">@Loc["nut_slot_" + pick.Slot]</span>
+                                        <span class="mk-row-date">@Loc[prefs.NameKey(pick.Slot)]</span>
                                         <span class="mk-proposal-name">@pick.Meal.Name</span>
                                         <span class="mk-row-date">@Loc.T("nut_pick_line", pick.Meal.Name, Loc.Num(pick.Nutrition.Kcal), Loc.Num(pick.Nutrition.Protein))</span>
                                     </div>
@@ -124,6 +124,7 @@
     private readonly List<Entry> entries = new();
     private string uid = "";
     private bool isBusy, scrollPending, snackOn = true;
+    private MealPrefs prefs = new();
     private DateOnly askDate = DateOnly.FromDateTime(DateTime.Today);
 
     protected override async Task OnInitializedAsync()
@@ -134,7 +135,7 @@
         uid = user.Uid;
 
         // No snack chip for someone who turned the evening snack off.
-        try { snackOn = (await NutritionStore.GetMealPrefsAsync(uid)).IsOn(MealSlot.Snack); }
+        try { prefs = await NutritionStore.GetMealPrefsAsync(uid); snackOn = prefs.IsOn(MealSlot.Snack); }
         catch { /* keep the chip */ }
 
         // From Week's "Plan my day": ai-plan?ask=protein&day=yyyy-MM-dd

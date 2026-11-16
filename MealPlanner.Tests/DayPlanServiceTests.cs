@@ -7,7 +7,7 @@ public class DayPlanServiceTests
     private static readonly DateOnly Monday = new(2026, 10, 19);
 
     /// <summary>Behaves like FirebaseNutritionStore: legacy entries read as Meal 1 until the day is saved.</summary>
-    private sealed class MemoryStore : INutritionStore
+    internal sealed class MemoryStore : INutritionStore
     {
         public Dictionary<DateOnly, PlanDay> Days { get; } = new();
         public Dictionary<DateOnly, WeeklyPlanEntry> Legacy { get; } = new();
@@ -34,6 +34,9 @@ public class DayPlanServiceTests
         public Task SaveBodyLogAsync(string uid, BodyLog log) => Task.CompletedTask;
         public Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid) => Task.FromResult(new Dictionary<DateOnly, string>());
         public Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl) => Task.CompletedTask;
+        public SharedReview? Shared;
+        public Task<SharedReview?> GetSharedReviewAsync(string uid) => Task.FromResult(Shared);
+        public Task ShareReviewAsync(string uid, SharedReview review) { Shared = review; return Task.CompletedTask; }
     }
 
     [Fact]

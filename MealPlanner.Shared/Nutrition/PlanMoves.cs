@@ -40,6 +40,32 @@ public static class PlanMoves
         return true;
     }
 
+    /// <summary>
+    /// "Copy this week": each day of the source week puts fresh copies (meal and servings only) into the matching
+    /// day of the target week. Only empty slots are filled, so nothing already planned is replaced.
+    /// Days before <paramref name="notBefore"/> are left alone, so a week already under way only gets its days ahead.
+    /// Returns the target days that changed.
+    /// </summary>
+    public static List<PlanDay> CopyWeek(IReadOnlyDictionary<DateOnly, PlanDay> days, DateOnly fromMonday, DateOnly toMonday, DateOnly? notBefore = null)
+    {
+        var changed = new List<PlanDay>();
+        if (fromMonday == toMonday) return changed;
+        for (var i = 0; i < 7; i++)
+        {
+            if (!days.TryGetValue(fromMonday.AddDays(i), out var from) || from.Slots.Count == 0) continue;
+            var date = toMonday.AddDays(i);
+            if (date < notBefore) continue;
+            var to = days.TryGetValue(date, out var existing) ? existing.Clone() : new PlanDay { Date = date };
+            to.Date = date;
+            var any = false;
+            foreach (var slot in from.Slots.Keys)
+                if (!to.Slots.ContainsKey(slot) && (from.Slots[slot].MealId is not null || from.Slots[slot].Quick is not null))
+                    any |= Copy(from, slot, to, slot);
+            if (any) changed.Add(to);
+        }
+        return changed;
+    }
+
     private static SlotEntry Unanswered(SlotEntry entry)
     {
         entry.Eaten = false;

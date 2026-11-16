@@ -5,6 +5,13 @@
    up to three suggestions with a reason, a "Rediscover" meal, Browse all meals, or Quick add. *@
 <NxtBottomSheet IsOpen="IsOpen" Title="@(Replacing ? Loc.T("nut_change_for", SlotName) : Loc.T("nut_add_to", SlotName))" OnDismiss="Close">
     <div class="mk-sheet-body mk-add-sheet" dir="@Loc.Direction">
+        @if (!string.IsNullOrEmpty(Tip))
+        {
+            <div class="mk-night-tip">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+                <span>@Tip</span>
+            </div>
+        }
         <label class="mk-search">
             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
             <input type="search" autocomplete="off" placeholder="@Loc["meals_search_placeholder"]" aria-label="@Loc["meals_search_placeholder"]"
@@ -87,6 +94,8 @@
     [Parameter] public MealSlot Slot { get; set; }
     /// <summary>The slot's name as shown (Ramadan mode renames slots).</summary>
     [Parameter] public string? Name { get; set; }
+    /// <summary>A short hint above the search, such as the iftar tip in Ramadan mode.</summary>
+    [Parameter] public string? Tip { get; set; }
     /// <summary>The slot already holds a meal that the pick will replace.</summary>
     [Parameter] public bool Replacing { get; set; }
     [Parameter, EditorRequired] public DayTotals Totals { get; set; } = default!;

@@ -97,7 +97,7 @@
             @if (pickSlot is { } ps)
             {
                 <button class="mk-btn is-lg is-block" disabled="@isAdding" @onclick="() => AddToSlot(ps)">
-                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc.T("nut_add_to", Loc["nut_slot_" + ps])
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc.T("nut_add_to", Loc[mealPrefs.NameKey(ps)])
                 </button>
             }
             else
@@ -114,7 +114,7 @@
                         {
                             var sl = slot;
                             <button class="mk-btn" disabled="@isAdding" @onclick="() => AddToSlot(sl)">
-                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["nut_slot_" + sl]
+                                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc[mealPrefs.NameKey(sl)]
                             </button>
                         }
                     </div>
@@ -232,7 +232,7 @@
         try
         {
             await Assigner.AssignAsync(uid, selectedDay, meal, slot);
-            var message = Uri.EscapeDataString(Loc.T("nut_added_toast", Loc["nut_slot_" + slot]));
+            var message = Uri.EscapeDataString(Loc.T("nut_added_toast", Loc[mealPrefs.NameKey(slot)]));
             Nav.NavigateTo($"/?day={selectedDay:yyyy-MM-dd}&toast={message}");
         }
         catch (Exception ex)

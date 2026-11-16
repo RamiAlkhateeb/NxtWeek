@@ -121,4 +121,13 @@ public sealed class FirebaseNutritionStore(HttpClient http, FirebaseOptions opti
         using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/progressPhotos/{monday:yyyy-MM-dd}"), dataUrl);
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<SharedReview?> GetSharedReviewAsync(string uid) =>
+        await http.GetFromJsonAsync<SharedReview?>(Url($"users/{Key(uid)}/sharedReview"));
+
+    public async Task ShareReviewAsync(string uid, SharedReview review)
+    {
+        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/sharedReview"), review);
+        response.EnsureSuccessStatusCode();
+    }
 }

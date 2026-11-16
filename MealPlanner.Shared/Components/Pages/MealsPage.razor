@@ -32,7 +32,7 @@
                 <span class="mk-banner-copy">
                     @if (pickSlot is { } ps)
                     {
-                        <b>@Loc.T("nut_pick_for", Loc["nut_slot_" + ps])</b>
+                        <b>@Loc.T("nut_pick_for", Loc[slotPrefs.NameKey(ps)])</b>
                         @if (pickBudget is { } budget) { <span>@Loc.T("nut_budget", Loc.Num(Math.Max(0, budget.OpenKcal)), Loc.Num(Math.Max(0, budget.OpenProtein)))</span> }
                     }
                     else
@@ -132,7 +132,7 @@
                             <span class="mk-meal-name">@meal.Name</span>
                             <span class="mk-subtitle">@Loc.GetMealTypeName(meal.MealType)@if (meal.PreparationMinutes is > 0) { <text> · @Loc.T("nut_minutes", Loc.Num(meal.PreparationMinutes.Value))</text> }</span>
                         </button>
-                        <button class="mk-icon-btn is-ink" aria-label="@(pickSlot is { } addSlot ? Loc.T("nut_add_to", Loc["nut_slot_" + addSlot]) : isContextMode ? Loc.T("meals_add_to_named_day", PickDayLabel) : Loc["meals_add_to_day_short"])" @onclick="() => SelectMeal(meal)">
+                        <button class="mk-icon-btn is-ink" aria-label="@(pickSlot is { } addSlot ? Loc.T("nut_add_to", Loc[slotPrefs.NameKey(addSlot)]) : isContextMode ? Loc.T("meals_add_to_named_day", PickDayLabel) : Loc["meals_add_to_day_short"])" @onclick="() => SelectMeal(meal)">
                             <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
                     </div>
@@ -375,6 +375,9 @@
     private void HandleLanguageChanged() => InvokeAsync(StateHasChanged);
 
     // What the chosen day still has open, shown in the pick banner. Not essential, so failures are silent.
+    // Slot names follow Ramadan mode (suhoor, iftar, late snack).
+    private MealPrefs slotPrefs = new();
+
     private async Task LoadPickBudgetAsync()
     {
         try
@@ -382,7 +385,7 @@
             var profile = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
             var days = await DayPlan.GetDaysAsync(uid, selectedDate, selectedDate);
             var day = days.GetValueOrDefault(selectedDate);
-            var prefs = await NutritionStore.GetMealPrefsAsync(uid);
+            var prefs = slotPrefs = await NutritionStore.GetMealPrefsAsync(uid);
             var nutrition = allMeals.ToDictionary(m => m.Id, m => m.Nutrition);
             pickBudget = DayMath.Totals(day, TargetCalculator.For(profile), id => nutrition.GetValueOrDefault(id), prefs);
         }
@@ -471,7 +474,7 @@
             var slot = await Assigner.AssignAsync(uid, date, meal, pickSlot);
             var text = pickSlot is null
                 ? Loc.T("meals_added_toast", meal.Name, Loc.GetDayName(date.DayOfWeek))
-                : Loc.T("nut_added_toast", Loc["nut_slot_" + slot]);
+                : Loc.T("nut_added_toast", Loc[slotPrefs.NameKey(slot)]);
             Nav.NavigateTo($"/?day={date:yyyy-MM-dd}&toast={Uri.EscapeDataString(text)}");
         }
         catch (Exception ex)

@@ -66,7 +66,7 @@
                                 <span class="mk-slot-tile mk-tile @MealTypeStyle.T(entry.Meal.MealType)" aria-hidden="true"><img src="@MealImages.GetImageUrl(entry.Meal)" alt="" loading="lazy" /></span>
                                 <span class="mk-slot-body">
                                     <b class="mk-planned-name">@entry.Meal.Name</b>
-                                    <span class="mk-subtitle">@Loc.GetShortDayName(entry.Date.DayOfWeek) · @Loc["nut_slot_" + entry.Slot]@if (entry.Entry.PrepBatches > 1) { <text> · @Loc.T("nut_prep_times", entry.Entry.PrepBatches)</text> }</span>
+                                    <span class="mk-subtitle">@Loc.GetShortDayName(entry.Date.DayOfWeek) · @Loc[slotPrefs.NameKey(entry.Slot)]@if (entry.Entry.PrepBatches > 1) { <text> · @Loc.T("nut_prep_times", entry.Entry.PrepBatches)</text> }</span>
                                 </span>
                                 <ServingsStepper Value="entry.Entry.Servings" ValueChanged="v => UpdatePlannedAsync(entry, e => e.Servings = v)" />
                                 <div class="mk-seg is-inset mk-planned-prep" role="group" aria-label="@Loc["nut_prep"]">
@@ -189,6 +189,7 @@
 </div>
 
 @code {
+    private MealPrefs slotPrefs = new();
     private RenderFragment ItemRow(ShoppingShop shop, ShoppingItem item) => @<div class="mk-shop-item @(item.IsBought ? "is-bought" : "")">
         <button class="mk-check @(item.IsBought ? "is-on" : "")" role="checkbox" aria-checked="@item.IsBought" aria-label="@((item.IsBought ? Loc["shopping_uncheck"] : Loc["shopping_bought"]) + ": " + item.Name)" @onclick="() => ToggleItemAsync(shop, item)">
             @if (item.IsBought) { <svg class="i" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> }
@@ -365,7 +366,8 @@
             var catalogTask = CatalogService.GetAllMealsAsync();
             await Task.WhenAll(prefsTask, daysTask, catalogTask);
             catalog = (await catalogTask).ToDictionary(m => m.Id);
-            planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, await prefsTask);
+            slotPrefs = await prefsTask;
+            planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, slotPrefs);
         }
         catch (Exception ex) { errorMessage = ex.Message; }
     }

@@ -19,7 +19,7 @@ else
     var n = DayMath.Of(Entry, _ => Meal?.Nutrition);
     var name = Entry.Quick?.Name ?? Meal?.Name ?? "";
     <div class="mk-slot is-filled @(Entry.Eaten || Entry.Skipped ? "is-eaten" : "")">
-        <button type="button" class="mk-slot-open" aria-label="@Loc.T("nut_slot_entry", Loc["nut_slot_" + Slot], name)" @onclick="OnOpen">
+        <button type="button" class="mk-slot-open" aria-label="@Loc.T("nut_slot_entry", SlotName, name)" @onclick="OnOpen">
             @if (Entry.IsQuick || Meal is null)
             {
                 <span class="mk-slot-tile is-quick" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>

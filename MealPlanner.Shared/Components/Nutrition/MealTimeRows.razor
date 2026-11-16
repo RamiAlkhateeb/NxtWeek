@@ -1,21 +1,22 @@
 @inject ILocalizationService Loc
 
 @* One row per meal, sorted by its time: on/off, name, time. Meal 1 is always on.
-   Used by Settings → Meal times and by the first-run setup. *@
+   In Ramadan mode suhoor, iftar and the late snack show their own names and times, which are kept apart
+   from the usual times. Used by Settings → Meal times and by the first-run setup. *@
 <div class="mk-times" dir="@Loc.Direction">
-    @foreach (var slot in Enum.GetValues<MealSlot>().OrderBy(s => Prefs.Times.GetValueOrDefault(s, ""), StringComparer.Ordinal))
+    @foreach (var slot in Enum.GetValues<MealSlot>().OrderBy(s => Prefs.TimeOf(s), StringComparer.Ordinal))
     {
         var s = slot;
         var on = Prefs.IsOn(s);
         var always = s == MealSlot.Meal1;
-        var name = Loc["nut_slot_" + s];
+        var name = Loc[Prefs.NameKey(s)];
         <div class="mk-times-row @(on ? "" : "is-off")">
             <ToggleSwitch Checked="on" Disabled="always" DescribedBy="@(always ? $"always-{s}" : null)" Label="@Loc.T("nut_meal_on_for", name)" CheckedChanged="v => SetOn(s, v)" />
             <label for="tm-@s" class="mk-times-name">
                 @name
                 @if (always) { <small id="always-@s">@Loc["nut_always_on"]</small> }
             </label>
-            <input id="tm-@s" class="mk-input mk-time" type="time" dir="ltr" disabled="@(!on)" value="@Prefs.Times.GetValueOrDefault(s)"
+            <input id="tm-@s" class="mk-input mk-time" type="time" dir="ltr" disabled="@(!on)" value="@Prefs.TimeOf(s)"
                    aria-label="@Loc.T("nut_time_for", name)" @onchange="e => SetTime(s, e.Value?.ToString())" />
         </div>
     }
@@ -35,7 +36,8 @@
     private Task SetTime(MealSlot slot, string? value)
     {
         if (!TimeOnly.TryParse(value, out var t)) return Task.CompletedTask;
-        Prefs.Times[slot] = t.ToString("HH:mm");
+        if (Prefs.IsRamadanSlot(slot)) Prefs.RamadanTimes[slot] = t.ToString("HH:mm");
+        else Prefs.Times[slot] = t.ToString("HH:mm");
         return OnChanged.InvokeAsync();
     }
 }

@@ -19,6 +19,8 @@ public interface IDayPlanService
     Task<List<PlanDay>> MoveEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot);
     /// <summary>Copies a meal to another slot or day, replacing what is there. Returns the day that changed, or null.</summary>
     Task<PlanDay?> CopyEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot);
+    /// <summary>Copies a week's meals and servings into the empty slots of another week (<see cref="PlanMoves.CopyWeek"/>). Returns the days written.</summary>
+    Task<List<PlanDay>> CopyWeekAsync(string uid, DateOnly fromMonday, DateOnly toMonday, DateOnly? notBefore = null);
 }
 
 public sealed class DayPlanService(INutritionStore store) : IDayPlanService
@@ -57,6 +59,17 @@ public sealed class DayPlanService(INutritionStore store) : IDayPlanService
         if (!PlanMoves.Copy(from, fromSlot, to, toSlot)) return null;
         await store.SaveDayAsync(uid, to);
         return to;
+    }
+
+    public async Task<List<PlanDay>> CopyWeekAsync(string uid, DateOnly fromMonday, DateOnly toMonday, DateOnly? notBefore = null)
+    {
+        var from = await store.GetDaysAsync(uid, fromMonday, fromMonday.AddDays(6));
+        var to = await store.GetDaysAsync(uid, toMonday, toMonday.AddDays(6));
+        var all = new Dictionary<DateOnly, PlanDay>(from);
+        foreach (var (date, day) in to) all[date] = day;
+        var changed = PlanMoves.CopyWeek(all, fromMonday, toMonday, notBefore);
+        foreach (var day in changed) await store.SaveDayAsync(uid, day);
+        return changed;
     }
 
     private async Task<PlanDay> LoadAsync(string uid, DateOnly date)

@@ -108,7 +108,7 @@ html, body { background: var(--nxt-page); }
 }
 .mk-page button { min-height: 0; }
 .mk-page button:not(:disabled), .mk-page [role="button"] { cursor: pointer; }
-.mk-page svg.i, .mk-nav svg.i, .mk-fab svg.i, .mk-svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mk-page svg.i, .mk-cele svg.i, .mk-nav svg.i, .mk-fab svg.i, .mk-svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ----- header card ------------------------------------------------------ */
 .mk-header {
@@ -1047,3 +1047,69 @@ html, body { background: var(--nxt-page); }
 .mk-photo-frame.is-add svg { width: 22px; height: 22px; }
 .mk-photo-frame.is-empty { font-size: 12px; }
 .mk-photo-date { font-size: 12px; color: var(--mk-muted); text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ---- Step 6: come-back features ---- */
+:root { --mk-night: #1d2340; --mk-night-ink: #f6e7b8; --mk-night-ink-2: #e9ddb8; }
+.mk-stamp-line { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: -6px 0 2px; color: var(--mk-ok-ink);
+  font-size: 13px; font-weight: 700; text-decoration: none; }
+.mk-stamp-line svg { width: 16px; height: 16px; flex: none; }
+.mk-review-banner { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 14px; border-radius: 22px; min-height: 44px;
+  background: var(--mk-ok-soft); color: var(--nxt-text); text-decoration: none; text-align: start; }
+.mk-review-banner .mk-set-link-copy span { font-size: 13px; color: var(--mk-ok-ink); font-weight: 600; }
+.mk-review-banner > svg { width: 18px; height: 18px; flex: none; color: var(--mk-ok-ink); }
+.mk-review-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--nxt-card); color: var(--mk-ok-ink); display: grid; place-items: center; flex: none; }
+.mk-review-icon svg { width: 22px; height: 22px; }
+.mk-iftar { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; padding: 14px 16px; border-radius: 22px;
+  background: var(--mk-night); color: var(--mk-night-ink); }
+.mk-iftar b { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.mk-iftar b svg { width: 18px; height: 18px; flex: none; }
+.mk-iftar span { font-size: 13px; color: var(--mk-night-ink-2); line-height: 1.4; }
+.mk-night-tip { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; margin-bottom: 12px;
+  background: var(--mk-night); color: var(--mk-night-ink); font-size: 13px; line-height: 1.4; }
+.mk-night-tip svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.mk-copy-card { display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; }
+.mk-copy-head { display: flex; gap: 12px; align-items: flex-start; }
+.mk-copy-head .mk-set-link-copy span { font-size: 13px; color: var(--mk-muted); }
+.mk-copy-icon { width: 44px; height: 44px; border-radius: 14px; background: var(--mk-accent-soft); color: var(--mk-accent-ink); display: grid; place-items: center; flex: none; }
+.mk-copy-icon svg { width: 20px; height: 20px; }
+
+.mk-cele { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, .42); cursor: pointer; }
+.mk-cele-card { background: var(--nxt-card); color: var(--nxt-text); border-radius: 28px; padding: 24px 20px 12px; max-width: 320px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, .3);
+  animation: mk-pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+.mk-cele-icon { width: 76px; height: 76px; border-radius: 50%; background: var(--mk-ok-soft); color: var(--mk-ok-ink); display: grid; place-items: center;
+  animation: mk-pop .6s .1s cubic-bezier(.2, 1.4, .4, 1) both; }
+.mk-cele-icon svg { width: 40px; height: 40px; }
+.mk-cele-title { font-size: 20px; font-weight: 800; }
+.mk-cele-body { font-size: 14px; color: var(--mk-muted); line-height: 1.45; }
+.mk-cele-close { min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--mk-muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 12px; }
+@keyframes mk-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .mk-cele-card, .mk-cele-icon { animation: none; }
+}
+
+/* Review */
+.mk-review-hero { display: flex; flex-direction: column; gap: 12px; background: linear-gradient(160deg, var(--mk-accent-soft), var(--nxt-card)); }
+.mk-review-hero-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.mk-review-hero-row b:last-child { font-size: 20px; font-variant-numeric: tabular-nums; }
+.mk-review-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.mk-review-strip > div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: var(--mk-muted); font-weight: 600; }
+.mk-review-strip i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--nxt-inset); }
+.mk-review-strip i.is-yes { background: var(--mk-ok); color: #fff; }
+:root[data-theme="dark"] .mk-review-strip i.is-yes { color: #000; }
+.mk-review-strip svg { width: 14px; height: 14px; }
+.mk-review-row { display: flex; align-items: center; gap: 12px; }
+.mk-review-row .mk-set-link-copy > span { font-size: 12px; color: var(--mk-muted); font-weight: 600; }
+.mk-review-foot { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 0 16px; background: var(--nxt-page); border-top: 1px solid var(--mk-hairline); }
+.mk-review-foot .mk-btn { flex: 1 1 auto; height: auto; min-height: 48px; white-space: normal; line-height: 1.25; padding: 8px 16px; }
+.mk-review-link { display: flex; align-items: center; gap: 12px; min-height: 52px; text-decoration: none; color: var(--nxt-text); font-weight: 700; }
+.mk-review-link > svg { width: 20px; height: 20px; flex: none; }
+.mk-review-link > svg:last-child { color: var(--mk-muted); width: 18px; height: 18px; }
+.mk-review-hero, .mk-review-row, .mk-copy-card { padding: 16px; }
+.mk-review-link { padding: 4px 16px; }
+.mk-review-row .mk-tile { width: 56px; height: 56px; border-radius: 16px; }
+.mk-review-foot > .mk-subtitle { flex-basis: 100%; }
+.mk-week-top { padding: 0 16px; }
+.mk-week-top:empty { display: none; }
+.mk-week-top > :last-child { margin-bottom: 0; }
+.mk-week-top .mk-stamp-line { margin: 4px 0 0; }

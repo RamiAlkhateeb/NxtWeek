@@ -90,6 +90,11 @@
             }
 
             <h2 class="mk-section-title">@Loc["nut_summary_tab"]</h2>
+            <a class="mk-card mk-review-link" href="@($"review?week={ThisMonday.AddDays(-7):yyyy-MM-dd}")">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5"/></svg>
+                <span class="mk-set-link-copy">@Loc["nut_last_review"]</span>
+                <svg class="i mk-flip-rtl" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            </a>
             @Summary()
 
             <h2 class="mk-section-title">@Loc["nut_badges"]</h2>
@@ -144,6 +149,7 @@
             // Health data stays unread for guests: there is none, and nothing is fetched.
             var logsTask = isGuest ? Task.FromResult(new List<BodyLog>()) : NutritionStore.GetBodyLogsAsync(uid);
             var photosTask = isGuest ? Task.FromResult(new Dictionary<DateOnly, string>()) : NutritionStore.GetProgressPhotosAsync(uid);
+            var sharedTask = NutritionStore.GetSharedReviewAsync(uid);
             await Task.WhenAll(profileTask, daysTask, catalogTask, logsTask, photosTask);
             profile = await profileTask ?? new NutritionProfile();
             prefs = await NutritionStore.GetMealPrefsAsync(uid);
@@ -151,10 +157,15 @@
             catalog = (await catalogTask).ToDictionary(m => m.Id);
             logs = await logsTask;
             photos = await photosTask;
-            badges = Badges.For(days, Today, prefs, TargetCalculator.For(profile).Protein, id => catalog.GetValueOrDefault(id)?.Nutrition, sharedWeek: false);
+            badges = Badges.For(days, Today, prefs, TargetCalculator.For(profile).Protein, id => catalog.GetValueOrDefault(id)?.Nutrition, sharedWeek: await SharedAsync(sharedTask));
         }
         catch { loadError = true; }
         finally { isLoading = false; }
+    }
+
+    private static async Task<bool> SharedAsync(Task<SharedReview?> task)
+    {
+        try { return await task is not null; } catch { return false; }
     }
 
     private async Task SavePhotoAsync(string dataUrl)

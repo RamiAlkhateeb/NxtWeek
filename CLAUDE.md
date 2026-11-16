@@ -75,6 +75,7 @@ nxtweek.theme
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
 | Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
+| Week shared from the Sunday review: Monday, days logged, most eaten meal (never calories or weight) | `users/{key}/sharedReview` |
 
 Makdous is about meals only: there are no training or rest days, and one daily target. The afternoon snack is
 stored under its first name, `PostWorkout`. Fields from before 3.1 (`days/*/type`, and `mealTimes`, `offSlots`,
@@ -102,6 +103,15 @@ The Gemini details call also fills a missing cooking time.
 Progress is one page: weight and waist with the weekly check, the weekly summary, badges (`Badges`, pure: first full
 week, protein 7 days in a row, 10 different meals, first batch cook, shared a week; computed from eaten meals only, so a
 missed day never takes one away) and the private weekly photo.
+
+Come-back features, all without notifications, with their rules in `ComeBack` and `PlanMoves.CopyWeek` (pure, tested):
+the stamp line on Week counts logged days (`DayStatus.Stamps`; a missed day never resets anything); the Sunday review
+(`/review?week=`) is announced on Week from Sunday 18:00 through Monday until opened (`mealPrefs.reviewSeen`), and its
+"Plan next week" copies meals and servings into the empty slots of the following week from today on; "Copy this week" shows
+on an empty next week; `CelebrationOverlay` marks day complete and protein reached (no animation under reduced motion).
+Ramadan mode (`mealPrefs.ramadan`) renames Meal 1, Dinner and the evening snack to suhoor, iftar and late snack with
+their own `ramadanTimes`: show slot names with `Loc[prefs.NameKey(slot)]` and times with `prefs.TimeOf(slot)`, never
+`"nut_slot_" + slot` directly.
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.

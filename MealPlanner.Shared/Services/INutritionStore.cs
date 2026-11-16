@@ -29,4 +29,8 @@ public interface INutritionStore
     /// <summary>The private weekly photos (JPEG data URLs) keyed by the week's Monday. Health data: account only.</summary>
     Task<Dictionary<DateOnly, string>> GetProgressPhotosAsync(string uid);
     Task SaveProgressPhotoAsync(string uid, DateOnly monday, string dataUrl);
+
+    // What the user chose to share from a Sunday review (users/{key}/sharedReview); null when never shared.
+    Task<SharedReview?> GetSharedReviewAsync(string uid);
+    Task ShareReviewAsync(string uid, SharedReview review);
 }
