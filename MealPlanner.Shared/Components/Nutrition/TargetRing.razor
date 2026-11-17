@@ -2,32 +2,46 @@
 @inject ILocalizationService Loc
 
 @* A smartwatch-style ring: the solid arc is what was eaten, the faint arc what is planned on top, the grey track
-   what is still open. The ring always starts at 12 o'clock and runs clockwise, in every language. *@
+   what is still open. The ring always starts at 12 o'clock and runs clockwise, in every language.
+   With OverIsGood (water) going past the target is a goal reached, not an "over". Controls (ChildContent) sit
+   under the ring, outside the picture, so screen readers reach them. *@
 @{
-    var (eatenArc, plannedArc, over) = DayStatus.RingArcs(Eaten, Planned, Target);
+    var (eatenArc, plannedArc, reached) = DayStatus.RingArcs(Eaten, Planned, Target);
+    var done = OverIsGood && Target > 0 && Eaten >= Target;
+    var over = reached && !OverIsGood;
     var left = Math.Round(Target - Eaten);
     var leftText = Loc.T(over ? "nut_unit_over" : "nut_unit_left", Unit);
+    var status = done ? DoneText ?? "" : $"{Loc.Num(Math.Abs(left))} {leftText}";
     var colour = over ? "var(--mk-accent)" : Colour;
 }
-<figure class="mk-ring @(over ? "is-over" : "")" role="img"
-        aria-label="@Loc.T("nut_ring_label", Label, Loc.Num(Eaten), Loc.Num(Target), Unit, $"{Loc.Num(Math.Abs(left))} {leftText}")">
-    <div class="mk-ring-dial">
-        <svg viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="mk-ring-track" cx="60" cy="60" r="@R" />
-            <circle class="mk-ring-arc is-planned @(plannedArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@Colour"
-                    stroke-dasharray="@Dash(plannedArc)" stroke-dashoffset="@Offset(eatenArc)" />
-            <circle class="mk-ring-arc @(eatenArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@colour" stroke-dasharray="@Dash(eatenArc)" />
-        </svg>
-        <div class="mk-ring-centre">
-            <b>@Loc.Num(Eaten)</b>
-            <span>@Loc.T("nut_ring_of", Loc.Num(Target), Unit)</span>
+<div class="mk-ring @(over ? "is-over" : "") @(done ? "is-done" : "") @CssClass">
+    <figure class="mk-ring-figure" role="img" aria-label="@Loc.T("nut_ring_label", Label, Loc.Num(Eaten), Loc.Num(Target), Unit, status)">
+        <div class="mk-ring-dial">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="mk-ring-track" cx="60" cy="60" r="@R" />
+                <circle class="mk-ring-arc is-planned @(plannedArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@Colour"
+                        stroke-dasharray="@Dash(plannedArc)" stroke-dashoffset="@Offset(eatenArc)" />
+                <circle class="mk-ring-arc @(eatenArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@colour" stroke-dasharray="@Dash(eatenArc)" />
+            </svg>
+            <div class="mk-ring-centre">
+                <b>@Loc.Num(Eaten)</b>
+                <span>@(OfText ?? Loc.T("nut_ring_of", Loc.Num(Target), Unit))</span>
+            </div>
         </div>
-    </div>
-    <figcaption>
-        <span class="mk-ring-label"><i style="background:@Colour"></i>@Label</span>
-        <span class="mk-ring-left"><b>@Loc.Num(Math.Abs(left))</b> @leftText</span>
-    </figcaption>
-</figure>
+        <figcaption>
+            <span class="mk-ring-label"><i style="background:@Colour"></i>@Label</span>
+            @if (done)
+            {
+                <span class="mk-ring-left is-done">@DoneText</span>
+            }
+            else
+            {
+                <span class="mk-ring-left"><b>@Loc.Num(Math.Abs(left))</b> @leftText</span>
+            }
+        </figcaption>
+    </figure>
+    @ChildContent
+</div>
 
 @code {
     private const double R = 50;
@@ -39,6 +53,15 @@
     [Parameter] public double Target { get; set; }
     [Parameter] public string Unit { get; set; } = "";
     [Parameter] public string Colour { get; set; } = "var(--mk-kc)";
+    /// <summary>Past the target is good (water): the ring stays in its colour and shows <see cref="DoneText"/>.</summary>
+    [Parameter] public bool OverIsGood { get; set; }
+    /// <summary>The line under the ring once the target is reached ("Goal reached").</summary>
+    [Parameter] public string? DoneText { get; set; }
+    /// <summary>The small line in the middle, instead of "of {target} {unit}".</summary>
+    [Parameter] public string? OfText { get; set; }
+    [Parameter] public string CssClass { get; set; } = "";
+    /// <summary>Controls under the ring (the water − and +).</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
 
     // An arc of the given share of the ring, as "length gap".
     private static string Dash(double share) =>

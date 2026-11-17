@@ -141,12 +141,8 @@ public class DayStatusTests
     }
 
     [Fact]
-    public void Water_glasses_fill_up_to_the_tapped_one_and_the_last_one_empties()
+    public void Eaten_share_is_capped_at_a_full_ring()
     {
-        Assert.Equal(3, DayStatus.WaterAfterTap(0, 2));
-        Assert.Equal(2, DayStatus.WaterAfterTap(3, 2));
-        Assert.Equal(1, DayStatus.WaterAfterTap(3, 0));
-        Assert.Equal(0, DayStatus.WaterAfterTap(1, 0));
         Assert.Equal(0.5, DayStatus.EatenShare(1000, 2000));
         Assert.Equal(1, DayStatus.EatenShare(3000, 2000));
     }
