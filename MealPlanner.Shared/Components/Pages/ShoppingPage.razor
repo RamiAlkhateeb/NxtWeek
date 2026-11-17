@@ -14,6 +14,7 @@
 @inject IMealImageService MealImages
 @inject IUserService UserService
 @inject LiveWatch Live
+@inject IJSRuntime JS
 
 @* Shopping by servings: the meals still to cook from today to Sunday (servings and meal prep change the plan
    itself), and one list grouped by aisle that follows them. The list is brought in line with the plan on
@@ -36,6 +37,9 @@
                     </span>
                 }
             </div>
+            <button class="mk-icon-btn" aria-label="@Loc["nut_share_list"]" disabled="@(isLoading || !AllItems.Any(x => !x.Item.IsBought))" @onclick="ShareListAsync">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+            </button>
         </div>
     </header>
 
@@ -564,6 +568,25 @@
         }
         catch { Toasts.Show(Loc["nut_save_error"], isError: true); CloseEdit(); }
     }
+
+    // The open items as text, by store and in shop order, for WhatsApp and the like.
+    private async Task ShareListAsync()
+    {
+        var all = AllItems.Where(x => !x.Item.IsBought).ToList();
+        var groups = shops.Count > 1
+            ? OrderedShops.Select(sh => new ShareGroup(sh.Name, Ordered(all.Where(x => x.Shop.Id == sh.Id)).Select(x => new ShareLine(x.Item.Name, PlainQuantity(x.Item))).ToList()))
+            : [new ShareGroup(null, Ordered(all).Select(x => new ShareLine(x.Item.Name, PlainQuantity(x.Item))).ToList())];
+        var text = ShoppingText.Build(Loc["nut_share_list_title"], groups);
+        string result;
+        try { result = await JS.InvokeAsync<string>("nxtweek.shareText", Loc["nut_share_list_title"], text); }
+        catch { result = "failed"; }
+        if (result == "copied") Toasts.Show(Loc["nut_share_list_copied"]);
+        else if (result == "failed") Toasts.Show(Loc["nut_save_error"], isError: true);
+    }
+
+    // The amount without the invisible direction marks used on screen.
+    private string PlainQuantity(ShoppingItem item) =>
+        QuantityText(item).Replace("\u2066", "").Replace("\u2067", "").Replace("\u2068", "").Replace("\u2069", "");
 
     private void OpenAddStore() { storeName = ""; storeError = ""; showAddStore = true; }
 

@@ -15,6 +15,9 @@ import { ARABIC_SEED_DISHES } from "./dishes.js";
 
 const IMAGE_MODEL = "@cf/black-forest-labs/flux-1-schnell";
 const TEXT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Steps read better from the larger model; the small one is the fallback.
+const STEPS_MODELS = ["@cf/meta/llama-3.3-70b-instruct-fp8-fast", TEXT_MODEL];
+const LANGUAGE_NAMES = { ar: "Arabic", en: "English", de: "German" };
 const TRANSLATE_MODEL = "@cf/meta/m2m100-1.2b";
 
 const ALLOWED_ORIGINS = [
@@ -30,16 +33,18 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
+    if (url.pathname === "/steps") return steps(request, env, origin, cors);
     if (url.pathname !== "/photo") return json({ error: "not_found" }, 404, cors);
     if (request.method !== "POST") return json({ error: "method" }, 405, cors);
     if (!isAllowedOrigin(origin)) return json({ error: "origin" }, 403, cors);
 
-    let mealId = "", user = "", replace = false;
+    let mealId = "", user = "", replace = false, ownerCode = "";
     try {
       const body = await request.json();
       mealId = String(body.mealId || "");
       user = String(body.user || "");
       replace = body.replace === true;
+      ownerCode = String(body.ownerCode || "");
     } catch { /* handled below */ }
     if (!/^[A-Za-z0-9_-]{1,64}$/.test(mealId) || !isUserKey(user)) return json({ error: "bad_request" }, 400, cors);
 
@@ -54,10 +59,11 @@ export default {
     if (!(await readJson(`${db}/users/${userPath}.json?shallow=true`))) return json({ error: "unknown_user" }, 403, cors);
 
     const limit = weeklyLimit(env);
+    const owner = isOwner(env, ownerCode);
     const monday = mondayOf(new Date());
     const quotaUrl = `${db}/PhotoQuota/${userPath}/${monday}.json`;
     const used = Number(await readJson(quotaUrl)) || 0;
-    if (used >= limit) return json({ error: "weekly_limit", used, limit, resetsOn: addDays(monday, 7) }, 429, cors);
+    if (!owner && used >= limit) return json({ error: "weekly_limit", used, limit, resetsOn: addDays(monday, 7) }, 429, cors);
 
     const meal = await readJson(`${db}/MealCatalog/${mealId}.json`);
     if (!meal || meal.isArchived) return json({ error: "unknown_meal" }, 404, cors);
@@ -78,7 +84,7 @@ export default {
       if (!result?.image) return json({ error: "no_image" }, 502, cors);
       // Only a picture actually drawn counts against the week.
       await fetch(quotaUrl, { method: "PUT", body: JSON.stringify(used + 1) });
-      return json({ image: `data:image/jpeg;base64,${result.image}`, twin: twin ? twinId : undefined, used: used + 1, limit }, 200, cors);
+      return json({ image: `data:image/jpeg;base64,${result.image}`, twin: twin ? twinId : undefined, used: used + 1, limit, owner: owner || undefined }, 200, cors);
     } catch (e) {
       // On the free plan Workers AI stops for the day once the allowance is used (error 4006).
       const text = String(e?.message || e);
@@ -87,6 +93,60 @@ export default {
     }
   }
 };
+
+/** POST /steps { mealId, user, replace? } → { steps: [{ text, minutes }] }: short cooking steps in the meal's own
+ *  language from Llama. Same checks as /photo (site, account, minute limit); a meal with steps is only redone when
+ *  "replace" is sent. Text is cheap, so there is no weekly count. The app saves the steps to the catalog. */
+async function steps(request, env, origin, cors) {
+  if (request.method !== "POST") return json({ error: "method" }, 405, cors);
+  if (!isAllowedOrigin(origin)) return json({ error: "origin" }, 403, cors);
+  let mealId = "", user = "", replace = false;
+  try { const b = await request.json(); mealId = String(b.mealId || ""); user = String(b.user || ""); replace = b.replace === true; } catch { /* below */ }
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(mealId) || !isUserKey(user)) return json({ error: "bad_request" }, 400, cors);
+  if (env.PER_VISITOR) {
+    const { success } = await env.PER_VISITOR.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
+    if (!success) return json({ error: "busy" }, 429, cors);
+  }
+  const db = env.FIREBASE_URL.replace(/\/$/, "");
+  if (!(await readJson(`${db}/users/${encodeURIComponent(user)}.json?shallow=true`))) return json({ error: "unknown_user" }, 403, cors);
+  const meal = await readJson(`${db}/MealCatalog/${mealId}.json`);
+  if (!meal || meal.isArchived) return json({ error: "unknown_meal" }, 404, cors);
+  if (!replace && Array.isArray(meal.steps) && meal.steps.length) return json({ error: "exists" }, 409, cors);
+
+  const language = LANGUAGE_NAMES[meal.language || "ar"] || "Arabic";
+  const hint = (meal.language || "ar") === "ar" && ARABIC_SEED_DISHES[mealId] ? ` (in English: ${ARABIC_SEED_DISHES[mealId][0]})` : "";
+  const ingredients = [...(meal.ingredientLines || []).map(l => l.name), ...(meal.ingredients || [])].filter(Boolean).slice(0, 12);
+  const messages = [
+    { role: "system", content: `You write short home-cooking steps. Reply with JSON only: {"steps":[{"text": string, "minutes": number or null}]}. ` +
+      `4 to 8 steps, each one short sentence, written in ${language}. "minutes" is how long that step takes when it involves waiting or cooking, else null.` },
+    { role: "user", content: `Dish: ${meal.name}${hint}\nIngredients: ${ingredients.join(", ") || "unknown"}` }
+  ];
+  for (const model of STEPS_MODELS) {
+    try {
+      const out = await env.AI.run(model, { messages, max_tokens: 700 });
+      const parsed = cleanSteps(out?.response);
+      if (parsed) return json({ steps: parsed }, 200, cors);
+    } catch (e) {
+      if (/4006|allocation|neurons|quota/i.test(String(e?.message || e))) return json({ error: "daily_limit" }, 429, cors);
+    }
+  }
+  return json({ error: "model_failed" }, 502, cors);
+}
+
+/** The model's reply as 2–12 steps of at most 240 characters, with minutes 1–600 or null; null when unusable. */
+export function cleanSteps(reply) {
+  const text = typeof reply === "string" ? reply : JSON.stringify(reply ?? "");
+  const found = text.match(/\{[\s\S]*\}/);
+  if (!found) return null;
+  let list;
+  try { list = JSON.parse(found[0]).steps; } catch { return null; }
+  if (!Array.isArray(list)) return null;
+  const steps = list
+    .map(s => ({ text: String(s?.text ?? s ?? "").trim().slice(0, 240), minutes: Number.isInteger(s?.minutes) && s.minutes > 0 && s.minutes <= 600 ? s.minutes : null }))
+    .filter(s => s.text.length > 0)
+    .slice(0, 12);
+  return steps.length >= 2 ? steps : null;
+}
 
 /** The English meal that is the same dish: the seeded n1–n30 exist as n12 (ar), en_n12 and de_n12. */
 export function englishTwinId(mealId, meal) {
@@ -145,6 +205,16 @@ export function prompt({ name, look, ingredients }) {
 
 /** An account key as the app stores it under users/: no characters Firebase forbids in a key. */
 export function isUserKey(key) { return /^[^.#$\[\]\/\s]{1,128}$/.test(key); }
+
+/** The owner's code (the worker secret OWNER_CODE, set in the Cloudflare dashboard) lifts the weekly limit;
+ *  the minute limit and Cloudflare's daily allowance stay. Compared in constant time. */
+export function isOwner(env, code) {
+  const secret = String(env.OWNER_CODE || "");
+  if (secret.length < 12 || code.length !== secret.length) return false;
+  let diff = 0;
+  for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ code.charCodeAt(i);
+  return diff === 0;
+}
 
 export function weeklyLimit(env) { return Math.max(0, Number(env.WEEKLY_LIMIT ?? 10) || 0); }
 

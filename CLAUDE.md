@@ -77,6 +77,7 @@ nxtweek.theme
 | Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
 | AI meal photos, shared by all users (480 px JPEG data URL) | `MealPhotos/{mealId}` |
+| Recipe steps (text and optional minutes), shared with the meal | `MealCatalog/{id}/steps` |
 | Photos drawn per account per week (Monday, UTC), written by the photo worker | `PhotoQuota/{key}/{yyyy-MM-dd}` |
 | Sync with one friend: partner and whose list is shared (both sides) | `users/{key}/sync` |
 | Waiting sync request (with the person asked) / the one I sent | `users/{key}/syncRequest`, `users/{key}/syncOutgoing` |
@@ -167,6 +168,30 @@ All Gemini calls go through Nxt.UI's `GeminiClient`: it tries the model chosen i
 picked), then up to three chat models the key can reach, and reports a switch in `LastFallback`. Failures are
 `GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`.
 
+## Recipe steps and cooking mode
+
+A meal's page shows its steps (`MealCatalogItem.Steps`) with "Start cooking" (`/meal/{id}/cook`: one big step at a time,
+the screen kept on with `nxtweek.keepAwake`, and a timer for steps with minutes that beeps and vibrates). Steps are
+typed one per line (`RecipeSteps.Parse`, pure and tested: numbering dropped, "10 min" / "١٠ دقائق" / "10 Minuten"
+becomes the timer) or fetched for free from the photo worker's `/steps` (`IRecipeService`).
+
+## Sharing the shopping list
+
+The share button on Shopping sends the open items as plain text (`ShoppingText.Build`: grouped by store, amounts
+included) through the phone's share sheet (`nxtweek.shareText`), or copies it where there is none.
+
+## Offline
+
+Every database request goes through `OfflineHandler` (registered in `Program.cs` as the `HttpClient`'s handler). Reads
+are remembered in `localStorage` (`nxtweek.offline.get:{path}{query}`) and answered from there when the network fails,
+also from a remembered parent or wider key range; writes that fail for lack of network wait in
+`nxtweek.offline.outbox` and are sent in order before the next write, when the browser is back online, every 20 s and
+on the next start. Pending writes are laid over cached reads (`OfflineMerge`, pure and tested), so the app shows its own
+offline edits. `OfflineBanner` says when the app is offline and how much is waiting. Health data and photos
+(`body`, `nutritionProfile`, `progressPhotos`, `mealPhotos`, `MealPhotos`, `PhotoQuota`) are never kept or queued
+(`OfflineMerge.MayKeep`); the Week page hides the targets card when the body data cannot be read. The cache is a
+convenience, never the source of truth.
+
 ## Meal pictures
 
 Show a meal's picture with `<MealPhoto Meal="meal" />`, never a bare `<img>`. The order is the user's own private
@@ -182,7 +207,8 @@ its English twin's photo (`MealTwins.EnglishTwinId`: `n12`/`de_n12` → `en_n12`
 meal; the Arabic classics have curated English descriptions in `photo-worker/src/dishes.js` (add one when you seed an
 Arabic meal). "New photo" sends `replace`. The worker only draws
 catalog meals without a photo (unless replacing), for an existing account (`users/{key}`), from the app's own sites, with 10 photos per
-account per week (`WEEKLY_LIMIT`, mirrored in `MealPhotoService.WeeklyLimit`; counted at `PhotoQuota`), 30 a minute per
+account per week (`WEEKLY_LIMIT`, mirrored in `MealPhotoService.WeeklyLimit`; counted at `PhotoQuota`; the owner's code,
+the worker's `OWNER_CODE` secret entered under Meal photos and kept in `nxtweek.photoOwnerCode`, lifts it), 30 a minute per
 visitor and Cloudflare's daily allowance; its errors become
 `MealPhotoException` and are shown with `MealPhotoException.MessageKey`. The illustration stays when no photo can be made.
 

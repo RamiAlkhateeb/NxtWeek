@@ -1,0 +1,184 @@
+@page "/meal/{MealId}/cook"
+@implements IAsyncDisposable
+@inject IMealCatalogService CatalogService
+@inject IAuthService Auth
+@inject ILocalizationService Loc
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@* Cooking mode: one step at a time in large type, the screen kept on, and a timer for steps that say how long.
+   The timer keeps running while you move between steps and beeps and vibrates when it ends. *@
+<div class="mk-page mk-cook" dir="@Loc.Direction">
+    <header class="mk-header">
+        <div class="mk-header-row is-start">
+            <BackButton Fallback="@($"/meal/{Uri.EscapeDataString(MealId)}")" />
+            <div class="mk-title-block">
+                <h1 class="mk-title is-md">@(meal?.Name ?? "")</h1>
+                @if (meal is { Steps.Count: > 0 })
+                {
+                    <p class="mk-subtitle">@Loc.T("nut_cook_step_of", Loc.Num(index + 1), Loc.Num(meal.Steps.Count))@if (awake) { <text> · @Loc["nut_cook_screen_on"]</text> }</p>
+                }
+            </div>
+        </div>
+    </header>
+
+    @if (isLoading)
+    {
+        <div class="mk-stack"><NxtSkeleton /><NxtSkeleton /></div>
+    }
+    else if (meal is null || meal.Steps.Count == 0)
+    {
+        <div class="mk-stack">
+            <div class="mk-note">@Loc["nut_steps_none"]</div>
+            <a class="mk-btn is-block" href="@($"meal/{Uri.EscapeDataString(MealId)}")">@Loc["nut_cook_back"]</a>
+        </div>
+    }
+    else
+    {
+        var step = meal.Steps[index];
+        <main class="mk-stack">
+            @if (Ingredients.Count > 0)
+            {
+                <details class="mk-card mk-cook-ingredients">
+                    <summary>@Loc["nut_cook_ingredients"]</summary>
+                    <ul>@foreach (var line in Ingredients) { <li>@line</li> }</ul>
+                </details>
+            }
+
+            <div class="mk-cook-progress" aria-hidden="true">
+                @for (var i = 0; i < meal.Steps.Count; i++) { <i class="@(i < index ? "is-done" : i == index ? "is-now" : "")"></i> }
+            </div>
+
+            <section class="mk-card mk-cook-step" aria-live="polite">
+                <span class="mk-cook-num">@Loc.Num(index + 1)</span>
+                <p class="mk-cook-text">@step.Text</p>
+                @if (step.Minutes is { } minutes)
+                {
+                    var mine = timerStep == index;
+                    <div class="mk-cook-timer @(mine && Remaining <= TimeSpan.Zero && timerEnd is not null ? "is-done" : "")" role="timer" aria-label="@Loc["nut_cook_timer"]">
+                        <b class="mk-cook-clock">@Clock(mine ? Remaining : TimeSpan.FromMinutes(minutes))</b>
+                        <div class="mk-btn-row">
+                            @if (mine && running)
+                            {
+                                <button class="mk-btn is-soft" @onclick="Pause">@Loc["nut_cook_pause"]</button>
+                            }
+                            else
+                            {
+                                <button class="mk-btn" @onclick="() => Start(index, minutes)">@(mine && Remaining > TimeSpan.Zero && Remaining < TimeSpan.FromMinutes(minutes) ? Loc["nut_cook_resume"] : Loc["nut_cook_start_timer"])</button>
+                            }
+                            @if (mine) { <button class="mk-btn is-soft" @onclick="Reset">@Loc["nut_cook_reset"]</button> }
+                        </div>
+                        @if (mine && timerEnd is not null && Remaining <= TimeSpan.Zero) { <span class="mk-cook-done" role="alert">@Loc["nut_cook_times_up"]</span> }
+                    </div>
+                }
+            </section>
+
+            @if (timerStep is { } ts && ts != index && running)
+            {
+                <button class="mk-cook-mini" @onclick="() => index = ts">@Loc.T("nut_cook_timer_for", Loc.Num(ts + 1), Clock(Remaining))</button>
+            }
+
+            <div class="mk-cook-nav">
+                <button class="mk-btn is-soft is-lg" disabled="@(index == 0)" @onclick="() => index--">
+                    <svg class="i mk-flip-rtl" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>@Loc["nut_cook_prev"]
+                </button>
+                @if (index < meal.Steps.Count - 1)
+                {
+                    <button class="mk-btn is-lg" @onclick="() => index++">@Loc["nut_cook_next"]<svg class="i mk-flip-rtl" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+                }
+                else
+                {
+                    <a class="mk-btn is-lg" href="@($"meal/{Uri.EscapeDataString(MealId)}")">@Loc["nut_cook_done"]</a>
+                }
+            </div>
+        </main>
+    }
+</div>
+
+@code {
+    [Parameter] public string MealId { get; set; } = "";
+
+    private MealCatalogItem? meal;
+    private bool isLoading = true, awake, running, alerted;
+    private int index;
+    private int? timerStep;
+    private DateTime? timerEnd;
+    private TimeSpan pausedLeft;
+    private Timer? ticker;
+
+    private TimeSpan Remaining => running && timerEnd is { } end ? end - DateTime.UtcNow : pausedLeft;
+
+    private List<string> Ingredients => meal is null ? []
+        : meal.IngredientLines.Count > 0
+            ? meal.IngredientLines.Select(l => l.Name).ToList()
+            : meal.Ingredients.Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Loc.OnLanguageChanged += OnLanguage;
+        if (await Auth.GetCurrentUserAsync() is null) { Nav.NavigateTo("/signin"); return; }
+        try { meal = await CatalogService.GetMealByIdAsync(MealId); }
+        catch { meal = null; }
+        isLoading = false;
+        ticker = new Timer(_ => InvokeAsync(Tick), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try { awake = await JS.InvokeAsync<bool>("nxtweek.keepAwake", true); StateHasChanged(); }
+        catch { awake = false; }
+    }
+
+    private async Task Tick()
+    {
+        if (!running) return;
+        if (Remaining <= TimeSpan.Zero && !alerted)
+        {
+            alerted = true;
+            running = false;
+            pausedLeft = TimeSpan.Zero;
+            try { await JS.InvokeVoidAsync("nxtweek.timerDone"); } catch { }
+        }
+        StateHasChanged();
+    }
+
+    private void Start(int step, int minutes)
+    {
+        var left = timerStep == step && pausedLeft > TimeSpan.Zero ? pausedLeft : TimeSpan.FromMinutes(minutes);
+        timerStep = step;
+        timerEnd = DateTime.UtcNow + left;
+        running = true;
+        alerted = false;
+    }
+
+    private void Pause()
+    {
+        pausedLeft = Remaining;
+        running = false;
+    }
+
+    private void Reset()
+    {
+        running = false;
+        timerStep = null;
+        timerEnd = null;
+        pausedLeft = TimeSpan.Zero;
+    }
+
+    private string Clock(TimeSpan t)
+    {
+        if (t < TimeSpan.Zero) t = TimeSpan.Zero;
+        var text = t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}" : $"{t.Minutes:00}:{t.Seconds:00}";
+        return NutFormat.Isolate(text);
+    }
+
+    private void OnLanguage() => InvokeAsync(StateHasChanged);
+
+    public async ValueTask DisposeAsync()
+    {
+        Loc.OnLanguageChanged -= OnLanguage;
+        ticker?.Dispose();
+        try { await JS.InvokeVoidAsync("nxtweek.keepAwake", false); } catch { }
+    }
+}

@@ -73,6 +73,12 @@ public class FirebaseMealCatalogService : IMealCatalogService
     }
 
     public Task UpdateMealAsync(MealCatalogItem meal) => UpsertMealAsync(meal);
+
+    public async Task SaveStepsAsync(string mealId, List<RecipeStep> steps)
+    {
+        using var response = await _http.PatchAsJsonAsync($"{_baseUrl}/{CatalogPath}/{Uri.EscapeDataString(mealId)}.json", new { steps });
+        response.EnsureSuccessStatusCode();
+    }
     public async Task DeleteMealAsync(string id)
     {
         using var response = await _http.DeleteAsync($"{_baseUrl}/{CatalogPath}/{id}.json");
@@ -166,6 +172,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
         public NutritionInfo? Nutrition { get; set; }
         public int? ServingsYield { get; set; }
         public List<IngredientLine>? IngredientLines { get; set; }
+        public List<RecipeStep>? Steps { get; set; }
         public List<MealSlot>? SuitableSlots { get; set; }
 
         public static MealCatalogItemDto FromModel(MealCatalogItem m) => new()
@@ -185,6 +192,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
             Nutrition = m.Nutrition,
             ServingsYield = m.ServingsYield,
             IngredientLines = m.IngredientLines,
+            Steps = m.Steps.Count > 0 ? m.Steps : null,
             SuitableSlots = m.SuitableSlots
         };
 
@@ -206,6 +214,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
             Nutrition = Nutrition,
             ServingsYield = ServingsYield is > 0 ? ServingsYield.Value : 1,
             IngredientLines = IngredientLines ?? new(),
+            Steps = Steps ?? new(),
             SuitableSlots = SuitableSlots ?? new()
         };
     }

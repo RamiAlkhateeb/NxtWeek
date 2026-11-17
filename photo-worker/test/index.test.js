@@ -1,7 +1,7 @@
 // Run with: node --test photo-worker/test/*.test.js   (Node 20+, no packages)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import worker, { englishDish, englishTwinId, ingredientWords, prompt, isAllowedOrigin, isUserKey, mondayOf, addDays } from "../src/index.js";
+import worker, { cleanSteps, isOwner, englishDish, englishTwinId, ingredientWords, prompt, isAllowedOrigin, isUserKey, mondayOf, addDays } from "../src/index.js";
 
 const DB = "https://db.test";
 const catalog = {
@@ -87,6 +87,18 @@ test("each account gets ten photos a week; only drawn pictures count", async () 
   assert.equal(failing.writes.length, 0);
 });
 
+test("the owner's code lifts the weekly limit, a wrong or short one does not", async () => {
+  const monday = mondayOf(new Date());
+  const owner = setup({ [`${DB}/PhotoQuota/rami/${monday}.json`]: 10 });
+  owner.env.OWNER_CODE = "a-long-private-code";
+  const res = await worker.fetch(post({ mealId: "en_n12", ownerCode: "a-long-private-code" }), owner.env);
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).owner, true);
+  assert.equal((await worker.fetch(post({ mealId: "en_n12", ownerCode: "a-long-private-cod3" }), owner.env)).status, 429);
+  assert.equal(isOwner({ OWNER_CODE: "short" }, "short"), false);
+  assert.equal(isOwner({}, ""), false);
+});
+
 test("the account must exist and be sent", async () => {
   const { env } = setup();
   assert.equal((await worker.fetch(post({ mealId: "en_n12", user: "nobody" }), env)).status, 403);
@@ -169,4 +181,35 @@ test("helpers", () => {
   assert.ok(isUserKey("rami13195_at_gmail_dot_com") && isUserKey("guest_3f2a-1b") && !isUserKey("a.b") && !isUserKey(""));
   assert.equal(mondayOf(new Date("2026-11-22T23:30:00Z")), "2026-11-16"); // Sunday night still counts for that week
   assert.equal(mondayOf(new Date("2026-11-23T00:10:00Z")), "2026-11-23");
+});
+
+const stepsReq = (body, origin = "https://meal-planner-af799.web.app") =>
+  new Request("https://w.test/steps", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({ user: "rami", ...body }) });
+
+test("/steps writes short steps in the meal's own language", async () => {
+  const { env, calls } = setup();
+  env.AI.run = async (model, input) => { calls.push({ model, input }); return { response: 'Sure: {"steps":[{"text":"لف ورق العنب","minutes":null},{"text":"اطبخه","minutes":45}]}' }; };
+  const res = await worker.fetch(stepsReq({ mealId: "m12" }), env);
+  assert.equal(res.status, 200);
+  assert.deepEqual((await res.json()).steps, [{ text: "لف ورق العنب", minutes: null }, { text: "اطبخه", minutes: 45 }]);
+  assert.match(calls[0].input.messages[0].content, /written in Arabic/);
+  assert.match(calls[0].input.messages[1].content, /يبرق \(in English: Stuffed vine leaves/);
+});
+
+test("/steps falls back to the small model, and checks the request like /photo", async () => {
+  const { env, calls } = setup();
+  env.AI.run = async model => { calls.push(model); if (model.includes("70b")) throw new Error("busy"); return { response: '{"steps":["a","b"]}' }; };
+  assert.equal((await worker.fetch(stepsReq({ mealId: "en_n12" }), env)).status, 200);
+  assert.equal(calls.length, 2);
+  assert.equal((await worker.fetch(stepsReq({ mealId: "en_n12" }, "https://evil.example"), env)).status, 403);
+  assert.equal((await worker.fetch(stepsReq({ mealId: "en_n12", user: "nobody" }), env)).status, 403);
+  catalog.withSteps = { name: "X", language: "en", steps: [{ text: "a" }] };
+  assert.equal((await worker.fetch(stepsReq({ mealId: "withSteps" }), env)).status, 409);
+  assert.equal((await worker.fetch(stepsReq({ mealId: "withSteps", replace: true }), env)).status, 200);
+});
+
+test("cleanSteps keeps only usable steps", () => {
+  assert.equal(cleanSteps("no json"), null);
+  assert.equal(cleanSteps('{"steps":["only one"]}'), null);
+  assert.deepEqual(cleanSteps('{"steps":[{"text":" a ","minutes":5000},{"text":"b","minutes":3},{"text":""}]}'), [{ text: "a", minutes: null }, { text: "b", minutes: 3 }]);
 });

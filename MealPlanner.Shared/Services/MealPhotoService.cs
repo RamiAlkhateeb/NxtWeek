@@ -25,6 +25,9 @@ public interface IMealPhotoService
     Task<string> GenerateAsync(MealCatalogItem meal, bool replace = false);
     /// <summary>How many photos this account has had drawn this week (Monday to Sunday, UTC), of <see cref="MealPhotoService.WeeklyLimit"/>.</summary>
     Task<PhotoQuota> GetQuotaAsync();
+    /// <summary>The owner's code that lifts the weekly limit, kept on this device only (localStorage).</summary>
+    Task<string?> GetOwnerCodeAsync();
+    Task SetOwnerCodeAsync(string? code);
     /// <summary>Raised with the meal id when a photo was generated, so every picture of that meal updates.</summary>
     event Action<string>? Changed;
 }
@@ -157,7 +160,7 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         {
             var user = (await auth.GetCurrentUserAsync())?.Uid;
             if (string.IsNullOrWhiteSpace(user)) throw new MealPhotoException(MealPhotoProblem.Unavailable, "Not signed in.");
-            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id, user, replace });
+            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id, user, replace, ownerCode = await GetOwnerCodeAsync() ?? "" });
             var body = await ReadAsync(response);
             var image = Text(body, "image");
             twinId = Text(body, "twin");
@@ -207,6 +210,20 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         photos[mealId] = dataUrl;
         (await IndexAsync()).Add(mealId);
         Changed?.Invoke(mealId);
+    }
+
+    private const string OwnerCodeKey = "nxtweek.photoOwnerCode";
+
+    public async Task<string?> GetOwnerCodeAsync()
+    {
+        try { return await js.InvokeAsync<string?>("localStorage.getItem", OwnerCodeKey) is { Length: > 0 } code ? code : null; }
+        catch { return null; }
+    }
+
+    public async Task SetOwnerCodeAsync(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) await js.InvokeVoidAsync("localStorage.removeItem", OwnerCodeKey);
+        else await js.InvokeVoidAsync("localStorage.setItem", OwnerCodeKey, code.Trim());
     }
 
     public async Task<PhotoQuota> GetQuotaAsync()
