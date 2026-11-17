@@ -113,6 +113,14 @@ public sealed class FirebaseShoppingListService(FirebaseRest db, IShoppingListOw
         if (update.Count > 0) await db.PatchAsync(ShoppingPaths.User(host), update);
     }
 
+    public async Task RestoreItemsAsync(string uid, IEnumerable<(string ShopId, ShoppingItem Item)> items, IEnumerable<string> undismiss)
+    {
+        var update = new Dictionary<string, object?>();
+        foreach (var (shopId, item) in items) update[$"shopping/{ShoppingPaths.ItemInList(shopId, item.Id)}"] = item;
+        foreach (var key in undismiss) update[$"shoppingDismissed/{key}"] = null;
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.User(await owner.GetAsync(uid)), update);
+    }
+
     public async Task<Dictionary<string, int>> GetDismissedAsync(string uid) =>
         await db.GetAsync<Dictionary<string, int>>(ShoppingPaths.Dismissed(await owner.GetAsync(uid))) ?? new();
 

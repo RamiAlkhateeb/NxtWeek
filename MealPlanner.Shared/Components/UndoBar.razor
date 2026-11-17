@@ -1,0 +1,34 @@
+@implements IDisposable
+@inject UndoService Undo
+@inject ILocalizationService Loc
+@inject ToastService Toasts
+
+@* The undo bar sits above the bottom tabs: the message and an Undo button, for a few seconds. *@
+@if (Undo.Current is { } offer)
+{
+    <div @key="offer.Id" class="mk-undo" role="status" aria-live="polite" dir="@Loc.Direction">
+        <span>@offer.Text</span>
+        <button type="button" class="mk-undo-btn" @onclick="UndoAsync">@Loc["nut_undo"]</button>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Undo.Changed += Refresh;
+        Loc.OnLanguageChanged += Refresh;
+    }
+
+    private async Task UndoAsync()
+    {
+        if (!await Undo.UndoAsync()) Toasts.Show(Loc["nut_save_error"], isError: true);
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Undo.Changed -= Refresh;
+        Loc.OnLanguageChanged -= Refresh;
+    }
+}

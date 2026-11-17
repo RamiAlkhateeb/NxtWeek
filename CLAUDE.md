@@ -74,7 +74,7 @@ nxtweek.theme
 | Shopping list (stores with items; a store's `logoDomain` and `emoji` come from Gemini) | `users/{key}/shopping` |
 | Which store an item goes to, by ingredient key or name | `users/{key}/shoppingRoutes/{key}` |
 | Plan items the user removed from the list, with the amount the plan needed then | `users/{key}/shoppingDismissed/{ingredientKey}` |
-| Day slots (Meal 1, afternoon snack, dinner, evening snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
+| Day slots (Meal 1, afternoon snack, dinner, evening snack) and glasses of water (`water`, personal, never mirrored) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
 | Body data, goal and target overrides (health data, signed-in only) | `users/{key}/nutritionProfile` |
 | Weight and waist (signed-in only, never localStorage) | `users/{key}/body/{yyyy-MM-dd}` |
@@ -99,7 +99,10 @@ save for everyone; goal and body data are saved only for a signed-in user, so a 
 continues with the default targets. Settings is grouped as You, App and Account.
 
 The Week page shows calories and protein as two smartwatch-style rings (`TargetRing`, arcs from `DayStatus.RingArcs`:
-eaten solid, planned faint, full and in the accent colour when over) with what is left; carbs and fat appear under Details only when
+eaten solid, planned faint, full and in the accent colour when over) with what is left. Under them, today shows the next
+meal as a big card with one-tap "Mark as eaten" (`DayStatus.NextMeal`), and every day a water row of eight glasses
+(`WaterCard`, `IDayPlanService.SetWaterAsync`, `DayStatus.WaterAfterTap`). Each day in the strip has a mini ring with the
+share of the calorie target eaten (`DayStatus.EatenShare`), green with a tick when the day is logged. carbs and fat appear under Details only when
 `mealPrefs.trackMacros` is on. An empty slot is one "Add a meal" target that opens `AddMealSheet` (search,
 suggestions with a reason, Rediscover, Browse all meals, Quick add). The day strip swipes a whole week at a time from 8 weeks back to next week (one `GetDaysAsync` for the range;
 older weeks are in Month view). The slot sheet puts Mark as eaten / Change meal first, nutrition as one line that opens,
@@ -140,7 +143,8 @@ domain and an emoji (`IStoreLogoService`, cleaned by `StoreLogo.Clean`), the log
 favicon service, else the emoji, else the first letter; asked once per store (`logoChecked`), again after a rename.
 Any item can be deleted. A plan item that is deleted is remembered in `shoppingDismissed` and stays away until the plan
 needs more of it (`ShoppingAggregator.Sync` with `dismissed`, `DismissFor`); "Clear list" empties every store and dismisses
-the plan items the same way, in one write.
+the plan items the same way, in one write. Rows swipe (`nxtweek.swipeRows`): towards the reading end ticks an item,
+towards the start removes it.
 The page runs one change at a time and applies a live update that arrives meanwhile right after it. The page brings the list in
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
 (`IngredientKey`) that are not bought. Bought items stay in their store, struck through; "Clear bought" removes only typed items
@@ -183,6 +187,13 @@ loses the meal. "Estimate from ingredients" uses the same call (`GeminiNutrition
 All Gemini calls go through Nxt.UI's `GeminiClient`: it tries the model chosen in Settings (saved as soon as it is
 picked), then up to three chat models the key can reach, and reports a switch in `LastFallback`. Failures are
 `GeminiApiException` with Google's own reason; show them with `NxtText.AiError(ex)`, never `ex.Message`.
+
+## Undo and feedback
+
+Changes that are easy to regret offer Undo for six seconds in the bar above the tabs (`UndoService` + `UndoBar` in the
+layout, a Makdous component because Nxt.UI's toast has no action): removing a meal, moving or copying it, "No" on the
+check-in, removing a shopping item and Clear list. The offer replaces the usual toast. Marking a meal eaten, ticking an
+item and swiping one away give a short vibration (`nxtweek.buzz`) where the phone supports it.
 
 ## Recipe steps and cooking mode
 

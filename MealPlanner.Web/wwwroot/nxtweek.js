@@ -379,3 +379,71 @@ window.nxtweek.offlineAncestors = (prefix, path) => {
     }
     return found;
 };
+
+// A short vibration as feedback (ticking an item, marking a meal eaten), where the phone supports it.
+window.nxtweek.buzz = (ms = 12) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch { } };
+
+// Swipe a list row sideways: towards the reading end ticks it, towards the start removes it. Rows carry
+// data-swipe-id; the row follows the finger and shows which action a release would take. Vertical scrolling and
+// taps are left alone, and a click right after a swipe is swallowed so it does not open the row.
+window.nxtweek.swipeRows = (() => {
+    const lists = new Map();
+    let next = 1;
+    return {
+        watch(container, dotnetRef, method) {
+            const id = next++;
+            let drag = null;
+            const rtl = () => getComputedStyle(container).direction === 'rtl';
+            const start = e => {
+                const row = e.target.closest?.('[data-swipe-id]');
+                if (!row || !container.contains(row) || e.touches.length !== 1 || e.target.closest('input, textarea')) return;
+                drag = { row, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, active: false };
+            };
+            const move = e => {
+                if (!drag) return;
+                const dx = e.touches[0].clientX - drag.x, dy = e.touches[0].clientY - drag.y;
+                if (!drag.active) {
+                    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+                    if (Math.abs(dx) < 10) return;
+                    drag.active = true;
+                    drag.row.style.transition = 'none';
+                }
+                drag.dx = dx;
+                const towardEnd = rtl() ? dx < 0 : dx > 0;
+                drag.row.dataset.swipe = Math.abs(dx) > Math.min(90, drag.row.offsetWidth * 0.3) ? (towardEnd ? 'tick' : 'remove') : 'hint-' + (towardEnd ? 'tick' : 'remove');
+                drag.row.style.transform = `translateX(${dx}px)`;
+                if (e.cancelable) e.preventDefault();
+            };
+            const end = () => {
+                if (!drag) return;
+                const { row, dx, active } = drag;
+                drag = null;
+                if (!active) return;
+                const action = row.dataset.swipe;
+                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                row.style.transition = reduce ? 'none' : 'transform .18s ease-out';
+                row.style.transform = '';
+                delete row.dataset.swipe;
+                // the click that follows a drag must not open the row
+                const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); };
+                row.addEventListener('click', swallow, { capture: true, once: true });
+                setTimeout(() => row.removeEventListener('click', swallow, { capture: true }), 400);
+                if (action === 'tick' || action === 'remove') {
+                    dotnetRef.invokeMethodAsync(method, row.dataset.swipeId, action).catch(() => { });
+                }
+            };
+            container.addEventListener('touchstart', start, { passive: true });
+            container.addEventListener('touchmove', move, { passive: false });
+            container.addEventListener('touchend', end);
+            container.addEventListener('touchcancel', end);
+            lists.set(id, () => {
+                container.removeEventListener('touchstart', start);
+                container.removeEventListener('touchmove', move);
+                container.removeEventListener('touchend', end);
+                container.removeEventListener('touchcancel', end);
+            });
+            return id;
+        },
+        unwatch(id) { lists.get(id)?.(); lists.delete(id); }
+    };
+})();

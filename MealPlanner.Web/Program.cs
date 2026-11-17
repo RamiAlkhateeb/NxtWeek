@@ -29,6 +29,7 @@ builder.Services.AddScoped<IUserService>(sp => sp.GetRequiredService<FirebaseUse
 builder.Services.AddScoped<FirebaseMealCatalogService>();
 builder.Services.AddScoped<IMealCatalogService>(sp => sp.GetRequiredService<FirebaseMealCatalogService>());
 builder.Services.AddScoped<FirebaseRest>();
+builder.Services.AddScoped<UndoService>();
 builder.Services.AddScoped<IShoppingListOwner, SyncedListOwner>();
 builder.Services.AddScoped<IShoppingListService, FirebaseShoppingListService>();
 builder.Services.AddScoped<IShoppingStoreService, FirebaseShoppingStoreService>();

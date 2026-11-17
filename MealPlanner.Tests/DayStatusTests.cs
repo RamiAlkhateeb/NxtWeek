@@ -115,4 +115,39 @@ public class DayStatusTests
         Assert.Equal((1.0, 0.0, true), DayStatus.RingArcs(2400, 300, 2000));
         Assert.Equal((0.0, 0.0, false), DayStatus.RingArcs(100, 100, 0));
     }
+
+    [Fact]
+    public void Next_meal_is_the_earliest_unanswered_planned_meal_still_ahead()
+    {
+        var prefs = new MealPrefs();   // Meal 1, Dinner and Evening snack on
+        var day = new PlanDay
+        {
+            Slots =
+            {
+                [MealSlot.Meal1] = new SlotEntry { MealId = "a" },
+                [MealSlot.Dinner] = new SlotEntry { MealId = "b" },
+                [MealSlot.Snack] = new SlotEntry { MealId = "c" }
+            }
+        };
+        var before = TimeOnly.Parse(prefs.TimeOf(MealSlot.Meal1)).AddMinutes(-5);
+        var afterDinner = TimeOnly.Parse(prefs.TimeOf(MealSlot.Dinner)).AddMinutes(5);
+        Assert.Equal(MealSlot.Meal1, DayStatus.NextMeal(day, prefs, before));
+        Assert.Equal(MealSlot.Snack, DayStatus.NextMeal(day, prefs, afterDinner));
+        day.Slots[MealSlot.Meal1].Eaten = true;
+        Assert.Equal(MealSlot.Dinner, DayStatus.NextMeal(day, prefs, before));
+        day.Slots.Clear();
+        Assert.Null(DayStatus.NextMeal(day, prefs, before));
+        Assert.Null(DayStatus.NextMeal(null, prefs, before));
+    }
+
+    [Fact]
+    public void Water_glasses_fill_up_to_the_tapped_one_and_the_last_one_empties()
+    {
+        Assert.Equal(3, DayStatus.WaterAfterTap(0, 2));
+        Assert.Equal(2, DayStatus.WaterAfterTap(3, 2));
+        Assert.Equal(1, DayStatus.WaterAfterTap(3, 0));
+        Assert.Equal(0, DayStatus.WaterAfterTap(1, 0));
+        Assert.Equal(0.5, DayStatus.EatenShare(1000, 2000));
+        Assert.Equal(1, DayStatus.EatenShare(3000, 2000));
+    }
 }

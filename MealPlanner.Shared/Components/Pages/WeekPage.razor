@@ -13,6 +13,7 @@
 @inject ILocalizationService Loc
 @inject IMealImageService MealImages
 @inject ToastService Toasts
+@inject UndoService Undo
 @inject LiveWatch Live
 @implements IAsyncDisposable
 
@@ -51,7 +52,7 @@
             </a>
         </div>
 
-        <DayStrip Weeks="StripWeeks" Current="WeekStart" Selected="selectedDate" Today="Today" Dots="dots" Logged="logged"
+        <DayStrip Weeks="StripWeeks" Current="WeekStart" Selected="selectedDate" Today="Today" Dots="dots" Logged="logged" Progress="progress"
                   OnSelect="SelectDay" OnWeek="GoToWeekAsync" />
     </header>
 
@@ -121,6 +122,34 @@
             </FootContent>
         </TargetsPanel>
         }
+
+        @if (selectedDate == Today && DayStatus.NextMeal(SelectedDay, prefs, now) is { } next && SelectedDay?.Slots.GetValueOrDefault(next) is { } nextEntry)
+        {
+            @* Today at a glance: the next meal, big, with "Mark as eaten" in one tap. *@
+            var nextMeal = MealFor(nextEntry);
+            var nn = DayMath.Of(nextEntry, _ => nextMeal?.Nutrition);
+            <section class="mk-next" aria-label="@Loc["nut_next_meal"]">
+                <button type="button" class="mk-next-open" @onclick="() => openSlot = next">
+                    @if (nextMeal is not null && !nextEntry.IsQuick)
+                    {
+                        <span class="mk-next-tile mk-tile @MealTypeStyle.T(nextMeal.MealType)" aria-hidden="true"><MealPhoto Meal="nextMeal" /></span>
+                    }
+                    <span class="mk-next-copy">
+                        <span class="mk-next-eyebrow">@Loc.T("nut_next_at", SlotName(next), TimeOf(next))</span>
+                        <b class="mk-next-name">@(nextEntry.Quick?.Name ?? nextMeal?.Name)</b>
+                        @if (!nn.Missing)
+                        {
+                            <span class="mk-subtitle">@Loc.T("nut_kcal_protein", Loc.Num(nn.Totals.Kcal), Loc.Num(nn.Totals.Protein))</span>
+                        }
+                    </span>
+                </button>
+                <button type="button" class="mk-btn is-block" @onclick="() => ToggleEatenAsync(next)">
+                    <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>@Loc["nut_mark_eaten"]
+                </button>
+            </section>
+        }
+
+        <WaterCard Glasses="SelectedDay?.Water ?? 0" OnChange="SetWaterAsync" />
 
         <div class="mk-stack mk-slots">
             @foreach (var slot in Slots)
@@ -200,6 +229,7 @@
     private Dictionary<DateOnly, PlanDay> days = new();
     private Dictionary<string, MealCatalogItem> catalog = new();
     private Dictionary<DateOnly, DayDot> dots = new();
+    private Dictionary<DateOnly, double> progress = new();
     private NutritionProfile profile = new();
     private bool profileMissing;
     private MealPrefs prefs = new();
@@ -413,6 +443,8 @@
         var all = Enumerable.Range(0, RangeEnd.DayNumber - RangeStart.DayNumber + 1).Select(i => RangeStart.AddDays(i)).ToList();
         dots = all.ToDictionary(d => d, d => DayStatus.DotFor(days.GetValueOrDefault(d), prefs));
         logged = all.Where(d => DayStatus.DayLogged(days.GetValueOrDefault(d), prefs)).ToHashSet();
+        var target = TargetCalculator.For(profile);
+        progress = all.ToDictionary(d => d, d => DayStatus.EatenShare(DayMath.Totals(days.GetValueOrDefault(d), target, NutritionFor, prefs).Eaten.Kcal, target.Kcal));
     }
 
     // Moving to another week keeps the same weekday selected (today when it is this week).
@@ -436,14 +468,16 @@
     private void SelectDay(DateOnly date) => selectedDate = date;
 
     // Every change is shown at once and saved in the background; a failed save reloads the truth.
-    private async Task SaveAsync(Func<Task<PlanDay>> write, string? toast = null)
+    // With an undo, the message shows in the undo bar instead of a toast, with the action that puts the day back.
+    private async Task SaveAsync(Func<Task<PlanDay>> write, string? toast = null, (string Text, Func<Task<PlanDay>> Back)? undo = null)
     {
         try
         {
             var saved = await write();
             days[saved.Date] = saved;
             RefreshDots();
-            if (toast is not null) Toasts.Show(toast);
+            if (undo is { } u) OfferUndo(u.Text, async () => [await u.Back()]);
+            else if (toast is not null) Toasts.Show(toast);
             await PublishShareStatsAsync();
         }
         catch (Exception ex)
@@ -461,7 +495,9 @@
         void Apply(SlotEntry e) { e.Eaten = ate; e.Skipped = !ate; }
         if (SelectedDay?.Slots.GetValueOrDefault(slot) is { } local) Apply(local);
         var celebrated = Celebrate(date, before);
-        return SaveAsync(() => DayPlan.UpdateEntryAsync(uid, date, slot, Apply), celebrated ? null : ate ? Loc["nut_eaten_toast"] : Loc["nut_skipped_toast"]);
+        if (ate) _ = BuzzAsync();
+        return SaveAsync(() => DayPlan.UpdateEntryAsync(uid, date, slot, Apply), celebrated ? null : ate ? Loc["nut_eaten_toast"] : null,
+            ate ? null : (Loc["nut_skipped_toast"], () => DayPlan.UpdateEntryAsync(uid, date, slot, e => { e.Eaten = false; e.Skipped = false; })));
     }
 
     // From the sheet: mark as eaten, or undo an earlier answer (eaten or skipped) back to planned.
@@ -474,6 +510,7 @@
         void Apply(SlotEntry e) { e.Eaten = !answered; e.Skipped = false; }
         if (entry is not null) Apply(entry);
         var celebrated = !answered && Celebrate(date, before);
+        if (!answered) _ = BuzzAsync();
         return SaveAsync(() => DayPlan.UpdateEntryAsync(uid, date, slot, Apply), answered || celebrated ? null : Loc["nut_eaten_toast"]);
     }
 
@@ -542,8 +579,37 @@
         if (openSlot is not { } slot) return;
         var date = selectedDate;
         openSlot = null;
+        var removed = SelectedDay?.Slots.GetValueOrDefault(slot)?.Clone();
         SelectedDay?.Slots.Remove(slot);
-        await SaveAsync(() => DayPlan.RemoveEntryAsync(uid, date, slot), Loc["nut_removed_toast"]);
+        await SaveAsync(() => DayPlan.RemoveEntryAsync(uid, date, slot), Loc["nut_removed_toast"],
+            removed is null ? null : (Loc["nut_removed_toast"], () => DayPlan.SetEntryAsync(uid, date, slot, removed)));
+    }
+
+    // The undo bar's action: puts the days back as they were and shows them.
+    private void OfferUndo(string text, Func<Task<IEnumerable<PlanDay>>> back)
+    {
+        Toasts.Hide();
+        Undo.Offer(text, async () =>
+        {
+            foreach (var day in await back())
+                if (day.Date >= RangeStart && day.Date <= RangeEnd) days[day.Date] = day;
+            RefreshDots();
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task SetWaterAsync(int glasses)
+    {
+        var date = selectedDate;
+        var day = days.TryGetValue(date, out var existing) ? existing : days[date] = new PlanDay { Date = date };
+        if (glasses > day.Water) _ = BuzzAsync();
+        day.Water = glasses;   // optimistic
+        await SaveAsync(() => DayPlan.SetWaterAsync(uid, date, glasses));
+    }
+
+    private async Task BuzzAsync()
+    {
+        try { await JS.InvokeVoidAsync("nxtweek.buzz", 12); } catch { /* no vibration here */ }
     }
 
     private async Task AddQuickAsync(SlotEntry entry)
@@ -630,15 +696,21 @@
         moveBusy = true;
         try
         {
-            var changed = moveCopying
-                ? (await DayPlan.CopyEntryAsync(uid, moveFromDate, fromSlot, target.Date, target.Slot) is { } copy ? new List<PlanDay> { copy } : [])
-                : await DayPlan.MoveEntryAsync(uid, moveFromDate, fromSlot, target.Date, target.Slot);
+            var from = moveFromDate;
+            var copying = moveCopying;
+            // What was in the target before a copy, so Undo can put it back (a move is undone by moving back).
+            var replaced = (moveDays.GetValueOrDefault(target.Date) ?? days.GetValueOrDefault(target.Date))?.Slots.GetValueOrDefault(target.Slot)?.Clone();
+            var changed = copying
+                ? (await DayPlan.CopyEntryAsync(uid, from, fromSlot, target.Date, target.Slot) is { } copy ? new List<PlanDay> { copy } : [])
+                : await DayPlan.MoveEntryAsync(uid, from, fromSlot, target.Date, target.Slot);
             foreach (var day in changed)
                 if (day.Date >= RangeStart && day.Date <= RangeEnd) days[day.Date] = day;
             RefreshDots();
             moveSlot = null;
             var where = Loc.T("nut_slot_on_day", SlotName(target.Slot), Loc.GetDayName(target.Date.DayOfWeek));
-            Toasts.Show(Loc.T(moveCopying ? "nut_copied_toast" : "nut_moved_toast", where));
+            OfferUndo(Loc.T(copying ? "nut_copied_toast" : "nut_moved_toast", where), async () => copying
+                ? [replaced is null ? await DayPlan.RemoveEntryAsync(uid, target.Date, target.Slot) : await DayPlan.SetEntryAsync(uid, target.Date, target.Slot, replaced)]
+                : await DayPlan.MoveEntryAsync(uid, target.Date, target.Slot, from, fromSlot));
         }
         catch
         {

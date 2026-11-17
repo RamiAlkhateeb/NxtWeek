@@ -19,6 +19,7 @@
 @inject IUserService UserService
 @inject LiveWatch Live
 @inject IJSRuntime JS
+@inject UndoService Undo
 
 @* Shopping by servings: the meals still to cook from today to Sunday (servings and meal prep change the plan
    itself), and one list grouped by aisle that follows them. The list is brought in line with the plan on
@@ -91,7 +92,8 @@
                 }
             </section>
 
-            <section class="mk-card mk-shop-card" aria-labelledby="list-h">
+            @* Rows swipe: towards the reading end ticks an item, towards the start removes it (nxtweek.swipeRows). *@
+            <section class="mk-card mk-shop-card" aria-labelledby="list-h" @ref="listCard">
                 <div class="mk-shop-list-head">
                     <h2 id="list-h" class="mk-shop-h">@Loc["nut_shopping_list"]</h2>
                     @if (all.Count > 0)
@@ -155,6 +157,8 @@
                     @foreach (var (shop, item) in Ordered(all.Where(x => x.Item.IsBought))) { @ItemRow(shop, item) }
                 }
 
+                @if (all.Count > 0) { <p class="mk-shop-hint">@Loc["nut_swipe_hint"]</p> }
+
                 @if (Clearable.Count > 0)
                 {
                     <button class="mk-btn is-soft is-sm is-block mk-clear-bought" disabled="@isBusy" @onclick="ClearBoughtAsync">@Loc.T("nut_clear_bought", Loc.Num(Clearable.Count))</button>
@@ -172,7 +176,7 @@
 </div>
 
 @code {
-    private RenderFragment ItemRow(ShoppingShop shop, ShoppingItem item) => @<div class="mk-shop-item @(item.IsBought ? "is-bought" : "")">
+    private RenderFragment ItemRow(ShoppingShop shop, ShoppingItem item) => @<div class="mk-shop-item @(item.IsBought ? "is-bought" : "")" data-swipe-id="@($"{shop.Id}/{item.Id}")">
         <button class="mk-check @(item.IsBought ? "is-on" : "")" role="checkbox" aria-checked="@(item.IsBought ? "true" : "false")" aria-label="@item.Name" @onclick="() => ToggleItemAsync(shop, item)">
             @if (item.IsBought) { <svg class="i" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg> }
         </button>
@@ -400,14 +404,16 @@
 
     // Runs one change, then reads the list again (and brings it in line with the plan). A failed change shows
     // <paramref name="onError"/> (a toast by default) and the list as it really is.
-    private async Task ChangeAsync(Func<Task> change, Action? onError = null)
+    // True when the change itself succeeded.
+    private async Task<bool> ChangeAsync(Func<Task> change, Action? onError = null)
     {
         await gate.WaitAsync();
         isBusy = true;
+        var ok = true;
         try
         {
             try { await change(); }
-            catch { (onError ?? (() => Toasts.Show(Loc["nut_save_error"], isError: true)))(); }
+            catch { ok = false; (onError ?? (() => Toasts.Show(Loc["nut_save_error"], isError: true)))(); }
             refreshWaiting = false;
             try { await LoadAndSyncAsync(); } catch { /* keep what is shown */ }
         }
@@ -417,6 +423,7 @@
             gate.Release();
         }
         if (refreshWaiting) { refreshWaiting = false; await RefreshAsync(); }
+        return ok;
     }
 
     private async Task LoadAndSyncAsync()
@@ -501,7 +508,7 @@
     private Task UpdatePlannedAsync(PlannedEntry entry, Action<SlotEntry> change)
     {
         change(entry.Entry);
-        return ChangeAsync(() => DayPlan.UpdateEntryAsync(uid, entry.Date, entry.Slot, change));
+        return (Task)ChangeAsync(() => DayPlan.UpdateEntryAsync(uid, entry.Date, entry.Slot, change));
     }
 
     // Measured amounts read "1.2 kg", "750 g", "3 pc"; units typed by hand are shown as written.
@@ -531,6 +538,7 @@
     private async Task ToggleItemAsync(ShoppingShop shop, ShoppingItem item)
     {
         item.IsBought = !item.IsBought;                       // optimistic: the list reacts immediately
+        if (item.IsBought) await BuzzAsync();
         item.BoughtAtUtc = item.IsBought ? DateTime.UtcNow : null;
         try { await ShoppingListService.SetItemBoughtAsync(uid, shop.Id, item.Id, item.IsBought); }
         catch
@@ -549,8 +557,10 @@
         confirmClear = false;
         var dismiss = ShoppingAggregator.Merge(planned.Concat(partnerPlanned))
             .ToDictionary(l => ShoppingAggregator.DismissKey(l.Key), ShoppingAggregator.StoredQuantity);
-        await ChangeAsync(() => ShoppingListService.ClearAsync(uid, dismiss));
-        Toasts.Show(Loc["nut_clear_list_done"]);
+        var removed = AllItems.Select(x => (x.Shop.Id, x.Item)).ToList();
+        var newlyDismissed = dismiss.Keys.Where(k => !dismissed.ContainsKey(k)).ToList();   // before the reload
+        if (await ChangeAsync(() => ShoppingListService.ClearAsync(uid, dismiss)))
+            OfferUndo(Loc["nut_clear_list_done"], removed, newlyDismissed);
     }
 
     private void OpenEdit(ShoppingShop shop, ShoppingItem item)
@@ -586,10 +596,55 @@
     {
         if (editing is not { } item || editingShop is not { } shop) return;
         CloseEdit();
-        // A plan item is remembered as removed, so the list does not add it straight back.
+        await RemoveAsync(shop, item);
+    }
+
+    // Removes one item, with Undo. A plan item is remembered as removed, so the list does not add it straight back.
+    private async Task RemoveAsync(ShoppingShop shop, ShoppingItem item)
+    {
         var removal = ShoppingAggregator.DismissFor(item, ShoppingAggregator.Merge(planned.Concat(partnerPlanned)));
         var dismiss = removal is { } r ? new Dictionary<string, int> { [r.Key] = r.Amount } : null;
-        await ChangeAsync(() => ShoppingListService.RemoveItemsAsync(uid, [(shop.Id, item.Id)], dismiss));
+        if (await ChangeAsync(() => ShoppingListService.RemoveItemsAsync(uid, [(shop.Id, item.Id)], dismiss)))
+            OfferUndo(Loc.T("nut_item_removed", item.Name), [(shop.Id, item)], dismiss?.Keys.ToList() ?? []);
+    }
+
+    private void OfferUndo(string text, List<(string ShopId, ShoppingItem Item)> items, List<string> undismiss)
+    {
+        Toasts.Hide();
+        Undo.Offer(text, async () =>
+        {
+            if (!await ChangeAsync(() => ShoppingListService.RestoreItemsAsync(uid, items, undismiss))) throw new InvalidOperationException();
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    // A swipe on a row: "tick" toggles bought, "remove" removes it (with Undo).
+    [JSInvokable]
+    public async Task OnSwipe(string id, string action)
+    {
+        var parts = id.Split('/', 2);
+        if (parts.Length != 2 || shops.FirstOrDefault(s => s.Id == parts[0]) is not { } shop
+            || shop.Items.Values.FirstOrDefault(i => i.Id == parts[1]) is not { } item) return;
+        if (action == "tick") await ToggleItemAsync(shop, item);
+        else if (action == "remove") { _ = BuzzAsync(); await RemoveAsync(shop, item); }
+        StateHasChanged();
+    }
+
+    private async Task BuzzAsync()
+    {
+        try { await JS.InvokeVoidAsync("nxtweek.buzz", 12); } catch { /* no vibration here */ }
+    }
+
+    private ElementReference listCard;
+    private DotNetObjectReference<ShoppingPage>? self;
+    private int swipeWatch;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (swipeWatch != 0 || isLoading || loadError) return;
+        self ??= DotNetObjectReference.Create(this);
+        try { swipeWatch = await JS.InvokeAsync<int>("nxtweek.swipeRows.watch", listCard, self, nameof(OnSwipe)); }
+        catch { swipeWatch = -1; /* tapping still works */ }
     }
 
     // The open items as text, by store and in shop order, for WhatsApp and the like.
@@ -667,6 +722,8 @@
 
     public void Dispose()
     {
+        if (swipeWatch > 0) _ = JS.InvokeVoidAsync("nxtweek.swipeRows.unwatch", swipeWatch).AsTask();
+        self?.Dispose();
         Loc.OnLanguageChanged -= OnLanguageChanged;
         foreach (var w in watches) _ = w.DisposeAsync().AsTask();
     }

@@ -33,6 +33,8 @@ public interface IShoppingListService
     Task ClearAsync(string uid, IReadOnlyDictionary<string, int> dismiss);
     /// <summary>Plan items the user removed, by <see cref="ShoppingAggregator.DismissKey"/>, with the amount needed then.</summary>
     Task<Dictionary<string, int>> GetDismissedAsync(string uid);
+    /// <summary>Puts removed items back where they were (Undo), forgetting their dismissals, in one write.</summary>
+    Task RestoreItemsAsync(string uid, IEnumerable<(string ShopId, ShoppingItem Item)> items, IEnumerable<string> undismiss);
     /// <summary>Forgets removals that no longer apply.</summary>
     Task UndismissAsync(string uid, IEnumerable<string> keys);
 }
