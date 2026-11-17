@@ -22,7 +22,7 @@
             <h1 class="mk-title">@Loc["meals_title"]</h1>
             <button class="mk-icon-btn" aria-label="@Loc["meals_filter"]" @onclick="() => showFilters = true">
                 <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
-                @if (!filterByAppLanguage || selectedMealType is not null) { <span class="mk-dot-badge" aria-hidden="true"></span> }
+                @if (!filterByAppLanguage) { <span class="mk-dot-badge" aria-hidden="true"></span> }
             </button>
         </div>
 
@@ -50,23 +50,14 @@
             <input type="search" placeholder="@Loc["meals_search_placeholder"]" aria-label="@Loc["meals_search_placeholder"]" @bind="searchText" @bind:event="oninput" />
         </label>
 
-        <div class="mk-chip-row is-wrap mk-meal-filters" role="group" aria-label="@Loc["meals_filter"]">
-            @foreach (var (flag, key) in NutritionFilters)
+        @* The meal types as chips, one tap each; the filter sheet only holds the language. *@
+        <div class="mk-chip-row is-wrap mk-meal-filters" role="group" aria-label="@Loc["meals_meal_type"]">
+            <button class="mk-chip @(selectedMealType is null ? "is-active" : "")" aria-pressed="@(selectedMealType is null ? "true" : "false")" @onclick="() => selectedMealType = null">@Loc["meals_filter_all"]</button>
+            @foreach (var type in AllTypes)
             {
-                var f = flag;
-                var on = filters.HasFlag(f);
-                <button class="mk-chip is-outline @(on ? "is-active" : "")" aria-pressed="@(on ? "true" : "false")" @onclick="() => filters ^= f">@Loc[key]</button>
+                var t = type;
+                <button class="mk-chip @(selectedMealType == t ? "is-active" : "")" aria-pressed="@(selectedMealType == t ? "true" : "false")" @onclick="() => selectedMealType = t">@Loc.GetMealTypeName(t)</button>
             }
-            <label class="mk-sort">
-                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>
-                <span class="mk-visually-hidden">@Loc["nut_sort"]</span>
-                <select aria-label="@Loc["nut_sort"]" value="@sort" @onchange="e => sort = Enum.TryParse<MealSort>(e.Value?.ToString(), out var v) ? v : MealSort.Recommended">
-                    @foreach (var option in Enum.GetValues<MealSort>())
-                    {
-                        <option value="@option" selected="@(sort == option)">@Loc["nut_sort_" + option]</option>
-                    }
-                </select>
-            </label>
         </div>
     </header>
 
@@ -86,7 +77,7 @@
             <button class="mk-btn is-block" @onclick="LoadAsync">@Loc["nut_retry"]</button>
         </div>
     }
-    else if (FilteredMeals.Count == 0 && (filters != MealFilters.None || selectedMealType is not null || !string.IsNullOrWhiteSpace(searchText)))
+    else if (FilteredMeals.Count == 0 && (selectedMealType is not null || !string.IsNullOrWhiteSpace(searchText)))
     {
         <div class="mk-stack mk-no-results">
             <svg class="i" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
@@ -155,15 +146,6 @@
 
 <NxtBottomSheet IsOpen="showFilters" Title="@Loc["meals_filter"]" OnDismiss="() => showFilters = false">
     <div class="mk-sheet-body" dir="@Loc.Direction">
-        <span class="mk-label">@Loc["meals_meal_type"]</span>
-        <div class="mk-chip-wrap" role="group" aria-label="@Loc["meals_meal_type"]">
-            <button class="mk-chip @(selectedMealType is null ? "is-active" : "")" aria-pressed="@(selectedMealType is null ? "true" : "false")" @onclick="() => SetMealType(null)">@Loc["meals_filter_all"]</button>
-            @foreach (var type in AllTypes)
-            {
-                var t = type;
-                <button class="mk-chip @(selectedMealType == t ? "is-active" : "")" aria-pressed="@(selectedMealType == t ? "true" : "false")" @onclick="() => SetMealType(t)">@Loc.GetMealTypeName(t)</button>
-            }
-        </div>
         <span class="mk-label">@Loc["meals_language_filter"]</span>
         <div class="mk-seg">
             <button class="@(filterByAppLanguage ? "is-active" : "")" @onclick="() => filterByAppLanguage = true">@Loc["meals_lang_app"]</button>
@@ -232,26 +214,15 @@
     private string searchText = "";
 
     private MealType? selectedMealType;
-    private MealFilters filters;
-    private MealSort sort = MealSort.Recommended;
     private bool loadError;
     private Dictionary<string, int> eatenCounts = new();
     private List<(MealCatalogItem Meal, int Count)> topMeals = new();
 
-    private bool ShowTopMeals => topMeals.Count > 0 && pickSlot is null && !isContextMode && filters == MealFilters.None
+    private bool ShowTopMeals => topMeals.Count > 0 && pickSlot is null && !isContextMode
                                  && selectedMealType is null && string.IsNullOrWhiteSpace(searchText);
-
-    private static readonly (MealFilters Flag, string Key)[] NutritionFilters =
-    [
-        (MealFilters.HighProtein, "nut_filter_high_protein"),
-        (MealFilters.Quick, "nut_filter_quick"),
-        (MealFilters.Favourites, "nut_filter_favourites")
-    ];
 
     private void ClearFilters()
     {
-        filters = MealFilters.None;
-        sort = MealSort.Recommended;
         selectedMealType = null;
         searchText = "";
     }
@@ -297,9 +268,7 @@
             if (selectedMealType.HasValue)
                 query = query.Where(m => m.MealType == selectedMealType.Value);
             var favourites = (userProfile?.FavoriteMealIds ?? []).ToHashSet();
-            if (filters != MealFilters.None)
-                query = query.Where(m => MealFiltering.Matches(m, filters, favourites));
-            query = MealFiltering.Sort(query, sort, favourites, eatenCounts);
+            query = MealFiltering.Recommended(query, favourites, eatenCounts);
             // Choosing for a slot: what fits the day comes first, then the most protein.
             if (pickBudget is { } budget) query = MealFiltering.PickOrder(query, budget.OpenKcal);
             return query.ToList();
@@ -405,7 +374,6 @@
         return date.AddDays(-diff);
     }
 
-    private void SetMealType(MealType? type) => selectedMealType = type;
 
     // Tapping a card opens the meal; in "pick a day" mode the day travels along so its button adds to that day.
     private void OpenMeal(MealCatalogItem meal) =>

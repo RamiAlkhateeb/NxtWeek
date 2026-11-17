@@ -108,9 +108,9 @@ A meal is moved or copied to another slot or day through `IDayPlanService.MoveEn
 (rules in `PlanMoves`: a move onto a taken slot swaps, a copy replaces). The assistant (`/ai-plan`) only has the
 two on-device asks; there is no free-text Gemini chat.
 
-Meals: search, High protein / Quick (`PreparationMinutes` ≤ 20) / Favourites chips and a sort (`MealFiltering.Sort`:
-Recommended = favourites, then most eaten, then name; Fewest calories; Most protein). Meal type and language live in
-the filter sheet. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
+Meals: search, and the meal types (All, Meat, Chicken, Fish & seafood, Vegetarian) as chips under it, one tap each; the
+filter sheet only holds the language. The list is in one order (`MealFiltering.Recommended`: favourites, then most eaten,
+then name); there is no sort or nutrition filter. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
 The Gemini details call also fills a missing cooking time.
 
 Progress is one page: weight and waist with the weekly check, the weekly summary, badges (`Badges`, pure: first full
@@ -128,7 +128,7 @@ their own `ramadanTimes`: show slot names with `Loc[prefs.NameKey(slot)]` and ti
 
 Shopping (`/shopping`) is shopping by servings: the meals still to cook from today to Sunday (not eaten, skipped or
 leftover) as small chips in two scrolling rows (a chip opens servings and meal prep), and one list in shop order with quick add
-and a collapsed "Bought" part, that follows them. With more than one store the list is grouped by store; moving an item
+and bought items struck through at the end of their own store, that follows them. With more than one store the list is grouped by store; moving an item
 to a store remembers it for next time (`users/{owner}/shoppingRoutes/{StoreRoute.Key}`), and plan items without a
 remembered store go to the first store made (`ShoppingStores`, pure and tested). Moving an item and deleting a store
 (its items go to the default store) are single multi-path writes, so no reader ever sees an item in two stores. Items are
@@ -139,7 +139,7 @@ favicon service, else the emoji, else the first letter; asked once per store (`l
 "Clear list" empties every store in one write; the planned meals' items come straight back, unbought.
 The page runs one change at a time and applies a live update that arrives meanwhile right after it. The page brings the list in
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
-(`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
+(`IngredientKey`) that are not bought. Bought items stay in their store, struck through; "Clear bought" removes only typed items
 and ones the plan no longer needs. Old accounts with several stores see all their items together.
 
 Friends: each friend's week shows their meals (tap one to add it to your favourites) and, only when they share, calories

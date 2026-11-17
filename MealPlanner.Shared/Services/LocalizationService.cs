@@ -326,7 +326,6 @@ public class LocalizationService : ILocalizationService
         // {0} = items left to buy, {1} = number of stores
         // {0} = bought count, {1} = total
         // {0} = bought count
-        ["shopping_bought_n"] = new() { ["ar"] = "تم شراؤها ({0})", ["en"] = "Bought ({0})", ["de"] = "Gekauft ({0})" },
         ["shopping_store_options"] = new() { ["ar"] = "خيارات المتجر", ["en"] = "Store options", ["de"] = "Geschäftsoptionen" },
         ["shopping_which_store"] = new() { ["ar"] = "أي متجر؟", ["en"] = "Which store?", ["de"] = "Welches Geschäft?" },
         ["shopping_item_name"] = new() { ["ar"] = "اسم العنصر", ["en"] = "Item name", ["de"] = "Artikelname" },
@@ -610,10 +609,6 @@ public class LocalizationService : ILocalizationService
         ["nut_moved_toast"] = new() { ["ar"] = "تم النقل إلى {0}", ["en"] = "Moved to {0}", ["de"] = "Verschoben nach: {0}" },
         ["nut_copied_toast"] = new() { ["ar"] = "تم النسخ إلى {0}", ["en"] = "Copied to {0}", ["de"] = "Kopiert nach: {0}" },
         ["nut_assistant_for"] = new() { ["ar"] = "اختر طلبًا في الأسفل لتخطيط {0}.", ["en"] = "Choose a request below to plan {0}.", ["de"] = "Wähle unten eine Anfrage, um {0} zu planen." },
-        ["nut_sort"] = new() { ["ar"] = "ترتيب", ["en"] = "Sort", ["de"] = "Sortieren" },
-        ["nut_sort_Recommended"] = new() { ["ar"] = "مقترح", ["en"] = "Recommended", ["de"] = "Empfohlen" },
-        ["nut_sort_FewestKcal"] = new() { ["ar"] = "الأقل سعرات", ["en"] = "Fewest calories", ["de"] = "Wenigste Kalorien" },
-        ["nut_sort_MostProtein"] = new() { ["ar"] = "الأكثر بروتيناً", ["en"] = "Most protein", ["de"] = "Meistes Eiweiß" },
         ["nut_top_meals"] = new() { ["ar"] = "أكثر وجباتك أكلاً", ["en"] = "Your top meals", ["de"] = "Deine Top-Gerichte" },
         ["nut_times_eaten"] = new() { ["ar"] = "{0}×", ["en"] = "{0}×", ["de"] = "{0}×" },
         ["nut_top_meal_label"] = new() { ["ar"] = "{0}، أُكلت {1} مرات", ["en"] = "{0}, eaten {1} times", ["de"] = "{0}, {1}-mal gegessen" },
@@ -880,9 +875,6 @@ public class LocalizationService : ILocalizationService
         ["nut_reason"] = new() { ["ar"] = "{0} غ بروتين، تناسب ما تبقى لك: {1} سعرة", ["en"] = "{0} g protein, fits your remaining {1} kcal", ["de"] = "{0} g Eiweiß, passt zu deinen restlichen {1} kcal" },
         ["nut_browse"] = new() { ["ar"] = "تصفح كل الوجبات", ["en"] = "Browse all meals", ["de"] = "Alle Gerichte ansehen" },
         ["nut_no_fit"] = new() { ["ar"] = "لا شيء يناسب السعرات المتبقية. جرّب إضافة سريعة.", ["en"] = "Nothing fits the remaining calories. Try a quick add.", ["de"] = "Nichts passt zu den restlichen Kalorien. Versuche Schnell erfassen." },
-        ["nut_filter_high_protein"] = new() { ["ar"] = "غني بالبروتين", ["en"] = "High protein", ["de"] = "Eiweißreich" },
-        ["nut_filter_quick"] = new() { ["ar"] = "سريع", ["en"] = "Quick", ["de"] = "Schnell" },
-        ["nut_filter_favourites"] = new() { ["ar"] = "المفضلة", ["en"] = "Favourites", ["de"] = "Favoriten" },
         ["nut_filter_all"] = new() { ["ar"] = "الكل", ["en"] = "All", ["de"] = "Alle" },
         ["nut_no_results"] = new() { ["ar"] = "لا توجد وجبات تطابق هذه التصفية", ["en"] = "No meals match these filters", ["de"] = "Keine Gerichte passen zu diesen Filtern" },
         ["nut_fits_today"] = new() { ["ar"] = "مناسبة لليوم", ["en"] = "Fits today", ["de"] = "Passt heute" },

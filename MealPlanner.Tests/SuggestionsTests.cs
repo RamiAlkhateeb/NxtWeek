@@ -112,21 +112,6 @@ public class MealFilteringTests
         new() { Id = id, PreparationMinutes = minutes, Nutrition = kcal is null ? null : new() { Kcal = kcal.Value, Protein = protein } };
 
     [Fact]
-    public void Filters_combine()
-    {
-        var shake = M("shake", 310, 32, 3);
-        var salmon = M("salmon", 640, 42, 25);
-        var koshari = M("koshari", null, 0, 45);
-        var favs = new HashSet<string> { "salmon" };
-
-        Assert.True(MealFiltering.Matches(shake, MealFilters.HighProtein | MealFilters.Under600 | MealFilters.Quick, favs));
-        Assert.False(MealFiltering.Matches(salmon, MealFilters.Under600, favs));
-        Assert.True(MealFiltering.Matches(salmon, MealFilters.Favourites | MealFilters.HighProtein, favs));
-        Assert.False(MealFiltering.Matches(koshari, MealFilters.HighProtein, favs));
-        Assert.True(MealFiltering.Matches(koshari, MealFilters.None, favs));
-    }
-
-    [Fact]
     public void Pick_order_puts_meals_that_fit_first_then_protein()
     {
         var order = MealFiltering.PickOrder([M("big", 900, 60, 30), M("small", 300, 20, 10), M("mid", 500, 40, 20), M("none", null, 0, 10)], openKcal: 600);
