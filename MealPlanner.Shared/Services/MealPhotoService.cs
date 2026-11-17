@@ -88,21 +88,19 @@ public sealed class MealPhotoOptions
     public string WorkerUrl { get; set; } = "https://makdous-photos.rami13195.workers.dev";
 }
 
-public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, MealPhotoOptions photoOptions, IJSRuntime js, IAuthService auth) : IMealPhotoService
+public sealed class MealPhotoService(HttpClient http, FirebaseRest db, MealPhotoOptions photoOptions, IJSRuntime js, IAuthService auth) : IMealPhotoService
 {
     /// <summary>Photos each account may have drawn per week. The worker enforces it (WEEKLY_LIMIT in photo-worker/wrangler.toml).</summary>
     public const int WeeklyLimit = 10;
 
     public const int Size = 480;
 
-    private readonly string baseUrl = options.DatabaseUrl.TrimEnd('/');
     private readonly Dictionary<string, string?> photos = new();
     private readonly Dictionary<string, Task<string?>> loading = new();
     private Task<HashSet<string>>? index;
 
     public event Action<string>? Changed;
 
-    private string Url(string path) => $"{baseUrl}/{path}.json";
 
     // A meal without its own photo shows its English twin's (the seeded n12 / de_n12 → en_n12).
     public async Task<string?> GetAsync(string mealId) =>
@@ -129,7 +127,7 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
     {
         try
         {
-            var shallow = await http.GetFromJsonAsync<JsonObject>($"{Url("MealPhotos")}?shallow=true");
+            var shallow = await db.GetAsync<JsonObject>("MealPhotos", "shallow=true");
             return shallow?.Select(child => child.Key).ToHashSet() ?? [];
         }
         catch
@@ -143,7 +141,7 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
     {
         try
         {
-            var url = await http.GetFromJsonAsync<string?>(Url($"MealPhotos/{Uri.EscapeDataString(mealId)}"));
+            var url = await db.GetAsync<string?>($"MealPhotos/{FirebaseRest.Key(mealId)}");
             url = url is not null && url.StartsWith("data:image/", StringComparison.Ordinal) ? url : null;
             photos[mealId] = url;
             return url;
@@ -205,8 +203,7 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
 
     private async Task StoreAsync(string mealId, string dataUrl)
     {
-        using (var saved = await http.PutAsJsonAsync(Url($"MealPhotos/{Uri.EscapeDataString(mealId)}"), dataUrl))
-            saved.EnsureSuccessStatusCode();
+        await db.PutAsync($"MealPhotos/{FirebaseRest.Key(mealId)}", dataUrl);
         photos[mealId] = dataUrl;
         (await IndexAsync()).Add(mealId);
         Changed?.Invoke(mealId);
@@ -233,7 +230,7 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         var user = (await auth.GetCurrentUserAsync())?.Uid;
         if (!string.IsNullOrWhiteSpace(user))
         {
-            try { used = await http.GetFromJsonAsync<int?>(Url($"PhotoQuota/{Uri.EscapeDataString(user)}/{monday:yyyy-MM-dd}")) ?? 0; }
+            try { used = await db.GetAsync<int?>($"PhotoQuota/{FirebaseRest.Key(user)}/{monday:yyyy-MM-dd}") ?? 0; }
             catch { /* shown as unused; the worker still counts */ }
         }
         return new PhotoQuota(used, WeeklyLimit, monday.AddDays(7));

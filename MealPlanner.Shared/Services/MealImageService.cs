@@ -21,13 +21,13 @@ namespace MealPlanner.Shared.Services;
 /// The keyword table lives here, not in the pages, so adding a language means
 /// touching exactly one place.
 /// </summary>
-public class MealImageService(HttpClient http, FirebaseOptions options, IAuthService auth) : IMealImageService
+public class MealImageService(FirebaseRest db, IAuthService auth) : IMealImageService
 {
     // A user's own pictures are kept under their profile (not in the shared catalog, which every page downloads
     // in full) and read into memory once.
     private readonly Dictionary<string, string> _photos = new();
     private string? _loadedFor;
-    private string DbUrl(string path) => $"{options.DatabaseUrl.TrimEnd('/')}/{path}.json";
+    private static string PhotosPath(string uid) => $"users/{FirebaseRest.Key(uid)}/mealPhotos";
 
     public async Task EnsureLoadedAsync()
     {
@@ -35,7 +35,7 @@ public class MealImageService(HttpClient http, FirebaseOptions options, IAuthSer
         if (user is null || string.IsNullOrWhiteSpace(user.Uid) || _loadedFor == user.Uid) return;
         try
         {
-            var stored = await http.GetFromJsonAsync<Dictionary<string, string>>(DbUrl($"users/{Uri.EscapeDataString(user.Uid)}/mealPhotos"));
+            var stored = await db.GetAsync<Dictionary<string, string>>(PhotosPath(user.Uid));
             _photos.Clear();
             foreach (var pair in stored ?? new()) _photos[pair.Key] = pair.Value;
             _loadedFor = user.Uid;
@@ -48,16 +48,14 @@ public class MealImageService(HttpClient http, FirebaseOptions options, IAuthSer
     public async Task SetPhotoAsync(string mealId, string dataUrl)
     {
         var user = await auth.GetCurrentUserAsync() ?? throw new InvalidOperationException("Not signed in.");
-        using var response = await http.PutAsJsonAsync(DbUrl($"users/{Uri.EscapeDataString(user.Uid)}/mealPhotos/{Uri.EscapeDataString(mealId)}"), dataUrl);
-        response.EnsureSuccessStatusCode();
+        await db.PutAsync($"{PhotosPath(user.Uid)}/{FirebaseRest.Key(mealId)}", dataUrl);
         _photos[mealId] = dataUrl;
     }
 
     public async Task RemovePhotoAsync(string mealId)
     {
         var user = await auth.GetCurrentUserAsync() ?? throw new InvalidOperationException("Not signed in.");
-        using var response = await http.DeleteAsync(DbUrl($"users/{Uri.EscapeDataString(user.Uid)}/mealPhotos/{Uri.EscapeDataString(mealId)}"));
-        response.EnsureSuccessStatusCode();
+        await db.DeleteAsync($"{PhotosPath(user.Uid)}/{FirebaseRest.Key(mealId)}");
         _photos.Remove(mealId);
     }
 

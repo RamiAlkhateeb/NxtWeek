@@ -1,28 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
 using MealPlanner.Shared.Models;
 
 namespace MealPlanner.Shared.Services;
 
-public class FirebaseMealCatalogService : IMealCatalogService
+public sealed class FirebaseMealCatalogService(FirebaseRest db) : IMealCatalogService
 {
     private const string CatalogPath = "MealCatalog";
-    private readonly HttpClient _http;
-    private readonly string _baseUrl;
-
-    public FirebaseMealCatalogService(HttpClient http, FirebaseOptions options)
-    {
-        _http = http;
-        _baseUrl = options.DatabaseUrl.TrimEnd('/');
-    }
+    private static string MealPath(string id) => $"{CatalogPath}/{FirebaseRest.Key(id)}";
 
     public async Task<List<MealCatalogItem>> GetAllMealsAsync()
     {
-        var all = await _http.GetFromJsonAsync<Dictionary<string, MealCatalogItemDto>>($"{_baseUrl}/{CatalogPath}.json");
+        var all = await db.GetAsync<Dictionary<string, MealCatalogItemDto>>(CatalogPath);
         if (all is null) return new List<MealCatalogItem>();
 
         return all.Select(kvp => kvp.Value.ToModel(kvp.Key)).ToList();
@@ -30,7 +17,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
 
     public async Task<MealCatalogItem?> GetMealByIdAsync(string id)
     {
-        var dto = await _http.GetFromJsonAsync<MealCatalogItemDto>($"{_baseUrl}/{CatalogPath}/{id}.json");
+        var dto = await db.GetAsync<MealCatalogItemDto>(MealPath(id));
         return dto?.ToModel(id);
     }
 
@@ -38,8 +25,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
     {
         if (string.IsNullOrWhiteSpace(meal.Id)) throw new ArgumentException("A meal ID is required.", nameof(meal));
         var dto = MealCatalogItemDto.FromModel(meal);
-        using var response = await _http.PutAsJsonAsync($"{_baseUrl}/{CatalogPath}/{meal.Id}.json", dto);
-        response.EnsureSuccessStatusCode();
+        await db.PutAsync(MealPath(meal.Id), dto);
     }
 
     public async Task<MealCatalogItem> CreateMealAsync(MealCatalogItem meal)
@@ -58,8 +44,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
 
     public async Task SaveStepsAsync(string mealId, List<RecipeStep> steps)
     {
-        using var response = await _http.PatchAsJsonAsync($"{_baseUrl}/{CatalogPath}/{Uri.EscapeDataString(mealId)}.json", new { steps });
-        response.EnsureSuccessStatusCode();
+        await db.PatchAsync(MealPath(mealId), new { steps });
     }
 
     public async Task SeedCatalogAsync(List<MealCatalogItem> meals)
@@ -101,8 +86,7 @@ public class FirebaseMealCatalogService : IMealCatalogService
         if (row.PreparationMinutes is null && seed.PreparationMinutes is not null) patch["preparationMinutes"] = seed.PreparationMinutes;
         if (patch.Count == 0) return;
 
-        using var response = await _http.PatchAsJsonAsync($"{_baseUrl}/{CatalogPath}/{row.Id}.json", patch);
-        response.EnsureSuccessStatusCode();
+        await db.PatchAsync(MealPath(row.Id), patch);
         // A later seed with the same name (an older row matched twice) must see this row as filled.
         if (patch.ContainsKey("nutrition")) row.Nutrition = seed.Nutrition;
         if (patch.ContainsKey("ingredientLines")) row.IngredientLines = seed.IngredientLines;

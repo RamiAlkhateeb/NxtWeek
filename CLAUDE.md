@@ -51,8 +51,10 @@ CSS uses logical alignment (`text-align: start`), never `right`.
 ## Data
 
 Firebase Realtime Database is the **source of truth**, reached over its REST API
-with an unauthenticated `HttpClient`. New services reach it through `FirebaseRest` (paths, `Get`/`Put`/`Patch`/`Delete`,
-multi-path `Patch` for changes that must happen together). The offline cache (below) is a convenience only — never treat
+with an unauthenticated `HttpClient`. Every service reaches it through `FirebaseRest` (`Key` escapes a path key; `Get`,
+`Put`, `Patch`, `Delete` throw on failure, `Try…` return false or null; multi-path `Patch` on a parent or `""` for changes
+that must happen together; `GetWithETagAsync` / `TryPutIfMatchAsync` for a write that must not overwrite a change made
+meanwhile). Do not build database URLs or call `HttpClient` for the database anywhere else. The offline cache (below) is a convenience only — never treat
 it as authoritative.
 
 Identity keys in `localStorage` (do **not** rename these; they are live user data):

@@ -56,7 +56,7 @@ public class FriendShareTests
     };
 
     private static FirebaseUserService Service(FakeFirebase fake) =>
-        new(new HttpClient(fake), new FirebaseOptions { DatabaseUrl = "https://db.example/" });
+        new(new FirebaseRest(new HttpClient(fake), new FirebaseOptions { DatabaseUrl = "https://db.example/" }));
 
     [Fact]
     public async Task Reading_a_profile_gets_its_fields_but_never_plan_or_health_data()
