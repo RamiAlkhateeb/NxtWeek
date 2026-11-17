@@ -1,6 +1,6 @@
 @inject ILocalizationService Loc
 
-@* The day against its targets: calories and protein, each with what is left (or over).
+@* The day against its targets: calories and protein as two rings, each with what is left (or over).
    "Details" adds eaten / planned / open, and carbs and fat only when the user tracks them. *@
 @{
     var t = Totals.Targets;
@@ -8,9 +8,9 @@
     var pl = Totals.Planned;
 }
 <section class="mk-tp" aria-label="@Loc["nut_daily_targets"]">
-    <div class="mk-tp-rows">
-        @Row(Loc["nut_calories"], "var(--mk-kc)", e.Kcal, pl.Kcal, t.Kcal, Loc["nut_kcal"])
-        @Row(Loc["nut_protein"], "var(--mk-pro)", e.Protein, pl.Protein, t.Protein, Loc["nut_g"])
+    <div class="mk-rings">
+        <TargetRing Label="@Loc["nut_calories"]" Colour="var(--mk-kc)" Eaten="e.Kcal" Planned="pl.Kcal" Target="t.Kcal" Unit="@Loc["nut_kcal"]" />
+        <TargetRing Label="@Loc["nut_protein"]" Colour="var(--mk-pro)" Eaten="e.Protein" Planned="pl.Protein" Target="t.Protein" Unit="@Loc["nut_g"]" />
     </div>
 
     @if (expanded)
@@ -58,18 +58,4 @@
     [Parameter] public RenderFragment? FootContent { get; set; }
 
     private bool expanded;
-
-    private RenderFragment Row(string label, string colour, double eaten, double planned, double target, string unit) => __builder =>
-    {
-        var left = Math.Round(target - eaten);
-        var over = left < 0;
-        <div class="mk-tp-line">
-            <div class="mk-tp-row">
-                <span class="mk-tp-label">@label</span>
-                <span class="mk-tp-left @(over ? "is-over" : "")"><b>@Loc.Num(Math.Abs(left))</b> @Loc.T(over ? "nut_unit_over" : "nut_unit_left", unit)</span>
-            </div>
-            <MacroBar Eaten="eaten" Planned="planned" Target="target" Colour="@colour" />
-            <span class="mk-tp-small">@Loc.T("nut_eaten_of", Loc.Num(eaten), Loc.Num(target), unit)</span>
-        </div>
-    };
 }

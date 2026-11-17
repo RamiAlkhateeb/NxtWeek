@@ -155,4 +155,32 @@ public class ShoppingAggregatorTests
 
         Assert.True(sync.IsEmpty);
     }
+
+    [Fact]
+    public void A_removed_plan_item_stays_away_until_the_plan_needs_more()
+    {
+        var rice = new MergedIngredient("rice|g", "Rice", 160, "g", "pantry", 1, "Chicken rice");
+        var removed = ShoppingAggregator.DismissFor(new ShoppingItem { Name = "Rice", IngredientKey = "rice|g", Quantity = 160 }, [rice]);
+        Assert.Equal(("rice|g", 160), removed);
+        var dismissed = new Dictionary<string, int> { [removed!.Value.Key] = removed.Value.Amount };
+
+        var same = ShoppingAggregator.Sync([], [rice], dismissed);
+        Assert.True(same.IsEmpty);
+
+        var more = ShoppingAggregator.Sync([], [rice with { Quantity = 320, UsedIn = 2 }], dismissed);
+        Assert.Equal("rice|g", Assert.Single(more.Add).Key);
+        Assert.Equal(["rice|g"], more.Undismiss);
+
+        var less = ShoppingAggregator.Sync([], [rice with { Quantity = 80 }], dismissed);
+        Assert.True(less.IsEmpty);
+    }
+
+    [Fact]
+    public void A_dismissal_the_plan_no_longer_needs_is_dropped_and_typed_items_are_never_dismissed()
+    {
+        var sync = ShoppingAggregator.Sync([], [], new Dictionary<string, int> { ["rice|g"] = 160 });
+        Assert.Equal(["rice|g"], sync.Undismiss);
+        Assert.Null(ShoppingAggregator.DismissFor(new ShoppingItem { Name = "Coffee" }, []));
+        Assert.Equal("txt:a_b", ShoppingAggregator.DismissKey("txt:a.b"));
+    }
 }

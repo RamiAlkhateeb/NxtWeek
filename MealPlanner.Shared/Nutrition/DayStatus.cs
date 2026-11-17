@@ -60,6 +60,17 @@ public static class DayStatus
 
     /// <summary>Percent of target, clamped to 0–100, for bars and rings.</summary>
     public static double Percent(double value, double target) => target > 0 ? Math.Clamp(value / target * 100, 0, 100) : 0;
+
+    /// <summary>
+    /// A target ring: the share eaten and the share planned on top (together at most a full ring, 0 to 1), and whether
+    /// eating went over the target.
+    /// </summary>
+    public static (double Eaten, double Planned, bool Over) RingArcs(double eaten, double planned, double target)
+    {
+        var e = Percent(eaten, target) / 100;
+        var p = Math.Min(1 - e, Percent(planned, target) / 100);
+        return (e, Math.Max(0, p), target > 0 && eaten > target);
+    }
 }
 
 /// <summary>Where a meal goes when the user did not pick a slot.</summary>

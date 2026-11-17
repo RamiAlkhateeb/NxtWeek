@@ -24,10 +24,17 @@ public interface IShoppingListService
     /// <summary>Updates the amount of an item the plan made, when the plan changed.</summary>
     Task UpdateAutoItemAsync(string uid, string shopId, string itemId, int quantity, int usedIn, string? sourceMeal);
     Task DeleteItemAsync(string uid, string shopId, string itemId);
-    /// <summary>Deletes several items at once (one write).</summary>
-    Task DeleteItemsAsync(string uid, IEnumerable<(string ShopId, string ItemId)> items);
-    /// <summary>Empties the whole list in one write; the stores stay.</summary>
-    Task ClearAsync(string uid);
+    /// <summary>
+    /// Removes items in one write. <paramref name="dismiss"/> remembers removed plan items (key → amount the plan
+    /// needed) so the list does not add them back until the plan needs more (<see cref="ShoppingAggregator.Sync"/>).
+    /// </summary>
+    Task RemoveItemsAsync(string uid, IEnumerable<(string ShopId, string ItemId)> items, IReadOnlyDictionary<string, int>? dismiss = null);
+    /// <summary>Empties the whole list in one write (the stores stay), remembering the plan items as removed.</summary>
+    Task ClearAsync(string uid, IReadOnlyDictionary<string, int> dismiss);
+    /// <summary>Plan items the user removed, by <see cref="ShoppingAggregator.DismissKey"/>, with the amount needed then.</summary>
+    Task<Dictionary<string, int>> GetDismissedAsync(string uid);
+    /// <summary>Forgets removals that no longer apply.</summary>
+    Task UndismissAsync(string uid, IEnumerable<string> keys);
 }
 
 /// <summary>The stores on the list: adding, renaming and deleting them, which store an item goes to, and their logos.</summary>

@@ -240,11 +240,8 @@
                 <p class="mk-subtitle">@Loc["nut_shop_auto_note"]</p>
             }
             <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(editName)" @onclick="SaveEditAsync">@Loc["save"]</button>
-            @* An item the plan needs would only come back; it is ticked instead. *@
-            @if (string.IsNullOrEmpty(editing.IngredientKey) || !Needed.Contains(editing.IngredientKey))
-            {
-                <button class="mk-btn is-soft is-block is-danger-text" @onclick="DeleteEditingAsync">@Loc["delete"]</button>
-            }
+            @* Any item can go. One the plan added stays away until the plan needs more of it. *@
+            <button class="mk-btn is-soft is-block is-danger-text" @onclick="DeleteEditingAsync">@Loc["delete"]</button>
         </div>
     }
 </NxtBottomSheet>
@@ -286,6 +283,8 @@
 @code {
     private List<ShoppingShop> shops = new();
     private Dictionary<string, string> routes = new();
+    // Plan items the user removed (ShoppingAggregator.DismissKey → amount the plan needed then).
+    private Dictionary<string, int> dismissed = new();
     private List<PlannedEntry> planned = new();
     // The sync partner's meals still to cook: they count in the shared list's amounts but are not shown above.
     private List<PlannedEntry> partnerPlanned = new();
@@ -437,6 +436,7 @@
         await Task.WhenAll(shopsTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
         shops = await shopsTask;
         try { routes = await Stores.GetStoreRoutesAsync(uid); } catch { routes = new(); }
+        try { dismissed = await ShoppingListService.GetDismissedAsync(uid); } catch { dismissed = new(); }
         catalog = (await catalogTask).ToDictionary(m => m.Id);
         slotPrefs = await prefsTask;
         planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, slotPrefs);
@@ -460,7 +460,7 @@
     private async Task<bool> SyncWithPlanAsync()
     {
         var lines = ShoppingAggregator.Merge(planned.Concat(partnerPlanned));
-        var sync = ShoppingAggregator.Sync(AllItems.Select(x => x.Item), lines);
+        var sync = ShoppingAggregator.Sync(AllItems.Select(x => x.Item), lines, dismissed);
         if (sync.IsEmpty) return false;
         var storeOf = ShoppingStores.StoreOfItems(shops);
         var fallback = DefaultShop ?? await Stores.GetOrAddDefaultAsync(uid, Loc["ai_plan_default_shop_name"]);
@@ -475,8 +475,10 @@
         foreach (var (item, line) in sync.Update)
             await ShoppingListService.UpdateAutoItemAsync(uid, storeOf[item.Id], item.Id, ShoppingAggregator.StoredQuantity(line), line.UsedIn, line.FirstMeal);
         if (sync.Remove.Count > 0)
-            await ShoppingListService.DeleteItemsAsync(uid, sync.Remove.Select(i => (storeOf[i.Id], i.Id)));
-        return true;
+            await ShoppingListService.RemoveItemsAsync(uid, sync.Remove.Select(i => (storeOf[i.Id], i.Id)));
+        if (sync.Undismiss.Count > 0)
+            await ShoppingListService.UndismissAsync(uid, sync.Undismiss);
+        return sync.Add.Count + sync.Update.Count + sync.Remove.Count > 0;
     }
 
     // Stores without a picture yet get one from Gemini (with the user's key) in the background, once each.
@@ -539,13 +541,15 @@
     }
 
     private Task ClearBoughtAsync() =>
-        ChangeAsync(() => ShoppingListService.DeleteItemsAsync(uid, Clearable.Select(x => (x.Shop.Id, x.Item.Id))));
+        ChangeAsync(() => ShoppingListService.RemoveItemsAsync(uid, Clearable.Select(x => (x.Shop.Id, x.Item.Id))));
 
-    // Empties the list; items the planned meals need come straight back, fresh and unticked.
+    // Empties the list. The planned meals' items stay away too, until the plan needs more of them.
     private async Task ClearListAsync()
     {
         confirmClear = false;
-        await ChangeAsync(() => ShoppingListService.ClearAsync(uid));
+        var dismiss = ShoppingAggregator.Merge(planned.Concat(partnerPlanned))
+            .ToDictionary(l => ShoppingAggregator.DismissKey(l.Key), ShoppingAggregator.StoredQuantity);
+        await ChangeAsync(() => ShoppingListService.ClearAsync(uid, dismiss));
         Toasts.Show(Loc["nut_clear_list_done"]);
     }
 
@@ -582,7 +586,10 @@
     {
         if (editing is not { } item || editingShop is not { } shop) return;
         CloseEdit();
-        await ChangeAsync(() => ShoppingListService.DeleteItemAsync(uid, shop.Id, item.Id));
+        // A plan item is remembered as removed, so the list does not add it straight back.
+        var removal = ShoppingAggregator.DismissFor(item, ShoppingAggregator.Merge(planned.Concat(partnerPlanned)));
+        var dismiss = removal is { } r ? new Dictionary<string, int> { [r.Key] = r.Amount } : null;
+        await ChangeAsync(() => ShoppingListService.RemoveItemsAsync(uid, [(shop.Id, item.Id)], dismiss));
     }
 
     // The open items as text, by store and in shop order, for WhatsApp and the like.

@@ -73,6 +73,7 @@ nxtweek.theme
 | Favorites | `users/{key}/favoriteMealIds` |
 | Shopping list (stores with items; a store's `logoDomain` and `emoji` come from Gemini) | `users/{key}/shopping` |
 | Which store an item goes to, by ingredient key or name | `users/{key}/shoppingRoutes/{key}` |
+| Plan items the user removed from the list, with the amount the plan needed then | `users/{key}/shoppingDismissed/{ingredientKey}` |
 | Day slots (Meal 1, afternoon snack, dinner, evening snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
 | Body data, goal and target overrides (health data, signed-in only) | `users/{key}/nutritionProfile` |
@@ -97,7 +98,8 @@ A new user starts at `/setup` (goal, about you, meal times, targets; `/welcome` 
 save for everyone; goal and body data are saved only for a signed-in user, so a guest who declines to sign in
 continues with the default targets. Settings is grouped as You, App and Account.
 
-The Week page shows calories and protein with what is left; carbs and fat appear under Details only when
+The Week page shows calories and protein as two smartwatch-style rings (`TargetRing`, arcs from `DayStatus.RingArcs`:
+eaten solid, planned faint, full and in the accent colour when over) with what is left; carbs and fat appear under Details only when
 `mealPrefs.trackMacros` is on. An empty slot is one "Add a meal" target that opens `AddMealSheet` (search,
 suggestions with a reason, Rediscover, Browse all meals, Quick add). The day strip swipes a whole week at a time from 8 weeks back to next week (one `GetDaysAsync` for the range;
 older weeks are in Month view). The slot sheet puts Mark as eaten / Change meal first, nutrition as one line that opens,
@@ -136,7 +138,9 @@ read and written through `IShoppingListService`, stores through `IShoppingStoreS
 `IShoppingListOwner`. Each store shows a picture (`StoreThumb`): Gemini, with the user's key, names the chain's web
 domain and an emoji (`IStoreLogoService`, cleaned by `StoreLogo.Clean`), the logo is the site's icon from Google's
 favicon service, else the emoji, else the first letter; asked once per store (`logoChecked`), again after a rename.
-"Clear list" empties every store in one write; the planned meals' items come straight back, unbought.
+Any item can be deleted. A plan item that is deleted is remembered in `shoppingDismissed` and stays away until the plan
+needs more of it (`ShoppingAggregator.Sync` with `dismissed`, `DismissFor`); "Clear list" empties every store and dismisses
+the plan items the same way, in one write.
 The page runs one change at a time and applies a live update that arrives meanwhile right after it. The page brings the list in
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
 (`IngredientKey`) that are not bought. Bought items stay in their store, struck through; "Clear bought" removes only typed items

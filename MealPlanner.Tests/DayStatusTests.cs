@@ -106,4 +106,13 @@ public class DayStatusTests
     [InlineData(6, 1, 6)]
     public void Servings_step_by_half_within_limits(double current, int direction, double expected) =>
         Assert.Equal(expected, DayStatus.StepServings(current, direction));
+
+    [Fact]
+    public void Ring_arcs_never_pass_a_full_ring()
+    {
+        Assert.Equal((0.5, 0.25, false), DayStatus.RingArcs(1000, 500, 2000));
+        Assert.Equal((0.75, 0.25, false), DayStatus.RingArcs(1500, 900, 2000));
+        Assert.Equal((1.0, 0.0, true), DayStatus.RingArcs(2400, 300, 2000));
+        Assert.Equal((0.0, 0.0, false), DayStatus.RingArcs(100, 100, 0));
+    }
 }
