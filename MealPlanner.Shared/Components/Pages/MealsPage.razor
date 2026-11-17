@@ -470,7 +470,7 @@
     private async Task MakePhotoAsync(MealCatalogItem meal)
     {
         try { await Photos.GenerateAsync(meal); }
-        catch (Exception ex) { Toasts.Show(Loc.T("nut_photo_failed", Loc[MealPhotoException.MessageKey(ex)]), isError: true); }
+        catch (Exception ex) { Toasts.Show(Loc.T("nut_photo_failed", MealPhotoException.Describe(Loc, ex)), isError: true); }
     }
 
         private async Task ExecuteAssignment(MealCatalogItem meal, DateOnly date)

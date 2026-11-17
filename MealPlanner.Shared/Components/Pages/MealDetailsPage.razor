@@ -272,7 +272,7 @@
             hasSharedPhoto = true;
             Toasts.Show(Loc["nut_photo_made"]);
         }
-        catch (Exception ex) { photoError = Loc[MealPhotoException.MessageKey(ex)]; }
+        catch (Exception ex) { photoError = MealPhotoException.Describe(Loc, ex); }
         finally { isGenerating = false; }
     }
 

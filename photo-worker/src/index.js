@@ -1,8 +1,10 @@
-// Makdous meal photos: POST /photo { "mealId": "..." } → { "image": "data:image/jpeg;base64,..." }.
+// Makdous meal photos: POST /photo { "mealId": "...", "user": "<account key>" }
+//   → { "image": "data:image/jpeg;base64,...", "used": n, "limit": 10 }.
 //
 // Only meals that exist in the shared catalog and have no shared photo yet are drawn, so the endpoint
-// cannot be used to draw anything else, nor to redraw what everyone already has. The app shrinks the
-// picture and stores it at MealPhotos/{mealId} itself, as before.
+// cannot be used to draw anything else, nor to redraw what everyone already has. Each account (users/{key})
+// may have WEEKLY_LIMIT photos drawn per week, Monday to Sunday in UTC, counted at PhotoQuota/{key}/{monday}.
+// The app shrinks the picture and stores it at MealPhotos/{mealId} itself.
 
 const IMAGE_MODEL = "@cf/black-forest-labs/flux-1-schnell";
 const TRANSLATE_MODEL = "@cf/meta/m2m100-1.2b";
@@ -24,9 +26,9 @@ export default {
     if (request.method !== "POST") return json({ error: "method" }, 405, cors);
     if (!isAllowedOrigin(origin)) return json({ error: "origin" }, 403, cors);
 
-    let mealId = "";
-    try { mealId = String((await request.json()).mealId || ""); } catch { /* handled below */ }
-    if (!/^[A-Za-z0-9_-]{1,64}$/.test(mealId)) return json({ error: "bad_request" }, 400, cors);
+    let mealId = "", user = "";
+    try { const body = await request.json(); mealId = String(body.mealId || ""); user = String(body.user || ""); } catch { /* handled below */ }
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(mealId) || !isUserKey(user)) return json({ error: "bad_request" }, 400, cors);
 
     if (env.PER_VISITOR) {
       const visitor = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -35,6 +37,15 @@ export default {
     }
 
     const db = env.FIREBASE_URL.replace(/\/$/, "");
+    const userPath = encodeURIComponent(user);
+    if (!(await readJson(`${db}/users/${userPath}.json?shallow=true`))) return json({ error: "unknown_user" }, 403, cors);
+
+    const limit = weeklyLimit(env);
+    const monday = mondayOf(new Date());
+    const quotaUrl = `${db}/PhotoQuota/${userPath}/${monday}.json`;
+    const used = Number(await readJson(quotaUrl)) || 0;
+    if (used >= limit) return json({ error: "weekly_limit", used, limit, resetsOn: addDays(monday, 7) }, 429, cors);
+
     const meal = await readJson(`${db}/MealCatalog/${mealId}.json`);
     if (!meal || meal.isArchived) return json({ error: "unknown_meal" }, 404, cors);
     if (await readJson(`${db}/MealPhotos/${mealId}.json?shallow=true`)) return json({ error: "exists" }, 409, cors);
@@ -43,7 +54,9 @@ export default {
       const dish = await englishDish(env, db, mealId, meal);
       const result = await env.AI.run(IMAGE_MODEL, { prompt: prompt(dish), steps: 4 });
       if (!result?.image) return json({ error: "no_image" }, 502, cors);
-      return json({ image: `data:image/jpeg;base64,${result.image}`, prompt: prompt(dish) }, 200, cors);
+      // Only a picture actually drawn counts against the week.
+      await fetch(quotaUrl, { method: "PUT", body: JSON.stringify(used + 1) });
+      return json({ image: `data:image/jpeg;base64,${result.image}`, used: used + 1, limit }, 200, cors);
     } catch (e) {
       // On the free plan Workers AI stops for the day once the allowance is used (error 4006).
       const text = String(e?.message || e);
@@ -87,6 +100,24 @@ export function prompt({ name, ingredients }) {
     + ". One serving, plated as it is usually served, seen from slightly above, soft natural daylight, "
     + "plain light background, square framing with the dish in the centre. "
     + "No text, no labels, no logos, no hands, no people.";
+}
+
+/** An account key as the app stores it under users/: no characters Firebase forbids in a key. */
+export function isUserKey(key) { return /^[^.#$\[\]\/\s]{1,128}$/.test(key); }
+
+export function weeklyLimit(env) { return Math.max(0, Number(env.WEEKLY_LIMIT ?? 10) || 0); }
+
+/** The Monday (UTC) of the week that contains `date`, as yyyy-MM-dd. */
+export function mondayOf(date) {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+export function addDays(isoDate, n) {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 export function isAllowedOrigin(origin) { return ALLOWED_ORIGINS.some(r => r.test(origin)); }

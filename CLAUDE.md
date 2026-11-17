@@ -76,6 +76,7 @@ nxtweek.theme
 | Weekly progress photo, JPEG data URL (signed-in only, never localStorage, never shared) | `users/{key}/progressPhotos/{monday}` |
 | Share daily calories and protein with friends (off by default) | `users/{key}/shareNutrition` |
 | AI meal photos, shared by all users (480 px JPEG data URL) | `MealPhotos/{mealId}` |
+| Photos drawn per account per week (Monday, UTC), written by the photo worker | `PhotoQuota/{key}/{yyyy-MM-dd}` |
 | Sync with one friend: partner and whose list is shared (both sides) | `users/{key}/sync` |
 | Waiting sync request (with the person asked) / the one I sent | `users/{key}/syncRequest`, `users/{key}/syncOutgoing` |
 | Protein-challenge count, only while sharing nutrition | `users/{key}/shareStats` |
@@ -174,7 +175,9 @@ fetched only when shown. They are drawn for free, without any user key, by the p
 (Cloudflare Workers AI, Flux; deployed by `.github/workflows/photo-worker.yml`, tests with
 `node --test photo-worker/test/*.test.js`): in the background when a meal is added, from "Make a photo" on the meal's
 page, and for every meal without one from Settings → Advanced → Meal photos (`MealPhotosBulk`). The worker only draws
-catalog meals without a photo, from the app's own sites, with a per-visitor and a daily limit; its errors become
+catalog meals without a photo, for an existing account (`users/{key}`), from the app's own sites, with 10 photos per
+account per week (`WEEKLY_LIMIT`, mirrored in `MealPhotoService.WeeklyLimit`; counted at `PhotoQuota`), 30 a minute per
+visitor and Cloudflare's daily allowance; its errors become
 `MealPhotoException` and are shown with `MealPhotoException.MessageKey`. The illustration stays when no photo can be made.
 
 `IMealImageService` resolves a flat SVG illustration from
