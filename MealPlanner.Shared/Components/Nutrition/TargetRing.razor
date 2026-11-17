@@ -1,0 +1,50 @@
+@using System.Globalization
+@inject ILocalizationService Loc
+
+@* A smartwatch-style ring: the solid arc is what was eaten, the faint arc what is planned on top, the grey track
+   what is still open. The ring always starts at 12 o'clock and runs clockwise, in every language. *@
+@{
+    var (eatenArc, plannedArc, over) = DayStatus.RingArcs(Eaten, Planned, Target);
+    var left = Math.Round(Target - Eaten);
+    var leftText = Loc.T(over ? "nut_unit_over" : "nut_unit_left", Unit);
+    var colour = over ? "var(--mk-accent)" : Colour;
+}
+<figure class="mk-ring @(over ? "is-over" : "")" role="img"
+        aria-label="@Loc.T("nut_ring_label", Label, Loc.Num(Eaten), Loc.Num(Target), Unit, $"{Loc.Num(Math.Abs(left))} {leftText}")">
+    <div class="mk-ring-dial">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="mk-ring-track" cx="60" cy="60" r="@R" />
+            <circle class="mk-ring-arc is-planned @(plannedArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@Colour"
+                    stroke-dasharray="@Dash(plannedArc)" stroke-dashoffset="@Offset(eatenArc)" />
+            <circle class="mk-ring-arc @(eatenArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@colour" stroke-dasharray="@Dash(eatenArc)" />
+        </svg>
+        <div class="mk-ring-centre">
+            <b>@Loc.Num(Eaten)</b>
+            <span>@Loc.T("nut_ring_of", Loc.Num(Target), Unit)</span>
+        </div>
+    </div>
+    <figcaption>
+        <span class="mk-ring-label"><i style="background:@Colour"></i>@Label</span>
+        <span class="mk-ring-left"><b>@Loc.Num(Math.Abs(left))</b> @leftText</span>
+    </figcaption>
+</figure>
+
+@code {
+    private const double R = 50;
+    private static readonly double Circumference = 2 * Math.PI * R;
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public double Eaten { get; set; }
+    [Parameter] public double Planned { get; set; }
+    [Parameter] public double Target { get; set; }
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public string Colour { get; set; } = "var(--mk-kc)";
+
+    // An arc of the given share of the ring, as "length gap".
+    private static string Dash(double share) =>
+        string.Create(CultureInfo.InvariantCulture, $"{share * Circumference:0.##} {Circumference:0.##}");
+
+    // The planned arc starts where the eaten one ends.
+    private static string Offset(double share) =>
+        (-share * Circumference).ToString("0.##", CultureInfo.InvariantCulture);
+}

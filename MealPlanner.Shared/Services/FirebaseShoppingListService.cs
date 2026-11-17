@@ -38,6 +38,8 @@ internal static class ShoppingPaths
     /// </summary>
     public static string ItemInList(string shopId, string itemId) => $"{shopId}/items/{itemId}";
     public static string Routes(string owner) => $"users/{Key(owner)}/shoppingRoutes";
+    public static string Dismissed(string owner) => $"users/{Key(owner)}/shoppingDismissed";
+    public static string User(string owner) => $"users/{Key(owner)}";
 
     /// <summary>Fills in ids that older data kept only as keys.</summary>
     public static List<ShoppingShop> Read(Dictionary<string, ShoppingShop>? shops) =>
@@ -93,18 +95,39 @@ public sealed class FirebaseShoppingListService(FirebaseRest db, IShoppingListOw
     public async Task DeleteItemAsync(string uid, string shopId, string itemId) =>
         await db.DeleteAsync(ShoppingPaths.Item(await owner.GetAsync(uid), shopId, itemId));
 
-    public async Task DeleteItemsAsync(string uid, IEnumerable<(string ShopId, string ItemId)> items)
+    public async Task RemoveItemsAsync(string uid, IEnumerable<(string ShopId, string ItemId)> items, IReadOnlyDictionary<string, int>? dismiss = null)
     {
-        var update = items.ToDictionary(x => ShoppingPaths.ItemInList(x.ShopId, x.ItemId), _ => (object?)null);
-        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.List(await owner.GetAsync(uid)), update);
+        // One multi-path write on the user: the items go and their dismissals are kept together.
+        var update = new Dictionary<string, object?>();
+        foreach (var (shopId, itemId) in items) update[$"shopping/{ShoppingPaths.ItemInList(shopId, itemId)}"] = null;
+        foreach (var (key, amount) in dismiss ?? new Dictionary<string, int>()) update[$"shoppingDismissed/{key}"] = amount;
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.User(await owner.GetAsync(uid)), update);
     }
 
-    public async Task ClearAsync(string uid)
+    public async Task ClearAsync(string uid, IReadOnlyDictionary<string, int> dismiss)
     {
         var host = await owner.GetAsync(uid);
         var shops = ShoppingPaths.Read(await db.GetAsync<Dictionary<string, ShoppingShop>>(ShoppingPaths.List(host)));
-        var update = shops.Where(s => s.Items.Count > 0).ToDictionary(s => $"{s.Id}/items", _ => (object?)null);
-        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.List(host), update);
+        var update = shops.Where(s => s.Items.Count > 0).ToDictionary(s => $"shopping/{s.Id}/items", _ => (object?)null);
+        foreach (var (key, amount) in dismiss) update[$"shoppingDismissed/{key}"] = amount;
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.User(host), update);
+    }
+
+    public async Task RestoreItemsAsync(string uid, IEnumerable<(string ShopId, ShoppingItem Item)> items, IEnumerable<string> undismiss)
+    {
+        var update = new Dictionary<string, object?>();
+        foreach (var (shopId, item) in items) update[$"shopping/{ShoppingPaths.ItemInList(shopId, item.Id)}"] = item;
+        foreach (var key in undismiss) update[$"shoppingDismissed/{key}"] = null;
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.User(await owner.GetAsync(uid)), update);
+    }
+
+    public async Task<Dictionary<string, int>> GetDismissedAsync(string uid) =>
+        await db.GetAsync<Dictionary<string, int>>(ShoppingPaths.Dismissed(await owner.GetAsync(uid))) ?? new();
+
+    public async Task UndismissAsync(string uid, IEnumerable<string> keys)
+    {
+        var update = keys.Distinct().ToDictionary(k => k, _ => (object?)null);
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.Dismissed(await owner.GetAsync(uid)), update);
     }
 }
 

@@ -4,7 +4,7 @@
 
 @* Monday-based weeks side by side: swipe sideways (or use the arrows) to move a whole week back or forward.
    Each week snaps into place; the page is told which week is showing. A logged day (every meal eaten or
-   skipped) shows a tick. In right-to-left languages earlier weeks lie to the right, as time reads there. *@
+   skipped) shows a tick inside its mini ring; the ring fills with the share of the calorie target eaten. In right-to-left languages earlier weeks lie to the right, as time reads there. *@
 <div class="mk-dstrip has-arrows" role="group" aria-label="@Loc.T("nut_week_of", WeekLabel(Current))">
     <button type="button" class="mk-dstrip-arrow" aria-label="@Loc["week_prev"]" disabled="@(Index(Current) <= 0)" @onclick="() => ShowAsync(Index(Current) - 1)">
         <svg class="i mk-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
@@ -24,14 +24,17 @@
                             aria-label="@(logged ? Loc.T("nut_day_logged", Loc.FormatDayDate(d)) : Loc.FormatDayDate(d))" @onclick="() => OnSelect.InvokeAsync(d)">
                         <span class="mk-dchip-name">@Loc.GetDayAbbr(d.DayOfWeek)</span>
                         <span class="mk-dchip-num">@d.Day</span>
-                        @if (logged)
-                        {
-                            <span class="mk-dchip-stamp" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>
-                        }
-                        else
-                        {
-                            <span class="mk-dchip-dot is-@dot.ToString().ToLowerInvariant()"></span>
-                        }
+                        @{ var share = Progress.GetValueOrDefault(d); }
+                        <span class="mk-mini-ring @(logged ? "is-logged" : "") is-@dot.ToString().ToLowerInvariant()" aria-hidden="true">
+                            <svg viewBox="0 0 20 20">
+                                <circle class="mk-mini-track" cx="10" cy="10" r="@MiniR" />
+                                @if (share > 0)
+                                {
+                                    <circle class="mk-mini-arc" cx="10" cy="10" r="@MiniR" stroke-dasharray="@MiniDash(share)" />
+                                }
+                                @if (logged) { <path class="mk-mini-tick" d="M6.5 10.2l2.3 2.3 4.7-5" /> }
+                            </svg>
+                        </span>
                     </button>
                 }
             </div>
@@ -51,6 +54,13 @@
     [Parameter] public DateOnly Today { get; set; }
     [Parameter] public IReadOnlyDictionary<DateOnly, DayDot> Dots { get; set; } = new Dictionary<DateOnly, DayDot>();
     [Parameter] public IReadOnlySet<DateOnly> Logged { get; set; } = new HashSet<DateOnly>();
+    /// <summary>The share of the calorie target eaten each day (0 to 1), drawn as a mini ring.</summary>
+    [Parameter] public IReadOnlyDictionary<DateOnly, double> Progress { get; set; } = new Dictionary<DateOnly, double>();
+
+    private const double MiniR = 8;
+    private static readonly double MiniCircumference = 2 * Math.PI * MiniR;
+    private static string MiniDash(double share) =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{share * MiniCircumference:0.##} {MiniCircumference:0.##}");
     [Parameter] public EventCallback<DateOnly> OnSelect { get; set; }
     /// <summary>Raised with a week's Monday when the user swipes or steps to it.</summary>
     [Parameter] public EventCallback<DateOnly> OnWeek { get; set; }

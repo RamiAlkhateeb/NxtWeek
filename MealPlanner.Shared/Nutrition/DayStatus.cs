@@ -42,6 +42,32 @@ public static class DayStatus
         Enumerable.Range(0, 7).Count(i => DayLogged(days.GetValueOrDefault(monday.AddDays(i)), prefs));
 
     /// <summary>"Did you eat this?" is asked for today's planned meal once its time has passed.</summary>
+    /// <summary>Glasses of water a day: the goal shown on Week, and the most that can be logged.</summary>
+    public const int WaterGoal = 8;
+    public const int WaterMax = 16;
+
+    /// <summary>Tapping glass <paramref name="index"/> (0-based) fills up to it; tapping the last full glass empties it.</summary>
+    public static int WaterAfterTap(int current, int index) => Math.Clamp(index + 1 == current ? index : index + 1, 0, WaterMax);
+
+    /// <summary>
+    /// Today's next meal: the earliest planned meal (not answered yet) whose time has not passed. Meals already past
+    /// their time are asked about on their own card instead.
+    /// </summary>
+    public static MealSlot? NextMeal(PlanDay? day, MealPrefs prefs, TimeOnly now)
+    {
+        if (day is null) return null;
+        foreach (var slot in DayMath.SlotsFor(prefs))
+        {
+            if (day.Slots.GetValueOrDefault(slot) is not { } entry || entry.Eaten || entry.Skipped) continue;
+            if (string.IsNullOrEmpty(entry.MealId) && entry.Quick is null) continue;
+            if (TimeOnly.TryParse(prefs.TimeOf(slot), out var time) && time > now) return slot;
+        }
+        return null;
+    }
+
+    /// <summary>The share of the calorie target eaten (0 to 1), for the mini ring under a day.</summary>
+    public static double EatenShare(double eatenKcal, double targetKcal) => Percent(eatenKcal, targetKcal) / 100;
+
     public static bool NeedsCheckIn(SlotEntry? entry, string slotTime, TimeOnly now, bool isToday = true)
     {
         if (!isToday || entry is null || entry.Eaten || entry.Skipped) return false;
@@ -60,6 +86,17 @@ public static class DayStatus
 
     /// <summary>Percent of target, clamped to 0–100, for bars and rings.</summary>
     public static double Percent(double value, double target) => target > 0 ? Math.Clamp(value / target * 100, 0, 100) : 0;
+
+    /// <summary>
+    /// A target ring: the share eaten and the share planned on top (together at most a full ring, 0 to 1), and whether
+    /// eating went over the target.
+    /// </summary>
+    public static (double Eaten, double Planned, bool Over) RingArcs(double eaten, double planned, double target)
+    {
+        var e = Percent(eaten, target) / 100;
+        var p = Math.Min(1 - e, Percent(planned, target) / 100);
+        return (e, Math.Max(0, p), target > 0 && eaten > target);
+    }
 }
 
 /// <summary>Where a meal goes when the user did not pick a slot.</summary>

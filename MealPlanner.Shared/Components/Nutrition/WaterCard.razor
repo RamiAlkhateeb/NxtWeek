@@ -1,0 +1,35 @@
+@inject ILocalizationService Loc
+
+@* Water for the day: eight glasses to tap (tapping fills up to that glass; tapping the last full one empties it)
+   and a plus for more than eight. *@
+<section class="mk-water" aria-label="@Loc["nut_water"]">
+    <div class="mk-water-head">
+        <span class="mk-water-title">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>
+            @Loc["nut_water"]
+        </span>
+        <span class="mk-water-count"><b>@Loc.Num(Glasses)</b> @Loc.T("nut_water_of", Loc.Num(DayStatus.WaterGoal))</span>
+    </div>
+    <div class="mk-water-glasses" role="group" aria-label="@Loc["nut_water"]">
+        @for (var i = 0; i < DayStatus.WaterGoal; i++)
+        {
+            var index = i;
+            var full = i < Glasses;
+            <button type="button" class="mk-glass @(full ? "is-full" : "")" aria-pressed="@(full ? "true" : "false")"
+                    aria-label="@Loc.T("nut_water_glass", Loc.Num(index + 1))" @onclick="() => OnChange.InvokeAsync(DayStatus.WaterAfterTap(Glasses, index))">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path class="mk-glass-fill" d="M7.2 11h9.6l-.9 9.1a1 1 0 0 1-1 .9H9.1a1 1 0 0 1-1-.9z"/><path class="mk-glass-line" d="M5.5 3h13l-1.7 17.1a1 1 0 0 1-1 .9H8.2a1 1 0 0 1-1-.9z"/></svg>
+            </button>
+        }
+        @if (Glasses >= DayStatus.WaterGoal)
+        {
+            <button type="button" class="mk-glass is-more" aria-label="@Loc["nut_water_more"]" disabled="@(Glasses >= DayStatus.WaterMax)" @onclick="() => OnChange.InvokeAsync(Glasses + 1)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path class="mk-glass-line" d="M12 6v12M6 12h12"/></svg>
+            </button>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public int Glasses { get; set; }
+    [Parameter] public EventCallback<int> OnChange { get; set; }
+}

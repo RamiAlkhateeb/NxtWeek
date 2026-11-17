@@ -110,9 +110,12 @@ public class PlanDay
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public DayType? Type { get; set; }
     public Dictionary<MealSlot, SlotEntry> Slots { get; set; } = new();
+    /// <summary>Glasses of water drunk that day (personal: never mirrored to a sync partner).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int Water { get; set; }
 
     /// <summary>A deep copy: changing its entries leaves this day as it was.</summary>
-    public PlanDay Clone() => new() { Date = Date, Type = Type, Slots = Slots.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()) };
+    public PlanDay Clone() => new() { Date = Date, Type = Type, Water = Water, Slots = Slots.ToDictionary(kv => kv.Key, kv => kv.Value.Clone()) };
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<Sex>))]
