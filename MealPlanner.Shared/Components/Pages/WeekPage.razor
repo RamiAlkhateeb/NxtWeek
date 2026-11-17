@@ -1,7 +1,7 @@
 @page "/"
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Services
-@inject IMealService MealService
+@inject ICatalogSeeder Seeder
 @inject IMealCatalogService CatalogService
 @inject IDayPlanService DayPlan
 @inject INutritionStore NutritionStore
@@ -302,7 +302,7 @@
 
         try
         {
-            await MealService.SeedAsync(new List<Meal>());
+            await Seeder.SeedAsync();
             var userProfile = await UserService.GetProfileAsync(uid);
             onboardingDone = userProfile?.FirstWeekAutoFilled ?? false;
             friendRequests = userProfile?.IncomingFriendRequests?.Count ?? 0;

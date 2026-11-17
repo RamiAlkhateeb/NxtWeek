@@ -34,19 +34,21 @@ The normal entry point is Guest Mode. No email or password is required. The brow
 ```text
 localStorage:nxtweek.guestId        # identity key: "guest_<guid>" or chosen username
 localStorage:nxtweek.activeUserKey
-localStorage:meals-cache            # read-through display cache only (never source of truth)
+localStorage:nxtweek.offline.*      # offline read cache and outbox (never source of truth)
 ```
 
 Actual persistence is a Firebase Realtime Database (the RTDB REST API through an unauthenticated `HttpClient`). Per-user data is keyed by the identity key under `users/{key}/...`:
 
 | Data | Path |
 |---|---|
-| Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
-| Favorites / selected meals | `users/{key}/favoriteMealIds`, `selectedMealIds` |
+| Day plan (four meal slots) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries are still read) |
+| Favorites | `users/{key}/favoriteMealIds` |
 | Profile / username | `users/{key}` + `usernames/{username}` reservation |
-| Shopping list | `users/{key}/shopping` |
+| Shopping list (stores with items) | `users/{key}/shopping` |
 
-The application-facing interfaces are kept separate from storage implementations (`IUserService`, `IMealCatalogService`, `IMealService`, `IShoppingListService`, ...).
+`CLAUDE.md` has the full, current list of paths.
+
+The application-facing interfaces are kept separate from storage implementations (`IUserService`, `IMealCatalogService`, `IDayPlanService`, `IShoppingListService`, `IShoppingStoreService`, ...); pure rules live in `MealPlanner.Shared/Nutrition` with tests.
 
 ## Data safety
 
@@ -68,19 +70,6 @@ Settings currently contains:
 
 The Settings UI talks to service interfaces rather than Firebase directly. Firebase Authentication / email-link cross-device sync is available but not wired to real credentials yet (`firebase-auth-config.js` must be filled in).
 
-## CSV import/export
-
-The import page accepts CSV and matches meal names against the existing catalog:
-
-```csv
-Date,Day,Meal
-2026-07-20,Monday,Chicken & Rice
-```
-
-`Date` should preferably use `yyyy-MM-dd`. `Day` is informational. Unknown meals, invalid dates, and duplicate dates are reported. Export produces the same schema for the current week.
-
-The current importer writes valid matched entries directly. Preview, duplicate-date reporting, merge/replace selection, and full history import are not implemented yet.
-
 ## Routes
 
 | Route | Purpose |
@@ -88,11 +77,12 @@ The current importer writes valid matched entries directly. Preview, duplicate-d
 | `/` | Current week |
 | `/meals` | Meal catalog and selection |
 | `/month` | Monthly overview route; month is also available from Week |
-| `/meal/{mealId}` | Meal details |
+| `/meal/{mealId}` | Meal details, recipe steps |
+| `/meal/{mealId}/cook` | Cooking mode |
+| `/shopping` | Shopping list by store |
 | `/settings` | Settings / profile |
 | `/settings/install` | Add-to-home-screen guide (Android + iPhone) |
 | `/settings/recover` | Recover a plan by username after cleared browser data / new device |
-| `/settings/import` | CSV weekly-plan import |
 | `/friends` | Friends, friend requests, and discovering other app users |
 | `/signin` | Legacy email sign-in page; not used by the normal Guest Mode flow |
 

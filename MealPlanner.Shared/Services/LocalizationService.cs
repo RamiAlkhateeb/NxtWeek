@@ -26,7 +26,6 @@ public class LocalizationService : ILocalizationService
 
     /// <summary>Every language code the app ships, for callers that need the set
     /// without depending on an instance (catalog seeding, for example).</summary>
-    public static IReadOnlyList<string> SupportedLanguageCodes { get; } = Languages.Select(l => l.Code).ToArray();
 
     /// <summary>Tried in order when a key has no entry for the active language.</summary>
     private static readonly string[] FallbackChain = ["en", "ar"];
@@ -148,7 +147,6 @@ public class LocalizationService : ILocalizationService
     private string[] Days => _currentLanguage switch { "ar" => ArabicDays, "de" => GermanDays, _ => EnglishDays };
     private string[] ShortDays => _currentLanguage switch { "ar" => ArabicShortDays, "de" => GermanShortDays, _ => EnglishShortDays };
     private string[] Months => _currentLanguage switch { "ar" => ArabicMonths, "de" => GermanMonths, _ => EnglishMonths };
-    private string[] ShortMonths => _currentLanguage switch { "ar" => ArabicMonths, "de" => GermanShortMonths, _ => EnglishShortMonths };
 
     public string GetDayName(DayOfWeek day) => Days[(int)day];
     public string GetDayName(DateOnly date) => GetDayName(date.DayOfWeek);
@@ -187,35 +185,26 @@ public class LocalizationService : ILocalizationService
     {
         // Brand & shared
         ["app_title"] = new() { ["ar"] = "مكدوس", ["en"] = "Makdous", ["de"] = "Makdous" },
-        ["app_subtitle"] = new() { ["ar"] = "مخطط وجبات شخصي", ["en"] = "Personal Weekly Meal Planner", ["de"] = "Dein persönlicher Wochen-Essensplaner" },
         ["loading"] = new() { ["ar"] = "جارِ التحميل...", ["en"] = "Loading...", ["de"] = "Wird geladen …" },
         ["save"] = new() { ["ar"] = "حفظ", ["en"] = "Save", ["de"] = "Speichern" },
         ["cancel"] = new() { ["ar"] = "إلغاء", ["en"] = "Cancel", ["de"] = "Abbrechen" },
-        ["close"] = new() { ["ar"] = "إغلاق", ["en"] = "Close", ["de"] = "Schließen" },
         ["delete"] = new() { ["ar"] = "حذف", ["en"] = "Delete", ["de"] = "Löschen" },
-        ["edit"] = new() { ["ar"] = "تعديل", ["en"] = "Edit", ["de"] = "Bearbeiten" },
         ["copy"] = new() { ["ar"] = "نسخ", ["en"] = "Copy", ["de"] = "Kopieren" },
         ["add"] = new() { ["ar"] = "إضافة", ["en"] = "Add", ["de"] = "Hinzufügen" },
         ["back"] = new() { ["ar"] = "السابق", ["en"] = "Back", ["de"] = "Zurück" },
         ["next"] = new() { ["ar"] = "التالي", ["en"] = "Next", ["de"] = "Weiter" },
-        ["confirm"] = new() { ["ar"] = "تأكيد", ["en"] = "Confirm", ["de"] = "Bestätigen" },
         ["done"] = new() { ["ar"] = "تم ✓", ["en"] = "Done ✓", ["de"] = "Fertig ✓" },
         ["search"] = new() { ["ar"] = "بحث", ["en"] = "Search", ["de"] = "Suchen" },
-        ["badge_favorite"] = new() { ["ar"] = "مفضلة", ["en"] = "Favorite", ["de"] = "Favorit" },
 
         // Nav
         ["nav_week"] = new() { ["ar"] = "الأسبوع", ["en"] = "Week", ["de"] = "Woche" },
         ["nav_meals"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
-        ["nav_shopping"] = new() { ["ar"] = "المشتريات", ["en"] = "Shopping", ["de"] = "Einkauf" },
-        ["nav_friends"] = new() { ["ar"] = "الأصدقاء", ["en"] = "Friends", ["de"] = "Freunde" },
-        ["nav_assistant"] = new() { ["ar"] = "المساعد", ["en"] = "Assistant", ["de"] = "Assistent" },
         // {0} = number of pending friend requests
         ["nav_friends_requests"] = new() { ["ar"] = "{0} طلبات صداقة", ["en"] = "{0} friend requests", ["de"] = "{0} Freundschaftsanfragen" },
         ["nav_settings"] = new() { ["ar"] = "الإعدادات", ["en"] = "Settings", ["de"] = "Einstellungen" },
 
         // Settings
         ["settings_title"] = new() { ["ar"] = "الإعدادات", ["en"] = "Settings", ["de"] = "Einstellungen" },
-        ["settings_subtitle"] = new() { ["ar"] = "كل ما تحتاجه في مكان واحد", ["en"] = "Everything you need in one place", ["de"] = "Alles an einem Ort" },
         ["settings_theme_title"] = new() { ["ar"] = "المظهر", ["en"] = "Appearance", ["de"] = "Darstellung" },
         ["settings_theme_system"] = new() { ["ar"] = "تلقائي", ["en"] = "Auto", ["de"] = "Automatisch" },
         ["settings_theme_light"] = new() { ["ar"] = "فاتح", ["en"] = "Light", ["de"] = "Hell" },
@@ -223,10 +212,6 @@ public class LocalizationService : ILocalizationService
         ["settings_advanced"] = new() { ["ar"] = "متقدم", ["en"] = "Advanced", ["de"] = "Erweitert" },
         ["settings_advanced_hint"] = new() { ["ar"] = "مفتاح Gemini، النموذج، حول التطبيق والإصدار.", ["en"] = "Gemini key, model, About and version.", ["de"] = "Gemini-Schlüssel, Modell, Info und Version." },
         ["settings_lang_title"] = new() { ["ar"] = "لغة التطبيق", ["en"] = "App Language", ["de"] = "App-Sprache" },
-        ["settings_lang_desc"] = new() { ["ar"] = "اختر لغة الواجهة والاتجاه المفضل لديك.", ["en"] = "Choose your preferred interface language and direction.", ["de"] = "Wähle deine bevorzugte Sprache und Schreibrichtung." },
-        ["lang_ar"] = new() { ["ar"] = "العربية", ["en"] = "العربية", ["de"] = "العربية" },
-        ["lang_en"] = new() { ["ar"] = "English", ["en"] = "English", ["de"] = "English" },
-        ["lang_de"] = new() { ["ar"] = "Deutsch", ["en"] = "Deutsch", ["de"] = "Deutsch" },
         ["settings_username_title"] = new() { ["ar"] = "اسم المستخدم", ["en"] = "Username", ["de"] = "Benutzername" },
         ["settings_username_prompt"] = new() { ["ar"] = "اختر اسماً قبل إرسال أو قبول طلبات الصداقة.", ["en"] = "Choose a name before sending or accepting friend requests.", ["de"] = "Wähle einen Namen, bevor du Freundschaftsanfragen sendest oder annimmst." },
         ["settings_username_change"] = new() { ["ar"] = "تغيير اسم المستخدم", ["en"] = "Change username", ["de"] = "Benutzernamen ändern" },
@@ -238,51 +223,23 @@ public class LocalizationService : ILocalizationService
         ["settings_username_copied"] = new() { ["ar"] = "تم نسخ اسم المستخدم.", ["en"] = "Username copied.", ["de"] = "Benutzername kopiert." },
         ["settings_recover_title"] = new() { ["ar"] = "استرجاع خطتي", ["en"] = "Recover My Plan", ["de"] = "Plan wiederherstellen" },
         ["settings_recover_desc"] = new() { ["ar"] = "هل مسحت بيانات المتصفح أو غيّرت جهازك؟ استعد خططك ووجباتك باسم المستخدم الذي اخترته سابقاً.", ["en"] = "Cleared browser data or changed devices? Recover your plan and meals with your username.", ["de"] = "Browserdaten gelöscht oder Gerät gewechselt? Hol dir deinen Plan mit deinem Benutzernamen zurück." },
-        ["settings_recover_link"] = new() { ["ar"] = "استرجاع باسم المستخدم ←", ["en"] = "Recover by username →", ["de"] = "Mit Benutzernamen wiederherstellen →" },
         ["settings_install_title"] = new() { ["ar"] = "تثبيت على الشاشة الرئيسية", ["en"] = "Install on Home Screen", ["de"] = "Zum Startbildschirm hinzufügen" },
         ["settings_install_desc"] = new() { ["ar"] = "أضف مكدوس إلى شاشة هاتفك الرئيسية لفتحه كتطبيق سريع على أندرويد وiPhone.", ["en"] = "Add Makdous to your home screen for quick access on Android & iPhone.", ["de"] = "Füge Makdous zu deinem Startbildschirm hinzu — schneller Zugriff auf Android und iPhone." },
-        ["settings_install_link"] = new() { ["ar"] = "كيف أثبّت مكدوس؟ ←", ["en"] = "How to install Makdous? →", ["de"] = "Wie installiere ich Makdous? →" },
-        ["settings_about_title"] = new() { ["ar"] = "ℹ️ حول التطبيق", ["en"] = "ℹ️ About", ["de"] = "ℹ️ Über die App" },
-        ["settings_about_desc"] = new() { ["ar"] = "مكدوس — مخطط وجبات شخصي", ["en"] = "Makdous — Personal Weekly Meal Planner", ["de"] = "Makdous — dein persönlicher Wochen-Essensplaner" },
-        ["settings_about_version"] = new() { ["ar"] = "الإصدار 1.5", ["en"] = "Version 1.5", ["de"] = "Version 1.5" },
-        ["settings_about_dev"] = new() { ["ar"] = "الموقع الشخصي للمطور ↗", ["en"] = "Developer's Website ↗", ["de"] = "Website des Entwicklers ↗" },
 
         // Week page
-        ["week_title"] = new() { ["ar"] = "خطة الأسبوع", ["en"] = "Weekly Plan", ["de"] = "Wochenplan" },
         ["week_month_view"] = new() { ["ar"] = "عرض الشهر", ["en"] = "Month View", ["de"] = "Monatsansicht" },
-        ["week_surprise"] = new() { ["ar"] = "فاجئني", ["en"] = "Surprise Me", ["de"] = "Überrasch mich" },
         ["week_surprise_week"] = new() { ["ar"] = "فاجئني بالأسبوع", ["en"] = "Surprise My Week", ["de"] = "Überrasch meine Woche" },
         ["week_surprise_week_eyebrow"] = new() { ["ar"] = "سنملأ الأيام الفارغة فقط", ["en"] = "We'll only fill empty days", ["de"] = "Wir füllen nur die leeren Tage" },
         ["week_surprise_week_note"] = new() { ["ar"] = "لن يتم تغيير أي وجبة مخططة مسبقاً.", ["en"] = "No planned meals will be replaced.", ["de"] = "Bereits geplante Gerichte bleiben unverändert." },
-        ["week_share"] = new() { ["ar"] = "مشاركة", ["en"] = "Share", ["de"] = "Teilen" },
-        ["week_share_week"] = new() { ["ar"] = "شارك أسبوعك", ["en"] = "Share Week", ["de"] = "Woche teilen" },
-        ["week_share_failed"] = new() { ["ar"] = "تعذرت مشاركة الأسبوع. حاول مرة أخرى.", ["en"] = "Could not share week. Please try again.", ["de"] = "Die Woche konnte nicht geteilt werden. Bitte erneut versuchen." },
-        ["week_empty_meal"] = new() { ["ar"] = "لا توجد وجبة محددة", ["en"] = "No meal planned", ["de"] = "Kein Gericht geplant" },
-        ["week_choose_meal"] = new() { ["ar"] = "اختر وجبة", ["en"] = "Choose Meal", ["de"] = "Gericht wählen" },
-        ["week_change_meal"] = new() { ["ar"] = "تغيير", ["en"] = "Change", ["de"] = "Ändern" },
-        ["week_change_meal_action"] = new() { ["ar"] = "تغيير الوجبة", ["en"] = "Change Meal", ["de"] = "Gericht ändern" },
-        ["week_edit_meal"] = new() { ["ar"] = "تعديل الوجبة", ["en"] = "Edit Meal", ["de"] = "Gericht bearbeiten" },
-        ["week_suggest_meal"] = new() { ["ar"] = "اقتراح وجبة", ["en"] = "Suggest Meal", ["de"] = "Gericht vorschlagen" },
-        ["week_move_meal"] = new() { ["ar"] = "نقل ليوم آخر", ["en"] = "Move to another day", ["de"] = "Auf einen anderen Tag verschieben" },
-        ["week_remove_from_day"] = new() { ["ar"] = "حذف من اليوم", ["en"] = "Remove from day", ["de"] = "Vom Tag entfernen" },
-        ["week_clear_meal"] = new() { ["ar"] = "مسح", ["en"] = "Clear", ["de"] = "Leeren" },
-        ["week_today"] = new() { ["ar"] = "اليوم", ["en"] = "Today", ["de"] = "Heute" },
-        ["week_current"] = new() { ["ar"] = "هذا الأسبوع", ["en"] = "This Week", ["de"] = "Diese Woche" },
         // {0} = weekday name
-        ["week_today_named"] = new() { ["ar"] = "اليوم · {0}", ["en"] = "Today · {0}", ["de"] = "Heute · {0}" },
-        ["week_more"] = new() { ["ar"] = "المزيد", ["en"] = "More", ["de"] = "Mehr" },
         ["week_add_meal"] = new() { ["ar"] = "أضف وجبة", ["en"] = "Add a meal", ["de"] = "Gericht hinzufügen" },
         // {0} = the past weekdays, already joined
-        ["week_past_days"] = new() { ["ar"] = "أيام مضت · {0}", ["en"] = "Past days · {0}", ["de"] = "Vergangene Tage · {0}" },
         // joins a list of names: "Mon, Tue" / "الاثنين والثلاثاء"
-        ["list_and"] = new() { ["ar"] = " و", ["en"] = ", ", ["de"] = ", " },
         ["meal_remove_favorite_short"] = new() { ["ar"] = "إزالة من المفضلة", ["en"] = "Remove from favorites", ["de"] = "Aus Favoriten entfernen" },
         ["week_prev"] = new() { ["ar"] = "الأسبوع السابق", ["en"] = "Previous Week", ["de"] = "Vorige Woche" },
         ["week_next"] = new() { ["ar"] = "الأسبوع القادم", ["en"] = "Next Week", ["de"] = "Nächste Woche" },
-        ["week_nudge_prompt"] = new() { ["ar"] = "اختر اسم مستخدم لحفظ خطتك بشكل دائم ومشاركتها مع أصدقائك", ["en"] = "Choose a username to permanently save your plan and share with friends", ["de"] = "Wähle einen Benutzernamen, um deinen Plan dauerhaft zu speichern und zu teilen" },
 
         // Month page
-        ["month_back_settings"] = new() { ["ar"] = "العودة إلى الإعدادات", ["en"] = "Back to Settings", ["de"] = "Zurück zu den Einstellungen" },
         ["month_prev"] = new() { ["ar"] = "الشهر السابق", ["en"] = "Previous Month", ["de"] = "Voriger Monat" },
         ["month_next"] = new() { ["ar"] = "الشهر القادم", ["en"] = "Next Month", ["de"] = "Nächster Monat" },
         ["month_seg_week"] = new() { ["ar"] = "أسبوع", ["en"] = "Week", ["de"] = "Woche" },
@@ -292,22 +249,15 @@ public class LocalizationService : ILocalizationService
 
         // Meals page
         ["meals_title"] = new() { ["ar"] = "الوجبات", ["en"] = "Meals", ["de"] = "Gerichte" },
-        ["meals_subtitle"] = new() { ["ar"] = "تصفح الوجبات، احفظ المفضلة، واختر يوماً عند الاستخدام.", ["en"] = "Browse meals, save favorites, and pick a day to add.", ["de"] = "Gerichte durchstöbern, Favoriten speichern und einen Tag auswählen." },
         ["meals_search_placeholder"] = new() { ["ar"] = "ابحث عن وجبة أو مكون...", ["en"] = "Search meals or ingredients...", ["de"] = "Gericht oder Zutat suchen …" },
         ["meals_filter_all"] = new() { ["ar"] = "الكل", ["en"] = "All", ["de"] = "Alle" },
-        ["meals_filter_favs"] = new() { ["ar"] = "المفضلة", ["en"] = "Favorites", ["de"] = "Favoriten" },
-        ["meals_type_label"] = new() { ["ar"] = "النوع:", ["en"] = "Type:", ["de"] = "Art:" },
         ["meal_meat"] = new() { ["ar"] = "لحوم", ["en"] = "Meat", ["de"] = "Fleisch" },
         ["meal_chicken"] = new() { ["ar"] = "دواجن", ["en"] = "Chicken", ["de"] = "Geflügel" },
         ["meal_fish"] = new() { ["ar"] = "مأكولات بحرية", ["en"] = "Fish & Seafood", ["de"] = "Fisch & Meeresfrüchte" },
         ["meal_vegetarian"] = new() { ["ar"] = "نباتي", ["en"] = "Vegetarian", ["de"] = "Vegetarisch" },
         // {0} = number of meals shown
-        ["meals_results_count"] = new() { ["ar"] = "{0} وجبة", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
-        ["meals_results_one"] = new() { ["ar"] = "وجبة واحدة", ["en"] = "1 meal", ["de"] = "1 Gericht" },
-        ["meals_clear_filters"] = new() { ["ar"] = "مسح الفلاتر", ["en"] = "Clear filters", ["de"] = "Filter zurücksetzen" },
         ["meals_empty_title"] = new() { ["ar"] = "لم يتم العثور على وجبات", ["en"] = "No meals found", ["de"] = "Keine Gerichte gefunden" },
         ["meals_empty_desc"] = new() { ["ar"] = "جرّب تغيير كلمات البحث أو الفلاتر", ["en"] = "Try changing your search terms or filters", ["de"] = "Ändere deine Suchbegriffe oder Filter" },
-        ["meals_add_custom"] = new() { ["ar"] = "إضافة وجبة جديدة", ["en"] = "Add New Meal", ["de"] = "Neues Gericht anlegen" },
         ["meals_new_meal"] = new() { ["ar"] = "وجبة جديدة", ["en"] = "New Meal", ["de"] = "Neues Gericht" },
         ["meals_new_meal_eyebrow"] = new() { ["ar"] = "أضفها مرة واحدة لتصبح متاحة للجميع", ["en"] = "Add it once to make it available to all", ["de"] = "Einmal anlegen — für alle verfügbar" },
         ["meals_lang_all"] = new() { ["ar"] = "جميع اللغات", ["en"] = "All Languages", ["de"] = "Alle Sprachen" },
@@ -327,7 +277,6 @@ public class LocalizationService : ILocalizationService
         ["meals_edit_meal"] = new() { ["ar"] = "تعديل الوجبة", ["en"] = "Edit Meal", ["de"] = "Gericht bearbeiten" },
         ["meals_edit_eyebrow"] = new() { ["ar"] = "عدّل التفاصيل أو استخدمها في خطتك", ["en"] = "Edit details or use it in your plan", ["de"] = "Details ändern oder ins Wochenmenü übernehmen" },
         ["meals_save_changes"] = new() { ["ar"] = "حفظ التعديلات", ["en"] = "Save Changes", ["de"] = "Änderungen speichern" },
-        ["meals_use_meal"] = new() { ["ar"] = "استخدم هذه الوجبة", ["en"] = "Use this meal", ["de"] = "Dieses Gericht verwenden" },
         ["meals_hide_meal"] = new() { ["ar"] = "إخفاء الوجبة من المكتبة", ["en"] = "Hide meal from library", ["de"] = "Gericht aus der Bibliothek ausblenden" },
         ["meals_meal_updated"] = new() { ["ar"] = "تم حفظ تعديلات الوجبة ✨", ["en"] = "Meal updated successfully ✨", ["de"] = "Gericht aktualisiert ✨" },
         ["meals_meal_hidden"] = new() { ["ar"] = "تم إخفاء الوجبة من المكتبة.", ["en"] = "Meal hidden from library.", ["de"] = "Gericht wurde ausgeblendet." },
@@ -339,17 +288,9 @@ public class LocalizationService : ILocalizationService
 
         // Meal card / details
         ["meal_ingredients"] = new() { ["ar"] = "المكونات", ["en"] = "Ingredients", ["de"] = "Zutaten" },
-        ["meal_view_ingredients"] = new() { ["ar"] = "عرض المكونات", ["en"] = "View ingredients", ["de"] = "Zutaten ansehen" },
         ["meal_side_dishes"] = new() { ["ar"] = "أطباق جانبية", ["en"] = "Side Dishes", ["de"] = "Beilagen" },
-        ["meal_select_for_day"] = new() { ["ar"] = "اختيار لهذا اليوم", ["en"] = "Select for this day", ["de"] = "Für diesen Tag wählen" },
-        ["meal_select_this"] = new() { ["ar"] = "✓ اختر هذه الوجبة", ["en"] = "✓ Select This Meal", ["de"] = "✓ Dieses Gericht wählen" },
-        ["meal_use_this"] = new() { ["ar"] = "استخدام هذه الوجبة", ["en"] = "Use This Meal", ["de"] = "Dieses Gericht verwenden" },
-        ["meal_add_to_plan"] = new() { ["ar"] = "إضافة إلى الخطة", ["en"] = "Add to Plan", ["de"] = "Zum Plan hinzufügen" },
         ["meal_favorite"] = new() { ["ar"] = "المفضلة", ["en"] = "Favorite", ["de"] = "Favorit" },
-        ["meal_add_favorite"] = new() { ["ar"] = "☆ إضافة للمفضلة", ["en"] = "☆ Add to Favorites", ["de"] = "☆ Zu Favoriten hinzufügen" },
-        ["meal_remove_favorite"] = new() { ["ar"] = "⭐ إزالة من المفضلة", ["en"] = "⭐ Remove from Favorites", ["de"] = "⭐ Aus Favoriten entfernen" },
         ["meal_no_ingredients"] = new() { ["ar"] = "لم يتم تحديد مكونات بعد لهذه الوجبة.", ["en"] = "No ingredients specified yet.", ["de"] = "Für dieses Gericht sind noch keine Zutaten hinterlegt." },
-        ["meal_no_side_dishes"] = new() { ["ar"] = "لم يتم اختيار أطباق جانبية بعد.", ["en"] = "No side dishes specified yet.", ["de"] = "Noch keine Beilagen ausgewählt." },
         ["meal_ingredients_hint"] = new() { ["ar"] = "أضف للمشتريات بلمسة", ["en"] = "Add to shopping with a tap", ["de"] = "Mit einem Tipp zum Einkauf" },
         ["meal_on_list"] = new() { ["ar"] = "على قائمتك", ["en"] = "On your list", ["de"] = "Auf deiner Liste" },
         // {0} = ingredient
@@ -359,7 +300,6 @@ public class LocalizationService : ILocalizationService
         ["meal_serves_with"] = new() { ["ar"] = "يُقدَّم مع", ["en"] = "Serves with", ["de"] = "Dazu passt" },
         ["meal_add_to_day_label"] = new() { ["ar"] = "أضف إلى يوم", ["en"] = "Add to a day", ["de"] = "Zu einem Tag hinzufügen" },
         // {0} = day, e.g. "الأربعاء 14"
-        ["meal_add_to_named_day_cta"] = new() { ["ar"] = "أضف إلى {0}", ["en"] = "Add to {0}", ["de"] = "Zu {0} hinzufügen" },
         ["meal_add_photo"] = new() { ["ar"] = "إضافة صورة", ["en"] = "Add photo", ["de"] = "Foto hinzufügen" },
         ["meal_change_photo"] = new() { ["ar"] = "تغيير الصورة", ["en"] = "Change photo", ["de"] = "Foto ändern" },
         ["meal_remove_photo"] = new() { ["ar"] = "حذف الصورة", ["en"] = "Remove photo", ["de"] = "Foto entfernen" },
@@ -371,49 +311,23 @@ public class LocalizationService : ILocalizationService
         ["meal_back_home"] = new() { ["ar"] = "العودة للرئيسية", ["en"] = "Back to Home", ["de"] = "Zurück zur Startseite" },
 
         // Selected day header
-        ["selectedday_add_to"] = new() { ["ar"] = "إضافة وجبة إلى", ["en"] = "Add meal to", ["de"] = "Gericht hinzufügen für" },
 
         // Shopping
-        ["shopping_add_ingredients"] = new() { ["ar"] = "أضف المكونات إلى قائمة التسوق", ["en"] = "Add ingredients to shopping list", ["de"] = "Zutaten auf die Einkaufsliste" },
         // {0} = number of ingredients added, {1} = shopping list name
-        ["shopping_ingredients_added"] = new() { ["ar"] = "تمت إضافة {0} مكوّنات إلى {1}", ["en"] = "Added {0} ingredients to {1}", ["de"] = "{0} Zutaten zu {1} hinzugefügt" },
-        ["shopping_ingredients_present"] = new() { ["ar"] = "كل المكونات موجودة في قائمتك بالفعل", ["en"] = "All ingredients are already on your list", ["de"] = "Alle Zutaten stehen schon auf deiner Liste" },
         ["shopping_title"] = new() { ["ar"] = "المشتريات", ["en"] = "Shopping", ["de"] = "Einkauf" },
-        ["shopping_subtitle"] = new() { ["ar"] = "رتّب مشترياتك حسب المتجر", ["en"] = "Organize your shopping by store", ["de"] = "Sortiere deinen Einkauf nach Geschäft" },
         ["shopping_add_store"] = new() { ["ar"] = "أضف متجرًا", ["en"] = "Add Store", ["de"] = "Geschäft hinzufügen" },
-        ["shopping_loading"] = new() { ["ar"] = "جارٍ تحميل قائمة المشتريات…", ["en"] = "Loading shopping list…", ["de"] = "Einkaufsliste wird geladen …" },
-        ["shopping_empty_title"] = new() { ["ar"] = "قائمة المشتريات جاهزة", ["en"] = "Shopping list is ready", ["de"] = "Deine Einkaufsliste ist bereit" },
-        ["shopping_empty_desc"] = new() { ["ar"] = "أضف متجرًا ثم دوّن ما تحتاجه منه.", ["en"] = "Add a store and list what you need.", ["de"] = "Füge ein Geschäft hinzu und notiere, was du brauchst." },
-        ["shopping_add_first_store"] = new() { ["ar"] = "أضف أول متجر", ["en"] = "Add First Store", ["de"] = "Erstes Geschäft hinzufügen" },
-        ["shopping_items"] = new() { ["ar"] = "عنصر", ["en"] = "items", ["de"] = "Artikel" },
-        ["shopping_delete_store"] = new() { ["ar"] = "حذف المتجر", ["en"] = "Delete Store", ["de"] = "Geschäft löschen" },
         // {0} = store name
         ["shopping_delete_store_named"] = new() { ["ar"] = "حذف {0}", ["en"] = "Delete {0}", ["de"] = "{0} löschen" },
         // {0} = store name
-        ["shopping_add_item_to"] = new() { ["ar"] = "أضف عنصرًا إلى {0}", ["en"] = "Add item to {0}", ["de"] = "Artikel zu {0} hinzufügen" },
         ["shopping_add_item"] = new() { ["ar"] = "أضف عنصرًا", ["en"] = "Add item", ["de"] = "Artikel hinzufügen" },
-        ["shopping_no_items"] = new() { ["ar"] = "لا توجد عناصر بعد — أضف أول عنصر.", ["en"] = "No items yet — add your first item.", ["de"] = "Noch keine Artikel — füge den ersten hinzu." },
-        ["shopping_bought"] = new() { ["ar"] = "تم الشراء", ["en"] = "Bought", ["de"] = "Gekauft" },
-        ["shopping_uncheck"] = new() { ["ar"] = "إلغاء شراء", ["en"] = "Uncheck", ["de"] = "Abwählen" },
         ["shopping_new_store"] = new() { ["ar"] = "متجر جديد", ["en"] = "New Store", ["de"] = "Neues Geschäft" },
         ["shopping_new_store_eyebrow"] = new() { ["ar"] = "رتّب مشترياتك بالطريقة التي تناسبك", ["en"] = "Organize your shopping the way you like", ["de"] = "Ordne deinen Einkauf so, wie es dir passt" },
         ["shopping_store_placeholder"] = new() { ["ar"] = "اسم المتجر، مثل كارفور أو بنده", ["en"] = "Store name, e.g. Walmart", ["de"] = "Name des Geschäfts, z. B. REWE" },
-        ["shopping_delete_store_q"] = new() { ["ar"] = "حذف المتجر؟", ["en"] = "Delete Store?", ["de"] = "Geschäft löschen?" },
-        ["shopping_delete_store_eyebrow"] = new() { ["ar"] = "سيُحذف المتجر وكل العناصر الموجودة فيه.", ["en"] = "The store and all its items will be deleted.", ["de"] = "Das Geschäft und alle Artikel darin werden gelöscht." },
         // {0} = items left to buy, {1} = number of stores
-        ["shopping_summary"] = new() { ["ar"] = "{0} متبقية في {1} متاجر", ["en"] = "{0} left to buy in {1} stores", ["de"] = "{0} offen in {1} Geschäften" },
-        ["shopping_summary_one"] = new() { ["ar"] = "{0} متبقية للشراء", ["en"] = "{0} left to buy", ["de"] = "{0} noch zu kaufen" },
-        ["shopping_summary_empty"] = new() { ["ar"] = "لا شيء للشراء", ["en"] = "Nothing left to buy", ["de"] = "Nichts mehr zu kaufen" },
-        ["shopping_add_week_ingredients"] = new() { ["ar"] = "أضف مكونات وجبات هذا الأسبوع", ["en"] = "Add this week's ingredients", ["de"] = "Zutaten dieser Woche hinzufügen" },
-        ["shopping_by_store"] = new() { ["ar"] = "حسب المتجر", ["en"] = "By store", ["de"] = "Nach Geschäft" },
-        ["shopping_by_aisle"] = new() { ["ar"] = "حسب القسم", ["en"] = "By aisle", ["de"] = "Nach Abteilung" },
         // {0} = bought count, {1} = total
-        ["shopping_progress"] = new() { ["ar"] = "{0} من {1}", ["en"] = "{0} of {1}", ["de"] = "{0} von {1}" },
         // {0} = bought count
         ["shopping_bought_n"] = new() { ["ar"] = "تم شراؤها ({0})", ["en"] = "Bought ({0})", ["de"] = "Gekauft ({0})" },
         ["shopping_store_options"] = new() { ["ar"] = "خيارات المتجر", ["en"] = "Store options", ["de"] = "Geschäftsoptionen" },
-        ["shopping_expand"] = new() { ["ar"] = "توسيع", ["en"] = "Expand", ["de"] = "Aufklappen" },
-        ["shopping_item_placeholder"] = new() { ["ar"] = "اسم العنصر", ["en"] = "Item name", ["de"] = "Artikelname" },
         ["shopping_which_store"] = new() { ["ar"] = "أي متجر؟", ["en"] = "Which store?", ["de"] = "Welches Geschäft?" },
         ["shopping_item_name"] = new() { ["ar"] = "اسم العنصر", ["en"] = "Item name", ["de"] = "Artikelname" },
         ["shopping_quantity"] = new() { ["ar"] = "الكمية", ["en"] = "Quantity", ["de"] = "Menge" },
@@ -422,9 +336,6 @@ public class LocalizationService : ILocalizationService
         ["shopping_increase"] = new() { ["ar"] = "زيادة", ["en"] = "Increase", ["de"] = "Mehr" },
         ["shopping_decrease"] = new() { ["ar"] = "إنقاص", ["en"] = "Decrease", ["de"] = "Weniger" },
         // {0} = meal name
-        ["shopping_for_meal"] = new() { ["ar"] = "لـ{0}", ["en"] = "for {0}", ["de"] = "für {0}" },
-        ["shopping_week_no_meals"] = new() { ["ar"] = "لا توجد وجبات مخططة لبقية هذا الأسبوع.", ["en"] = "No meals planned for the rest of this week.", ["de"] = "Für den Rest der Woche sind keine Gerichte geplant." },
-        ["shopping_week_nothing_new"] = new() { ["ar"] = "كل المكونات موجودة في قوائمك بالفعل.", ["en"] = "Every ingredient is already on your lists.", ["de"] = "Alle Zutaten stehen schon auf deinen Listen." },
         // {0} = number added, {1} = store name
         ["aisle_produce"] = new() { ["ar"] = "خضار وفواكه", ["en"] = "Fruit and vegetables", ["de"] = "Obst und Gemüse" },
         ["aisle_bakery"] = new() { ["ar"] = "مخبوزات", ["en"] = "Bakery", ["de"] = "Backwaren" },
@@ -456,7 +367,6 @@ public class LocalizationService : ILocalizationService
         ["install_works_desc"] = new() { ["ar"] = "استخدم متصفح Safari على iPhone/iPad، أو Chrome على أندرويد، واتبع نفس الخطوات من قائمة المشاركة أو القائمة ⋮.", ["en"] = "Use Safari on iPhone/iPad or Chrome on Android, then follow the same steps from the share menu or the ⋮ menu.", ["de"] = "Nutze Safari auf iPhone/iPad oder Chrome auf Android und folge den gleichen Schritten im Teilen-Menü oder im ⋮-Menü." },
         ["install_tip"] = new() { ["ar"] = "عند التثبيت على الشاشة الرئيسية يعمل مكدوس في وضع ملء الشاشة، ويُفتح بشكل أسرع، ويمكنك استخدامه من الشاشة الرئيسية مباشرة دون كتابة العنوان.", ["en"] = "Once installed, Makdous runs full screen, starts faster, and opens straight from your home screen without typing a URL.", ["de"] = "Einmal installiert, läuft Makdous im Vollbild, startet schneller und öffnet sich direkt vom Startbildschirm — ganz ohne Adresseingabe." },
         // {0} = current step, {1} = total steps
-        ["carousel_step"] = new() { ["ar"] = "الخطوة {0} من {1}", ["en"] = "Step {0} of {1}", ["de"] = "Schritt {0} von {1}" },
         ["carousel_start"] = new() { ["ar"] = "ابدأ الآن 🚀", ["en"] = "Get started 🚀", ["de"] = "Los geht's 🚀" },
         // {0} = step number
         ["carousel_badge"] = new() { ["ar"] = "الخطوة {0}", ["en"] = "Step {0}", ["de"] = "Schritt {0}" },
@@ -475,8 +385,6 @@ public class LocalizationService : ILocalizationService
         ["wizard_skip"] = new() { ["ar"] = "تخطّي الإعداد لاحقاً", ["en"] = "Skip setup for now", ["de"] = "Einrichtung später erledigen" },
         ["ios_guide_title"] = new() { ["ar"] = "أضف مكدوس إلى الشاشة الرئيسية", ["en"] = "Add Makdous to your home screen", ["de"] = "Makdous zum Startbildschirm hinzufügen" },
         ["ios_guide_desc"] = new() { ["ar"] = "اضغط زر المشاركة في Safari، ثم اختر «إضافة إلى الشاشة الرئيسية».", ["en"] = "Tap the share button in Safari, then choose \"Add to Home Screen\".", ["de"] = "Tippe in Safari auf „Teilen“ und wähle „Zum Home-Bildschirm“." },
-        ["ios_guide_alt"] = new() { ["ar"] = "شرح إضافة مكدوس إلى الشاشة الرئيسية على iPhone", ["en"] = "How to add Makdous to the home screen on iPhone", ["de"] = "So fügst du Makdous auf dem iPhone zum Startbildschirm hinzu" },
-        ["ios_guide_replay"] = new() { ["ar"] = "إعادة العرض", ["en"] = "Replay", ["de"] = "Nochmal abspielen" },
         ["ios_guide_gotit"] = new() { ["ar"] = "فهمت", ["en"] = "Got it", ["de"] = "Verstanden" },
         ["email_confirm_title"] = new() { ["ar"] = "أكمل تسجيل الدخول", ["en"] = "Finish signing in", ["de"] = "Anmeldung abschließen" },
         ["email_confirm_desc"] = new() { ["ar"] = "اكتب البريد الإلكتروني الذي أرسلنا إليه الرابط للتأكد من هويتك.", ["en"] = "Enter the email address we sent the link to so we can confirm it is you.", ["de"] = "Gib die E-Mail-Adresse ein, an die wir den Link geschickt haben." },
@@ -487,59 +395,32 @@ public class LocalizationService : ILocalizationService
         ["friends_discoverable"] = new() { ["ar"] = "أشخاص على مكدوس", ["en"] = "People on Makdous", ["de"] = "Leute bei Makdous" },
 
         // Friends page
-        ["friends_loading"] = new() { ["ar"] = "جارِ تحميل الأصدقاء...", ["en"] = "Loading friends...", ["de"] = "Freunde werden geladen …" },
         ["friends_need_username"] = new() { ["ar"] = "اختر اسم مستخدم من الإعدادات أولاً لتتمكن من إرسال أو قبول طلبات الصداقة.", ["en"] = "Choose a username in Settings first so you can send and accept friend requests.", ["de"] = "Wähle zuerst in den Einstellungen einen Benutzernamen, damit du Freundschaftsanfragen senden und annehmen kannst." },
         ["friends_your_username"] = new() { ["ar"] = "اسم المستخدم الخاص بك", ["en"] = "Your username", ["de"] = "Dein Benutzername" },
-        ["friends_copy_username"] = new() { ["ar"] = "نسخ اسم المستخدم", ["en"] = "Copy username", ["de"] = "Benutzernamen kopieren" },
-        ["friends_add_label"] = new() { ["ar"] = "أضف صديقاً", ["en"] = "Add a friend", ["de"] = "Freund hinzufügen" },
-        ["friends_username_placeholder"] = new() { ["ar"] = "اسم المستخدم", ["en"] = "Username", ["de"] = "Benutzername" },
         ["friends_send_request"] = new() { ["ar"] = "إرسال طلب صداقة", ["en"] = "Send friend request", ["de"] = "Freundschaftsanfrage senden" },
-        ["friends_requests_heading"] = new() { ["ar"] = "طلبات الصداقة", ["en"] = "Friend requests", ["de"] = "Freundschaftsanfragen" },
         ["friends_accept"] = new() { ["ar"] = "قبول طلب الصداقة", ["en"] = "Accept friend request", ["de"] = "Anfrage annehmen" },
         ["friends_decline"] = new() { ["ar"] = "رفض طلب الصداقة", ["en"] = "Decline friend request", ["de"] = "Anfrage ablehnen" },
-        ["friends_list_heading"] = new() { ["ar"] = "أصدقاؤك", ["en"] = "Your friends", ["de"] = "Deine Freunde" },
         ["friends_empty"] = new() { ["ar"] = "شارك اسم المستخدم أعلاه وابدأ التخطيط مع أصدقائك.", ["en"] = "Share your username above and start planning with your friends.", ["de"] = "Teile deinen Benutzernamen von oben und plane gemeinsam mit deinen Freunden." },
-        ["friends_week_of"] = new() { ["ar"] = "أسبوع {0}", ["en"] = "{0}'s week", ["de"] = "Woche von {0}" },
-        ["friends_discover_empty"] = new() { ["ar"] = "لا يوجد مستخدمون جدد حالياً. ادعُ من حولك ليبدأوا التخطيط أيضاً!", ["en"] = "No new users right now. Invite people around you to start planning too!", ["de"] = "Gerade keine neuen Nutzer. Lade Leute aus deinem Umfeld ein, auch zu planen!" },
         ["friends_discover_hint"] = new() { ["ar"] = "أضفهم كأصدقاء وشاهد أسبوعهم مباشرة.", ["en"] = "Add them as friends and see their week right away.", ["de"] = "Füge sie als Freunde hinzu und sieh sofort ihre Woche." },
-        ["friends_add_friend"] = new() { ["ar"] = "إضافة صديق", ["en"] = "Add friend", ["de"] = "Freund hinzufügen" },
-        ["friends_add_user"] = new() { ["ar"] = "إضافة {0}", ["en"] = "Add {0}", ["de"] = "{0} hinzufügen" },
-        ["friends_need_username_first"] = new() { ["ar"] = "اختر اسم مستخدم أولاً من الإعدادات.", ["en"] = "Choose a username in Settings first.", ["de"] = "Wähle zuerst in den Einstellungen einen Benutzernamen." },
         ["friends_request_sent"] = new() { ["ar"] = "تم إرسال طلب الصداقة ✨", ["en"] = "Friend request sent ✨", ["de"] = "Freundschaftsanfrage gesendet ✨" },
         ["friends_request_sent_to"] = new() { ["ar"] = "تم إرسال طلب الصداقة إلى @{0} ✨", ["en"] = "Friend request sent to @{0} ✨", ["de"] = "Freundschaftsanfrage an @{0} gesendet ✨" },
         ["friends_now_friends"] = new() { ["ar"] = "صرتما أصدقاء الآن 🎉", ["en"] = "You are friends now 🎉", ["de"] = "Ihr seid jetzt Freunde 🎉" },
-        ["friends_copied"] = new() { ["ar"] = "تم نسخ اسم المستخدم. أرسله لصديقك!", ["en"] = "Username copied. Send it to your friend!", ["de"] = "Benutzername kopiert. Schick ihn deinem Freund!" },
         ["friends_copy_failed"] = new() { ["ar"] = "تعذر النسخ. يمكنك تحديد الاسم ونسخه.", ["en"] = "Couldn't copy. You can select the name and copy it by hand.", ["de"] = "Kopieren fehlgeschlagen. Markiere den Namen und kopiere ihn von Hand." },
-        ["friends_meal_fallback"] = new() { ["ar"] = "وجبة", ["en"] = "Meal", ["de"] = "Gericht" },
 
         // Friend week sync
-        ["friends_sync_button"] = new() { ["ar"] = "مزامنة أسبوعي", ["en"] = "Sync my week", ["de"] = "Meine Woche synchronisieren" },
-        ["friends_sync_confirm_title"] = new() { ["ar"] = "مزامنة الأسبوع؟", ["en"] = "Sync this week?", ["de"] = "Diese Woche synchronisieren?" },
         // {0} = friend's display name, {1} = the week's date range (e.g. "5 Oct – 11 Oct")
-        ["friends_sync_confirm_eyebrow"] = new() { ["ar"] = "سيتم استبدال خطتك لأسبوع {1} بخطة {0}", ["en"] = "This will replace your plan for the week of {1} with {0}'s plan", ["de"] = "Dein Plan für die Woche vom {1} wird durch den von {0} ersetzt" },
-        ["friends_sync_confirm_note"] = new() { ["ar"] = "لا يمكن التراجع عن هذا تلقائياً، لكن يمكنك تعديل خطتك يدوياً بعد ذلك.", ["en"] = "This can't be undone automatically, but you can still edit your plan afterward.", ["de"] = "Das lässt sich nicht automatisch rückgängig machen, du kannst deinen Plan danach aber jederzeit bearbeiten." },
         // {0} = friend's display name
-        ["friends_sync_confirm_action"] = new() { ["ar"] = "نعم، انسخ خطة {0}", ["en"] = "Yes, copy {0}'s plan", ["de"] = "Ja, Plan von {0} übernehmen" },
-        ["friends_sync_syncing"] = new() { ["ar"] = "جارٍ المزامنة...", ["en"] = "Syncing...", ["de"] = "Wird synchronisiert …" },
         // {0} = friend's display name
-        ["friends_sync_success"] = new() { ["ar"] = "تمت مزامنة أسبوعك مع خطة {0} ✨", ["en"] = "Your week now matches {0}'s plan ✨", ["de"] = "Deine Woche entspricht jetzt dem Plan von {0} ✨" },
         ["friends_add_placeholder"] = new() { ["ar"] = "أضف صديقاً باسم المستخدم", ["en"] = "Add a friend by username", ["de"] = "Freund per Benutzername hinzufügen" },
         ["friends_send_request"] = new() { ["ar"] = "إرسال طلب", ["en"] = "Send request", ["de"] = "Anfrage senden" },
         ["friends_your_username"] = new() { ["ar"] = "اسم المستخدم الخاص بك", ["en"] = "Your username", ["de"] = "Dein Benutzername" },
         ["friends_need_username"] = new() { ["ar"] = "اختر اسم مستخدم من الإعدادات أولاً لتتمكن من إضافة الأصدقاء.", ["en"] = "Pick a username in Settings first so you can add friends.", ["de"] = "Wähle zuerst in den Einstellungen einen Benutzernamen, um Freunde hinzuzufügen." },
-        ["friends_need_username_short"] = new() { ["ar"] = "اختر اسم مستخدم أولاً من الإعدادات.", ["en"] = "Pick a username in Settings first.", ["de"] = "Wähle zuerst in den Einstellungen einen Benutzernamen." },
         ["friends_go_settings"] = new() { ["ar"] = "اذهب إلى الإعدادات", ["en"] = "Go to Settings", ["de"] = "Zu den Einstellungen" },
         ["friends_wants_to_add"] = new() { ["ar"] = "تريد إضافتك", ["en"] = "wants to add you", ["de"] = "möchte dich hinzufügen" },
         ["friends_accept"] = new() { ["ar"] = "قبول", ["en"] = "Accept", ["de"] = "Annehmen" },
         ["friends_decline"] = new() { ["ar"] = "رفض", ["en"] = "Decline", ["de"] = "Ablehnen" },
         ["friends_empty"] = new() { ["ar"] = "شارك اسم المستخدم أعلاه وابدأ التخطيط مع أصدقائك.", ["en"] = "Share your username above and start planning with friends.", ["de"] = "Teile deinen Benutzernamen und plant gemeinsam mit Freunden." },
         ["friends_planned_days"] = new() { ["ar"] = "{0} من 7 أيام مخططة", ["en"] = "{0} of 7 days planned", ["de"] = "{0} von 7 Tagen geplant" },
-        ["friends_prev_week"] = new() { ["ar"] = "الأسبوع السابق", ["en"] = "Previous week", ["de"] = "Vorherige Woche" },
-        ["friends_next_week"] = new() { ["ar"] = "الأسبوع القادم", ["en"] = "Next week", ["de"] = "Nächste Woche" },
-        ["friends_replaces"] = new() { ["ar"] = "يحلّ محل: {0}", ["en"] = "Replaces: {0}", ["de"] = "Ersetzt: {0}" },
-        ["friends_empty_day"] = new() { ["ar"] = "يوم فارغ", ["en"] = "Empty day", ["de"] = "Leerer Tag" },
-        ["friends_replace_week"] = new() { ["ar"] = "استبدال أسبوعي", ["en"] = "Replace my week", ["de"] = "Meine Woche ersetzen" },
-        ["friends_copy_empty"] = new() { ["ar"] = "نسخ الأيام الفارغة فقط", ["en"] = "Copy empty days only", ["de"] = "Nur leere Tage kopieren" },
         ["friends_discover_hint"] = new() { ["ar"] = "أضفهم وشاهد أسبوعهم", ["en"] = "Add them to see their week", ["de"] = "Füge sie hinzu und sieh ihre Woche" },
         ["friends_add_named"] = new() { ["ar"] = "إضافة {0}", ["en"] = "Add {0}", ["de"] = "{0} hinzufügen" },
         ["friends_request_sent"] = new() { ["ar"] = "تم إرسال طلب الصداقة ✨", ["en"] = "Friend request sent ✨", ["de"] = "Freundschaftsanfrage gesendet ✨" },
@@ -547,8 +428,6 @@ public class LocalizationService : ILocalizationService
         ["friends_now_friends"] = new() { ["ar"] = "صرتما أصدقاء الآن 🎉", ["en"] = "You're friends now 🎉", ["de"] = "Ihr seid jetzt befreundet 🎉" },
         ["friends_username_copied"] = new() { ["ar"] = "تم نسخ اسم المستخدم. أرسله لصديقك!", ["en"] = "Username copied. Send it to a friend!", ["de"] = "Benutzername kopiert. Schick ihn einem Freund!" },
         ["friends_copy_failed"] = new() { ["ar"] = "تعذر النسخ. يمكنك تحديد الاسم ونسخه.", ["en"] = "Couldn't copy. You can select the name and copy it.", ["de"] = "Kopieren fehlgeschlagen. Markiere den Namen und kopiere ihn." },
-        ["friends_nothing_to_copy"] = new() { ["ar"] = "لا توجد أيام فارغة لنسخها.", ["en"] = "No empty days to copy.", ["de"] = "Keine leeren Tage zum Kopieren." },
-        ["friends_copy_empty_success"] = new() { ["ar"] = "تم نسخ الأيام الفارغة من خطة {0} ✨", ["en"] = "Filled your empty days from {0}'s plan ✨", ["de"] = "Leere Tage mit dem Plan von {0} gefüllt ✨" },
         ["signin_lead"] = new() { ["ar"] = "احفظ خطتك واستخدمها على كل أجهزتك", ["en"] = "Save your plan and use it on all your devices", ["de"] = "Speichere deinen Plan und nutze ihn auf allen Geräten" },
         ["signin_sub"] = new() { ["ar"] = "أدخل بريدك الإلكتروني للمتابعة، بدون كلمة مرور.", ["en"] = "Enter your email to continue — no password needed.", ["de"] = "Gib deine E-Mail ein, um fortzufahren – ganz ohne Passwort." },
         ["signin_email"] = new() { ["ar"] = "البريد الإلكتروني", ["en"] = "Email", ["de"] = "E-Mail" },
@@ -885,6 +764,11 @@ public class LocalizationService : ILocalizationService
         ["nut_offline_pending"] = new() { ["ar"] = "أنت غير متصل. تغييرات بانتظار الإرسال: {0}", ["en"] = "You're offline. Changes waiting to send: {0}", ["de"] = "Du bist offline. Wartende Änderungen: {0}" },
         ["nut_offline_sending"] = new() { ["ar"] = "جارٍ إرسال التغييرات: {0}", ["en"] = "Sending changes: {0}", ["de"] = "Änderungen werden gesendet: {0}" },
         ["nut_steps_minutes"] = new() { ["ar"] = "{0} دقيقة", ["en"] = "{0} min", ["de"] = "{0} Min." },
+        ["nut_clear_list"] = new() { ["ar"] = "امسح القائمة", ["en"] = "Clear list", ["de"] = "Liste leeren" },
+        ["nut_clear_list_q"] = new() { ["ar"] = "مسح القائمة كلها؟", ["en"] = "Clear the whole list?", ["de"] = "Ganze Liste leeren?" },
+        ["nut_clear_list_note"] = new() { ["ar"] = "ستُحذف كل العناصر، المشتراة وغير المشتراة. تبقى المتاجر.", ["en"] = "Every item goes, bought or not. Your stores stay.", ["de"] = "Alle Artikel werden entfernt, gekauft oder nicht. Deine Läden bleiben." },
+        ["nut_clear_list_note_plan"] = new() { ["ar"] = "ستُحذف كل العناصر وتبقى المتاجر. مكونات الوجبات المخطط لها ستُضاف من جديد كعناصر لم تُشترَ بعد.", ["en"] = "Every item goes and your stores stay. Ingredients for your planned meals are added again, not yet bought.", ["de"] = "Alle Artikel werden entfernt, deine Läden bleiben. Zutaten für geplante Gerichte kommen neu und ungekauft wieder dazu." },
+        ["nut_clear_list_done"] = new() { ["ar"] = "تم مسح القائمة", ["en"] = "List cleared", ["de"] = "Liste geleert" },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg
@@ -908,8 +792,6 @@ public class LocalizationService : ILocalizationService
         ["nut_not_now"] = new() { ["ar"] = "ليس الآن", ["en"] = "Not now", ["de"] = "Jetzt nicht" },
         ["nut_assistant"] = new() { ["ar"] = "المساعد", ["en"] = "Assistant", ["de"] = "Assistent" },
         ["nut_shopping"] = new() { ["ar"] = "المشتريات", ["en"] = "Shopping", ["de"] = "Einkauf" },
-        ["nut_eat_leftover"] = new() { ["ar"] = "تُؤكل كبقايا", ["en"] = "Eat as leftover", ["de"] = "Als Reste essen" },
-        ["nut_eat_leftover_hint"] = new() { ["ar"] = "من طبخة سابقة، فلا تُضاف إلى قائمة التسوق.", ["en"] = "From an earlier cook, so it stays off the shopping list.", ["de"] = "Von einem früheren Kochen, kommt also nicht auf die Einkaufsliste." },
         ["nut_retry"] = new() { ["ar"] = "إعادة المحاولة", ["en"] = "Try again", ["de"] = "Erneut versuchen" },
         ["nut_load_error"] = new() { ["ar"] = "تعذّر تحميل خطتك.", ["en"] = "Couldn't load your plan.", ["de"] = "Dein Plan konnte nicht geladen werden." },
         ["nut_servings_less"] = new() { ["ar"] = "حصص أقل", ["en"] = "Fewer servings", ["de"] = "Weniger Portionen" },
@@ -1015,7 +897,6 @@ public class LocalizationService : ILocalizationService
         ["nut_applied"] = new() { ["ar"] = "تم. يومك الآن يصل إلى {0} غ بروتين و{1} سعرة.", ["en"] = "Done. Your day now reaches {0} g protein and {1} kcal.", ["de"] = "Fertig. Dein Tag erreicht jetzt {0} g Eiweiß und {1} kcal." },
         ["nut_proposal_remove"] = new() { ["ar"] = "إزالة", ["en"] = "Remove", ["de"] = "Entfernen" },
         // {0} = number of meals shown
-        ["nut_results_count"] = new() { ["ar"] = "{0} وجبة", ["en"] = "{0} meals", ["de"] = "{0} Gerichte" },
         // {0} = meal name, {1} = kcal, {2} = grams of protein
         ["nut_pick_line"] = new() { ["ar"] = "{1} سعرة · {2} غ", ["en"] = "{1} kcal · {2} g", ["de"] = "{1} kcal · {2} g" },
 
@@ -1035,7 +916,6 @@ public class LocalizationService : ILocalizationService
         ["nut_l"] = new() { ["ar"] = "ل", ["en"] = "l", ["de"] = "l" },
         ["nut_nothing_planned"] = new() { ["ar"] = "لا وجبات مخططة من اليوم حتى الأحد.", ["en"] = "No meals planned from today to Sunday.", ["de"] = "Von heute bis Sonntag ist nichts geplant." },
         // {0} = items added, {1} = items whose amount changed, {2} = items removed
-        ["nut_sync_result"] = new() { ["ar"] = "أُضيف {0}، وحُدّث {1}، وحُذف {2}", ["en"] = "{0} added, {1} updated, {2} removed", ["de"] = "{0} hinzugefügt, {1} aktualisiert, {2} entfernt" },
 
         // Friends: opt-in nutrition sharing (3.0)
         ["nut_share_title"] = new() { ["ar"] = "شارك تغذيتي مع الأصدقاء", ["en"] = "Share my nutrition with friends", ["de"] = "Meine Ernährung mit Freunden teilen" },

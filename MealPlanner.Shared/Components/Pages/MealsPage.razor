@@ -10,7 +10,7 @@
 @inject IMealPhotoService Photos
 @inject ToastService Toasts
 @inject INutritionStore NutritionStore
-@inject IMealService MealService
+@inject ICatalogSeeder Seeder
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject IMealImageService MealImages
@@ -346,7 +346,7 @@
         loadError = false;
         try
         {
-            try { await MealService.SeedAsync(new List<Meal>()); } catch { /* seeding is best effort */ }
+            try { await Seeder.SeedAsync(); } catch { /* seeding is best effort */ }
             await MealImages.EnsureLoadedAsync();
             var mealsTask = CatalogService.GetAllMealsAsync();
             var profileTask = UserService.GetProfileAsync(uid);

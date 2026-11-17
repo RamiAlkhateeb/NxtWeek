@@ -9,17 +9,11 @@ public interface IUserService
 {
     Task<UserProfile?> GetProfileAsync(string uid);
     Task CreateProfileAsync(UserProfile profile);
-    Task SaveSelectedMealsAsync(string uid, List<string> mealIds);
     Task SaveFavoriteMealsAsync(string uid, List<string> mealIds);
     Task ToggleFavoriteMealAsync(string uid, string mealId);
-    Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string uid, DateOnly start, DateOnly end);
-    Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month);
     Task<bool> HasAnyPlanEntryAsync(string uid);
     Task<List<UserProfile>> GetRegisteredUsersAsync(string excludeUid);
     Task<UserProfile?> GetNamedProfileAsync(string username);
-    Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry);
-    Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries);
-    Task AssignMealToDateAsync(string uid, DateOnly date, string mealId);
     Task<bool> IsUsernameAvailableAsync(string username, string currentUid);
     Task<string> RenameUserAsync(string currentUid, string requestedUsername);
     Task<string?> GetDataKeyForAuthUidAsync(string authUid);

@@ -51,8 +51,11 @@ CSS uses logical alignment (`text-align: start`), never `right`.
 ## Data
 
 Firebase Realtime Database is the **source of truth**, reached over its REST API
-with an unauthenticated `HttpClient`. `localStorage:meals-cache` is a read-through
-display cache only — never treat it as authoritative.
+with an unauthenticated `HttpClient`. Every service reaches it through `FirebaseRest` (`Key` escapes a path key; `Get`,
+`Put`, `Patch`, `Delete` throw on failure, `Try…` return false or null; multi-path `Patch` on a parent or `""` for changes
+that must happen together; `GetWithETagAsync` / `TryPutIfMatchAsync` for a write that must not overwrite a change made
+meanwhile). Do not build database URLs or call `HttpClient` for the database anywhere else. The offline cache (below) is a convenience only — never treat
+it as authoritative.
 
 Identity keys in `localStorage` (do **not** rename these; they are live user data):
 
@@ -68,7 +71,7 @@ nxtweek.theme
 | Meal catalog (shared by all users) | `MealCatalog/{id}` |
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
-| Shopping list (stores with items) | `users/{key}/shopping` |
+| Shopping list (stores with items; a store's `logoDomain` and `emoji` come from Gemini) | `users/{key}/shopping` |
 | Which store an item goes to, by ingredient key or name | `users/{key}/shoppingRoutes/{key}` |
 | Day slots (Meal 1, afternoon snack, dinner, evening snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
@@ -127,7 +130,14 @@ Shopping (`/shopping`) is shopping by servings: the meals still to cook from tod
 leftover) as small chips in two scrolling rows (a chip opens servings and meal prep), and one list in shop order with quick add
 and a collapsed "Bought" part, that follows them. With more than one store the list is grouped by store; moving an item
 to a store remembers it for next time (`users/{owner}/shoppingRoutes/{StoreRoute.Key}`), and plan items without a
-remembered store go to the first store made. Deleting a store moves its items to another. The page brings the list in
+remembered store go to the first store made (`ShoppingStores`, pure and tested). Moving an item and deleting a store
+(its items go to the default store) are single multi-path writes, so no reader ever sees an item in two stores. Items are
+read and written through `IShoppingListService`, stores through `IShoppingStoreService`, and whose list it is through
+`IShoppingListOwner`. Each store shows a picture (`StoreThumb`): Gemini, with the user's key, names the chain's web
+domain and an emoji (`IStoreLogoService`, cleaned by `StoreLogo.Clean`), the logo is the site's icon from Google's
+favicon service, else the emoji, else the first letter; asked once per store (`logoChecked`), again after a rename.
+"Clear list" empties every store in one write; the planned meals' items come straight back, unbought.
+The page runs one change at a time and applies a live update that arrives meanwhile right after it. The page brings the list in
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
 (`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
 and ones the plan no longer needs. Old accounts with several stores see all their items together.
@@ -141,6 +151,8 @@ leftovers and quick adds stay personal, and an answered entry is never changed. 
 (`IShoppingListService.GetListOwnerAsync`), and its amounts count both people's servings. Stopping gives the other side a copy
 of the list. Live updates use `LiveWatch` (Firebase REST streaming on one narrow path, plus a reload when the tab is shown
 again): Week watches this week's days, Shopping watches the shared list and both plans.
+
+The built-in meals are seeded by `ICatalogSeeder`; "Surprise my week" picks with `SurprisePicks` (pure, tested).
 
 Write day slots only through `IDayPlanService` (or `IMealAssignService`, which picks a slot):
 it saves the whole day, so a legacy `weeklyPlan` day becomes the new shape on its first edit.

@@ -1245,3 +1245,17 @@ html, body { background: var(--nxt-page); }
 .mk-offline .i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .mk-cook-timer .mk-btn-row { justify-content: center; }
 .mk-cook-timer .mk-btn.is-soft { background: var(--nxt-card); color: var(--nxt-text); }
+
+/* ---- Store pictures and clearing the list ---- */
+.mk-store-thumb { width: 32px; height: 32px; flex: none; border-radius: 10px; background: var(--nxt-card); border: 1px solid var(--nxt-border); display: grid; place-items: center; overflow: hidden; }
+.mk-store-thumb.is-sm { width: 22px; height: 22px; border-radius: 7px; }
+.mk-store-thumb img { width: 72%; height: 72%; object-fit: contain; }
+.mk-store-thumb-emoji { font-size: 18px; line-height: 1; }
+.mk-store-thumb.is-sm .mk-store-thumb-emoji { font-size: 13px; }
+.mk-store-thumb-letter { font-weight: 800; font-size: 14px; color: var(--nxt-text-2, var(--nxt-text)); }
+.mk-store-thumb.is-sm .mk-store-thumb-letter { font-size: 11px; }
+.mk-store-chip { display: inline-flex; align-items: center; gap: 6px; }
+.mk-store-head { display: flex; align-items: center; gap: 10px; }
+.mk-clear-list { display: inline-flex; align-items: center; gap: 6px; align-self: center; margin-top: 8px; min-height: 44px; color: #ff3b30; }
+.mk-clear-list { white-space: nowrap; font-size: 14px; font-weight: 700; }
+.mk-clear-list .i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

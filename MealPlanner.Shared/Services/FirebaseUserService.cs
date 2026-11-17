@@ -15,11 +15,9 @@ namespace MealPlanner.Shared.Services;
 // contain them. For that reason every profile mutation here uses PATCH (shallow
 // merge) or a targeted path write, and username rename MOVES the whole subtree
 // instead of rebuilding it, so no plan/shopping data is ever dropped.
-public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options) : IUserService
+public sealed class FirebaseUserService(FirebaseRest db) : IUserService
 {
-    private readonly string baseUrl = options.DatabaseUrl.TrimEnd('/');
-    private string Url(string path) => $"{baseUrl}/{path}.json";
-    private static string Key(string value) => Uri.EscapeDataString(value);
+    private static string Key(string value) => FirebaseRest.Key(value);
 
     public async Task<UserProfile?> GetProfileAsync(string uid)
     {
@@ -48,13 +46,13 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     /// </summary>
     private async Task<UserProfile?> ReadProfileAsync(string key)
     {
-        var shallow = await http.GetFromJsonAsync<JsonObject>($"{Url($"users/{Key(key)}")}?shallow=true");
+        var shallow = await db.GetAsync<JsonObject>($"users/{Key(key)}", "shallow=true");
         if (shallow is null) return null;
         var present = shallow.Select(child => child.Key)
             .Where(name => ProfileFields.Contains(name, StringComparer.OrdinalIgnoreCase))
             .ToList();
         var fields = await Task.WhenAll(present.Select(async name =>
-            (name, value: await http.GetFromJsonAsync<JsonNode>(Url($"users/{Key(key)}/{name}")))));
+            (name, value: await db.GetAsync<JsonNode>($"users/{Key(key)}/{name}"))));
         var node = new JsonObject();
         foreach (var (name, value) in fields) node[name] = value?.DeepClone();
         return node.Deserialize<UserProfile>(Web);
@@ -63,24 +61,22 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     public async Task<bool> HasDataAsync(string key)
     {
         if (string.IsNullOrWhiteSpace(key)) return false;
-        var shallow = await http.GetFromJsonAsync<JsonObject>($"{Url($"users/{Key(key)}")}?shallow=true");
+        var shallow = await db.GetAsync<JsonObject>($"users/{Key(key)}", "shallow=true");
         return shallow is { Count: > 0 };
     }
 
     public async Task SetShareNutritionAsync(string uid, bool share)
     {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/shareNutrition"), share);
-        response.EnsureSuccessStatusCode();
+        await db.PutAsync($"users/{Key(uid)}/shareNutrition", share);
     }
 
     public async Task PublishShareStatsAsync(string uid, ShareStats stats)
     {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/shareStats"), stats);
-        response.EnsureSuccessStatusCode();
+        await db.PutAsync($"users/{Key(uid)}/shareStats", stats);
     }
 
     public async Task<ShareStats?> GetShareStatsAsync(string uid) =>
-        await http.GetFromJsonAsync<ShareStats?>(Url($"users/{Key(uid)}/shareStats"));
+        await db.GetAsync<ShareStats?>($"users/{Key(uid)}/shareStats");
 
     // Merge-only write. Never PUTs the whole document, so sibling weeklyPlan /
     // shopping / favorite nodes already stored under the same uid survive.
@@ -106,66 +102,32 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         if (profile.IncomingFriendRequests is { Count: > 0 })
             patch["incomingFriendRequests"] = profile.IncomingFriendRequests;
 
-        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(profile.Uid)}"), patch);
-        if (!response.IsSuccessStatusCode)
+        if (!await db.TryPatchAsync($"users/{Key(profile.Uid)}", patch))
             throw new InvalidOperationException("تعذر حفظ الملف الشخصي. حاول مرة أخرى.");
-    }
-
-    public async Task SaveSelectedMealsAsync(string uid, List<string> mealIds)
-    {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/selectedMealIds"), mealIds);
-        response.EnsureSuccessStatusCode();
     }
 
     public async Task SaveFavoriteMealsAsync(string uid, List<string> mealIds)
     {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/favoriteMealIds"), mealIds);
-        response.EnsureSuccessStatusCode();
+        await db.PutAsync($"users/{Key(uid)}/favoriteMealIds", mealIds);
     }
 
     public async Task ToggleFavoriteMealAsync(string uid, string mealId)
     {
-        var values = await http.GetFromJsonAsync<List<string>>(Url($"users/{Key(uid)}/favoriteMealIds")) ?? [];
+        var values = await db.GetAsync<List<string>>($"users/{Key(uid)}/favoriteMealIds") ?? [];
         if (!values.Remove(mealId)) values.Add(mealId);
         await SaveFavoriteMealsAsync(uid, values);
     }
 
-    public async Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string uid, DateOnly start, DateOnly end)
-    {
-        var plan = await http.GetFromJsonAsync<Dictionary<string, WeeklyPlanEntry>>(Url($"users/{Key(uid)}/weeklyPlan")) ?? [];
-        return plan.Values
-            .Where(x => x.Date >= start && x.Date <= end)
-            .OrderBy(x => x.Date)
-            .ToList();
-    }
-
-    public Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month) =>
-        GetWeeklyPlanAsync(uid, new DateOnly(year, month, 1), new DateOnly(year, month, 1).AddMonths(1).AddDays(-1));
-
     public async Task<bool> HasAnyPlanEntryAsync(string uid)
     {
-        var plan = await http.GetFromJsonAsync<Dictionary<string, WeeklyPlanEntry>>(Url($"users/{Key(uid)}/weeklyPlan"));
+        var plan = await db.GetAsync<Dictionary<string, WeeklyPlanEntry>>($"users/{Key(uid)}/weeklyPlan");
         return plan is { Count: > 0 };
     }
-
-    public async Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry)
-    {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/weeklyPlan/{entry.Date:yyyy-MM-dd}"), entry);
-        response.EnsureSuccessStatusCode();
-    }
-
-    public async Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries)
-    {
-        foreach (var entry in entries) await SaveWeeklyPlanEntryAsync(uid, entry);
-    }
-
-    public Task AssignMealToDateAsync(string uid, DateOnly date, string mealId) =>
-        SaveWeeklyPlanEntryAsync(uid, new() { Date = date, MealId = mealId });
 
     public async Task<bool> IsUsernameAvailableAsync(string username, string currentUid)
     {
         var normalized = NormalizeUsername(username);
-        var reservation = await http.GetFromJsonAsync<UsernameReservation>(Url($"usernames/{Key(normalized)}"));
+        var reservation = await db.GetAsync<UsernameReservation>($"usernames/{Key(normalized)}");
         return reservation is null || string.Equals(reservation.UserKey, currentUid, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -176,27 +138,14 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         if (string.Equals(currentUid, username, StringComparison.OrdinalIgnoreCase)) return username;
 
         // Reserve the requested name (optimistic concurrency via ETag).
-        var reservationUrl = Url($"usernames/{Key(username)}");
-        using var get = new HttpRequestMessage(HttpMethod.Get, reservationUrl);
-        get.Headers.TryAddWithoutValidation("X-Firebase-ETag", "true");
-        using var existing = await http.SendAsync(get);
-        existing.EnsureSuccessStatusCode();
-        var etag = existing.Headers.ETag?.Tag ?? "null_etag";
-        var existingBody = await existing.Content.ReadAsStringAsync();
-        var reservation = string.IsNullOrWhiteSpace(existingBody) || existingBody == "null"
-            ? null : JsonSerializer.Deserialize<UsernameReservation>(existingBody, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var reservationPath = $"usernames/{Key(username)}";
+        var (reservation, etag) = await db.GetWithETagAsync<UsernameReservation>(reservationPath);
         if (reservation is not null && !string.Equals(reservation.UserKey, currentUid, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("اسم المستخدم مستخدم بالفعل.");
 
         if (reservation is null)
         {
-            using var reserve = new HttpRequestMessage(HttpMethod.Put, reservationUrl)
-            {
-                Content = JsonContent.Create(new UsernameReservation { UserKey = username, AuthUid = current.AuthUid })
-            };
-            reserve.Headers.TryAddWithoutValidation("if-match", etag);
-            using var reserved = await http.SendAsync(reserve);
-            if (!reserved.IsSuccessStatusCode)
+            if (!await db.TryPutIfMatchAsync(reservationPath, new UsernameReservation { UserKey = username, AuthUid = current.AuthUid }, etag))
                 throw new InvalidOperationException("تم اختيار اسم المستخدم من مستخدم آخر. جرب اسماً آخر.");
         }
 
@@ -204,16 +153,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         // carried over to the new key instead of being dropped. If the read fails
         // we abort WITHOUT deleting anything — deleting on a failed read is how
         // weekly plans were previously wiped from the DB.
-        JsonObject? rawNode = null;
-        using (var rawGet = await http.GetAsync(Url($"users/{Key(currentUid)}")))
-        {
-            if (rawGet.IsSuccessStatusCode)
-            {
-                var rawJson = await rawGet.Content.ReadAsStringAsync();
-                if (!string.IsNullOrWhiteSpace(rawJson) && rawJson != "null")
-                    rawNode = JsonNode.Parse(rawJson) as JsonObject;
-            }
-        }
+        var rawNode = await db.TryGetNodeAsync($"users/{Key(currentUid)}");
         if (rawNode is null)
             throw new InvalidOperationException("تعذر قراءة بياناتك الحالية، لذلك لم نغيّر اسم المستخدم ولم نحذف أي شيء. حاول مرة أخرى.");
 
@@ -259,11 +199,8 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
 
         if (friendPatches.Count > 0)
         {
-            using (var friendResp = await http.PatchAsJsonAsync(Url(""), friendPatches))
-            {
-                if (!friendResp.IsSuccessStatusCode)
-                    throw new InvalidOperationException("تعذر حفظ اسم المستخدم. حاول مرة أخرى.");
-            }
+            if (!await db.TryPatchAsync("", friendPatches))
+                throw new InvalidOperationException("تعذر حفظ اسم المستخدم. حاول مرة أخرى.");
         }
 
         // 2) Copy the entire user node to the new key FIRST, and only delete the
@@ -279,14 +216,8 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         // Display name mirrors the username (a user no longer shows as "ضيف" guest).
         moved["displayName"] = username;
 
-        using (var copy = await http.PatchAsJsonAsync(Url(""), new Dictionary<string, object?>
-        {
-            [$"users/{Key(username)}"] = moved
-        }))
-        {
-            if (!copy.IsSuccessStatusCode)
-                throw new InvalidOperationException("تعذر حفظ اسم المستخدم، ولم تُحذف بياناتك. حاول مرة أخرى.");
-        }
+        if (!await db.TryPatchAsync("", new Dictionary<string, object?> { [$"users/{Key(username)}"] = moved }))
+            throw new InvalidOperationException("تعذر حفظ اسم المستخدم، ولم تُحذف بياناتك. حاول مرة أخرى.");
 
         // 3) Now remove the old node and update references.
         var cleanupPatch = new Dictionary<string, object?>
@@ -298,17 +229,14 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         if (!string.Equals(currentUid, username, StringComparison.OrdinalIgnoreCase) && !currentUid.StartsWith("guest_", StringComparison.OrdinalIgnoreCase))
             cleanupPatch[$"usernames/{Key(currentUid)}"] = null;
 
-        using (var cleanup = await http.PatchAsJsonAsync(Url(""), cleanupPatch))
-        {
-            if (!cleanup.IsSuccessStatusCode)
-                throw new InvalidOperationException("تم حفظ اسم المستخدم، لكن تعذر إزالة النسخة القديمة. بياناتك سليمة.");
-        }
+        if (!await db.TryPatchAsync("", cleanupPatch))
+            throw new InvalidOperationException("تم حفظ اسم المستخدم، لكن تعذر إزالة النسخة القديمة. بياناتك سليمة.");
 
         return username;
     }
 
     public async Task<string?> GetDataKeyForAuthUidAsync(string authUid) =>
-        await http.GetFromJsonAsync<string>(Url($"authUsers/{Key(authUid)}"));
+        await db.GetAsync<string>($"authUsers/{Key(authUid)}");
 
     public async Task LinkAuthAccountAsync(string userKey, string authUid, string email)
     {
@@ -318,8 +246,9 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         profile.Username = userKey;
         profile.DisplayName = userKey; // mirror username instead of showing "ضيف"
         await CreateProfileAsync(profile);
-        await http.PutAsJsonAsync(Url($"authUsers/{Key(authUid)}"), userKey);
-        await http.PutAsJsonAsync(Url($"usernames/{Key(userKey)}"), new UsernameReservation { UserKey = userKey, AuthUid = authUid });
+        // Best effort, as before: the profile already carries the link.
+        await db.TryPutAsync($"authUsers/{Key(authUid)}", userKey);
+        await db.TryPutAsync($"usernames/{Key(userKey)}", new UsernameReservation { UserKey = userKey, AuthUid = authUid });
     }
 
     // Discovery: list registered (named) users so the app can show "other people
@@ -330,7 +259,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
     {
         // The username reservations are the list of named accounts; reading them instead of
         // users/ means discovering people never downloads anybody's data.
-        var reservations = await http.GetFromJsonAsync<Dictionary<string, UsernameReservation>>(Url("usernames")) ?? new();
+        var reservations = await db.GetAsync<Dictionary<string, UsernameReservation>>("usernames") ?? new();
         var result = new List<UserProfile>();
         foreach (var (name, reservation) in reservations)
         {
@@ -395,8 +324,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
             [$"users/{Key(recipientUid)}/incomingFriendRequests/{Key(senderUid)}"] = recipient.IncomingFriendRequests[senderUid],
             [$"users/{Key(senderUid)}/outgoingFriendRequestIds"] = sender.OutgoingFriendRequestIds
         };
-        using var response = await http.PatchAsJsonAsync(Url(""), patch);
-        if (!response.IsSuccessStatusCode)
+        if (!await db.TryPatchAsync("", patch))
             throw new InvalidOperationException("تعذر إرسال طلب الصداقة. حاول مرة أخرى.");
     }
 
@@ -424,8 +352,7 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
             [$"users/{Key(senderUid)}/friendIds"] = sender.FriendIds,
             [$"users/{Key(senderUid)}/outgoingFriendRequestIds"] = sender.OutgoingFriendRequestIds ?? new()
         };
-        using var response = await http.PatchAsJsonAsync(Url(""), patch);
-        if (!response.IsSuccessStatusCode)
+        if (!await db.TryPatchAsync("", patch))
             throw new InvalidOperationException("تعذر قبول طلب الصداقة. حاول مرة أخرى.");
     }
 
@@ -439,19 +366,17 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         {
             [$"users/{Key(uid)}/incomingFriendRequests"] = profile.IncomingFriendRequests ?? new Dictionary<string, FriendRequest>()
         };
-        using (var response = await http.PatchAsJsonAsync(Url(""), patch))
-        {
-            if (!response.IsSuccessStatusCode) throw new InvalidOperationException("تعذر رفض طلب الصداقة. حاول مرة أخرى.");
-        }
+        if (!await db.TryPatchAsync("", patch))
+            throw new InvalidOperationException("تعذر رفض طلب الصداقة. حاول مرة أخرى.");
 
         var sender = await GetProfileAsync(senderUid);
         if (sender is not null && sender.OutgoingFriendRequestIds?.Remove(uid) == true)
         {
-            using var resp = await http.PatchAsJsonAsync(Url(""), new Dictionary<string, object?>
+            if (!await db.TryPatchAsync("", new Dictionary<string, object?>
             {
                 [$"users/{Key(senderUid)}/outgoingFriendRequestIds"] = sender.OutgoingFriendRequestIds
-            });
-            if (!resp.IsSuccessStatusCode) throw new InvalidOperationException("تعذر رفض طلب الصداقة. حاول مرة أخرى.");
+            }))
+                throw new InvalidOperationException("تعذر رفض طلب الصداقة. حاول مرة أخرى.");
         }
     }
 

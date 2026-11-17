@@ -13,8 +13,6 @@ public interface IDayPlanService
     Task<PlanDay> SetEntryAsync(string uid, DateOnly date, MealSlot slot, SlotEntry entry);
     Task<PlanDay> UpdateEntryAsync(string uid, DateOnly date, MealSlot slot, Action<SlotEntry> change);
     Task<PlanDay> RemoveEntryAsync(string uid, DateOnly date, MealSlot slot);
-    /// <summary>Replaces every slot of the day (copying a friend's day).</summary>
-    Task<PlanDay> ReplaceSlotsAsync(string uid, DateOnly date, Dictionary<MealSlot, SlotEntry> slots);
     /// <summary>Moves a meal to another slot or day (swapping with what is there). Returns the days that changed.</summary>
     Task<List<PlanDay>> MoveEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot);
     /// <summary>Copies a meal to another slot or day, replacing what is there. Returns the day that changed, or null.</summary>
@@ -43,9 +41,6 @@ public sealed class DayPlanService(INutritionStore store, Func<DateOnly>? today 
 
     public Task<PlanDay> RemoveEntryAsync(string uid, DateOnly date, MealSlot slot) =>
         ChangeAsync(uid, date, day => day.Slots.Remove(slot));
-
-    public Task<PlanDay> ReplaceSlotsAsync(string uid, DateOnly date, Dictionary<MealSlot, SlotEntry> slots) =>
-        ChangeAsync(uid, date, day => day.Slots = new Dictionary<MealSlot, SlotEntry>(slots));
 
     public async Task<List<PlanDay>> MoveEntryAsync(string uid, DateOnly fromDate, MealSlot fromSlot, DateOnly toDate, MealSlot toSlot)
     {

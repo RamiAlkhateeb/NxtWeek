@@ -21,17 +21,6 @@ public static class FriendShare
         return any ? (kcal, protein) : null;
     }
 
-    /// <summary>
-    /// The friend's catalog meals for copying into my day: quick adds stay personal, and the copy starts
-    /// fresh (not eaten, not a leftover, one serving, no meal prep).
-    /// </summary>
-    public static Dictionary<MealSlot, SlotEntry> CopyableSlots(PlanDay? day) =>
-        day is null
-            ? new()
-            : day.Slots
-                .Where(s => !string.IsNullOrWhiteSpace(s.Value.MealId))
-                .ToDictionary(s => s.Key, s => new SlotEntry { MealId = s.Value.MealId });
-
     /// <summary>The catalog meal ids of a day in slot order.</summary>
     public static List<string> MealIds(PlanDay? day) =>
         day is null ? [] : day.Slots.OrderBy(s => s.Key).Select(s => s.Value.MealId).OfType<string>().ToList();

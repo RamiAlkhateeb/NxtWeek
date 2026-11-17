@@ -7,15 +7,13 @@ namespace MealPlanner.Shared.Services;
 /// (<c>nxtweek.watch</c>), and when the tab comes back into view. Pages watch the narrowest path they show
 /// (this week's days, the shared shopping list) and reload it; the returned handle stops the watch.
 /// </summary>
-public sealed class LiveWatch(IJSRuntime js, FirebaseOptions options)
+public sealed class LiveWatch(IJSRuntime js, FirebaseRest db)
 {
-    private readonly string baseUrl = options.DatabaseUrl.TrimEnd('/');
-
     /// <param name="path">For example "users/{key}/days" (the caller escapes keys).</param>
     /// <param name="startAt">Only children with keys from this one on (for days: a yyyy-MM-dd date).</param>
     public async Task<IAsyncDisposable> WatchAsync(string path, Func<Task> onChange, string? startAt = null)
     {
-        var url = $"{baseUrl}/{path}.json";
+        var url = db.Url(path);
         if (startAt is not null)
             url += $"?orderBy={Uri.EscapeDataString("\"$key\"")}&startAt={Uri.EscapeDataString($"\"{startAt}\"")}";
         var target = new Target(onChange);
@@ -32,7 +30,7 @@ public sealed class LiveWatch(IJSRuntime js, FirebaseOptions options)
         }
     }
 
-    public static string Key(string value) => Uri.EscapeDataString(value);
+    public static string Key(string value) => FirebaseRest.Key(value);
 
     private sealed class Target(Func<Task> onChange)
     {

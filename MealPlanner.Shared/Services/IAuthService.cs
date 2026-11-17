@@ -6,7 +6,6 @@ public interface IAuthService
 {
     ValueTask<AuthUser?> GetCurrentUserAsync();
     ValueTask<AuthUser> SignInAsync(string email);
-    ValueTask SendEmailLinkAsync(string email, string username);
     ValueTask<bool> HasPendingEmailLinkAsync();
     ValueTask<string> GetPendingEmailLinkUsernameAsync();
     ValueTask<AuthUser?> CompleteStoredEmailLinkAsync();
