@@ -1,7 +1,7 @@
 @inject ILocalizationService Loc
 
 @* The day against its targets: calories, protein and water as three rings, each with what is left (or over; for
-   water, "Goal reached"). Water has − and + under its ring. "Details" adds eaten / planned / open, and carbs and fat
+   water, "Goal reached"). Tapping the water ring adds a glass. "Details" adds eaten / planned / open, and carbs and fat
    only when the user tracks them. Without body data (offline) only the water ring shows. *@
 @{
     var t = Totals.Targets;
@@ -17,16 +17,8 @@
         }
         <TargetRing Label="@Loc["nut_water"]" Colour="var(--mk-water)" Eaten="Water" Target="DayStatus.WaterGoal" CssClass="is-water"
                     Unit="@Loc["nut_glasses"]" OfText="@Loc.T("nut_water_of", Loc.Num(DayStatus.WaterGoal))"
-                    OverIsGood="true" DoneText="@Loc["nut_water_done"]">
-            <div class="mk-ring-steps" role="group" aria-label="@Loc["nut_water"]">
-                <button type="button" aria-label="@Loc["nut_water_remove"]" disabled="@(Water <= 0)" @onclick="() => OnWater.InvokeAsync(Water - 1)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>
-                </button>
-                <button type="button" class="is-add" aria-label="@Loc["nut_water_add"]" disabled="@(Water >= DayStatus.WaterMax)" @onclick="() => OnWater.InvokeAsync(Water + 1)">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>
-                </button>
-            </div>
-        </TargetRing>
+                    OverIsGood="true" DoneText="@Loc["nut_water_done"]"
+                    OnTap="() => OnWater.InvokeAsync(Water + 1)" TapLabel="@Loc["nut_water_add"]" />
     </div>
 
     @if (ShowTargets && expanded)
@@ -75,7 +67,7 @@
     [Parameter] public bool ShowTargets { get; set; } = true;
     /// <summary>Glasses of water drunk that day.</summary>
     [Parameter] public int Water { get; set; }
-    /// <summary>Raised with the new number of glasses when − or + is tapped.</summary>
+    /// <summary>Raised with the new number of glasses when the water ring is tapped.</summary>
     [Parameter] public EventCallback<int> OnWater { get; set; }
     /// <summary>Settings → "Track carbs and fat". Off: Details shows calories only.</summary>
     [Parameter] public bool TrackMacros { get; set; }

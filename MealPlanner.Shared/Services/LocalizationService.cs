@@ -773,10 +773,10 @@ public class LocalizationService : ILocalizationService
         ["nut_water"] = new() { ["ar"] = "الماء", ["en"] = "Water", ["de"] = "Wasser" },
         ["nut_water_of"] = new() { ["ar"] = "من {0} أكواب", ["en"] = "of {0} glasses", ["de"] = "von {0} Gläsern" },
         ["nut_swipe_hint"] = new() { ["ar"] = "اسحب عنصراً للتحديد أو للحذف", ["en"] = "Swipe an item to tick it or remove it", ["de"] = "Wische einen Artikel, um ihn abzuhaken oder zu entfernen" },
-        ["nut_water_add"] = new() { ["ar"] = "كوب ماء إضافي", ["en"] = "Add a glass of water", ["de"] = "Ein Glas Wasser mehr" },
-        ["nut_water_remove"] = new() { ["ar"] = "كوب ماء أقل", ["en"] = "Remove a glass of water", ["de"] = "Ein Glas Wasser weniger" },
+        ["nut_water_add"] = new() { ["ar"] = "اضغط لإضافة كوب", ["en"] = "Tap to add a glass", ["de"] = "Tippen, um ein Glas hinzuzufügen" },
         ["nut_water_done"] = new() { ["ar"] = "تم بلوغ الهدف", ["en"] = "Goal reached", ["de"] = "Ziel erreicht" },
         ["nut_glasses"] = new() { ["ar"] = "أكواب", ["en"] = "glasses", ["de"] = "Gläser" },
+        ["nut_water_added"] = new() { ["ar"] = "أُضيف كوب ماء ({0})", ["en"] = "Glass of water added ({0})", ["de"] = "Glas Wasser hinzugefügt ({0})" },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg
