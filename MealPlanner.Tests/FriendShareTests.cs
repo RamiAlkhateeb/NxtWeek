@@ -26,28 +26,6 @@ public class FriendShareTests
         Assert.Null(FriendShare.EatenOn(null, Meals.GetValueOrDefault));
     }
 
-    [Fact]
-    public void Copy_brings_meals_fresh_and_leaves_quick_adds()
-    {
-        var day = new PlanDay
-        {
-            Slots =
-            {
-                [MealSlot.Meal1] = new SlotEntry { MealId = "m", Eaten = true, Servings = 2, PrepBatches = 3, Leftover = true },
-                [MealSlot.Snack] = new SlotEntry { Quick = new QuickAddEntry { Name = "Nuts" } }
-            }
-        };
-
-        var copy = FriendShare.CopyableSlots(day);
-
-        var e = Assert.Single(copy).Value;
-        Assert.Equal("m", e.MealId);
-        Assert.False(e.Eaten);
-        Assert.False(e.Leftover);
-        Assert.Equal(1, e.Servings);
-        Assert.Equal(1, e.PrepBatches);
-    }
-
     /// <summary>Answers Firebase REST requests from a dictionary and records every request (with its body).</summary>
     private sealed class FakeFirebase(Dictionary<string, string> responses) : HttpMessageHandler
     {

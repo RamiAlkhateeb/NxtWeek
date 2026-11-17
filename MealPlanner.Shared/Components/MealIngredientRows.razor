@@ -2,6 +2,7 @@
 @using MealPlanner.Shared.Services
 @inject IAuthService Auth
 @inject IShoppingListService ShoppingList
+@inject IShoppingStoreService Stores
 @inject IAisleService Aisles
 @inject ILocalizationService Loc
 @inject ToastService Toasts
@@ -70,15 +71,18 @@
         busy.Add(ingredient);
         try
         {
+            // The store this item went to last time, else the default store.
             var shops = await ShoppingList.GetShopsAsync(uid);
-            var shop = shops.FirstOrDefault() ?? await ShoppingList.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            var routes = await Stores.GetStoreRoutesAsync(uid);
+            var shop = MealPlanner.Shared.Nutrition.ShoppingStores.Remembered(StoreRoute.Key(null, ingredient), routes, shops)
+                       ?? await Stores.GetOrAddDefaultAsync(uid, Loc["ai_plan_default_shop_name"]);
             await ShoppingList.AddItemAsync(uid, shop.Id, ingredient, new ShoppingItemOptions(Aisle: Aisles.For(ingredient).Key, SourceMeal: MealName));
             onList.Add(ingredient.Trim());
             Toasts.Show(Loc.T("meal_ingredient_added", ingredient, shop.Name));
         }
-        catch (Exception ex)
+        catch
         {
-            Toasts.Show(ex.Message, isError: true);
+            Toasts.Show(Loc["nut_save_error"], isError: true);
         }
         finally { busy.Remove(ingredient); }
     }

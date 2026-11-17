@@ -1,91 +1,64 @@
-using System.Net.Http.Json;
 using MealPlanner.Shared.Models;
+using MealPlanner.Shared.Nutrition;
+using static MealPlanner.Shared.Services.FirebaseRest;
 
 namespace MealPlanner.Shared.Services;
 
-/// <remarks>
+/// <summary>
 /// While two friends sync, both use one list: the one at users/{ListHost}/shopping. The host is looked up from
 /// users/{key}/sync and remembered for a short while.
-/// </remarks>
-public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions options, INutritionStore store) : IShoppingListService
+/// </summary>
+public sealed class SyncedListOwner(INutritionStore store) : IShoppingListOwner
 {
-    private static readonly TimeSpan HostTtl = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan Remember = TimeSpan.FromSeconds(15);
     private readonly Dictionary<string, (string Host, DateTime Until)> hosts = new();
 
-    public async Task<string> GetListOwnerAsync(string uid)
+    public async Task<string> GetAsync(string uid)
     {
         if (hosts.TryGetValue(uid, out var known) && known.Until > DateTime.UtcNow) return known.Host;
         string host;
         try { host = (await store.GetSyncLinkAsync(uid))?.ListHost is { Length: > 0 } h ? h : uid; }
         catch { host = uid; }
-        hosts[uid] = (host, DateTime.UtcNow + HostTtl);
+        hosts[uid] = (host, DateTime.UtcNow + Remember);
         return host;
     }
 
-    public void ForgetListOwner(string uid) => hosts.Remove(uid);
+    public void Forget(string uid) => hosts.Remove(uid);
+}
 
-    private readonly string baseUrl = options.DatabaseUrl.TrimEnd('/');
-    private string Url(string path) => $"{baseUrl}/{path}.json";
-    private static string Key(string value) => Uri.EscapeDataString(value);
+/// <summary>Database paths of a shopping list: users/{owner}/shopping/{shop}/items/{item}.</summary>
+internal static class ShoppingPaths
+{
+    public static string List(string owner) => $"users/{Key(owner)}/shopping";
+    public static string Shop(string owner, string shopId) => $"{List(owner)}/{Key(shopId)}";
+    public static string Item(string owner, string shopId, string itemId) => $"{Shop(owner, shopId)}/items/{Key(itemId)}";
+    /// <summary>
+    /// An item's place relative to the list, as a key in a multi-path update on <see cref="List"/>. Keys in a request
+    /// body are not URL-escaped.
+    /// </summary>
+    public static string ItemInList(string shopId, string itemId) => $"{shopId}/items/{itemId}";
+    public static string Routes(string owner) => $"users/{Key(owner)}/shoppingRoutes";
 
-    public async Task<List<ShoppingShop>> GetShopsAsync(string uid)
-    {
-        var shops = await http.GetFromJsonAsync<Dictionary<string, ShoppingShop>>(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping")) ?? new();
-        return shops.Select(pair =>
+    /// <summary>Fills in ids that older data kept only as keys.</summary>
+    public static List<ShoppingShop> Read(Dictionary<string, ShoppingShop>? shops) =>
+        (shops ?? new()).Select(pair =>
         {
             var shop = pair.Value;
-            shop.Id = string.IsNullOrWhiteSpace(shop.Id) ? pair.Key : shop.Id;
+            if (string.IsNullOrWhiteSpace(shop.Id)) shop.Id = pair.Key;
             shop.Items ??= new();
-            foreach (var item in shop.Items)
-                item.Value.Id = string.IsNullOrWhiteSpace(item.Value.Id) ? item.Key : item.Value.Id;
+            foreach (var (key, item) in shop.Items)
+                if (string.IsNullOrWhiteSpace(item.Id)) item.Id = key;
             return shop;
-        }).OrderBy(shop => shop.Name, StringComparer.OrdinalIgnoreCase).ToList();
-    }
+        }).ToList();
 
-    public async Task<ShoppingShop> AddShopAsync(string uid, string name)
-    {
-        name = RequiredName(name, "المتجر");
-        var existing = await GetShopsAsync(uid);
-        if (existing.Any(shop => string.Equals(shop.Name, name, StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException("هذا المتجر موجود بالفعل في قائمتك.");
+    public static string Name(string value) =>
+        value.Trim() is { Length: > 0 } name ? name : throw new ArgumentException("A name is required.", nameof(value));
+}
 
-        var shop = new ShoppingShop { Id = Guid.NewGuid().ToString("N"), Name = name };
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{shop.Id}"), shop);
-        response.EnsureSuccessStatusCode();
-        return shop;
-    }
-
-    public async Task DeleteShopAsync(string uid, string shopId)
-    {
-        using var response = await http.DeleteAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}"));
-        response.EnsureSuccessStatusCode();
-    }
-
-    public async Task RenameShopAsync(string uid, string shopId, string name)
-    {
-        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}"), new { name = RequiredName(name, "المتجر") });
-        response.EnsureSuccessStatusCode();
-    }
-
-    public async Task MoveItemAsync(string uid, string fromShopId, string toShopId, ShoppingItem item)
-    {
-        if (fromShopId == toShopId) return;
-        var owner = Key(await GetListOwnerAsync(uid));
-        // Written to the new store first: if the delete fails the item shows twice rather than not at all.
-        using (var put = await http.PutAsJsonAsync(Url($"users/{owner}/shopping/{Key(toShopId)}/items/{Key(item.Id)}"), item))
-            put.EnsureSuccessStatusCode();
-        using var delete = await http.DeleteAsync(Url($"users/{owner}/shopping/{Key(fromShopId)}/items/{Key(item.Id)}"));
-        delete.EnsureSuccessStatusCode();
-    }
-
-    public async Task<Dictionary<string, string>> GetStoreRoutesAsync(string uid) =>
-        await http.GetFromJsonAsync<Dictionary<string, string>>(Url($"users/{Key(await GetListOwnerAsync(uid))}/shoppingRoutes")) ?? new();
-
-    public async Task RememberStoreAsync(string uid, string routeKey, string shopId)
-    {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shoppingRoutes/{Key(routeKey)}"), shopId);
-        response.EnsureSuccessStatusCode();
-    }
+public sealed class FirebaseShoppingListService(FirebaseRest db, IShoppingListOwner owner) : IShoppingListService
+{
+    public async Task<List<ShoppingShop>> GetShopsAsync(string uid) =>
+        ShoppingPaths.Read(await db.GetAsync<Dictionary<string, ShoppingShop>>(ShoppingPaths.List(await owner.GetAsync(uid))));
 
     public async Task<ShoppingItem> AddItemAsync(string uid, string shopId, string name, ShoppingItemOptions? options = null)
     {
@@ -93,7 +66,7 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
         var item = new ShoppingItem
         {
             Id = Guid.NewGuid().ToString("N"),
-            Name = RequiredName(name, "العنصر"),
+            Name = ShoppingPaths.Name(name),
             Quantity = Math.Max(1, options.Quantity),
             Unit = options.Unit,
             Aisle = options.Aisle,
@@ -101,48 +74,93 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
             IngredientKey = options.IngredientKey,
             UsedIn = options.UsedIn
         };
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}/items/{item.Id}"), item);
-        response.EnsureSuccessStatusCode();
+        await db.PutAsync(ShoppingPaths.Item(await owner.GetAsync(uid), shopId, item.Id), item);
         return item;
     }
 
-    public async Task SetItemQuantityAsync(string uid, string shopId, string itemId, int quantity)
+    public async Task UpdateItemAsync(string uid, string shopId, string itemId, string name, int quantity, string? unit) =>
+        await db.PatchAsync(ShoppingPaths.Item(await owner.GetAsync(uid), shopId, itemId),
+            new { name = ShoppingPaths.Name(name), quantity = Math.Max(1, quantity), unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim() });
+
+    public async Task SetItemBoughtAsync(string uid, string shopId, string itemId, bool isBought) =>
+        await db.PatchAsync(ShoppingPaths.Item(await owner.GetAsync(uid), shopId, itemId),
+            new { isBought, boughtAtUtc = isBought ? DateTime.UtcNow : (DateTime?)null });
+
+    public async Task UpdateAutoItemAsync(string uid, string shopId, string itemId, int quantity, int usedIn, string? sourceMeal) =>
+        await db.PatchAsync(ShoppingPaths.Item(await owner.GetAsync(uid), shopId, itemId),
+            new { quantity = Math.Max(1, quantity), usedIn, sourceMeal });
+
+    public async Task DeleteItemAsync(string uid, string shopId, string itemId) =>
+        await db.DeleteAsync(ShoppingPaths.Item(await owner.GetAsync(uid), shopId, itemId));
+
+    public async Task DeleteItemsAsync(string uid, IEnumerable<(string ShopId, string ItemId)> items)
     {
-        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}/items/{Key(itemId)}"), new { quantity = Math.Max(1, quantity) });
-        response.EnsureSuccessStatusCode();
+        var update = items.ToDictionary(x => ShoppingPaths.ItemInList(x.ShopId, x.ItemId), _ => (object?)null);
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.List(await owner.GetAsync(uid)), update);
     }
 
-    public async Task UpdateItemAsync(string uid, string shopId, string itemId, string name, int quantity, string? unit)
+    public async Task ClearAsync(string uid)
     {
-        var update = new { name = RequiredName(name, "العنصر"), quantity = Math.Max(1, quantity), unit = string.IsNullOrWhiteSpace(unit) ? null : unit.Trim() };
-        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
-        response.EnsureSuccessStatusCode();
+        var host = await owner.GetAsync(uid);
+        var shops = ShoppingPaths.Read(await db.GetAsync<Dictionary<string, ShoppingShop>>(ShoppingPaths.List(host)));
+        var update = shops.Where(s => s.Items.Count > 0).ToDictionary(s => $"{s.Id}/items", _ => (object?)null);
+        if (update.Count > 0) await db.PatchAsync(ShoppingPaths.List(host), update);
+    }
+}
+
+public sealed class FirebaseShoppingStoreService(FirebaseRest db, IShoppingListOwner owner) : IShoppingStoreService
+{
+    public async Task<ShoppingShop> AddShopAsync(string uid, string name)
+    {
+        var shop = new ShoppingShop { Id = Guid.NewGuid().ToString("N"), Name = ShoppingPaths.Name(name), CreatedAtUtc = DateTime.UtcNow };
+        await db.PutAsync(ShoppingPaths.Shop(await owner.GetAsync(uid), shop.Id), shop);
+        return shop;
     }
 
-    public async Task SetItemBoughtAsync(string uid, string shopId, string itemId, bool isBought)
+    public async Task<ShoppingShop> GetOrAddDefaultAsync(string uid, string defaultName)
     {
-        var update = new { isBought, boughtAtUtc = isBought ? DateTime.UtcNow : (DateTime?)null };
-        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
-        response.EnsureSuccessStatusCode();
+        var shops = ShoppingPaths.Read(await db.GetAsync<Dictionary<string, ShoppingShop>>(ShoppingPaths.List(await owner.GetAsync(uid))));
+        return ShoppingStores.Default(shops) ?? await AddShopAsync(uid, defaultName);
     }
 
-    public async Task UpdateAutoItemAsync(string uid, string shopId, string itemId, int quantity, int usedIn, string? sourceMeal)
+    public async Task RenameShopAsync(string uid, string shopId, string name) =>
+        await db.PatchAsync(ShoppingPaths.Shop(await owner.GetAsync(uid), shopId), new { name = ShoppingPaths.Name(name) });
+
+    public async Task DeleteShopAsync(string uid, string shopId, string moveItemsTo)
     {
-        var update = new { quantity = Math.Max(1, quantity), usedIn, sourceMeal };
-        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}/items/{Key(itemId)}"), update);
-        response.EnsureSuccessStatusCode();
+        if (shopId == moveItemsTo) throw new ArgumentException("A store's items cannot move to itself.", nameof(moveItemsTo));
+        var host = await owner.GetAsync(uid);
+        var shop = await db.GetAsync<ShoppingShop>(ShoppingPaths.Shop(host, shopId));
+        var update = new Dictionary<string, object?> { [shopId] = null };
+        foreach (var (key, item) in shop?.Items ?? new())
+        {
+            if (string.IsNullOrWhiteSpace(item.Id)) item.Id = key;
+            update[ShoppingPaths.ItemInList(moveItemsTo, item.Id)] = item;
+        }
+        await db.PatchAsync(ShoppingPaths.List(host), update);
+
+        // Items remembered for the deleted store go where its items went.
+        var routes = await db.GetAsync<Dictionary<string, string>>(ShoppingPaths.Routes(host)) ?? new();
+        var moved = routes.Where(r => r.Value == shopId).ToDictionary(r => r.Key, _ => moveItemsTo);
+        if (moved.Count > 0) await db.PatchAsync(ShoppingPaths.Routes(host), moved);
     }
 
-    public async Task DeleteItemAsync(string uid, string shopId, string itemId)
+    public async Task MoveItemAsync(string uid, string fromShopId, string toShopId, ShoppingItem item)
     {
-        using var response = await http.DeleteAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}/items/{Key(itemId)}"));
-        response.EnsureSuccessStatusCode();
+        if (fromShopId == toShopId) return;
+        var host = await owner.GetAsync(uid);
+        await db.PatchAsync(ShoppingPaths.List(host), new Dictionary<string, object?>
+        {
+            [ShoppingPaths.ItemInList(toShopId, item.Id)] = item,
+            [ShoppingPaths.ItemInList(fromShopId, item.Id)] = null
+        });
+        await db.PutAsync($"{ShoppingPaths.Routes(host)}/{Key(StoreRoute.Key(item))}", toShopId);
     }
 
-    private static string RequiredName(string value, string label)
-    {
-        var name = value.Trim();
-        if (string.IsNullOrWhiteSpace(name)) throw new InvalidOperationException($"أدخل اسم {label}.");
-        return name;
-    }
+    public async Task<Dictionary<string, string>> GetStoreRoutesAsync(string uid) =>
+        await db.GetAsync<Dictionary<string, string>>(ShoppingPaths.Routes(await owner.GetAsync(uid))) ?? new();
+
+    public async Task SetLookAsync(string uid, string shopId, StoreLook? look) =>
+        await db.PatchAsync(ShoppingPaths.Shop(await owner.GetAsync(uid), shopId),
+            new { logoDomain = look?.Domain, emoji = look?.Emoji, logoChecked = look is not null });
 }

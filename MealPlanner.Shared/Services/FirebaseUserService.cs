@@ -111,12 +111,6 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
             throw new InvalidOperationException("تعذر حفظ الملف الشخصي. حاول مرة أخرى.");
     }
 
-    public async Task SaveSelectedMealsAsync(string uid, List<string> mealIds)
-    {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/selectedMealIds"), mealIds);
-        response.EnsureSuccessStatusCode();
-    }
-
     public async Task SaveFavoriteMealsAsync(string uid, List<string> mealIds)
     {
         using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/favoriteMealIds"), mealIds);
@@ -130,37 +124,11 @@ public sealed class FirebaseUserService(HttpClient http, FirebaseOptions options
         await SaveFavoriteMealsAsync(uid, values);
     }
 
-    public async Task<List<WeeklyPlanEntry>> GetWeeklyPlanAsync(string uid, DateOnly start, DateOnly end)
-    {
-        var plan = await http.GetFromJsonAsync<Dictionary<string, WeeklyPlanEntry>>(Url($"users/{Key(uid)}/weeklyPlan")) ?? [];
-        return plan.Values
-            .Where(x => x.Date >= start && x.Date <= end)
-            .OrderBy(x => x.Date)
-            .ToList();
-    }
-
-    public Task<List<WeeklyPlanEntry>> GetMonthPlanAsync(string uid, int year, int month) =>
-        GetWeeklyPlanAsync(uid, new DateOnly(year, month, 1), new DateOnly(year, month, 1).AddMonths(1).AddDays(-1));
-
     public async Task<bool> HasAnyPlanEntryAsync(string uid)
     {
         var plan = await http.GetFromJsonAsync<Dictionary<string, WeeklyPlanEntry>>(Url($"users/{Key(uid)}/weeklyPlan"));
         return plan is { Count: > 0 };
     }
-
-    public async Task SaveWeeklyPlanEntryAsync(string uid, WeeklyPlanEntry entry)
-    {
-        using var response = await http.PutAsJsonAsync(Url($"users/{Key(uid)}/weeklyPlan/{entry.Date:yyyy-MM-dd}"), entry);
-        response.EnsureSuccessStatusCode();
-    }
-
-    public async Task SaveWeeklyPlanEntriesAsync(string uid, List<WeeklyPlanEntry> entries)
-    {
-        foreach (var entry in entries) await SaveWeeklyPlanEntryAsync(uid, entry);
-    }
-
-    public Task AssignMealToDateAsync(string uid, DateOnly date, string mealId) =>
-        SaveWeeklyPlanEntryAsync(uid, new() { Date = date, MealId = mealId });
 
     public async Task<bool> IsUsernameAvailableAsync(string username, string currentUid)
     {

@@ -34,24 +34,6 @@ public class FirebaseMealCatalogService : IMealCatalogService
         return dto?.ToModel(id);
     }
 
-    public async Task<List<MealCatalogItem>> GetFilteredMealsAsync(MealType? mealType, string? language = null)
-    {
-        var meals = await GetAllMealsAsync();
-        var query = meals.AsEnumerable();
-
-        if (mealType is not null)
-        {
-            query = query.Where(m => m.MealType == mealType.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(language))
-        {
-            query = query.Where(m => string.Equals(m.Language, language, StringComparison.OrdinalIgnoreCase));
-        }
-
-        return query.ToList();
-    }
-
     public async Task UpsertMealAsync(MealCatalogItem meal)
     {
         if (string.IsNullOrWhiteSpace(meal.Id)) throw new ArgumentException("A meal ID is required.", nameof(meal));
@@ -78,35 +60,6 @@ public class FirebaseMealCatalogService : IMealCatalogService
     {
         using var response = await _http.PatchAsJsonAsync($"{_baseUrl}/{CatalogPath}/{Uri.EscapeDataString(mealId)}.json", new { steps });
         response.EnsureSuccessStatusCode();
-    }
-    public async Task DeleteMealAsync(string id)
-    {
-        using var response = await _http.DeleteAsync($"{_baseUrl}/{CatalogPath}/{id}.json");
-        response.EnsureSuccessStatusCode();
-    }
-    public async Task<List<MealCatalogItem>> SearchMealsAsync(string query)
-    {
-        var normalized = NormalizeName(query);
-        return string.IsNullOrEmpty(normalized) ? await GetAllMealsAsync() : (await GetAllMealsAsync()).Where(x => NormalizeName(x.Name).Contains(normalized)).ToList();
-    }
-
-    /// <summary>
-    /// True only when every language the app ships already has meals in the catalog.
-    /// Checking a fixed pair of languages here would silently skip the seed for any
-    /// language added later.
-    /// </summary>
-    public async Task<bool> IsCatalogSeededAsync()
-    {
-        var seeded = await GetSeededLanguagesAsync();
-        return LocalizationService.SupportedLanguageCodes.All(seeded.Contains);
-    }
-
-    public async Task<IReadOnlyCollection<string>> GetSeededLanguagesAsync()
-    {
-        var all = await GetAllMealsAsync();
-        return all
-            .Select(m => string.IsNullOrWhiteSpace(m.Language) ? "ar" : m.Language)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task SeedCatalogAsync(List<MealCatalogItem> meals)

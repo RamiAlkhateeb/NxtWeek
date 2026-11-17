@@ -7,7 +7,7 @@ public class SeedMealNutritionTests
     [Fact]
     public void Every_built_in_meal_has_an_estimate_and_nothing_else_does()
     {
-        var ids = FirebaseMealService.BuiltInMeals().Select(m => m.Id).ToHashSet();
+        var ids = CatalogSeeder.BuiltInMeals().Select(m => m.Id).ToHashSet();
 
         Assert.Equal(91, ids.Count);
         Assert.All(ids, id => Assert.True(SeedMealNutrition.ById.ContainsKey(id), id));

@@ -102,9 +102,6 @@ public class MealImageService(HttpClient http, FirebaseOptions options, IAuthSer
     public string GetImageUrl(MealCatalogItem? meal) =>
         meal is null ? Url("vegetarian") : GetImageUrl(meal.Name, meal.MealType, meal.Tags, OwnPhoto(meal.Id) ?? meal.PhotoUrl);
 
-    public string GetImageUrl(Meal? meal) =>
-        meal is null ? Url("vegetarian") : GetImageUrl(meal.Name, meal.MealType, tags: null, OwnPhoto(meal.MealId) ?? meal.PhotoUrl);
-
     public string GetImageUrl(string? name, MealType? mealType, IEnumerable<string>? tags = null, string? photoUrl = null)
     {
         if (!string.IsNullOrWhiteSpace(photoUrl)) return photoUrl;

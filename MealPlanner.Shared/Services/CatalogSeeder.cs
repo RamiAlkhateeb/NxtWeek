@@ -1,150 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
 using MealPlanner.Shared.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.JSInterop;
 
 namespace MealPlanner.Shared.Services;
 
-public class FirebaseMealService : IMealService
+/// <summary>Puts the built-in meals into the shared catalog, filling only what is missing.</summary>
+public interface ICatalogSeeder
 {
-    private readonly HttpClient _http;
-    private readonly string _baseUrl;
-    private readonly IJSRuntime _js;
-    private readonly IUserService _userService;
-    private readonly IMealCatalogService _catalogService;
-    private readonly IAuthService _auth;
+    Task SeedAsync();
+}
 
-    public FirebaseMealService(
-        HttpClient http, 
-        FirebaseOptions options, 
-        IJSRuntime js, 
-        IUserService userService, 
-        IMealCatalogService catalogService,
-        IAuthService auth)
+/// <summary>The built-in meals in all three languages, with their nutrition, seeded into <c>MealCatalog</c>.</summary>
+public sealed class CatalogSeeder(IMealCatalogService catalog) : ICatalogSeeder
+{
+    public async Task SeedAsync()
     {
-        _http = http;
-        _baseUrl = options.DatabaseUrl.TrimEnd('/');
-        _js = js;
-        _userService = userService;
-        _catalogService = catalogService;
-        _auth = auth;
-    }
-
-    public async Task<List<Meal>> GetWeekAsync(DateOnly start, DateOnly end)
-    {
-        var user = await _auth.GetCurrentUserAsync();
-        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return new List<Meal>();
-        var username = user.Uid;
-
-        var planEntries = await _userService.GetWeeklyPlanAsync(username, start, end);
-        var planDict = planEntries.ToDictionary(e => e.Date, e => e);
-
-        var catalog = await _catalogService.GetAllMealsAsync();
-        var catalogDict = catalog.ToDictionary(m => m.Id, m => m);
-
-        var meals = new List<Meal>();
-        for (var date = start; date <= end; date = date.AddDays(1))
-        {
-            var meal = new Meal
-            {
-                Id = date.ToString("yyyy-MM-dd"),
-                Date = date,
-                DayName = date.DayOfWeek.ToString(),
-                Name = ""
-            };
-
-            if (planDict.TryGetValue(date, out var entry))
-            {
-                meal.MealId = entry.MealId;
-                meal.IsFavorite = entry.IsFavorite;
-                if (catalogDict.TryGetValue(entry.MealId, out var catItem))
-                {
-                    meal.Name = catItem.Name;
-                    meal.PhotoUrl = catItem.PhotoUrl;
-                    meal.Ingredients = catItem.Ingredients;
-                    meal.SideDishes = catItem.SideDishes;
-                    meal.MealType = catItem.MealType;
-                    meal.Tags = catItem.Tags;
-                    meal.Language = string.IsNullOrWhiteSpace(catItem.Language) ? "ar" : catItem.Language;
-                }
-            }
-
-            meals.Add(meal);
-        }
-
-        return meals.OrderBy(m => m.Date).ToList();
-    }
-
-    public async Task UpsertMealAsync(Meal meal)
-    {
-        var user = await _auth.GetCurrentUserAsync();
-        if (user is null || string.IsNullOrWhiteSpace(user.Uid)) return;
-        var username = user.Uid;
-
-        var catalog = await _catalogService.GetAllMealsAsync();
-        var normalizedName = NormalizeName(meal.Name);
-        var existing = catalog.FirstOrDefault(c => NormalizeName(c.Name) == normalizedName);
-        
-        string mealId;
-        if (existing is not null)
-        {
-            mealId = existing.Id;
-            existing.MealType = meal.MealType ?? existing.MealType;
-            existing.Ingredients = meal.Ingredients.Count > 0 ? meal.Ingredients : existing.Ingredients;
-            existing.SideDishes = meal.SideDishes.Count > 0 ? meal.SideDishes : existing.SideDishes;
-            if (!string.IsNullOrWhiteSpace(meal.Language))
-            {
-                existing.Language = meal.Language;
-            }
-            await _catalogService.UpdateMealAsync(existing);
-        }
-        else
-        {
-            var newItem = new MealCatalogItem
-            {
-                Name = meal.Name,
-                MealType = meal.MealType ?? MealType.Vegetarian,
-                Ingredients = meal.Ingredients,
-                SideDishes = meal.SideDishes,
-                Language = string.IsNullOrWhiteSpace(meal.Language) ? "ar" : meal.Language
-            };
-            newItem = await _catalogService.CreateMealAsync(newItem);
-            mealId = newItem.Id;
-        }
-
-        var entry = new WeeklyPlanEntry
-        {
-            Date = meal.Date,
-            MealId = mealId,
-            IsFavorite = meal.IsFavorite
-        };
-        await _userService.SaveWeeklyPlanEntryAsync(username, entry);
-    }
-
-    public async Task SeedAsync(List<Meal> meals)
-    {
-        var catalogMeals = BuiltInMeals();
-
+        var meals = BuiltInMeals();
         // Built-in meals from before 3.0 get estimated nutrition; the seed backfill only fills rows without any.
-        foreach (var seed in catalogMeals) seed.Nutrition ??= SeedMealNutrition.For(seed.Id);
-        catalogMeals.AddRange(NutritionSeedMeals.All());
-        foreach (var catalogMeal in catalogMeals)
-        {
-            if (string.IsNullOrWhiteSpace(catalogMeal.Language))
-            {
-                catalogMeal.Language = "ar";
-            }
-        }
-        await _catalogService.SeedCatalogAsync(catalogMeals);
+        foreach (var seed in meals) seed.Nutrition ??= SeedMealNutrition.For(seed.Id);
+        meals.AddRange(NutritionSeedMeals.All());
+        foreach (var meal in meals.Where(m => string.IsNullOrWhiteSpace(m.Language))) meal.Language = "ar";
+        await catalog.SeedCatalogAsync(meals);
     }
 
     /// <summary>The built-in catalog meals (all languages), before the 3.0 nutrition meals are added.</summary>
@@ -292,13 +166,4 @@ new() { Id = "m49", Name = "همبرغر", MealType = MealType.Meat, Ingredients
     new() { Id = "de_m26", Name = "Brotzeit mit Obatzda", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "bread" }, Ingredients = new() { "Camembert", "Butter", "Zwiebeln", "Paprikapulver", "Brezn" }, SideDishes = new() { "Radieschen", "Gewürzgurken" } },
     new() { Id = "de_m27", Name = "Bunter Sommersalat mit Feta", MealType = MealType.Vegetarian, Language = "de", Tags = new() { "salad" }, Ingredients = new() { "Blattsalat", "Tomaten", "Gurke", "Feta", "Olivenöl" }, SideDishes = new() { "Baguette" } }
 };
-
-    public async Task<bool> IsSeededAsync()
-    {
-        return await _catalogService.IsCatalogSeededAsync();
-    }
-
-    private static string NormalizeName(string value) => string.Join(' ', value.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
-
 }
-

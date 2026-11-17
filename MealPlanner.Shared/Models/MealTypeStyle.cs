@@ -19,9 +19,4 @@ public static class MealTypeStyle
     /// <summary>Redesign hook: "t-meat", "t-vegan"… styles .mk-tile / .mk-dot with the type's tint.</summary>
     public static string T(MealType? type) => $"t-{Slug(type)}";
 
-    /// <summary>Class for the soft-tinted tile behind a meal illustration.</summary>
-    public static string TileClass(MealType? type) => $"type-tile-{Slug(type)}";
-
-    /// <summary>Class for a type badge/chip.</summary>
-    public static string BadgeClass(MealType? type) => $"type-badge-{Slug(type)}";
 }

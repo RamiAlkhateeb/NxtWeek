@@ -1,4 +1,5 @@
 using MealPlanner.Shared.Models;
+using MealPlanner.Shared.Nutrition;
 
 namespace MealPlanner.Shared.Services;
 
@@ -9,31 +10,20 @@ public interface IWeekFillService
     Task<int> FillEmptyMeal1Async(string uid, IReadOnlyList<DateOnly> dates, IReadOnlyDictionary<DateOnly, PlanDay> days);
 }
 
-public sealed class WeekFillService(ISuggestionService suggestions, IMealCatalogService catalog, IDayPlanService plan) : IWeekFillService
+public sealed class WeekFillService(IMealCatalogService catalog, IUserService users, IDayPlanService plan, ILocalizationService loc) : IWeekFillService
 {
     public async Task<int> FillEmptyMeal1Async(string uid, IReadOnlyList<DateOnly> dates, IReadOnlyDictionary<DateOnly, PlanDay> days)
     {
         var empty = dates.Where(d => !days.TryGetValue(d, out var day) || !day.Slots.ContainsKey(MealSlot.Meal1)).ToList();
         if (empty.Count == 0) return 0;
 
-        // The suggester avoids meals already planned this week.
-        var planned = days.Values
-            .SelectMany(d => d.Slots.Values)
-            .Where(e => !string.IsNullOrWhiteSpace(e.MealId))
-            .Select(e => new Meal { MealId = e.MealId! })
-            .ToList();
-        var names = await suggestions.GetSuggestionsAsync(uid, planned, empty.Count);
-        if (names.Count == 0) return 0;
+        var planned = days.Values.SelectMany(d => d.Slots.Values).Select(e => e.MealId)
+            .OfType<string>().Where(id => id.Length > 0).ToHashSet(StringComparer.Ordinal);
+        var favourites = (await users.GetProfileAsync(uid))?.FavoriteMealIds.ToHashSet() ?? [];
+        var picks = SurprisePicks.Pick(await catalog.GetAllMealsAsync(), loc.CurrentLanguage, favourites, planned, empty.Count, Random.Shared);
 
-        var all = await catalog.GetAllMealsAsync();
-        var filled = 0;
-        foreach (var (date, name) in empty.Zip(names))
-        {
-            var item = all.FirstOrDefault(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (item is null) continue;
-            await plan.SetEntryAsync(uid, date, MealSlot.Meal1, new SlotEntry { MealId = item.Id });
-            filled++;
-        }
-        return filled;
+        foreach (var (date, meal) in empty.Zip(picks))
+            await plan.SetEntryAsync(uid, date, MealSlot.Meal1, new SlotEntry { MealId = meal.Id });
+        return Math.Min(empty.Count, picks.Count);
     }
 }

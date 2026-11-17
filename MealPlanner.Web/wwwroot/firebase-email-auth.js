@@ -22,7 +22,6 @@
   const pendingUsername = () => { const url = new URL(window.location.href); const direct = url.searchParams.get('linkUsername'); if (direct) return direct; const continueUrl = url.searchParams.get('continueUrl'); return continueUrl ? new URL(continueUrl).searchParams.get('linkUsername') || '' : ''; };
   window.nxtweek.emailAuth = {
     async getCurrentUser() { await ready; return user(auth?.currentUser); },
-    async sendLink(email, username) { const active = await requireAuth(); const url = `${window.location.origin}/?linkUsername=${encodeURIComponent(username)}`; await sdk.sendSignInLinkToEmail(active, email, { url, handleCodeInApp: true }); localStorage.setItem('nxtweek.emailForSignIn', email); },
     async hasPendingLink() { await ready; return Boolean(pending()); },
     async getPendingUsername() { await ready; return pendingUsername(); },
     async completeStoredLink() { await ready; const email = localStorage.getItem('nxtweek.emailForSignIn'); return email && pending() ? this.completeLink(email) : null; },

@@ -106,7 +106,6 @@ public sealed class LocalAuthService(IJSRuntime js) : IAuthService
         }
     }
 
-    public async ValueTask SendEmailLinkAsync(string email, string username) => await js.InvokeVoidAsync("nxtweek.emailAuth.sendLink", email, username);
     public async ValueTask<bool> HasPendingEmailLinkAsync() => await js.InvokeAsync<bool>("nxtweek.emailAuth.hasPendingLink");
     public async ValueTask<string> GetPendingEmailLinkUsernameAsync() => await js.InvokeAsync<string>("nxtweek.emailAuth.getPendingUsername");
     public async ValueTask<AuthUser?> CompleteStoredEmailLinkAsync() => await js.InvokeAsync<AuthUser?>("nxtweek.emailAuth.completeStoredLink");

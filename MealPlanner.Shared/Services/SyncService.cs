@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using MealPlanner.Shared.Models;
 using MealPlanner.Shared.Nutrition;
 
@@ -37,22 +36,20 @@ public sealed class SyncException(SyncProblem problem) : Exception(problem.ToStr
     public SyncProblem Problem { get; } = problem;
 }
 
-public sealed class FirebaseSyncService(HttpClient http, FirebaseOptions options, INutritionStore store, IShoppingListService shopping) : ISyncService
+public sealed class FirebaseSyncService(FirebaseRest db, INutritionStore store, IShoppingListOwner listOwner) : ISyncService
 {
     /// <summary>How far ahead a starting sync takes over the requester's meals.</summary>
     public const int AdoptDays = 56;
 
-    private readonly string baseUrl = options.DatabaseUrl.TrimEnd('/');
-    private string Url(string path) => $"{baseUrl}/{path}.json";
-    private static string Key(string value) => Uri.EscapeDataString(value);
+    private static string Key(string value) => FirebaseRest.Key(value);
 
     public Task<SyncLink?> GetLinkAsync(string uid) => store.GetSyncLinkAsync(uid);
 
     public Task<SyncRequest?> GetIncomingAsync(string uid) =>
-        http.GetFromJsonAsync<SyncRequest?>(Url($"users/{Key(uid)}/syncRequest"));
+        db.GetAsync<SyncRequest?>($"users/{Key(uid)}/syncRequest");
 
     public Task<string?> GetOutgoingAsync(string uid) =>
-        http.GetFromJsonAsync<string?>(Url($"users/{Key(uid)}/syncOutgoing"));
+        db.GetAsync<string?>($"users/{Key(uid)}/syncOutgoing");
 
     public async Task RequestAsync(string uid, string displayName, string partner)
     {
@@ -103,8 +100,8 @@ public sealed class FirebaseSyncService(HttpClient http, FirebaseOptions options
         await PutAsync($"users/{Key(uid)}/sync", new SyncLink { Partner = host, ListHost = host, Since = today });
         await DeleteAsync($"users/{Key(uid)}/syncRequest");
         await DeleteAsync($"users/{Key(host)}/syncOutgoing");
-        shopping.ForgetListOwner(uid);
-        shopping.ForgetListOwner(host);
+        listOwner.Forget(uid);
+        listOwner.Forget(host);
     }
 
     public async Task StopAsync(string uid)
@@ -115,8 +112,8 @@ public sealed class FirebaseSyncService(HttpClient http, FirebaseOptions options
         catch { /* the link is removed anyway; the shared list is still there with its host */ }
         await DeleteAsync($"users/{Key(link.Partner)}/sync");
         await DeleteAsync($"users/{Key(uid)}/sync");
-        shopping.ForgetListOwner(uid);
-        shopping.ForgetListOwner(link.Partner);
+        listOwner.Forget(uid);
+        listOwner.Forget(link.Partner);
     }
 
     private async Task<(Dictionary<DateOnly, PlanDay> Theirs, Dictionary<DateOnly, PlanDay> Mine)> DaysAsync(string them, string me, DateOnly today)
@@ -139,7 +136,7 @@ public sealed class FirebaseSyncService(HttpClient http, FirebaseOptions options
         var (shopId, shop) = target.FirstOrDefault();
         if (shop is null)
         {
-            shop = new ShoppingShop { Id = Guid.NewGuid().ToString("N"), Name = source.Values.First().Name };
+            shop = new ShoppingShop { Id = Guid.NewGuid().ToString("N"), Name = source.Values.First().Name, CreatedAtUtc = DateTime.UtcNow };
             shopId = shop.Id;
             await PutAsync($"users/{Key(to)}/shopping/{shopId}", shop);
         }
@@ -155,17 +152,9 @@ public sealed class FirebaseSyncService(HttpClient http, FirebaseOptions options
     }
 
     private async Task<Dictionary<string, ShoppingShop>> ReadShopsAsync(string key) =>
-        await http.GetFromJsonAsync<Dictionary<string, ShoppingShop>>(Url($"users/{Key(key)}/shopping")) ?? new();
+        await db.GetAsync<Dictionary<string, ShoppingShop>>($"users/{Key(key)}/shopping") ?? new();
 
-    private async Task PutAsync<T>(string path, T value)
-    {
-        using var response = await http.PutAsJsonAsync(Url(path), value);
-        response.EnsureSuccessStatusCode();
-    }
+    private Task PutAsync<T>(string path, T value) => db.PutAsync(path, value);
 
-    private async Task DeleteAsync(string path)
-    {
-        using var response = await http.DeleteAsync(Url(path));
-        response.EnsureSuccessStatusCode();
-    }
+    private Task DeleteAsync(string path) => db.DeleteAsync(path);
 }
