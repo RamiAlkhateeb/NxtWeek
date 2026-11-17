@@ -23,7 +23,7 @@
 @* Shopping by servings: the meals still to cook from today to Sunday (servings and meal prep change the plan
    itself), and one list grouped by aisle that follows them. The list is brought in line with the plan on
    every visit and after every change here (ShoppingAggregator.Sync): only items it made itself and that are
-   not bought are changed. Items typed by hand stay as they are. Bought items stay in place, struck through.
+   not bought are changed. Items typed by hand stay as they are. Bought items stay in their store, struck through, after the items still to buy.
    While syncing with a friend the list is shared (it lives with the friend who asked), its amounts count both
    people's servings, and it updates live when either of you changes it. *@
 <div class="mk-page mk-shopping" dir="@Loc.Direction">
@@ -133,6 +133,7 @@
                     {
                         var sh = shop;
                         var open = Ordered(all.Where(x => x.Shop.Id == sh.Id && !x.Item.IsBought)).ToList();
+                        var boughtHere = Ordered(all.Where(x => x.Shop.Id == sh.Id && x.Item.IsBought)).ToList();
                         <div class="mk-store-head @(firstStore ? "is-first" : "")">
                             <StoreThumb Shop="sh" />
                             <span class="mk-store-head-name">@sh.Name</span>
@@ -141,31 +142,22 @@
                                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                             </button>
                         </div>
-                        @if (open.Count == 0) { <p class="mk-subtitle mk-store-empty">@Loc["nut_store_empty"]</p> }
+                        @if (open.Count == 0 && boughtHere.Count == 0) { <p class="mk-subtitle mk-store-empty">@Loc["nut_store_empty"]</p> }
                         @foreach (var (shop2, item) in open) { @ItemRow(shop2, item) }
+                        @* Bought items stay with their store, struck through, after the ones still to buy. *@
+                        @foreach (var (shop2, item) in boughtHere) { @ItemRow(shop2, item) }
                         firstStore = false;
                     }
                 }
                 else
                 {
                     @foreach (var (shop, item) in Ordered(all.Where(x => !x.Item.IsBought))) { @ItemRow(shop, item) }
+                    @foreach (var (shop, item) in Ordered(all.Where(x => x.Item.IsBought))) { @ItemRow(shop, item) }
                 }
 
-                @{ var bought = all.Where(x => x.Item.IsBought).ToList(); }
-                @if (bought.Count > 0)
+                @if (Clearable.Count > 0)
                 {
-                    <button class="mk-bought-toggle" aria-expanded="@(showBought ? "true" : "false")" @onclick="() => showBought = !showBought">
-                        <span>@Loc.T("shopping_bought_n", Loc.Num(bought.Count))</span>
-                        <svg class="i mk-past-chev @(showBought ? "is-open" : "")" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    @if (showBought)
-                    {
-                        @foreach (var (shop, item) in Ordered(bought)) { @ItemRow(shop, item) }
-                        @if (Clearable.Count > 0)
-                        {
-                            <button class="mk-btn is-soft is-sm is-block" disabled="@isBusy" @onclick="ClearBoughtAsync">@Loc.T("nut_clear_bought", Loc.Num(Clearable.Count))</button>
-                        }
-                    }
+                    <button class="mk-btn is-soft is-sm is-block mk-clear-bought" disabled="@isBusy" @onclick="ClearBoughtAsync">@Loc.T("nut_clear_bought", Loc.Num(Clearable.Count))</button>
                 }
 
                 @if (all.Count > 0)
@@ -186,9 +178,9 @@
         </button>
         <button class="mk-shop-item-name" aria-label="@Loc.T("nut_slot_entry", Loc["nut_edit_item"], item.Name)" @onclick="() => OpenEdit(shop, item)">
             <span>@item.Name</span>
-            @if (item.UsedIn > 1 || (item.IsBought && shops.Count > 1))
+            @if (item.UsedIn > 1)
             {
-                <span class="mk-subtitle">@string.Join(" · ", new[] { item.UsedIn > 1 ? Loc.T("nut_used_in", Loc.Num(item.UsedIn)) : null, item.IsBought && shops.Count > 1 ? shop.Name : null }.Where(x => x is not null))</span>
+                <span class="mk-subtitle">@Loc.T("nut_used_in", Loc.Num(item.UsedIn))</span>
             }
         </button>
         @if (QuantityText(item) is { Length: > 0 } qty) { <b class="mk-shop-amount">@qty</b> }
@@ -303,7 +295,7 @@
     private string? partnerName;
     private readonly List<IAsyncDisposable> watches = new();
     private string uid = "";
-    private bool isLoading = true, loadError, showBought, showAddStore, confirmClear;
+    private bool isLoading = true, loadError, showAddStore, confirmClear;
     private string newItemName = "", storeName = "", storeError = "";
     private string? addShopId, editShopId;
     private ShoppingShop? menuShop;

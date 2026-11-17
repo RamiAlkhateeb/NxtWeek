@@ -19,27 +19,12 @@ public class MealSortTests
     ];
 
     [Fact]
-    public void Fewest_calories_and_most_protein_put_meals_without_nutrition_last()
-    {
-        Assert.Equal(["a", "c", "b", "d"], MealFiltering.Sort(Meals, MealSort.FewestKcal, new HashSet<string>()).Select(m => m.Id));
-        Assert.Equal(["c", "b", "a", "d"], MealFiltering.Sort(Meals, MealSort.MostProtein, new HashSet<string>()).Select(m => m.Id));
-    }
-
-    [Fact]
     public void Recommended_puts_favourites_then_most_eaten_then_by_name()
     {
         var eaten = new Dictionary<string, int> { ["b"] = 3, ["a"] = 1 };
 
-        Assert.Equal(["d", "b", "a", "c"], MealFiltering.Sort(Meals, MealSort.Recommended, new HashSet<string> { "d" }, eaten).Select(m => m.Id));
-        Assert.Equal(["a", "b", "c", "d"], MealFiltering.Sort(Meals, MealSort.Recommended, new HashSet<string>()).Select(m => m.Id));
-    }
-
-    [Fact]
-    public void Quick_means_20_minutes_or_less_and_unknown_time_is_not_quick()
-    {
-        var quick = Meals.Where(m => MealFiltering.Matches(m, MealFilters.Quick, new HashSet<string>())).Select(m => m.Id);
-
-        Assert.Equal(["a"], quick);
+        Assert.Equal(["d", "b", "a", "c"], MealFiltering.Recommended(Meals, new HashSet<string> { "d" }, eaten).Select(m => m.Id));
+        Assert.Equal(["a", "b", "c", "d"], MealFiltering.Recommended(Meals, new HashSet<string>()).Select(m => m.Id));
     }
 
     [Fact]

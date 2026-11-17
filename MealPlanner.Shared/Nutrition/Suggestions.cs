@@ -123,35 +123,9 @@ public static class Suggestions
             .FirstOrDefault();
 }
 
-[Flags]
-public enum MealFilters
-{
-    None = 0,
-    HighProtein = 1,
-    Under600 = 2,
-    Quick = 4,
-    Favourites = 8
-}
-
-public enum MealSort { Recommended, FewestKcal, MostProtein }
-
-/// <summary>The Meals tab's nutrition filters and the pick-mode order.</summary>
+/// <summary>The Meals tab's search, order and the pick-mode order.</summary>
 public static class MealFiltering
 {
-    public const double HighProteinGrams = 30;
-    public const double LowKcal = 600;
-    public const int QuickMinutes = 20;
-
-    public static bool Matches(MealCatalogItem meal, MealFilters filters, ISet<string> favourites)
-    {
-        var n = meal.Nutrition;
-        if (filters.HasFlag(MealFilters.HighProtein) && !(n is not null && n.Protein >= HighProteinGrams)) return false;
-        if (filters.HasFlag(MealFilters.Under600) && !(n is not null && n.Kcal < LowKcal)) return false;
-        if (filters.HasFlag(MealFilters.Quick) && !(meal.PreparationMinutes is > 0 and <= QuickMinutes)) return false;
-        if (filters.HasFlag(MealFilters.Favourites) && !favourites.Contains(meal.Id)) return false;
-        return true;
-    }
-
     /// <summary>Meals whose name or an ingredient contains the text; an empty search matches nothing.</summary>
     public static List<MealCatalogItem> Search(IEnumerable<MealCatalogItem> meals, string? text, int max = 20)
     {
@@ -170,19 +144,12 @@ public static class MealFiltering
             .ToList();
     }
 
-    /// <summary>
-    /// Recommended: favourites first, then the meals eaten most, then by name. Fewest calories and most protein put
-    /// meals without nutrition last.
-    /// </summary>
-    public static IEnumerable<MealCatalogItem> Sort(IEnumerable<MealCatalogItem> meals, MealSort sort, ISet<string> favourites,
-        IReadOnlyDictionary<string, int>? eatenCounts = null) => sort switch
-    {
-        MealSort.FewestKcal => meals.OrderBy(m => m.Nutrition is null).ThenBy(m => m.Nutrition?.Kcal ?? 0).ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase),
-        MealSort.MostProtein => meals.OrderBy(m => m.Nutrition is null).ThenByDescending(m => m.Nutrition?.Protein ?? 0).ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase),
-        _ => meals.OrderByDescending(m => favourites.Contains(m.Id))
-                  .ThenByDescending(m => eatenCounts?.GetValueOrDefault(m.Id) ?? 0)
-                  .ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase)
-    };
+    /// <summary>The Meals tab's order: favourites first, then the meals eaten most, then by name.</summary>
+    public static IEnumerable<MealCatalogItem> Recommended(IEnumerable<MealCatalogItem> meals, ISet<string> favourites,
+        IReadOnlyDictionary<string, int>? eatenCounts = null) =>
+        meals.OrderByDescending(m => favourites.Contains(m.Id))
+             .ThenByDescending(m => eatenCounts?.GetValueOrDefault(m.Id) ?? 0)
+             .ThenBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase);
 
     /// <summary>How often each meal was eaten (not planned, not skipped) before today.</summary>
     public static Dictionary<string, int> EatenCounts(IReadOnlyDictionary<DateOnly, PlanDay> days, DateOnly today)
