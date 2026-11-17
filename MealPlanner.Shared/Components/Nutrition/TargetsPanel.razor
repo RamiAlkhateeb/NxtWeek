@@ -1,19 +1,35 @@
 @inject ILocalizationService Loc
 
-@* The day against its targets: calories and protein as two rings, each with what is left (or over).
-   "Details" adds eaten / planned / open, and carbs and fat only when the user tracks them. *@
+@* The day against its targets: calories, protein and water as three rings, each with what is left (or over; for
+   water, "Goal reached"). Water has − and + under its ring. "Details" adds eaten / planned / open, and carbs and fat
+   only when the user tracks them. Without body data (offline) only the water ring shows. *@
 @{
     var t = Totals.Targets;
     var e = Totals.Eaten;
     var pl = Totals.Planned;
 }
 <section class="mk-tp" aria-label="@Loc["nut_daily_targets"]">
-    <div class="mk-rings">
-        <TargetRing Label="@Loc["nut_calories"]" Colour="var(--mk-kc)" Eaten="e.Kcal" Planned="pl.Kcal" Target="t.Kcal" Unit="@Loc["nut_kcal"]" />
-        <TargetRing Label="@Loc["nut_protein"]" Colour="var(--mk-pro)" Eaten="e.Protein" Planned="pl.Protein" Target="t.Protein" Unit="@Loc["nut_g"]" />
+    <div class="mk-rings @(ShowTargets ? "" : "is-water-only")">
+        @if (ShowTargets)
+        {
+            <TargetRing Label="@Loc["nut_calories"]" Colour="var(--mk-kc)" Eaten="e.Kcal" Planned="pl.Kcal" Target="t.Kcal" Unit="@Loc["nut_kcal"]" />
+            <TargetRing Label="@Loc["nut_protein"]" Colour="var(--mk-pro)" Eaten="e.Protein" Planned="pl.Protein" Target="t.Protein" Unit="@Loc["nut_g"]" />
+        }
+        <TargetRing Label="@Loc["nut_water"]" Colour="var(--mk-water)" Eaten="Water" Target="DayStatus.WaterGoal" CssClass="is-water"
+                    Unit="@Loc["nut_glasses"]" OfText="@Loc.T("nut_water_of", Loc.Num(DayStatus.WaterGoal))"
+                    OverIsGood="true" DoneText="@Loc["nut_water_done"]">
+            <div class="mk-ring-steps" role="group" aria-label="@Loc["nut_water"]">
+                <button type="button" aria-label="@Loc["nut_water_remove"]" disabled="@(Water <= 0)" @onclick="() => OnWater.InvokeAsync(Water - 1)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg>
+                </button>
+                <button type="button" class="is-add" aria-label="@Loc["nut_water_add"]" disabled="@(Water >= DayStatus.WaterMax)" @onclick="() => OnWater.InvokeAsync(Water + 1)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>
+                </button>
+            </div>
+        </TargetRing>
     </div>
 
-    @if (expanded)
+    @if (ShowTargets && expanded)
     {
         <div class="mk-tp-more" id="mk-tp-more">
             <div class="mk-legend">
@@ -41,17 +57,26 @@
         </div>
     }
 
-    <div class="mk-tp-foot">
-        <button type="button" class="mk-tp-toggle" aria-expanded="@(expanded ? "true" : "false")" aria-controls="mk-tp-more" @onclick="() => expanded = !expanded">
-            @(expanded ? Loc["nut_less"] : Loc["nut_details"])
-            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="@(expanded ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6")"/></svg>
-        </button>
-        @FootContent
-    </div>
+    @if (ShowTargets)
+    {
+        <div class="mk-tp-foot">
+            <button type="button" class="mk-tp-toggle" aria-expanded="@(expanded ? "true" : "false")" aria-controls="mk-tp-more" @onclick="() => expanded = !expanded">
+                @(expanded ? Loc["nut_less"] : Loc["nut_details"])
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="@(expanded ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6")"/></svg>
+            </button>
+            @FootContent
+        </div>
+    }
 </section>
 
 @code {
     [Parameter, EditorRequired] public DayTotals Totals { get; set; } = default!;
+    /// <summary>False when body data cannot be read (offline): only the water ring shows.</summary>
+    [Parameter] public bool ShowTargets { get; set; } = true;
+    /// <summary>Glasses of water drunk that day.</summary>
+    [Parameter] public int Water { get; set; }
+    /// <summary>Raised with the new number of glasses when − or + is tapped.</summary>
+    [Parameter] public EventCallback<int> OnWater { get; set; }
     /// <summary>Settings → "Track carbs and fat". Off: Details shows calories only.</summary>
     [Parameter] public bool TrackMacros { get; set; }
     /// <summary>Extra buttons beside Details ("Plan my day").</summary>

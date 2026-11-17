@@ -98,10 +98,12 @@ A new user starts at `/setup` (goal, about you, meal times, targets; `/welcome` 
 save for everyone; goal and body data are saved only for a signed-in user, so a guest who declines to sign in
 continues with the default targets. Settings is grouped as You, App and Account.
 
-The Week page shows calories and protein as two smartwatch-style rings (`TargetRing`, arcs from `DayStatus.RingArcs`:
-eaten solid, planned faint, full and in the accent colour when over) with what is left. Under them, today shows the next
-meal as a big card with one-tap "Mark as eaten" (`DayStatus.NextMeal`), and every day a water row of eight glasses
-(`WaterCard`, `IDayPlanService.SetWaterAsync`, `DayStatus.WaterAfterTap`). Each day in the strip has a mini ring with the
+The Week page shows calories, protein and water as three smartwatch-style rings (`TargetRing` in `TargetsPanel`, arcs
+from `DayStatus.RingArcs`: eaten solid, planned faint, full and in the accent colour when over) with what is left. Water
+counts glasses against a goal of 8 (`DayStatus.WaterGoal`, up to `WaterMax`), with − and + under its ring
+(`IDayPlanService.SetWaterAsync`); past the goal it shows "Goal reached", never "over" (`OverIsGood`). Without body data
+(offline) only the water ring shows. Under the rings, today shows the next meal as a big card with one-tap
+"Mark as eaten" (`DayStatus.NextMeal`). Each day in the strip has a mini ring with the
 share of the calorie target eaten (`DayStatus.EatenShare`), green with a tick when the day is logged. carbs and fat appear under Details only when
 `mealPrefs.trackMacros` is on. An empty slot is one "Add a meal" target that opens `AddMealSheet` (search,
 suggestions with a reason, Rediscover, Browse all meals, Quick add). The day strip swipes a whole week at a time from 8 weeks back to next week (one `GetDaysAsync` for the range;

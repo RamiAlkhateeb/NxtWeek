@@ -46,9 +46,6 @@ public static class DayStatus
     public const int WaterGoal = 8;
     public const int WaterMax = 16;
 
-    /// <summary>Tapping glass <paramref name="index"/> (0-based) fills up to it; tapping the last full glass empties it.</summary>
-    public static int WaterAfterTap(int current, int index) => Math.Clamp(index + 1 == current ? index : index + 1, 0, WaterMax);
-
     /// <summary>
     /// Today's next meal: the earliest planned meal (not answered yet) whose time has not passed. Meals already past
     /// their time are asked about on their own card instead.

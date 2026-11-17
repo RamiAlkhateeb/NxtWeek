@@ -108,10 +108,10 @@
                 </section>
             }
         </div>
-        @* Targets come from body data, which is never kept on the device: offline without it, the card waits. *@
-        @if (!profileMissing)
-        {
-        <TargetsPanel Totals="totals" TrackMacros="prefs.TrackMacros">
+        @* Calories and protein come from body data, which is never kept on the device: offline without it only the
+           water ring shows. *@
+        <TargetsPanel Totals="totals" TrackMacros="prefs.TrackMacros" ShowTargets="!profileMissing"
+                      Water="SelectedDay?.Water ?? 0" OnWater="SetWaterAsync">
             <FootContent>
                 @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, prefs).Count > 0)
                 {
@@ -121,7 +121,6 @@
                 }
             </FootContent>
         </TargetsPanel>
-        }
 
         @if (selectedDate == Today && DayStatus.NextMeal(SelectedDay, prefs, now) is { } next && SelectedDay?.Slots.GetValueOrDefault(next) is { } nextEntry)
         {
@@ -148,8 +147,6 @@
                 </button>
             </section>
         }
-
-        <WaterCard Glasses="SelectedDay?.Water ?? 0" OnChange="SetWaterAsync" />
 
         <div class="mk-stack mk-slots">
             @foreach (var slot in Slots)
