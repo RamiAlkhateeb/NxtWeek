@@ -1,0 +1,52 @@
+@using MealPlanner.Shared.Offline
+@implements IAsyncDisposable
+@inject OfflineState State
+@inject OfflineHandler Outbox
+@inject ILocalizationService Loc
+@inject IJSRuntime JS
+
+@* Shown while the database cannot be reached or changes are still waiting to be sent. *@
+@if (State.IsOffline || State.Pending > 0)
+{
+    <div class="mk-offline" role="status" dir="@Loc.Direction">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.4a5 5 0 0 1 7 0M12 20h.01"/>@if (State.IsOffline) { <path d="M3 3l18 18"/> }</svg>
+        <span>@(State.IsOffline
+            ? State.Pending > 0 ? Loc.T("nut_offline_pending", Loc.Num(State.Pending)) : Loc["nut_offline"]
+            : Loc.T("nut_offline_sending", Loc.Num(State.Pending)))</span>
+    </div>
+}
+
+@code {
+    private Timer? timer;
+    private DotNetObjectReference<OfflineBanner>? self;
+    private IJSObjectReference? unsubscribe;
+
+    protected override async Task OnInitializedAsync()
+    {
+        State.Changed += Refresh;
+        Loc.OnLanguageChanged += Refresh;
+        if (await Outbox.PendingAsync() > 0) _ = Outbox.FlushAsync();
+        // While something waits, try again every 20 seconds as well as when the browser says it is back online.
+        timer = new Timer(_ => { if (State.Pending > 0) _ = InvokeAsync(() => Outbox.FlushAsync()); }, null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(20));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        self = DotNetObjectReference.Create(this);
+        try { unsubscribe = await JS.InvokeAsync<IJSObjectReference>("nxtweek.onOnline", self, nameof(Online)); } catch { }
+    }
+
+    [JSInvokable] public Task Online() => Outbox.FlushAsync();
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public async ValueTask DisposeAsync()
+    {
+        State.Changed -= Refresh;
+        Loc.OnLanguageChanged -= Refresh;
+        timer?.Dispose();
+        self?.Dispose();
+        if (unsubscribe is not null) { try { await unsubscribe.DisposeAsync(); } catch { } }
+    }
+}

@@ -107,6 +107,9 @@
                 </section>
             }
         </div>
+        @* Targets come from body data, which is never kept on the device: offline without it, the card waits. *@
+        @if (!profileMissing)
+        {
         <TargetsPanel Totals="totals" TrackMacros="prefs.TrackMacros">
             <FootContent>
                 @if (totals.OpenProtein > 0 && DayMath.EmptySlots(SelectedDay, prefs).Count > 0)
@@ -117,6 +120,7 @@
                 }
             </FootContent>
         </TargetsPanel>
+        }
 
         <div class="mk-stack mk-slots">
             @foreach (var slot in Slots)
@@ -197,6 +201,7 @@
     private Dictionary<string, MealCatalogItem> catalog = new();
     private Dictionary<DateOnly, DayDot> dots = new();
     private NutritionProfile profile = new();
+    private bool profileMissing;
     private MealPrefs prefs = new();
     private int friendRequests;
     private MealSlot? openSlot;
@@ -353,18 +358,38 @@
         try { return await UserService.HasAnyPlanEntryAsync(uid); } catch { return true; }
     }
 
+    // Offline the body data cannot be read (it is never kept on the device): keep what this visit already had,
+    // or, after a restart, hide the targets until the connection is back.
+    private async Task<NutritionProfile> ProfileOrPreviousAsync()
+    {
+        try
+        {
+            var read = await NutritionStore.GetProfileAsync(uid) ?? new NutritionProfile();
+            profileMissing = false;
+            profileLoaded = true;
+            return read;
+        }
+        catch (HttpRequestException)
+        {
+            profileMissing = !profileLoaded;
+            return profile;
+        }
+    }
+
+    private bool profileLoaded;
+
     private async Task LoadAsync()
     {
         isLoading = true;
         loadError = false;
         try
         {
-            var profileTask = NutritionStore.GetProfileAsync(uid);
+            var profileTask = ProfileOrPreviousAsync();
             var prefsTask = NutritionStore.GetMealPrefsAsync(uid);
             var daysTask = DayPlan.GetDaysAsync(uid, RangeStart, RangeEnd);
             var catalogTask = CatalogService.GetAllMealsAsync();
             await Task.WhenAll(profileTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
-            profile = await profileTask ?? new NutritionProfile();
+            profile = await profileTask;
             prefs = await prefsTask;
             days = await daysTask;
             catalog = (await catalogTask).ToDictionary(m => m.Id);

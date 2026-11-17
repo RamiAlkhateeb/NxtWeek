@@ -1198,3 +1198,50 @@ html, body { background: var(--nxt-page); }
 .mk-bulk-progress { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 /* `.mk-page button { min-height: 0 }` would shrink these below a 44 px touch target. */
 .mk-page .mk-plan-chip, .mk-page .mk-fmeal, .mk-page .mk-nut-line, .mk-page .mk-stamp-line, .mk-page .mk-shop-item-name, .mk-page .mk-cele-close { min-height: 44px; }
+
+/* ---- Shopping: stores ---- */
+.mk-shop-list-head { flex-wrap: wrap; }
+.mk-add-store { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-weight: 700; }
+.mk-add-store svg { width: 16px; height: 16px; }
+.mk-store-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 8px; }
+.mk-store-chips::-webkit-scrollbar { display: none; }
+.mk-store-head { display: flex; align-items: center; gap: 8px; padding: 12px 0 2px; border-top: 1px solid var(--mk-hairline); margin-top: 6px; }
+.mk-store-head.is-first { border-top: 0; margin-top: 0; }
+.mk-store-head-name { font-weight: 800; font-size: 14px; }
+.mk-store-head .mk-icon-btn { margin-inline-start: auto; }
+.mk-store-head .mk-icon-btn svg { width: 18px; height: 18px; }
+.mk-store-empty { margin: 4px 0 8px; }
+.mk-store-rename { display: flex; gap: 8px; align-items: center; }
+.mk-store-rename .mk-search { flex: 1; margin: 0; }
+.mk-owner-code { display: flex; flex-direction: column; gap: 8px; }
+.mk-owner-code summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--mk-muted); }
+
+/* ---- Recipe steps and cooking mode ---- */
+.mk-steps { display: flex; flex-direction: column; gap: 10px; }
+.mk-steps-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mk-step-list { margin: 0; padding-inline-start: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.5; }
+.mk-step-list li span.mk-tag { margin-inline-start: 6px; vertical-align: middle; }
+.mk-steps-text { width: 100%; min-height: 180px; padding: 12px; border-radius: 16px; border: 1px solid var(--nxt-border); background: var(--nxt-card); color: var(--nxt-text); font: inherit; line-height: 1.5; resize: vertical; box-sizing: border-box; }
+.mk-cook-ingredients { padding: 4px 16px; }
+.mk-cook-ingredients summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+.mk-cook-ingredients ul { margin: 0 0 12px; padding-inline-start: 20px; line-height: 1.7; }
+.mk-cook-progress { display: flex; gap: 4px; }
+.mk-cook-progress i { flex: 1; height: 5px; border-radius: 3px; background: var(--nxt-inset); }
+.mk-cook-progress i.is-done { background: var(--mk-ok); }
+.mk-cook-progress i.is-now { background: var(--nxt-accent); }
+.mk-cook-step { padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; min-height: 220px; }
+.mk-cook-num { width: 40px; height: 40px; border-radius: 50%; background: var(--nxt-ink); color: var(--nxt-on-ink); display: grid; place-items: center; font-weight: 800; }
+.mk-cook-text { margin: 0; font-size: 24px; line-height: 1.45; font-weight: 600; }
+.mk-cook-timer { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: var(--nxt-inset); }
+.mk-cook-timer.is-done { background: var(--mk-accent-soft); }
+.mk-cook-clock { font-size: 40px; font-variant-numeric: tabular-nums; text-align: center; }
+.mk-cook-done { text-align: center; font-weight: 800; color: var(--mk-accent-ink); }
+.mk-cook-mini { min-height: 44px; border: 0; border-radius: 999px; background: var(--mk-accent-soft); color: var(--mk-accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.mk-cook-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mk-cook-nav .mk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* ---- Offline banner ---- */
+.mk-offline { position: sticky; top: 0; z-index: 50; width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top)); background: var(--mk-warn-soft); color: var(--mk-warn-ink); font-size: 13px; font-weight: 700; text-align: center; }
+.mk-offline .i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mk-cook-timer .mk-btn-row { justify-content: center; }
+.mk-cook-timer .mk-btn.is-soft { background: var(--nxt-card); color: var(--nxt-text); }

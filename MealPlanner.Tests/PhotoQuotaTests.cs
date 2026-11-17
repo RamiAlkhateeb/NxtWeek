@@ -19,3 +19,16 @@ public class PhotoQuotaTests
         Assert.Equal(0, new PhotoQuota(12, 10, default).Left);
     }
 }
+
+public class MealTwinsTests
+{
+    [Theory]
+    [InlineData("n12", "en_n12")]
+    [InlineData("de_n3", "en_n3")]
+    [InlineData("en_n3", null)]
+    [InlineData("m5", null)]
+    [InlineData("de_m2", null)]
+    [InlineData("abc123", null)]
+    public void Seeded_dishes_point_to_their_english_meal(string id, string? twin) =>
+        Assert.Equal(twin, MealTwins.EnglishTwinId(id));
+}

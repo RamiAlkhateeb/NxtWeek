@@ -10,6 +10,7 @@
 @inject INutritionStore NutritionStore
 @inject IMealImageService MealImages
 @inject IMealPhotoService Photos
+@inject IRecipeService Recipes
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject ToastService Toasts
@@ -99,6 +100,40 @@
                 <MealIngredientRows Ingredients="meal.Ingredients" MealName="@meal.Name" />
             </div>
 
+            <section class="mk-card mk-details-card mk-steps" aria-labelledby="steps-h">
+                <div class="mk-steps-head">
+                    <h2 id="steps-h" class="mk-shop-h">@Loc["nut_steps"]</h2>
+                    @if (meal.Steps.Count > 0) { <button class="mk-link-btn" @onclick="OpenSteps">@Loc["meal_edit"]</button> }
+                </div>
+                @if (meal.Steps.Count > 0)
+                {
+                    <ol class="mk-step-list">
+                        @foreach (var step in meal.Steps)
+                        {
+                            <li>
+                                <span>@step.Text</span>
+                                @if (step.Minutes is { } min) { <span class="mk-tag">@Loc.T("nut_dur_min", Loc.Num(min))</span> }
+                            </li>
+                        }
+                    </ol>
+                    <a class="mk-btn is-block" href="@($"meal/{Uri.EscapeDataString(meal.Id)}/cook")">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>@Loc["nut_cook_start"]
+                    </a>
+                }
+                else
+                {
+                    <p class="mk-subtitle">@Loc["nut_steps_none"]</p>
+                    <div class="mk-btn-row">
+                        <button class="mk-btn" disabled="@isFetchingSteps" @onclick="() => FetchStepsAsync(false)">
+                            @if (isFetchingSteps) { <span class="nxt-dots" aria-hidden="true"><i></i><i></i><i></i></span> @Loc["nut_steps_fetching"] }
+                            else { <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>@Loc["nut_steps_get"] }
+                        </button>
+                        <button class="mk-btn is-soft" @onclick="OpenSteps">@Loc["nut_steps_write"]</button>
+                    </div>
+                }
+                @if (stepsError is { Length: > 0 }) { <div class="mk-notice is-error" role="alert">@stepsError</div> }
+            </section>
+
             @if (meal.SideDishes is { Count: > 0 })
             {
                 <div class="mk-sides">
@@ -139,6 +174,18 @@
     }
 </div>
 
+<NxtBottomSheet IsOpen="showSteps" Title="@Loc["nut_steps"]" Eyebrow="@meal?.Name" OnDismiss="() => showSteps = false">
+    <div class="mk-sheet-body" dir="@Loc.Direction">
+        <label class="mk-label" for="steps-text">@Loc["nut_steps_hint"]</label>
+        <textarea id="steps-text" class="mk-input mk-steps-text" rows="8" @bind="stepsText" @bind:event="oninput"></textarea>
+        <button class="mk-btn is-lg is-block" disabled="@isSavingSteps" @onclick="SaveStepsAsync">@Loc["save"]</button>
+        @if (meal?.Steps.Count > 0)
+        {
+            <button class="mk-btn is-soft is-block" disabled="@isFetchingSteps" @onclick="() => FetchStepsAsync(true)">@Loc["nut_steps_get_again"]</button>
+        }
+    </div>
+</NxtBottomSheet>
+
 <NxtBottomSheet IsOpen="showEdit" Title="@Loc["meals_edit_meal"]" Eyebrow="@Loc["meals_edit_eyebrow"]" OnDismiss="() => showEdit = false">
     <div class="mk-sheet-body" dir="@Loc.Direction">
         <label class="mk-search"><input placeholder="@Loc["meals_meal_name"]" aria-label="@Loc["meals_meal_name"]" @bind="editName" @bind:event="oninput" /></label>
@@ -164,6 +211,44 @@
     private bool isLoading = true;
     private bool isAdding;
     private bool isSavingPhoto, isGenerating, hasSharedPhoto;
+    private bool showSteps, isFetchingSteps, isSavingSteps;
+    private string stepsText = "";
+    private string? stepsError;
+
+    private void OpenSteps()
+    {
+        stepsText = RecipeSteps.ToText(meal?.Steps ?? [], Loc["nut_steps_minutes"]);
+        stepsError = null;
+        showSteps = true;
+    }
+
+    private async Task SaveStepsAsync()
+    {
+        if (meal is null) return;
+        isSavingSteps = true;
+        try
+        {
+            await Recipes.SaveStepsAsync(meal, RecipeSteps.Parse(stepsText));
+            showSteps = false;
+        }
+        catch { stepsError = Loc["nut_save_error"]; }
+        finally { isSavingSteps = false; }
+    }
+
+    // Free steps from the photo worker's text model, written in the meal's own language.
+    private async Task FetchStepsAsync(bool replace)
+    {
+        if (meal is null || isFetchingSteps) return;
+        isFetchingSteps = true;
+        stepsError = null;
+        try
+        {
+            await Recipes.FetchStepsAsync(meal, replace);
+            showSteps = false;
+        }
+        catch (Exception ex) { stepsError = MealPhotoException.Describe(Loc, ex); showSteps = false; }
+        finally { isFetchingSteps = false; }
+    }
     private string? photoError;
     private string uid = "";
     private List<DateOnly> days = new();
@@ -268,7 +353,7 @@
         photoError = null;
         try
         {
-            await Photos.GenerateAsync(meal);
+            await Photos.GenerateAsync(meal, replace: hasSharedPhoto);
             hasSharedPhoto = true;
             Toasts.Show(Loc["nut_photo_made"]);
         }

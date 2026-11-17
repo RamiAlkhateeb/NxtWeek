@@ -50,4 +50,13 @@ public class MealCatalogItem
     public List<IngredientLine> IngredientLines { get; set; } = new();
     // Slots this meal suits (a shake fits a snack, not dinner). Empty means any slot.
     public List<MealSlot> SuitableSlots { get; set; } = new();
+    /// <summary>How to cook it, in the meal's language. Written by hand or fetched from the photo worker's text model.</summary>
+    public List<RecipeStep> Steps { get; set; } = new();
+}
+
+/// <summary>One cooking step; <see cref="Minutes"/> starts a timer in cooking mode.</summary>
+public class RecipeStep
+{
+    public string Text { get; set; } = string.Empty;
+    public int? Minutes { get; set; }
 }

@@ -4,6 +4,7 @@
 @implements IDisposable
 
 <div class="app-shell @($"lang-{Loc.CurrentLanguage}")" dir="@Loc.Direction" lang="@Loc.CurrentLanguage" style="flex-direction: column; align-items: center;">
+    <MealPlanner.Shared.Components.OfflineBanner />
     <div style="width: 100%; display: flex; justify-content: center; flex: 1;">@Body</div>
     <MealPlanner.Shared.Components.BottomNav />
 </div>

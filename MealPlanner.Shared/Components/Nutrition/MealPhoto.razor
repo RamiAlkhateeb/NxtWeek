@@ -32,7 +32,7 @@
 
     private void OnChanged(string mealId)
     {
-        if (Meal?.Id != mealId) return;
+        if (Meal is null || (Meal.Id != mealId && MealTwins.EnglishTwinId(Meal.Id) != mealId)) return;
         _ = InvokeAsync(async () => { await OnParametersSetAsync(); StateHasChanged(); });
     }
 

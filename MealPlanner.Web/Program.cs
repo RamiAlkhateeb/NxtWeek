@@ -10,7 +10,13 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+// Database requests go through the offline handler: reads are remembered, writes wait in an outbox without a connection.
+builder.Services.AddScoped<MealPlanner.Shared.Offline.OfflineState>();
+builder.Services.AddScoped(sp => new MealPlanner.Shared.Offline.OfflineHandler(
+    sp.GetRequiredService<Microsoft.JSInterop.IJSRuntime>(), sp.GetRequiredService<FirebaseOptions>(), sp.GetRequiredService<MealPlanner.Shared.Offline.OfflineState>())
+{ InnerHandler = new HttpClientHandler() });
+builder.Services.AddScoped(sp => new HttpClient(sp.GetRequiredService<MealPlanner.Shared.Offline.OfflineHandler>(), disposeHandler: false)
+{ BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 
 builder.Services.AddSingleton(new FirebaseOptions
@@ -61,6 +67,7 @@ builder.Services.AddNxtUi(o =>
 builder.Services.AddScoped<IMealImageService, MealImageService>();
 builder.Services.AddSingleton(new MealPhotoOptions());
 builder.Services.AddScoped<IMealPhotoService, MealPhotoService>();
+builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddSingleton<IAisleService, AisleService>();
 
 await builder.Build().RunAsync();

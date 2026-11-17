@@ -30,7 +30,11 @@
     else
     {
         @if (message is { Length: > 0 }) { <p class="mk-subtitle" role="status">@message</p> }
-        @if (quota is { } q)
+        @if (hasOwnerCode)
+        {
+            <p class="mk-subtitle">@Loc["nut_owner_code_on"]</p>
+        }
+        else if (quota is { } q)
         {
             <p class="mk-subtitle">@Loc.T("nut_photos_left_week", Loc.Num(q.Left), Loc.Num(q.Limit))</p>
         }
@@ -38,7 +42,7 @@
         {
             <p class="mk-subtitle">@Loc["nut_photos_bulk_none"]</p>
         }
-        else if (quota is { Left: 0 })
+        else if (!hasOwnerCode && quota is { Left: 0 })
         {
             <p class="mk-subtitle">@Loc.T("nut_photo_err_weekly", Loc.Num(MealPhotoService.WeeklyLimit))</p>
         }
@@ -47,15 +51,38 @@
             <button class="mk-btn is-sm" @onclick="RunAsync">@Loc.T("nut_photos_bulk_start", Loc.Num(Batch))</button>
         }
     }
+    <details class="mk-owner-code">
+        <summary>@Loc["nut_owner_code"]</summary>
+        <form class="mk-store-rename" @onsubmit="SaveOwnerCodeAsync" @onsubmit:preventDefault>
+            <label class="mk-search"><input type="password" autocomplete="off" aria-label="@Loc["nut_owner_code"]" placeholder="@Loc["nut_owner_code"]" @bind="ownerCode" @bind:event="oninput" /></label>
+            <button type="submit" class="mk-btn is-sm">@Loc["save"]</button>
+        </form>
+        <span class="mk-subtitle">@Loc["nut_owner_code_hint"]</span>
+    </details>
 </div>
 
 @code {
     private bool isCounting, running;
     private List<MealCatalogItem>? missing;
     private PhotoQuota? quota;
+    private string ownerCode = "";
+    private bool hasOwnerCode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ownerCode = await Photos.GetOwnerCodeAsync() ?? "";
+        hasOwnerCode = ownerCode.Length > 0;
+    }
+
+    private async Task SaveOwnerCodeAsync()
+    {
+        await Photos.SetOwnerCodeAsync(ownerCode);
+        hasOwnerCode = ownerCode.Trim().Length > 0;
+        message = hasOwnerCode ? Loc["nut_owner_code_saved"] : "";
+    }
 
     // Never more than this week's photos left.
-    private int Batch => Math.Min(missing?.Count ?? 0, quota?.Left ?? MealPhotoService.WeeklyLimit);
+    private int Batch => hasOwnerCode ? missing?.Count ?? 0 : Math.Min(missing?.Count ?? 0, quota?.Left ?? MealPhotoService.WeeklyLimit);
     private int done, total;
     private string current = "", message = "";
     private CancellationTokenSource? cancel;

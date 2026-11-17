@@ -310,3 +310,72 @@ window.nxtweek.weekPager = (() => {
     unwatch(id) { watched.get(id)?.(); watched.delete(id); }
   };
 })();
+
+// Shares text through the phone's share sheet (WhatsApp, Messages…); where there is none, copies it.
+// Returns "shared", "copied", "cancelled" or "failed".
+window.nxtweek.shareText = async (title, text) => {
+  if (navigator.share) {
+    try { await navigator.share({ title, text }); return "shared"; }
+    catch (e) { if (e && e.name === "AbortError") return "cancelled"; }
+  }
+  try { await navigator.clipboard.writeText(text); return "copied"; }
+  catch { return "failed"; }
+};
+
+// Cooking mode: keep the screen on while it is open (Screen Wake Lock), asking again when the tab comes back.
+window.nxtweek.keepAwake = (() => {
+  let lock = null, wanted = false;
+  const request = async () => { try { if (wanted && navigator.wakeLock && document.visibilityState === 'visible') lock = await navigator.wakeLock.request('screen'); } catch { lock = null; } };
+  document.addEventListener('visibilitychange', request);
+  return async on => {
+    wanted = on;
+    if (on) { await request(); return !!lock; }
+    try { await lock?.release(); } catch { }
+    lock = null;
+    return false;
+  };
+})();
+
+// A short double beep and a vibration when a cooking timer ends.
+window.nxtweek.timerDone = () => {
+  try { navigator.vibrate?.([300, 150, 300]); } catch { }
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.35].forEach(t => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 880; g.gain.value = 0.2;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.2);
+    });
+    setTimeout(() => ctx.close(), 1000);
+  } catch { }
+};
+
+// Offline reads: remembers a database answer; when storage is full the old answers are dropped and it tries once more.
+window.nxtweek.offlineStore = (prefix, key, text) => {
+    try { localStorage.setItem(key, text); }
+    catch {
+        try {
+            Object.keys(localStorage).filter(k => k.startsWith(prefix)).forEach(k => localStorage.removeItem(k));
+            localStorage.setItem(key, text);
+        } catch { /* still full: skip */ }
+    }
+};
+
+// Calls back when the browser says the network is back, so waiting changes are sent at once.
+window.nxtweek.onOnline = (ref, method) => {
+    const handler = () => ref.invokeMethodAsync(method).catch(() => { });
+    window.addEventListener('online', handler);
+    return { dispose: () => window.removeEventListener('online', handler) };
+};
+
+// Remembered offline reads of a path and its parents: [[key, text], ...].
+window.nxtweek.offlineAncestors = (prefix, path) => {
+    const found = [];
+    for (const key of Object.keys(localStorage)) {
+        if (!key.startsWith(prefix)) continue;
+        const p = key.slice(prefix.length).split('?')[0];
+        if (p === path || path.startsWith(p + '/')) found.push([key, localStorage.getItem(key)]);
+    }
+    return found;
+};
