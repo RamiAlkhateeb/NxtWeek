@@ -1,3 +1,4 @@
+using MealPlanner.Shared.Nutrition;
 using MealPlanner.Shared.Components.Nutrition;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
@@ -20,7 +21,8 @@ public interface IMealPhotoService
     /// <summary>Whether a shared photo exists for the meal (from the one-request index; nothing is downloaded).</summary>
     Task<bool> HasAsync(string mealId);
     /// <summary>Draws a photo with the photo worker, shrinks it to 480 px and shares it. Throws <see cref="MealPhotoException"/>.</summary>
-    Task<string> GenerateAsync(MealCatalogItem meal);
+    /// <param name="replace">Redraw a meal that already has a photo ("New photo").</param>
+    Task<string> GenerateAsync(MealCatalogItem meal, bool replace = false);
     /// <summary>How many photos this account has had drawn this week (Monday to Sunday, UTC), of <see cref="MealPhotoService.WeeklyLimit"/>.</summary>
     Task<PhotoQuota> GetQuotaAsync();
     /// <summary>Raised with the meal id when a photo was generated, so every picture of that meal updates.</summary>
@@ -99,7 +101,11 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
 
     private string Url(string path) => $"{baseUrl}/{path}.json";
 
-    public async Task<string?> GetAsync(string mealId)
+    // A meal without its own photo shows its English twin's (the seeded n12 / de_n12 → en_n12).
+    public async Task<string?> GetAsync(string mealId) =>
+        await GetOwnAsync(mealId) ?? (MealTwins.EnglishTwinId(mealId) is { } twin ? await GetOwnAsync(twin) : null);
+
+    private async Task<string?> GetOwnAsync(string mealId)
     {
         if (string.IsNullOrWhiteSpace(mealId)) return null;
         if (photos.TryGetValue(mealId, out var known)) return known;
@@ -108,7 +114,11 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         return await task;
     }
 
-    public async Task<bool> HasAsync(string mealId) => photos.TryGetValue(mealId, out var p) && p is not null || (await IndexAsync()).Contains(mealId);
+    public async Task<bool> HasAsync(string mealId) =>
+        await HasOwnAsync(mealId) || (MealTwins.EnglishTwinId(mealId) is { } twin && await HasOwnAsync(twin));
+
+    private async Task<bool> HasOwnAsync(string mealId) =>
+        photos.TryGetValue(mealId, out var p) && p is not null || (await IndexAsync()).Contains(mealId);
 
     private Task<HashSet<string>> IndexAsync() => index ??= LoadIndexAsync();
 
@@ -139,16 +149,18 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
         finally { loading.Remove(mealId); }
     }
 
-    public async Task<string> GenerateAsync(MealCatalogItem meal)
+    public async Task<string> GenerateAsync(MealCatalogItem meal, bool replace = false)
     {
         string raw;
+        string? twinId;
         try
         {
             var user = (await auth.GetCurrentUserAsync())?.Uid;
             if (string.IsNullOrWhiteSpace(user)) throw new MealPhotoException(MealPhotoProblem.Unavailable, "Not signed in.");
-            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id, user });
+            using var response = await http.PostAsJsonAsync($"{photoOptions.WorkerUrl.TrimEnd('/')}/photo", new { mealId = meal.Id, user, replace });
             var body = await ReadAsync(response);
             var image = Text(body, "image");
+            twinId = Text(body, "twin");
             var status = (int)response.StatusCode;
             if (status == 200 && string.IsNullOrEmpty(image)) status = 502;
             switch (status)
@@ -179,12 +191,22 @@ public sealed class MealPhotoService(HttpClient http, FirebaseOptions options, M
 
         var small = await js.InvokeAsync<string?>("nxtweek.squareJpeg", raw, Size)
             ?? throw new MealPhotoException(MealPhotoProblem.Failed, "The picture could not be read.");
-        using (var saved = await http.PutAsJsonAsync(Url($"MealPhotos/{Uri.EscapeDataString(meal.Id)}"), small))
-            saved.EnsureSuccessStatusCode();
-        photos[meal.Id] = small;
-        (await IndexAsync()).Add(meal.Id);
-        Changed?.Invoke(meal.Id);
+        await StoreAsync(meal.Id, small);
+        // Drawn from the English twin that had none: it is the same dish, so it gets the photo too.
+        if (twinId is { Length: > 0 } t && !await HasOwnAsync(t))
+        {
+            try { await StoreAsync(t, small); } catch { /* the meal itself has its photo */ }
+        }
         return small;
+    }
+
+    private async Task StoreAsync(string mealId, string dataUrl)
+    {
+        using (var saved = await http.PutAsJsonAsync(Url($"MealPhotos/{Uri.EscapeDataString(mealId)}"), dataUrl))
+            saved.EnsureSuccessStatusCode();
+        photos[mealId] = dataUrl;
+        (await IndexAsync()).Add(mealId);
+        Changed?.Invoke(mealId);
     }
 
     public async Task<PhotoQuota> GetQuotaAsync()

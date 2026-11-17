@@ -1198,3 +1198,18 @@ html, body { background: var(--nxt-page); }
 .mk-bulk-progress { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 /* `.mk-page button { min-height: 0 }` would shrink these below a 44 px touch target. */
 .mk-page .mk-plan-chip, .mk-page .mk-fmeal, .mk-page .mk-nut-line, .mk-page .mk-stamp-line, .mk-page .mk-shop-item-name, .mk-page .mk-cele-close { min-height: 44px; }
+
+/* ---- Shopping: stores ---- */
+.mk-shop-list-head { flex-wrap: wrap; }
+.mk-add-store { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-weight: 700; }
+.mk-add-store svg { width: 16px; height: 16px; }
+.mk-store-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 8px; }
+.mk-store-chips::-webkit-scrollbar { display: none; }
+.mk-store-head { display: flex; align-items: center; gap: 8px; padding: 12px 0 2px; border-top: 1px solid var(--mk-hairline); margin-top: 6px; }
+.mk-store-head.is-first { border-top: 0; margin-top: 0; }
+.mk-store-head-name { font-weight: 800; font-size: 14px; }
+.mk-store-head .mk-icon-btn { margin-inline-start: auto; }
+.mk-store-head .mk-icon-btn svg { width: 18px; height: 18px; }
+.mk-store-empty { margin: 4px 0 8px; }
+.mk-store-rename { display: flex; gap: 8px; align-items: center; }
+.mk-store-rename .mk-search { flex: 1; margin: 0; }

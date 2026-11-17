@@ -61,6 +61,32 @@ public sealed class FirebaseShoppingListService(HttpClient http, FirebaseOptions
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task RenameShopAsync(string uid, string shopId, string name)
+    {
+        using var response = await http.PatchAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shopping/{Key(shopId)}"), new { name = RequiredName(name, "المتجر") });
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task MoveItemAsync(string uid, string fromShopId, string toShopId, ShoppingItem item)
+    {
+        if (fromShopId == toShopId) return;
+        var owner = Key(await GetListOwnerAsync(uid));
+        // Written to the new store first: if the delete fails the item shows twice rather than not at all.
+        using (var put = await http.PutAsJsonAsync(Url($"users/{owner}/shopping/{Key(toShopId)}/items/{Key(item.Id)}"), item))
+            put.EnsureSuccessStatusCode();
+        using var delete = await http.DeleteAsync(Url($"users/{owner}/shopping/{Key(fromShopId)}/items/{Key(item.Id)}"));
+        delete.EnsureSuccessStatusCode();
+    }
+
+    public async Task<Dictionary<string, string>> GetStoreRoutesAsync(string uid) =>
+        await http.GetFromJsonAsync<Dictionary<string, string>>(Url($"users/{Key(await GetListOwnerAsync(uid))}/shoppingRoutes")) ?? new();
+
+    public async Task RememberStoreAsync(string uid, string routeKey, string shopId)
+    {
+        using var response = await http.PutAsJsonAsync(Url($"users/{Key(await GetListOwnerAsync(uid))}/shoppingRoutes/{Key(routeKey)}"), shopId);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task<ShoppingItem> AddItemAsync(string uid, string shopId, string name, ShoppingItemOptions? options = null)
     {
         options ??= new ShoppingItemOptions();

@@ -68,7 +68,8 @@ nxtweek.theme
 | Meal catalog (shared by all users) | `MealCatalog/{id}` |
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
-| Shopping list | `users/{key}/shopping` |
+| Shopping list (stores with items) | `users/{key}/shopping` |
+| Which store an item goes to, by ingredient key or name | `users/{key}/shoppingRoutes/{key}` |
 | Day slots (Meal 1, afternoon snack, dinner, evening snack) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
 | Meal times, which meals are on, track carbs and fat, Ramadan mode (not health data, guests too) | `users/{key}/mealPrefs` |
 | Body data, goal and target overrides (health data, signed-in only) | `users/{key}/nutritionProfile` |
@@ -122,8 +123,10 @@ their own `ramadanTimes`: show slot names with `Loc[prefs.NameKey(slot)]` and ti
 `"nut_slot_" + slot` directly.
 
 Shopping (`/shopping`) is shopping by servings: the meals still to cook from today to Sunday (not eaten, skipped or
-leftover) as small chips in two scrolling rows (a chip opens servings and meal prep), and one simple list in shop order
-with quick add and a collapsed "Bought" part, that follows them. The page brings the list in
+leftover) as small chips in two scrolling rows (a chip opens servings and meal prep), and one list in shop order with quick add
+and a collapsed "Bought" part, that follows them. With more than one store the list is grouped by store; moving an item
+to a store remembers it for next time (`users/{owner}/shoppingRoutes/{StoreRoute.Key}`), and plan items without a
+remembered store go to the first store made. Deleting a store moves its items to another. The page brings the list in
 line with the plan on every visit and after each change (`ShoppingAggregator.Sync`), touching only items it made itself
 (`IngredientKey`) that are not bought. Bought items stay in place, struck through; "Clear bought" removes only typed items
 and ones the plan no longer needs. Old accounts with several stores see all their items together.
@@ -174,8 +177,11 @@ kept out of `MealCatalog` so the catalog download stays small. A shallow read sa
 fetched only when shown. They are drawn for free, without any user key, by the photo worker in `photo-worker/`
 (Cloudflare Workers AI, Flux; deployed by `.github/workflows/photo-worker.yml`, tests with
 `node --test photo-worker/test/*.test.js`): in the background when a meal is added, from "Make a photo" on the meal's
-page, and for every meal without one from Settings → Advanced → Meal photos (`MealPhotosBulk`). The worker only draws
-catalog meals without a photo, for an existing account (`users/{key}`), from the app's own sites, with 10 photos per
+page, and for every meal without one from Settings → Advanced → Meal photos (`MealPhotosBulk`). An Arabic or German seeded dish shows
+its English twin's photo (`MealTwins.EnglishTwinId`: `n12`/`de_n12` → `en_n12`), and the worker draws from the English
+meal; the Arabic classics have curated English descriptions in `photo-worker/src/dishes.js` (add one when you seed an
+Arabic meal). "New photo" sends `replace`. The worker only draws
+catalog meals without a photo (unless replacing), for an existing account (`users/{key}`), from the app's own sites, with 10 photos per
 account per week (`WEEKLY_LIMIT`, mirrored in `MealPhotoService.WeeklyLimit`; counted at `PhotoQuota`), 30 a minute per
 visitor and Cloudflare's daily allowance; its errors become
 `MealPhotoException` and are shown with `MealPhotoException.MessageKey`. The illustration stays when no photo can be made.

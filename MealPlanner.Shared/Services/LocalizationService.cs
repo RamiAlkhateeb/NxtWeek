@@ -848,6 +848,10 @@ public class LocalizationService : ILocalizationService
         ["nut_photo_err_unavailable"] = new() { ["ar"] = "خدمة الصور غير متاحة الآن.", ["en"] = "The photo service can't be reached right now.", ["de"] = "Der Fotodienst ist gerade nicht erreichbar." },
         ["nut_photo_err_weekly"] = new() { ["ar"] = "استخدمت صور هذا الأسبوع ({0}). يمكنك صنع المزيد من يوم الاثنين.", ["en"] = "You've used this week's {0} photos. You can make more from Monday.", ["de"] = "Du hast die {0} Fotos dieser Woche verbraucht. Ab Montag kannst du wieder welche erstellen." },
         ["nut_photos_left_week"] = new() { ["ar"] = "بقي لك {0} من {1} صور هذا الأسبوع.", ["en"] = "{0} of {1} photos left this week.", ["de"] = "Diese Woche noch {0} von {1} Fotos." },
+        ["nut_store_empty"] = new() { ["ar"] = "لا شيء في هذا المتجر.", ["en"] = "Nothing for this store.", ["de"] = "Nichts für dieses Geschäft." },
+        ["nut_store_name"] = new() { ["ar"] = "اسم المتجر", ["en"] = "Store name", ["de"] = "Name des Geschäfts" },
+        ["nut_store_exists"] = new() { ["ar"] = "يوجد متجر بهذا الاسم.", ["en"] = "There is already a store with this name.", ["de"] = "Es gibt schon ein Geschäft mit diesem Namen." },
+        ["nut_store_delete_note"] = new() { ["ar"] = "تنتقل عناصره إلى {0}.", ["en"] = "Its items move to {0}.", ["de"] = "Seine Artikel kommen zu {0}." },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

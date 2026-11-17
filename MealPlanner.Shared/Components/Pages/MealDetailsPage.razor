@@ -268,7 +268,7 @@
         photoError = null;
         try
         {
-            await Photos.GenerateAsync(meal);
+            await Photos.GenerateAsync(meal, replace: hasSharedPhoto);
             hasSharedPhoto = true;
             Toasts.Show(Loc["nut_photo_made"]);
         }

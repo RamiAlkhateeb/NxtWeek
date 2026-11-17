@@ -90,6 +90,9 @@
                     {
                         <span class="mk-tag @(left == 0 ? "is-ok" : "")" aria-label="@Loc.T("nut_shop_left", Loc.Num(left), Loc.Num(all.Count))">@Loc.T("nut_days_on_count", Loc.Num(left), Loc.Num(all.Count))</span>
                     }
+                    <button type="button" class="mk-link-btn mk-add-store" @onclick="OpenAddStore">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>@Loc["shopping_add_store"]
+                    </button>
                 </div>
 
                 @* A real form: Enter on mobile keyboards submits it too. *@
@@ -98,13 +101,45 @@
                     <input placeholder="@Loc["shopping_add_item"]" aria-label="@Loc["shopping_add_item"]" @bind="newItemName" @bind:event="oninput" enterkeyhint="done" autocomplete="off" />
                     <button type="submit" class="mk-quickadd-add" disabled="@(string.IsNullOrWhiteSpace(newItemName) || isSaving)">@Loc["add"]</button>
                 </form>
+                @if (shops.Count > 1)
+                {
+                    <div class="mk-store-chips" role="group" aria-label="@Loc["shopping_which_store"]">
+                        @foreach (var shop in OrderedShops)
+                        {
+                            var sh = shop;
+                            <button type="button" class="mk-chip @(AddTarget?.Id == sh.Id ? "is-active" : "")" aria-pressed="@(AddTarget?.Id == sh.Id ? "true" : "false")" @onclick="() => addShopId = sh.Id">@sh.Name</button>
+                        }
+                    </div>
+                }
 
                 @if (all.Count == 0)
                 {
                     <p class="mk-subtitle mk-shop-empty">@Loc["nut_shop_empty"]</p>
                 }
 
-                @foreach (var (shop, item) in Ordered(all.Where(x => !x.Item.IsBought))) { @ItemRow(shop, item) }
+                @if (shops.Count > 1)
+                {
+                    var firstStore = true;
+                    @foreach (var shop in OrderedShops)
+                    {
+                        var sh = shop;
+                        var open = Ordered(all.Where(x => x.Shop.Id == sh.Id && !x.Item.IsBought)).ToList();
+                        <div class="mk-store-head @(firstStore ? "is-first" : "")">
+                            <span class="mk-store-head-name">@sh.Name</span>
+                            <span class="mk-subtitle">@(open.Count == 1 ? Loc["nut_aisle_item_one"] : Loc.T("nut_aisle_items", Loc.Num(open.Count)))</span>
+                            <button type="button" class="mk-icon-btn is-plain is-muted" aria-label="@Loc.T("nut_slot_entry", Loc["shopping_store_options"], sh.Name)" @onclick="() => OpenStoreMenu(sh)">
+                                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                            </button>
+                        </div>
+                        @if (open.Count == 0) { <p class="mk-subtitle mk-store-empty">@Loc["nut_store_empty"]</p> }
+                        @foreach (var (shop2, item) in open) { @ItemRow(shop2, item) }
+                        firstStore = false;
+                    }
+                }
+                else
+                {
+                    @foreach (var (shop, item) in Ordered(all.Where(x => !x.Item.IsBought))) { @ItemRow(shop, item) }
+                }
 
                 @{ var bought = all.Where(x => x.Item.IsBought).ToList(); }
                 @if (bought.Count > 0)
@@ -134,7 +169,10 @@
         </button>
         <button class="mk-shop-item-name" aria-label="@Loc.T("nut_slot_entry", Loc["nut_edit_item"], item.Name)" @onclick="() => OpenEdit(shop, item)">
             <span>@item.Name</span>
-            @if (item.UsedIn > 1) { <span class="mk-subtitle">@Loc.T("nut_used_in", Loc.Num(item.UsedIn))</span> }
+            @if (item.UsedIn > 1 || (item.IsBought && shops.Count > 1))
+            {
+                <span class="mk-subtitle">@string.Join(" · ", new[] { item.UsedIn > 1 ? Loc.T("nut_used_in", Loc.Num(item.UsedIn)) : null, item.IsBought && shops.Count > 1 ? shop.Name : null }.Where(x => x is not null))</span>
+            }
         </button>
         @if (QuantityText(item) is { Length: > 0 } qty) { <b class="mk-shop-amount">@qty</b> }
     </div>;
@@ -177,6 +215,17 @@
                 </div>
             </div>
             <label class="mk-search"><input placeholder="@Loc["shopping_unit_placeholder"]" aria-label="@Loc["shopping_unit"]" @bind="editUnit" @bind:event="oninput" /></label>
+            @if (shops.Count > 1)
+            {
+                <span class="mk-label">@Loc["shopping_which_store"]</span>
+                <div class="mk-chip-wrap" role="group" aria-label="@Loc["shopping_which_store"]">
+                    @foreach (var shop in OrderedShops)
+                    {
+                        var sh = shop;
+                        <button type="button" class="mk-chip @(editShopId == sh.Id ? "is-active" : "")" aria-pressed="@(editShopId == sh.Id ? "true" : "false")" @onclick="() => editShopId = sh.Id">@sh.Name</button>
+                    }
+                </div>
+            }
             @if (!string.IsNullOrEmpty(editing.IngredientKey))
             {
                 <p class="mk-subtitle">@Loc["nut_shop_auto_note"]</p>
@@ -191,8 +240,49 @@
     }
 </NxtBottomSheet>
 
+<NxtBottomSheet IsOpen="showAddStore" Title="@Loc["shopping_new_store"]" Eyebrow="@Loc["shopping_new_store_eyebrow"]" OnDismiss="() => showAddStore = false">
+    <form class="mk-sheet-body" dir="@Loc.Direction" @onsubmit="AddStoreAsync" @onsubmit:preventDefault>
+        <label class="mk-search"><input placeholder="@Loc["shopping_store_placeholder"]" aria-label="@Loc["shopping_store_placeholder"]" @bind="storeName" @bind:event="oninput" autocomplete="off" /></label>
+        @if (storeError is { Length: > 0 }) { <div class="mk-notice is-error" role="alert">@storeError</div> }
+        <button type="submit" class="mk-btn is-lg is-block" disabled="@(string.IsNullOrWhiteSpace(storeName) || isSaving)">@Loc["shopping_add_store"]</button>
+    </form>
+</NxtBottomSheet>
+
+<NxtBottomSheet IsOpen="menuShop is not null" Title="@menuShop?.Name" Eyebrow="@Loc["shopping_store_options"]" OnDismiss="() => menuShop = null">
+    @if (menuShop is { } ms)
+    {
+        <div class="mk-sheet-body" dir="@Loc.Direction">
+            <form class="mk-store-rename" @onsubmit="RenameStoreAsync" @onsubmit:preventDefault>
+                <label class="mk-search"><input aria-label="@Loc["nut_store_name"]" @bind="storeName" @bind:event="oninput" autocomplete="off" /></label>
+                <button type="submit" class="mk-btn" disabled="@(string.IsNullOrWhiteSpace(storeName) || storeName.Trim() == ms.Name || isSaving)">@Loc["save"]</button>
+            </form>
+            @if (storeError is { Length: > 0 }) { <div class="mk-notice is-error" role="alert">@storeError</div> }
+            @if (shops.Count > 1)
+            {
+                <p>@Loc.T("nut_store_delete_note", OrderedShops.First(x => x.Id != ms.Id).Name)</p>
+                <button class="mk-btn is-soft is-block is-danger-text" disabled="@isSaving" @onclick="DeleteStoreAsync">@Loc.T("shopping_delete_store_named", ms.Name)</button>
+            }
+        </div>
+    }
+</NxtBottomSheet>
+
 @code {
     private readonly SemaphoreSlim syncLock = new(1, 1);
+    private Dictionary<string, string> routes = new();
+    private string? addShopId, editShopId;
+    private ShoppingShop? menuShop;
+    private bool showAddStore;
+    private string storeName = "", storeError = "";
+
+    // The first store made is the default: plan items without a remembered store go there.
+    private ShoppingShop? DefaultShop => shops.OrderBy(x => x.CreatedAtUtc).ThenBy(x => x.Id, StringComparer.Ordinal).FirstOrDefault();
+    private IEnumerable<ShoppingShop> OrderedShops => DefaultShop is { } d
+        ? new[] { d }.Concat(shops.Where(x => x.Id != d.Id).OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase))
+        : shops;
+    private ShoppingShop? AddTarget => shops.FirstOrDefault(x => x.Id == addShopId) ?? DefaultShop;
+
+    private ShoppingShop StoreFor(string routeKey, ShoppingShop fallback) =>
+        routes.TryGetValue(routeKey, out var id) && shops.FirstOrDefault(x => x.Id == id) is { } remembered ? remembered : fallback;
     private List<ShoppingShop> shops = new();
     private List<PlannedEntry> planned = new();
     // The sync partner's meals still to cook: they count in the shared list's amounts but are not shown above.
@@ -296,6 +386,7 @@
         var catalogTask = CatalogService.GetAllMealsAsync();
         await Task.WhenAll(shopsTask, prefsTask, daysTask, catalogTask, MealImages.EnsureLoadedAsync());
         shops = await shopsTask;
+        try { routes = await ShoppingListService.GetStoreRoutesAsync(uid); } catch { routes = new(); }
         catalog = (await catalogTask).ToDictionary(m => m.Id);
         slotPrefs = await prefsTask;
         planned = ShoppingAggregator.PlannedEntries(await daysTask, catalog, Today, Sunday, slotPrefs);
@@ -326,11 +417,11 @@
             var sync = ShoppingAggregator.Sync(all.Select(x => x.Item), lines);
             if (sync.IsEmpty) return;
             var shopOf = all.ToDictionary(x => x.Item.Id, x => x.Shop.Id);
-            var target = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            var target = DefaultShop ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
             foreach (var line in sync.Add)
             {
                 var aisle = string.IsNullOrEmpty(line.Aisle) ? Aisles.For(line.Name).Key : line.Aisle;
-                await ShoppingListService.AddItemAsync(uid, target.Id, line.Name, new ShoppingItemOptions(
+                await ShoppingListService.AddItemAsync(uid, StoreFor(StoreRoute.Key(line.Key, line.Name), target).Id, line.Name, new ShoppingItemOptions(
                     Quantity: ShoppingAggregator.StoredQuantity(line), Unit: line.Unit, Aisle: aisle,
                     SourceMeal: line.FirstMeal, IngredientKey: line.Key, UsedIn: line.UsedIn));
             }
@@ -380,7 +471,7 @@
         isSaving = true;
         try
         {
-            var shop = shops.FirstOrDefault() ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            var shop = AddTarget ?? await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
             await ShoppingListService.AddItemAsync(uid, shop.Id, name, new ShoppingItemOptions(Aisle: Aisles.For(name).Key));
             shops = await ShoppingListService.GetShopsAsync(uid);
         }
@@ -434,6 +525,7 @@
         editName = item.Name;
         editQuantity = Math.Max(1, item.Quantity);
         editUnit = item.Unit ?? "";
+        editShopId = shop.Id;
     }
 
     private void CloseEdit() { editing = null; editingShop = null; }
@@ -444,6 +536,17 @@
         try
         {
             await ShoppingListService.UpdateItemAsync(uid, editingShop.Id, editing.Id, editName, editQuantity, editUnit);
+            if (editShopId is { } to && to != editingShop.Id)
+            {
+                editing.Name = editName.Trim();
+                editing.Quantity = editQuantity;
+                editing.Unit = string.IsNullOrWhiteSpace(editUnit) ? null : editUnit.Trim();
+                await ShoppingListService.MoveItemAsync(uid, editingShop.Id, to, editing);
+                // Next time this item is on the list it goes to the same store.
+                var key = StoreRoute.Key(editing);
+                routes[key] = to;
+                try { await ShoppingListService.RememberStoreAsync(uid, key, to); } catch { /* moved anyway */ }
+            }
             CloseEdit();
             shops = await ShoppingListService.GetShopsAsync(uid);
         }
@@ -460,6 +563,67 @@
             shops = await ShoppingListService.GetShopsAsync(uid);
         }
         catch { Toasts.Show(Loc["nut_save_error"], isError: true); CloseEdit(); }
+    }
+
+    private void OpenAddStore() { storeName = ""; storeError = ""; showAddStore = true; }
+
+    private async Task AddStoreAsync()
+    {
+        if (string.IsNullOrWhiteSpace(storeName) || isSaving) return;
+        if (shops.Any(x => string.Equals(x.Name, storeName.Trim(), StringComparison.CurrentCultureIgnoreCase))) { storeError = Loc["nut_store_exists"]; return; }
+        isSaving = true;
+        try
+        {
+            // The very first store is created only when needed; make the existing default list real first.
+            if (shops.Count == 0) await ShoppingListService.AddShopAsync(uid, Loc["ai_plan_default_shop_name"]);
+            var shop = await ShoppingListService.AddShopAsync(uid, storeName.Trim());
+            shops = await ShoppingListService.GetShopsAsync(uid);
+            addShopId = shop.Id;
+            showAddStore = false;
+        }
+        catch { storeError = Loc["nut_save_error"]; }
+        finally { isSaving = false; }
+    }
+
+    private void OpenStoreMenu(ShoppingShop shop) { menuShop = shop; storeName = shop.Name; storeError = ""; }
+
+    private async Task RenameStoreAsync()
+    {
+        if (menuShop is not { } shop || string.IsNullOrWhiteSpace(storeName) || isSaving) return;
+        if (shops.Any(x => x.Id != shop.Id && string.Equals(x.Name, storeName.Trim(), StringComparison.CurrentCultureIgnoreCase))) { storeError = Loc["nut_store_exists"]; return; }
+        isSaving = true;
+        try
+        {
+            await ShoppingListService.RenameShopAsync(uid, shop.Id, storeName.Trim());
+            shops = await ShoppingListService.GetShopsAsync(uid);
+            menuShop = null;
+        }
+        catch { storeError = Loc["nut_save_error"]; }
+        finally { isSaving = false; }
+    }
+
+    // Deleting a store keeps its items: they move to the first other store.
+    private async Task DeleteStoreAsync()
+    {
+        if (menuShop is not { } shop || shops.Count < 2 || isSaving) return;
+        isSaving = true;
+        try
+        {
+            var to = OrderedShops.First(x => x.Id != shop.Id);
+            foreach (var item in shop.Items.Values.ToList())
+                await ShoppingListService.MoveItemAsync(uid, shop.Id, to.Id, item);
+            await ShoppingListService.DeleteShopAsync(uid, shop.Id);
+            foreach (var key in routes.Where(r => r.Value == shop.Id).Select(r => r.Key).ToList())
+            {
+                routes[key] = to.Id;
+                try { await ShoppingListService.RememberStoreAsync(uid, key, to.Id); } catch { /* falls back to the default */ }
+            }
+            shops = await ShoppingListService.GetShopsAsync(uid);
+            if (addShopId == shop.Id) addShopId = null;
+            menuShop = null;
+        }
+        catch { storeError = Loc["nut_save_error"]; await ReloadAsync(); }
+        finally { isSaving = false; }
     }
 
     private void OnLanguageChanged() => InvokeAsync(StateHasChanged);
