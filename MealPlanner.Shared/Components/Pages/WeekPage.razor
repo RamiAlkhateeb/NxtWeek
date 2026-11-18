@@ -22,9 +22,19 @@
 <div class="mk-page mk-week" dir="@Loc.Direction">
     <header class="mk-header">
         <div class="mk-header-row">
-            <div class="mk-title-block">
-                <h1 class="mk-title">@Loc.GetDayName(selectedDate)</h1>
-                <span class="mk-subtitle">@Loc.T("nut_day_month", selectedDate.Day, Loc.GetMonthName(selectedDate.Month))@if (selectedDate == Today) { <text> · @Loc["nut_today"]</text> }</span>
+            @* The date is the way into Month view; on another day a "Today" chip jumps back. *@
+            <div class="mk-title-row">
+                <a class="mk-title-btn" href="month" aria-label="@Loc.T("nut_open_month", Loc.FormatDayDate(selectedDate))">
+                    <h1 class="mk-title">@Loc.GetDayName(selectedDate)</h1>
+                    <span class="mk-subtitle">
+                        @Loc.T("nut_day_month", selectedDate.Day, Loc.GetMonthName(selectedDate.Month))@if (selectedDate == Today) { <text> · @Loc["nut_today"]</text> }
+                        <svg class="i mk-title-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                    </span>
+                </a>
+                @if (selectedDate != Today)
+                {
+                    <button type="button" class="mk-today-chip" @onclick="GoToTodayAsync">@Loc["nut_today"]</button>
+                }
             </div>
             <div class="mk-header-actions">
                 <a class="mk-icon-btn mk-has-dot" href="friends" aria-label="@(friendRequests > 0 ? Loc.T("nut_friends_requests", friendRequests) : Loc["nut_friends"])">
@@ -38,18 +48,6 @@
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
                 </a>
             </div>
-        </div>
-
-        <div class="mk-week-nav is-simple">
-            <div class="mk-week-range">
-                <span class="mk-week-range-text">@WeekRangeLabel</span>
-                @if (weekOffset == 1) { <span class="mk-subtitle">@Loc["nut_next_week"]</span> }
-                else if (weekOffset == -1) { <span class="mk-subtitle">@Loc["nut_last_week"]</span> }
-                else if (weekOffset < -1) { <button type="button" class="mk-link-btn" @onclick="() => GoToWeekAsync(StartOfWeek(Today))">@Loc["nut_back_to_today"]</button> }
-            </div>
-            <a class="mk-icon-btn is-plain is-muted" href="month" aria-label="@Loc["week_month_view"]">
-                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
-            </a>
         </div>
 
         <DayStrip Weeks="StripWeeks" Current="WeekStart" Selected="selectedDate" Today="Today" Dots="dots" Logged="logged" Progress="progress"
@@ -267,7 +265,6 @@
     private static DateOnly RangeEnd => StartOfWeek(Today).AddDays(13);
     private static IReadOnlyList<DateOnly> StripWeeks => Enumerable.Range(0, WeeksBack + 2).Select(i => RangeStart.AddDays(7 * i)).ToList();
     private IReadOnlyList<DateOnly> WeekDates => Enumerable.Range(0, 7).Select(i => WeekStart.AddDays(i)).ToList();
-    private string WeekRangeLabel => $"{WeekStart.Day} – {WeekStart.AddDays(6).Day} {Loc.GetMonthName(WeekStart.AddDays(6).Month)}";
 
     private PlanDay? SelectedDay => days.GetValueOrDefault(selectedDate);
     private IReadOnlyList<MealSlot> Slots => DayMath.SlotsFor(prefs);
@@ -464,6 +461,12 @@
 
     private void SelectDay(DateOnly date) => selectedDate = date;
 
+    private async Task GoToTodayAsync()
+    {
+        await GoToWeekAsync(StartOfWeek(Today));
+        selectedDate = Today;
+    }
+
     // Every change is shown at once and saved in the background; a failed save reloads the truth.
     // With an undo, the message shows in the undo bar instead of a toast, with the action that puts the day back.
     private async Task SaveAsync(Func<Task<PlanDay>> write, string? toast = null, (string Text, Func<Task<PlanDay>> Back)? undo = null)
@@ -595,17 +598,19 @@
         });
     }
 
-    // A tap on the water ring adds a glass; the undo bar takes it back (there is no minus button).
+    // A tap on the water ring adds a glass, holding it removes one (the hold buzzes in nxtweek.longPress);
+    // either can be taken back from the undo bar.
     private async Task SetWaterAsync(int glasses)
     {
         var date = selectedDate;
         var day = days.TryGetValue(date, out var existing) ? existing : days[date] = new PlanDay { Date = date };
         var before = day.Water;
-        if (glasses > DayStatus.WaterMax || glasses == before) return;
-        if (glasses > before) _ = BuzzAsync();
+        if (glasses < 0 || glasses > DayStatus.WaterMax || glasses == before) return;
+        var adding = glasses > before;
+        if (adding) _ = BuzzAsync();
         day.Water = glasses;   // optimistic
         await SaveAsync(() => DayPlan.SetWaterAsync(uid, date, glasses), null,
-            (Loc.T("nut_water_added", Loc.Num(glasses)), () => DayPlan.SetWaterAsync(uid, date, before)));
+            (Loc.T(adding ? "nut_water_added" : "nut_water_removed", Loc.Num(glasses)), () => DayPlan.SetWaterAsync(uid, date, before)));
     }
 
     private async Task BuzzAsync()

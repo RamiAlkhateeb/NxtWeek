@@ -227,7 +227,6 @@ public class LocalizationService : ILocalizationService
         ["settings_install_desc"] = new() { ["ar"] = "أضف مكدوس إلى شاشة هاتفك الرئيسية لفتحه كتطبيق سريع على أندرويد وiPhone.", ["en"] = "Add Makdous to your home screen for quick access on Android & iPhone.", ["de"] = "Füge Makdous zu deinem Startbildschirm hinzu — schneller Zugriff auf Android und iPhone." },
 
         // Week page
-        ["week_month_view"] = new() { ["ar"] = "عرض الشهر", ["en"] = "Month View", ["de"] = "Monatsansicht" },
         ["week_surprise_week"] = new() { ["ar"] = "فاجئني بالأسبوع", ["en"] = "Surprise My Week", ["de"] = "Überrasch meine Woche" },
         ["week_surprise_week_eyebrow"] = new() { ["ar"] = "سنملأ الأيام الفارغة فقط", ["en"] = "We'll only fill empty days", ["de"] = "Wir füllen nur die leeren Tage" },
         ["week_surprise_week_note"] = new() { ["ar"] = "لن يتم تغيير أي وجبة مخططة مسبقاً.", ["en"] = "No planned meals will be replaced.", ["de"] = "Bereits geplante Gerichte bleiben unverändert." },
@@ -706,7 +705,6 @@ public class LocalizationService : ILocalizationService
         ["nut_photo_made"] = new() { ["ar"] = "صورة جديدة للوجبة، يراها الجميع", ["en"] = "New photo for this meal, seen by everyone", ["de"] = "Neues Foto für dieses Gericht, für alle sichtbar" },
         ["nut_photo_failed"] = new() { ["ar"] = "تعذّر صنع الصورة: {0}", ["en"] = "Couldn't make a photo: {0}", ["de"] = "Foto konnte nicht erstellt werden: {0}" },
         ["nut_week_of"] = new() { ["ar"] = "أسبوع {0}", ["en"] = "Week of {0}", ["de"] = "Woche vom {0}" },
-        ["nut_back_to_today"] = new() { ["ar"] = "عودة إلى اليوم", ["en"] = "Back to today", ["de"] = "Zurück zu heute" },
         ["nut_plan_chip_label"] = new() { ["ar"] = "{0}، {1}، الحصص: {2}", ["en"] = "{0}, {1}, servings: {2}", ["de"] = "{0}, {1}, Portionen: {2}" },
         ["nut_photos_bulk_title"] = new() { ["ar"] = "صور الوجبات", ["en"] = "Meal photos", ["de"] = "Fotos der Gerichte" },
         ["nut_photos_bulk_hint"] = new() { ["ar"] = "اصنع صوراً بالذكاء الاصطناعي للوجبات التي ليس لها صورة. مجانية ومشتركة مع الجميع؛ لكل حساب 10 صور في الأسبوع.", ["en"] = "Make AI photos for meals that have none yet. They are free and shared with everyone; each account can make 10 a week.", ["de"] = "Erstelle KI-Fotos für Gerichte, die noch keins haben. Sie sind kostenlos und für alle sichtbar; jedes Konto kann 10 pro Woche erstellen." },
@@ -773,10 +771,12 @@ public class LocalizationService : ILocalizationService
         ["nut_water"] = new() { ["ar"] = "الماء", ["en"] = "Water", ["de"] = "Wasser" },
         ["nut_water_of"] = new() { ["ar"] = "من {0} أكواب", ["en"] = "of {0} glasses", ["de"] = "von {0} Gläsern" },
         ["nut_swipe_hint"] = new() { ["ar"] = "اسحب عنصراً للتحديد أو للحذف", ["en"] = "Swipe an item to tick it or remove it", ["de"] = "Wische einen Artikel, um ihn abzuhaken oder zu entfernen" },
-        ["nut_water_add"] = new() { ["ar"] = "اضغط لإضافة كوب", ["en"] = "Tap to add a glass", ["de"] = "Tippen, um ein Glas hinzuzufügen" },
+        ["nut_water_add"] = new() { ["ar"] = "اضغط لإضافة كوب، واضغط مطولاً لإزالة كوب", ["en"] = "Tap to add a glass, long press to remove one", ["de"] = "Tippen fügt ein Glas hinzu, lang drücken entfernt eins" },
         ["nut_water_done"] = new() { ["ar"] = "تم بلوغ الهدف", ["en"] = "Goal reached", ["de"] = "Ziel erreicht" },
         ["nut_glasses"] = new() { ["ar"] = "أكواب", ["en"] = "glasses", ["de"] = "Gläser" },
         ["nut_water_added"] = new() { ["ar"] = "أُضيف كوب ماء ({0})", ["en"] = "Glass of water added ({0})", ["de"] = "Glas Wasser hinzugefügt ({0})" },
+        ["nut_water_removed"] = new() { ["ar"] = "أُزيل كوب ماء ({0})", ["en"] = "Glass of water removed ({0})", ["de"] = "Glas Wasser entfernt ({0})" },
+        ["nut_open_month"] = new() { ["ar"] = "{0}. افتح عرض الشهر", ["en"] = "{0}. Open month view", ["de"] = "{0}. Monatsansicht öffnen" },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

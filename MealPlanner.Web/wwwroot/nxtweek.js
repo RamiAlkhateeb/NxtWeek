@@ -447,3 +447,46 @@ window.nxtweek.swipeRows = (() => {
         unwatch(id) { lists.get(id)?.(); lists.delete(id); }
     };
 })();
+
+// Long press: holding an element for `ms` calls back once (with a buzz) and the click that follows is swallowed,
+// so a long press never also counts as a tap. Moving the finger, lifting it early or leaving cancels it.
+window.nxtweek.longPress = (() => {
+    const watched = new Map();
+    let next = 1;
+    return {
+        watch(el, dotnetRef, method, ms = 500) {
+            const id = next++;
+            let timer = 0, x = 0, y = 0, fired = false;
+            const cancel = () => { clearTimeout(timer); timer = 0; el.classList.remove('is-pressing'); };
+            const down = e => {
+                if (e.button !== undefined && e.button > 0) return;
+                fired = false; x = e.clientX; y = e.clientY;
+                el.classList.add('is-pressing');
+                timer = setTimeout(() => {
+                    timer = 0; fired = true;
+                    el.classList.remove('is-pressing');
+                    window.nxtweek.buzz(20);
+                    dotnetRef.invokeMethodAsync(method).catch(() => { });
+                }, ms);
+            };
+            const move = e => { if (timer && Math.hypot(e.clientX - x, e.clientY - y) > 10) cancel(); };
+            const click = e => { if (fired) { fired = false; e.stopImmediatePropagation(); e.preventDefault(); } };
+            const menu = e => e.preventDefault();
+            el.addEventListener('pointerdown', down);
+            el.addEventListener('pointermove', move);
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => el.addEventListener(t, cancel));
+            el.addEventListener('click', click, true);
+            el.addEventListener('contextmenu', menu);
+            watched.set(id, () => {
+                cancel();
+                el.removeEventListener('pointerdown', down);
+                el.removeEventListener('pointermove', move);
+                ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => el.removeEventListener(t, cancel));
+                el.removeEventListener('click', click, true);
+                el.removeEventListener('contextmenu', menu);
+            });
+            return id;
+        },
+        unwatch(id) { watched.get(id)?.(); watched.delete(id); }
+    };
+})();
