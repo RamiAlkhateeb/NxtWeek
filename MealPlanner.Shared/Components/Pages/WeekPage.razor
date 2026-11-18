@@ -595,13 +595,17 @@
         });
     }
 
+    // A tap on the water ring adds a glass; the undo bar takes it back (there is no minus button).
     private async Task SetWaterAsync(int glasses)
     {
         var date = selectedDate;
         var day = days.TryGetValue(date, out var existing) ? existing : days[date] = new PlanDay { Date = date };
-        if (glasses > day.Water) _ = BuzzAsync();
+        var before = day.Water;
+        if (glasses > DayStatus.WaterMax || glasses == before) return;
+        if (glasses > before) _ = BuzzAsync();
         day.Water = glasses;   // optimistic
-        await SaveAsync(() => DayPlan.SetWaterAsync(uid, date, glasses));
+        await SaveAsync(() => DayPlan.SetWaterAsync(uid, date, glasses), null,
+            (Loc.T("nut_water_added", Loc.Num(glasses)), () => DayPlan.SetWaterAsync(uid, date, before)));
     }
 
     private async Task BuzzAsync()

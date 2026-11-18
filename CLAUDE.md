@@ -100,8 +100,8 @@ continues with the default targets. Settings is grouped as You, App and Account.
 
 The Week page shows calories, protein and water as three smartwatch-style rings (`TargetRing` in `TargetsPanel`, arcs
 from `DayStatus.RingArcs`: eaten solid, planned faint, full and in the accent colour when over) with what is left. Water
-counts glasses against a goal of 8 (`DayStatus.WaterGoal`, up to `WaterMax`), with − and + under its ring
-(`IDayPlanService.SetWaterAsync`); past the goal it shows "Goal reached", never "over" (`OverIsGood`). Without body data
+counts glasses against a goal of 8 (`DayStatus.WaterGoal`, up to `WaterMax`); tapping the water ring adds a glass
+(`TargetRing.OnTap`, `IDayPlanService.SetWaterAsync`) and the undo bar takes it back; past the goal it shows "Goal reached", never "over" (`OverIsGood`). Without body data
 (offline) only the water ring shows. Under the rings, today shows the next meal as a big card with one-tap
 "Mark as eaten" (`DayStatus.NextMeal`). Each day in the strip has a mini ring with the
 share of the calorie target eaten (`DayStatus.EatenShare`), green with a tick when the day is logged. carbs and fat appear under Details only when
@@ -194,7 +194,7 @@ picked), then up to three chat models the key can reach, and reports a switch in
 
 Changes that are easy to regret offer Undo for six seconds in the bar above the tabs (`UndoService` + `UndoBar` in the
 layout, a Makdous component because Nxt.UI's toast has no action): removing a meal, moving or copying it, "No" on the
-check-in, removing a shopping item and Clear list. The offer replaces the usual toast. Marking a meal eaten, ticking an
+check-in, adding a glass of water, removing a shopping item and Clear list. The offer replaces the usual toast. Marking a meal eaten, ticking an
 item and swiping one away give a short vibration (`nxtweek.buzz`) where the phone supports it.
 
 ## Recipe steps and cooking mode

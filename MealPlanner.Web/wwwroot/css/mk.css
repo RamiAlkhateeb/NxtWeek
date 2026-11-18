@@ -1246,7 +1246,7 @@ html, body { background: var(--nxt-page); }
 .mk-rings.is-water-only { grid-template-columns: minmax(0, 1fr); }
 .mk-ring { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
 .mk-ring-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
-.mk-ring-dial { position: relative; width: min(108px, 26vw); aspect-ratio: 1; }
+.mk-ring-dial { display: block; position: relative; width: min(108px, 26vw); aspect-ratio: 1; }
 .mk-ring-dial svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
 .mk-ring-track { fill: none; stroke: var(--nxt-inset); stroke-width: 11; }
 .mk-ring-arc { fill: none; stroke-width: 11; stroke-linecap: round; transition: stroke-dasharray .6s ease-out, stroke-dashoffset .6s ease-out; }
@@ -1254,7 +1254,7 @@ html, body { background: var(--nxt-page); }
 .mk-ring-centre { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; line-height: 1.1; padding: 18%; }
 .mk-ring-centre b { font-size: clamp(17px, 5.2vw, 23px); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--nxt-text); }
 .mk-ring-centre span { font-size: 10px; color: var(--mk-muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
-.mk-ring figcaption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.mk-ring-caption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
 .mk-ring-label { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; }
 .mk-ring-label i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .mk-ring-left { font-size: 12px; color: var(--mk-muted); font-variant-numeric: tabular-nums; }
@@ -1300,10 +1300,13 @@ html, body { background: var(--nxt-page); }
 .mk-shop-item[data-swipe="remove"] { background: #ff3b30; color: #fff; }
 .mk-shop-hint { font-size: 12px; color: var(--mk-muted); text-align: center; margin: 8px 0 0; }
 
-/* ---- Water ring: − and + under it ---- */
 .mk-ring-left.is-done { color: var(--mk-water); font-weight: 800; }
-.mk-ring-steps { display: flex; gap: 8px; }
-.mk-ring-steps button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--nxt-inset); color: var(--nxt-text); display: grid; place-items: center; cursor: pointer; }
-.mk-ring-steps button.is-add { background: var(--mk-water); color: #fff; }
-.mk-ring-steps button:disabled { opacity: .35; cursor: default; }
-.mk-ring-steps svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+
+/* ---- Water ring: the ring itself is the button ---- */
+.mk-ring-figure.is-tap { border: 0; background: transparent; padding: 4px; border-radius: 20px; font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.mk-ring-figure.is-tap:active .mk-ring-dial { transform: scale(.96); }
+.mk-ring-figure.is-tap:focus-visible { outline: 2px solid var(--mk-water); outline-offset: 2px; }
+.mk-ring-dial { transition: transform .12s ease-out; }
+.mk-ring-plus { position: absolute; bottom: 2px; inset-inline-end: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--mk-water); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 3px var(--nxt-card); }
+.mk-ring-plus svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+@media (prefers-reduced-motion: reduce) { .mk-ring-dial { transition: none; } .mk-ring-figure.is-tap:active .mk-ring-dial { transform: none; } }

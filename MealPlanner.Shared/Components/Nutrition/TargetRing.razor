@@ -3,8 +3,8 @@
 
 @* A smartwatch-style ring: the solid arc is what was eaten, the faint arc what is planned on top, the grey track
    what is still open. The ring always starts at 12 o'clock and runs clockwise, in every language.
-   With OverIsGood (water) going past the target is a goal reached, not an "over". Controls (ChildContent) sit
-   under the ring, outside the picture, so screen readers reach them. *@
+   With OverIsGood (water) going past the target is a goal reached, not an "over". With OnTap the whole ring is a
+   button (water: tap to add a glass) and shows a small plus. *@
 @{
     var (eatenArc, plannedArc, reached) = DayStatus.RingArcs(Eaten, Planned, Target);
     var done = OverIsGood && Target > 0 && Eaten >= Target;
@@ -12,35 +12,22 @@
     var left = Math.Round(Target - Eaten);
     var leftText = Loc.T(over ? "nut_unit_over" : "nut_unit_left", Unit);
     var status = done ? DoneText ?? "" : $"{Loc.Num(Math.Abs(left))} {leftText}";
+    var label = Loc.T("nut_ring_label", Label, Loc.Num(Eaten), Loc.Num(Target), Unit, status);
     var colour = over ? "var(--mk-accent)" : Colour;
 }
 <div class="mk-ring @(over ? "is-over" : "") @(done ? "is-done" : "") @CssClass">
-    <figure class="mk-ring-figure" role="img" aria-label="@Loc.T("nut_ring_label", Label, Loc.Num(Eaten), Loc.Num(Target), Unit, status)">
-        <div class="mk-ring-dial">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-                <circle class="mk-ring-track" cx="60" cy="60" r="@R" />
-                <circle class="mk-ring-arc is-planned @(plannedArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@Colour"
-                        stroke-dasharray="@Dash(plannedArc)" stroke-dashoffset="@Offset(eatenArc)" />
-                <circle class="mk-ring-arc @(eatenArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@colour" stroke-dasharray="@Dash(eatenArc)" />
-            </svg>
-            <div class="mk-ring-centre">
-                <b>@Loc.Num(Eaten)</b>
-                <span>@(OfText ?? Loc.T("nut_ring_of", Loc.Num(Target), Unit))</span>
-            </div>
-        </div>
-        <figcaption>
-            <span class="mk-ring-label"><i style="background:@Colour"></i>@Label</span>
-            @if (done)
-            {
-                <span class="mk-ring-left is-done">@DoneText</span>
-            }
-            else
-            {
-                <span class="mk-ring-left"><b>@Loc.Num(Math.Abs(left))</b> @leftText</span>
-            }
-        </figcaption>
-    </figure>
-    @ChildContent
+    @if (OnTap.HasDelegate)
+    {
+        <button type="button" class="mk-ring-figure is-tap" aria-label="@($"{label}. {TapLabel}")" @onclick="() => OnTap.InvokeAsync()">
+            @Body(colour, eatenArc, plannedArc, done, left, leftText)
+        </button>
+    }
+    else
+    {
+        <figure class="mk-ring-figure" role="img" aria-label="@label">
+            @Body(colour, eatenArc, plannedArc, done, left, leftText)
+        </figure>
+    }
 </div>
 
 @code {
@@ -60,8 +47,42 @@
     /// <summary>The small line in the middle, instead of "of {target} {unit}".</summary>
     [Parameter] public string? OfText { get; set; }
     [Parameter] public string CssClass { get; set; } = "";
-    /// <summary>Controls under the ring (the water − and +).</summary>
-    [Parameter] public RenderFragment? ChildContent { get; set; }
+    /// <summary>Makes the whole ring a button (water: add a glass).</summary>
+    [Parameter] public EventCallback OnTap { get; set; }
+    /// <summary>What a tap does, read after the ring's numbers ("Tap to add a glass").</summary>
+    [Parameter] public string? TapLabel { get; set; }
+
+    // Spans only, so the same content is valid inside a button and inside a figure.
+    private RenderFragment Body(string colour, double eatenArc, double plannedArc, bool done, double left, string leftText) => __builder =>
+    {
+        <span class="mk-ring-dial">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="mk-ring-track" cx="60" cy="60" r="@R" />
+                <circle class="mk-ring-arc is-planned @(plannedArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@Colour"
+                        stroke-dasharray="@Dash(plannedArc)" stroke-dashoffset="@Offset(eatenArc)" />
+                <circle class="mk-ring-arc @(eatenArc <= 0 ? "is-empty" : "")" cx="60" cy="60" r="@R" stroke="@colour" stroke-dasharray="@Dash(eatenArc)" />
+            </svg>
+            <span class="mk-ring-centre">
+                <b>@Loc.Num(Eaten)</b>
+                <span>@(OfText ?? Loc.T("nut_ring_of", Loc.Num(Target), Unit))</span>
+            </span>
+            @if (OnTap.HasDelegate)
+            {
+                <span class="mk-ring-plus" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></span>
+            }
+        </span>
+        <span class="mk-ring-caption">
+            <span class="mk-ring-label"><i style="background:@Colour"></i>@Label</span>
+            @if (done)
+            {
+                <span class="mk-ring-left is-done">@DoneText</span>
+            }
+            else
+            {
+                <span class="mk-ring-left"><b>@Loc.Num(Math.Abs(left))</b> @leftText</span>
+            }
+        </span>
+    };
 
     // An arc of the given share of the ring, as "length gap".
     private static string Dash(double share) =>
