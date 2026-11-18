@@ -119,7 +119,10 @@ two on-device asks; there is no free-text Gemini chat.
 Meals: search, and the meal types (All, Meat, Chicken, Fish & seafood, Vegetarian) as chips under it, one tap each; the
 filter sheet only holds the language. The list is in one order (`MealFiltering.Recommended`: favourites, then most eaten,
 then name); there is no sort or nutrition filter. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
-The Gemini details call also fills a missing cooking time.
+The Gemini details call also fills a missing cooking time. A meal's page has an Edit button (name and type); in its sheet a meal the
+user added (`CreatedBy`) can be deleted and a shared built-in meal hidden, both after a confirmation and with Undo. Both
+only set `IsArchived`, so days that already use the meal keep showing it. The Week slot sheet links to the meal's page
+("Edit meal").
 
 Progress is one page: weight and waist with the weekly check, the weekly summary, badges (`Badges`, pure: first full
 week, protein 7 days in a row, 10 different meals, first batch cook, shared a week; computed from eaten meals only, so a
@@ -194,7 +197,7 @@ picked), then up to three chat models the key can reach, and reports a switch in
 ## Undo and feedback
 
 Changes that are easy to regret offer Undo for six seconds in the bar above the tabs (`UndoService` + `UndoBar` in the
-layout, a Makdous component because Nxt.UI's toast has no action): removing a meal, moving or copying it, "No" on the
+layout, a Makdous component because Nxt.UI's toast has no action): removing a meal, moving or copying it, deleting or hiding a meal from the library, "No" on the
 check-in, adding or removing a glass of water, removing a shopping item and Clear list. The offer replaces the usual toast. Marking a meal eaten, ticking an
 item and swiping one away give a short vibration (`nxtweek.buzz`) where the phone supports it.
 

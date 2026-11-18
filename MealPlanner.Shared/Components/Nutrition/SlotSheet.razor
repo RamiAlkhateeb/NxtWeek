@@ -71,6 +71,12 @@
                 <button type="button" class="mk-btn is-sm is-soft" @onclick="OnCopy">
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>@Loc["nut_copy_to_day"]
                 </button>
+                @if (Meal is not null && Entry?.IsQuick != true)
+                {
+                    <a class="mk-btn is-sm is-soft" href="@($"meal/{Uri.EscapeDataString(Meal.Id)}")">
+                        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>@Loc["nut_edit_meal"]
+                    </a>
+                }
                 <button type="button" class="mk-btn is-sm is-soft is-danger-text" @onclick="OnRemove">
                     <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>@Loc["nut_remove"]
                 </button>

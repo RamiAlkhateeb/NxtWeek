@@ -777,6 +777,12 @@ public class LocalizationService : ILocalizationService
         ["nut_water_added"] = new() { ["ar"] = "أُضيف كوب ماء ({0})", ["en"] = "Glass of water added ({0})", ["de"] = "Glas Wasser hinzugefügt ({0})" },
         ["nut_water_removed"] = new() { ["ar"] = "أُزيل كوب ماء ({0})", ["en"] = "Glass of water removed ({0})", ["de"] = "Glas Wasser entfernt ({0})" },
         ["nut_open_month"] = new() { ["ar"] = "{0}. افتح عرض الشهر", ["en"] = "{0}. Open month view", ["de"] = "{0}. Monatsansicht öffnen" },
+        ["meals_delete_meal"] = new() { ["ar"] = "حذف الوجبة", ["en"] = "Delete meal", ["de"] = "Gericht löschen" },
+        ["meals_delete_confirm"] = new() { ["ar"] = "ستُحذف هذه الوجبة من قائمة وجباتك. الأيام التي خطّطتها بها تبقى كما هي.", ["en"] = "This meal leaves your meals list. Days you already planned with it stay as they are.", ["de"] = "Dieses Gericht verschwindet aus deiner Liste. Bereits geplante Tage bleiben, wie sie sind." },
+        ["meals_hide_confirm"] = new() { ["ar"] = "هذه وجبة مدمجة يشاركها الجميع. إخفاؤها يزيلها من مكتبة الوجبات للجميع.", ["en"] = "This is a built-in meal everyone shares. Hiding it removes it from the meals library for everyone.", ["de"] = "Dies ist ein eingebautes Gericht für alle. Ausblenden entfernt es für alle aus der Bibliothek." },
+        ["meals_meal_deleted"] = new() { ["ar"] = "حُذفت {0}", ["en"] = "{0} deleted", ["de"] = "{0} gelöscht" },
+        ["meals_meal_hidden_named"] = new() { ["ar"] = "أُخفيت {0}", ["en"] = "{0} hidden", ["de"] = "{0} ausgeblendet" },
+        ["nut_edit_meal"] = new() { ["ar"] = "تعديل الوجبة", ["en"] = "Edit meal", ["de"] = "Gericht bearbeiten" },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

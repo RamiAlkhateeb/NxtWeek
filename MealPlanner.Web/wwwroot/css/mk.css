@@ -1312,3 +1312,7 @@ html, body { background: var(--nxt-page); }
 .mk-title-btn .mk-subtitle { display: inline-flex; align-items: center; gap: 2px; }
 .mk-title-chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .mk-today-chip { min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--mk-accent-soft); color: var(--mk-accent-ink); font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; align-self: center; }
+
+/* ---- Edit meal button on the meal page ---- */
+.mk-pill-btn.mk-edit-meal { background: var(--nxt-inset); color: var(--nxt-text); min-height: 40px; }
+.mk-pill-btn.mk-edit-meal svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
