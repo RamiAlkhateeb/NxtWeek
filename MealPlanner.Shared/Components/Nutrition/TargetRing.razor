@@ -1,10 +1,12 @@
 @using System.Globalization
+@implements IAsyncDisposable
 @inject ILocalizationService Loc
+@inject IJSRuntime JS
 
 @* A smartwatch-style ring: the solid arc is what was eaten, the faint arc what is planned on top, the grey track
    what is still open. The ring always starts at 12 o'clock and runs clockwise, in every language.
    With OverIsGood (water) going past the target is a goal reached, not an "over". With OnTap the whole ring is a
-   button (water: tap to add a glass) and shows a small plus. *@
+   button (water: tap to add a glass), and OnLongPress adds a hold (water: hold to remove a glass, nxtweek.longPress). *@
 @{
     var (eatenArc, plannedArc, reached) = DayStatus.RingArcs(Eaten, Planned, Target);
     var done = OverIsGood && Target > 0 && Eaten >= Target;
@@ -18,7 +20,7 @@
 <div class="mk-ring @(over ? "is-over" : "") @(done ? "is-done" : "") @CssClass">
     @if (OnTap.HasDelegate)
     {
-        <button type="button" class="mk-ring-figure is-tap" aria-label="@($"{label}. {TapLabel}")" @onclick="() => OnTap.InvokeAsync()">
+        <button type="button" class="mk-ring-figure is-tap" aria-label="@($"{label}. {TapLabel}")" @ref="tapButton" @onclick="TapAsync">
             @Body(colour, eatenArc, plannedArc, done, left, leftText)
         </button>
     }
@@ -51,6 +53,42 @@
     [Parameter] public EventCallback OnTap { get; set; }
     /// <summary>What a tap does, read after the ring's numbers ("Tap to add a glass").</summary>
     [Parameter] public string? TapLabel { get; set; }
+    /// <summary>Holding the ring (only with <see cref="OnTap"/>): water removes a glass.</summary>
+    [Parameter] public EventCallback OnLongPress { get; set; }
+
+    private ElementReference tapButton;
+    private DotNetObjectReference<TargetRing>? self;
+    private int pressWatch;
+    private DateTime lastLongPress;
+
+    private Task TapAsync()
+    {
+        // The click right after a hold is not a tap (nxtweek.longPress swallows it too).
+        if (DateTime.UtcNow - lastLongPress < TimeSpan.FromMilliseconds(700)) return Task.CompletedTask;
+        return OnTap.InvokeAsync();
+    }
+
+    [JSInvokable]
+    public Task LongPressed()
+    {
+        lastLongPress = DateTime.UtcNow;
+        return OnLongPress.InvokeAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (pressWatch != 0 || !OnTap.HasDelegate || !OnLongPress.HasDelegate) return;
+        self ??= DotNetObjectReference.Create(this);
+        try { pressWatch = await JS.InvokeAsync<int>("nxtweek.longPress.watch", tapButton, self, nameof(LongPressed), 500); }
+        catch { pressWatch = -1; /* taps still work */ }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { if (pressWatch > 0) await JS.InvokeVoidAsync("nxtweek.longPress.unwatch", pressWatch); }
+        catch { /* the page is going away */ }
+        self?.Dispose();
+    }
 
     // Spans only, so the same content is valid inside a button and inside a figure.
     private RenderFragment Body(string colour, double eatenArc, double plannedArc, bool done, double left, string leftText) => __builder =>
@@ -66,10 +104,6 @@
                 <b>@Loc.Num(Eaten)</b>
                 <span>@(OfText ?? Loc.T("nut_ring_of", Loc.Num(Target), Unit))</span>
             </span>
-            @if (OnTap.HasDelegate)
-            {
-                <span class="mk-ring-plus" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></span>
-            }
         </span>
         <span class="mk-ring-caption">
             <span class="mk-ring-label"><i style="background:@Colour"></i>@Label</span>

@@ -1,7 +1,7 @@
 @inject ILocalizationService Loc
 
 @* The day against its targets: calories, protein and water as three rings, each with what is left (or over; for
-   water, "Goal reached"). Tapping the water ring adds a glass. "Details" adds eaten / planned / open, and carbs and fat
+   water, "Goal reached"). Tapping the water ring adds a glass; holding it removes one. "Details" adds eaten / planned / open, and carbs and fat
    only when the user tracks them. Without body data (offline) only the water ring shows. *@
 @{
     var t = Totals.Targets;
@@ -18,7 +18,8 @@
         <TargetRing Label="@Loc["nut_water"]" Colour="var(--mk-water)" Eaten="Water" Target="DayStatus.WaterGoal" CssClass="is-water"
                     Unit="@Loc["nut_glasses"]" OfText="@Loc.T("nut_water_of", Loc.Num(DayStatus.WaterGoal))"
                     OverIsGood="true" DoneText="@Loc["nut_water_done"]"
-                    OnTap="() => OnWater.InvokeAsync(Water + 1)" TapLabel="@Loc["nut_water_add"]" />
+                    OnTap="() => OnWater.InvokeAsync(Water + 1)" OnLongPress="() => OnWater.InvokeAsync(Water - 1)"
+                    TapLabel="@Loc["nut_water_add"]" />
     </div>
 
     @if (ShowTargets && expanded)
