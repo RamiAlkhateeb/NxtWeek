@@ -14,6 +14,7 @@
 @inject NavigationManager Nav
 @inject ILocalizationService Loc
 @inject ToastService Toasts
+@inject UndoService Undo
 
 <div class="mk-page mk-details" dir="@Loc.Direction">
     @if (isLoading)
@@ -73,7 +74,9 @@
             <div class="mk-details-titleblock">
                 <div class="mk-details-title-row">
                     <span class="mk-type-label @MealTypeStyle.T(meal.MealType)">@Loc.GetMealTypeName(meal.MealType)</span>
-                    <button class="mk-link-btn" @onclick="OpenEdit">@Loc["meal_edit"]</button>
+                    <button type="button" class="mk-pill-btn mk-edit-meal" @onclick="OpenEdit">
+                        <svg class="i" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>@Loc["meal_edit"]
+                    </button>
                 </div>
                 <h1 class="mk-details-name">@meal.Name</h1>
             </div>
@@ -197,7 +200,20 @@
         </div>
         @if (!string.IsNullOrWhiteSpace(editError)) { <div class="mk-notice is-error">@editError</div> }
         <button class="mk-btn is-lg is-block" disabled="@string.IsNullOrWhiteSpace(editName)" @onclick="SaveEdit">@Loc["meals_save_changes"]</button>
-        <button class="mk-btn is-soft is-block" @onclick="HideMeal">@Loc["meals_hide_meal"]</button>
+        @* A meal you added can be deleted; a shared built-in meal can only be hidden. Either way it leaves the library
+           (IsArchived), so days that already use it keep showing it, and Undo brings it back. *@
+        @if (!confirmDelete)
+        {
+            <button class="mk-btn is-soft is-block is-danger-text" @onclick="() => confirmDelete = true">@(IsMine ? Loc["meals_delete_meal"] : Loc["meals_hide_meal"])</button>
+        }
+        else
+        {
+            <div class="mk-notice is-warn" role="alert">@(IsMine ? Loc["meals_delete_confirm"] : Loc["meals_hide_confirm"])</div>
+            <div class="mk-btn-row">
+                <button class="mk-btn is-soft" @onclick="() => confirmDelete = false">@Loc["cancel"]</button>
+                <button class="mk-btn is-danger-fill" @onclick="HideMeal">@(IsMine ? Loc["meals_delete_meal"] : Loc["meals_hide_meal"])</button>
+            </div>
+        }
     </div>
 </NxtBottomSheet>
 
@@ -386,9 +402,13 @@
         catch { Toasts.Show(Loc["meal_photo_failed"], isError: true); }
     }
 
+    private bool confirmDelete;
+    private bool IsMine => meal is not null && !string.IsNullOrEmpty(uid) && meal.CreatedBy == uid;
+
     private void OpenEdit()
     {
         if (meal is null) return;
+        confirmDelete = false;
         editName = meal.Name;
         editType = meal.MealType;
         editError = "";
@@ -416,9 +436,16 @@
         if (meal is null) return;
         try
         {
-            meal.IsArchived = true;
-            await CatalogService.UpdateMealAsync(meal);
-            Toasts.Show(Loc["meals_meal_hidden"]);
+            var removed = meal;
+            removed.IsArchived = true;
+            await CatalogService.UpdateMealAsync(removed);
+            showEdit = false;
+            Toasts.Hide();
+            Undo.Offer(Loc.T(IsMine ? "meals_meal_deleted" : "meals_meal_hidden_named", removed.Name), async () =>
+            {
+                removed.IsArchived = false;
+                await CatalogService.UpdateMealAsync(removed);
+            });
             await Close();
         }
         catch (Exception ex) { editError = ex.Message; }
