@@ -15,6 +15,7 @@
 @inject ILocalizationService Loc
 @inject ToastService Toasts
 @inject UndoService Undo
+@inject IMealDetailsService MealDetails
 
 <div class="mk-page mk-details" dir="@Loc.Direction">
     @if (isLoading)
@@ -190,6 +191,28 @@
 </NxtBottomSheet>
 
 <NxtBottomSheet IsOpen="showEdit" Title="@Loc["meals_edit_meal"]" Eyebrow="@Loc["meals_edit_eyebrow"]" OnDismiss="() => showEdit = false">
+    @if (askRecalc && meal is not null)
+    {
+        @* After a new name: offer to ask Gemini again, so ingredients and nutrition fit the new dish. *@
+        <div class="mk-sheet-body" dir="@Loc.Direction">
+            <p class="mk-recalc-q">@Loc.T("nut_recalc_q", meal.Name)</p>
+            @if (meal.Nutrition is { IsEstimate: false }) { <p class="mk-subtitle">@Loc["nut_recalc_manual_note"]</p> }
+            <button class="mk-btn is-lg is-block" disabled="@isRecalculating" @onclick="RecalculateAsync">
+                @if (isRecalculating)
+                {
+                    <span class="mk-busy-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                    <span role="status">@Loc["nut_filling_details"]</span>
+                }
+                else
+                {
+                    @Loc["nut_recalc"]
+                }
+            </button>
+            <button class="mk-btn is-soft is-block" disabled="@isRecalculating" @onclick="KeepAsIs">@Loc["nut_recalc_keep"]</button>
+        </div>
+    }
+    else
+    {
     <div class="mk-sheet-body" dir="@Loc.Direction">
         <label class="mk-search"><input placeholder="@Loc["meals_meal_name"]" aria-label="@Loc["meals_meal_name"]" @bind="editName" @bind:event="oninput" /></label>
         <div class="mk-chip-wrap" role="group" aria-label="@Loc["meals_meal_type"]">
@@ -215,6 +238,7 @@
             </div>
         }
     </div>
+    }
 </NxtBottomSheet>
 
 @code {
@@ -402,13 +426,14 @@
         catch { Toasts.Show(Loc["meal_photo_failed"], isError: true); }
     }
 
-    private bool confirmDelete;
+    private bool confirmDelete, askRecalc, isRecalculating;
     private bool IsMine => meal is not null && !string.IsNullOrEmpty(uid) && meal.CreatedBy == uid;
 
     private void OpenEdit()
     {
         if (meal is null) return;
         confirmDelete = false;
+        askRecalc = false;
         editName = meal.Name;
         editType = meal.MealType;
         editError = "";
@@ -420,15 +445,52 @@
         if (meal is null) return;
         var name = editName.Trim();
         if (name.Length == 0) { editError = Loc["meals_name_required"]; return; }
+        var renamed = !string.Equals(name, meal.Name, StringComparison.Ordinal);
         try
         {
             meal.Name = name;
             meal.MealType = editType;
             await CatalogService.UpdateMealAsync(meal);
-            showEdit = false;
-            Toasts.Show(Loc["meals_meal_updated"]);
         }
-        catch (Exception ex) { editError = ex.Message; }
+        catch { editError = Loc["nut_save_error"]; return; }
+
+        // A new name usually means a different dish: offer to recalculate with Gemini (the user's key).
+        if (renamed && await MealDetails.IsAvailableAsync()) { askRecalc = true; return; }
+        showEdit = false;
+        Toasts.Show(renamed ? $"{Loc["meals_meal_updated"]} {Loc["nut_recalc_no_key"]}" : Loc["meals_meal_updated"]);
+    }
+
+    private void KeepAsIs()
+    {
+        askRecalc = false;
+        showEdit = false;
+        Toasts.Show(Loc["meals_meal_updated"]);
+    }
+
+    // Clears and refills a fresh copy of the meal, so a failed answer never leaves it half cleared.
+    private async Task RecalculateAsync()
+    {
+        if (meal is null) return;
+        isRecalculating = true;
+        try
+        {
+            var copy = await CatalogService.GetMealByIdAsync(meal.Id) ?? meal;
+            MealDetailsMapper.ForgetForNewName(copy);
+            var result = await MealDetails.FillMissingAsync(copy);
+            if (result == MealDetailsResult.Filled)
+            {
+                meal = await CatalogService.GetMealByIdAsync(meal.Id) ?? copy;
+                Toasts.Show(Loc["nut_recalc_done"]);
+            }
+            else Toasts.Show(Loc["nut_recalc_failed"], isError: true);
+        }
+        catch { Toasts.Show(Loc["nut_recalc_failed"], isError: true); }
+        finally
+        {
+            isRecalculating = false;
+            askRecalc = false;
+            showEdit = false;
+        }
     }
 
     private async Task HideMeal()

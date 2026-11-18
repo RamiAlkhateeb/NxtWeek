@@ -101,6 +101,21 @@ public static class MealDetailsMapper
     /// <summary>True when the meal still lacks measured ingredients or nutrition.</summary>
     public static bool NeedsDetails(MealCatalogItem meal) => meal.Nutrition is null || meal.IngredientLines.Count == 0;
 
+    /// <summary>
+    /// Before asking again for a renamed meal: forgets the ingredient lists, the cooking time and an estimated nutrition,
+    /// so <see cref="Apply"/> fills them for the new name. Nutrition the user typed in stays. True when anything was cleared.
+    /// </summary>
+    public static bool ForgetForNewName(MealCatalogItem meal)
+    {
+        var changed = meal.IngredientLines.Count > 0 || meal.Ingredients.Count > 0 || meal.PreparationMinutes is not null
+                      || meal.Nutrition is { IsEstimate: true };
+        meal.IngredientLines = new();
+        meal.Ingredients = new();
+        meal.PreparationMinutes = null;
+        if (meal.Nutrition is { IsEstimate: true }) meal.Nutrition = null;
+        return changed;
+    }
+
     // "Chicken breast" / "chicken-breast" → "chickenBreast", so lines from different meals merge on the shopping list.
     private static string Slug(string value)
     {

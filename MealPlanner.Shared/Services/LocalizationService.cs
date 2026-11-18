@@ -783,6 +783,13 @@ public class LocalizationService : ILocalizationService
         ["meals_meal_deleted"] = new() { ["ar"] = "حُذفت {0}", ["en"] = "{0} deleted", ["de"] = "{0} gelöscht" },
         ["meals_meal_hidden_named"] = new() { ["ar"] = "أُخفيت {0}", ["en"] = "{0} hidden", ["de"] = "{0} ausgeblendet" },
         ["nut_edit_meal"] = new() { ["ar"] = "تعديل الوجبة", ["en"] = "Edit meal", ["de"] = "Gericht bearbeiten" },
+        ["nut_recalc_q"] = new() { ["ar"] = "هل نعيد حساب المكونات والقيم الغذائية لـ «{0}»؟", ["en"] = "Recalculate ingredients and nutrition for “{0}”?", ["de"] = "Zutaten und Nährwerte für „{0}“ neu berechnen?" },
+        ["nut_recalc"] = new() { ["ar"] = "أعد الحساب", ["en"] = "Recalculate", ["de"] = "Neu berechnen" },
+        ["nut_recalc_keep"] = new() { ["ar"] = "أبقِها كما هي", ["en"] = "Keep as is", ["de"] = "So lassen" },
+        ["nut_recalc_manual_note"] = new() { ["ar"] = "القيم الغذائية التي أدخلتها بنفسك تبقى كما هي.", ["en"] = "Your own nutrition numbers stay.", ["de"] = "Deine eigenen Nährwerte bleiben." },
+        ["nut_recalc_done"] = new() { ["ar"] = "أُعيد حساب القيم الغذائية", ["en"] = "Nutrition recalculated", ["de"] = "Nährwerte neu berechnet" },
+        ["nut_recalc_no_key"] = new() { ["ar"] = "أضف مفتاح Gemini في الإعدادات لإعادة حساب القيم الغذائية.", ["en"] = "Add a Gemini key in Settings to recalculate nutrition.", ["de"] = "Füge in den Einstellungen einen Gemini-Schlüssel hinzu, um Nährwerte neu zu berechnen." },
+        ["nut_recalc_failed"] = new() { ["ar"] = "تعذّرت إعادة الحساب. تبقى المكونات والقيم الغذائية السابقة.", ["en"] = "Couldn’t recalculate. The meal keeps its earlier ingredients and nutrition.", ["de"] = "Neuberechnung nicht möglich. Das Gericht behält seine bisherigen Zutaten und Nährwerte." },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg

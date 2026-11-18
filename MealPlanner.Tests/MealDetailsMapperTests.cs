@@ -109,4 +109,28 @@ public class MealDetailsMapperTests
         MealDetailsMapper.Apply(other, silly);
         Assert.Null(other.PreparationMinutes);
     }
+
+    [Fact]
+    public void A_renamed_meal_forgets_its_estimate_and_ingredients_but_keeps_typed_nutrition()
+    {
+        var estimated = new MealCatalogItem
+        {
+            Name = "Beef stew", Ingredients = ["rice"], PreparationMinutes = 25,
+            IngredientLines = [new IngredientLine { Id = "rice", Name = "Rice", QtyPerServing = 80, Unit = "g", Aisle = "pantry" }],
+            Nutrition = new NutritionInfo { Kcal = 600, Protein = 50, Source = NutritionSource.Estimate }
+        };
+        Assert.True(MealDetailsMapper.ForgetForNewName(estimated));
+        Assert.Empty(estimated.IngredientLines);
+        Assert.Empty(estimated.Ingredients);
+        Assert.Null(estimated.PreparationMinutes);
+        Assert.Null(estimated.Nutrition);
+        Assert.True(MealDetailsMapper.NeedsDetails(estimated));
+
+        var typed = new MealCatalogItem { Name = "Soup", Ingredients = ["lentils"], Nutrition = new NutritionInfo { Kcal = 300, Protein = 18, Source = NutritionSource.Manual } };
+        Assert.True(MealDetailsMapper.ForgetForNewName(typed));
+        Assert.Equal(300, typed.Nutrition!.Kcal);
+        Assert.Empty(typed.Ingredients);
+
+        Assert.False(MealDetailsMapper.ForgetForNewName(new MealCatalogItem { Name = "Empty" }));
+    }
 }
