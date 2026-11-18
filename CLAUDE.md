@@ -122,7 +122,9 @@ then name); there is no sort or nutrition filter. "Your top meals" shows the fiv
 The Gemini details call also fills a missing cooking time. A meal's page has an Edit button (name and type); in its sheet a meal the
 user added (`CreatedBy`) can be deleted and a shared built-in meal hidden, both after a confirmation and with Undo. Both
 only set `IsArchived`, so days that already use the meal keep showing it. The Week slot sheet links to the meal's page
-("Edit meal").
+("Edit meal"). After a rename, with a Gemini key, the sheet offers to recalculate: `MealDetailsMapper.ForgetForNewName`
+clears the ingredient lists, cooking time and an estimated nutrition on a fresh copy (typed nutrition stays), then
+`IMealDetailsService.FillMissingAsync` fills them for the new name; a failure changes nothing.
 
 Progress is one page: weight and waist with the weekly check, the weekly summary, badges (`Badges`, pure: first full
 week, protein 7 days in a row, 10 different meals, first batch cook, shared a week; computed from eaten meals only, so a
