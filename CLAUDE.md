@@ -119,10 +119,10 @@ two on-device asks; there is no free-text Gemini chat.
 Meals: search, and the meal types (All, Meat, Chicken, Fish & seafood, Vegetarian) as chips under it, one tap each; the
 filter sheet only holds the language. The list is in one order (`MealFiltering.Recommended`: favourites, then most eaten,
 then name); there is no sort or nutrition filter. "Your top meals" shows the five most eaten meals of the last 12 weeks (`MealFiltering.TopMeals`).
-The Gemini details call also fills a missing cooking time. A meal's page has an Edit button (name and type); in its sheet a meal the
+The details call also fills a missing cooking time. A meal's page has an Edit button (name and type); in its sheet a meal the
 user added (`CreatedBy`) can be deleted and a shared built-in meal hidden, both after a confirmation and with Undo. Both
 only set `IsArchived`, so days that already use the meal keep showing it. The Week slot sheet links to the meal's page
-("Edit meal"). After a rename, with a Gemini key, the sheet offers to recalculate: `MealDetailsMapper.ForgetForNewName`
+("Edit meal"). After a rename the sheet offers to recalculate: `MealDetailsMapper.ForgetForNewName`
 clears the ingredient lists, cooking time and an estimated nutrition on a fresh copy (typed nutrition stays), then
 `IMealDetailsService.FillMissingAsync` fills them for the new name; a failure changes nothing.
 
