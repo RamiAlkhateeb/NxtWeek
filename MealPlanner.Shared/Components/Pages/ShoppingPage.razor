@@ -488,12 +488,12 @@
         return sync.Add.Count + sync.Update.Count + sync.Remove.Count > 0;
     }
 
-    // Stores without a picture yet get one from Gemini (with the user's key) in the background, once each.
+    // Stores without a picture yet get one from the AI (Gemini with the user's key, else the worker) in the background, once each.
     private async Task FindLogosAsync()
     {
         foreach (var shop in shops.Where(s => !s.LogoChecked && askedLogos.Add(s.Id)).ToList())
         {
-            if (await StoreLogos.FindAsync(shop.Name) is not { } look) return; // no key, or Gemini is not answering
+            if (await StoreLogos.FindAsync(shop.Name) is not { } look) return; // the AI is not answering
             try
             {
                 await Stores.SetLookAsync(uid, shop.Id, look);

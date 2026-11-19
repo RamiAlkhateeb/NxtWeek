@@ -34,6 +34,8 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname === "/steps") return steps(request, env, origin, cors);
+    if (url.pathname === "/details") return details(request, env, origin, cors);
+    if (url.pathname === "/store") return store(request, env, origin, cors);
     if (url.pathname !== "/photo") return json({ error: "not_found" }, 404, cors);
     if (request.method !== "POST") return json({ error: "method" }, 405, cors);
     if (!isAllowedOrigin(origin)) return json({ error: "origin" }, 403, cors);
@@ -131,6 +133,124 @@ async function steps(request, env, origin, cors) {
     }
   }
   return json({ error: "model_failed" }, 502, cors);
+}
+
+/** Checks shared by the text endpoints: method, site, a JSON body with a valid account, the minute limit and an
+ *  existing account. Returns { body } or { error: Response }. */
+async function textRequest(request, env, origin, cors) {
+  if (request.method !== "POST") return { error: json({ error: "method" }, 405, cors) };
+  if (!isAllowedOrigin(origin)) return { error: json({ error: "origin" }, 403, cors) };
+  let body = null;
+  try { body = await request.json(); } catch { /* below */ }
+  const user = String(body?.user || "");
+  if (!body || !isUserKey(user)) return { error: json({ error: "bad_request" }, 400, cors) };
+  if (env.PER_VISITOR) {
+    const { success } = await env.PER_VISITOR.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
+    if (!success) return { error: json({ error: "busy" }, 429, cors) };
+  }
+  const db = env.FIREBASE_URL.replace(/\/$/, "");
+  if (!(await readJson(`${db}/users/${encodeURIComponent(user)}.json?shallow=true`))) return { error: json({ error: "unknown_user" }, 403, cors) };
+  return { body };
+}
+
+const isDailyLimit = e => /4006|allocation|neurons|quota/i.test(String(e?.message || e));
+
+/** POST /details { user, name, type, language, ingredients[] } → { details }: ingredients per serving (with an English
+ *  camelCase id, unit and aisle), servings, minutes and nutrition per serving, for the app's users without a Gemini key.
+ *  The meal is sent rather than read, because "Recalculate" asks for a cleared copy that is not saved yet. Nothing is
+ *  saved here; the app checks the numbers (MealDetailsMapper.Validate) and fills the meal. */
+async function details(request, env, origin, cors) {
+  const { body, error } = await textRequest(request, env, origin, cors);
+  if (error) return error;
+  const name = String(body.name || "").trim();
+  const ingredients = Array.isArray(body.ingredients) ? body.ingredients.map(i => String(i ?? "").trim()) : [];
+  if (!name || name.length > 120 || ingredients.length > 30 || ingredients.some(i => i.length > 80)) return json({ error: "bad_request" }, 400, cors);
+  const lang = LANGUAGE_NAMES[String(body.language || "ar")] ? String(body.language || "ar") : "ar";
+  const type = String(body.type || "").slice(0, 20);
+  const mealId = String(body.mealId || "");
+  const hint = lang === "ar" && ARABIC_SEED_DISHES[mealId] ? ` (in English: ${ARABIC_SEED_DISHES[mealId][0]})` : "";
+  const known = ingredients.filter(Boolean).length ? `\nThe cook listed these ingredients; keep them and add amounts: ${ingredients.filter(Boolean).join(", ")}` : "";
+  const messages = [
+    { role: "system", content: "You are a nutrition assistant for a home-cooking meal planner. Reply with JSON only: " +
+      '{"ingredients":[{"id": English camelCase like "chickenBreast", "name": the ingredient as a shopper writes it, "quantity": number per serving, "unit": "g"|"ml"|"pc", "aisle": "produce"|"meat"|"dairy"|"pantry"|"bakery"|"other"}], ' +
+      '"servings": how many servings the recipe makes, "minutes": total cooking time, "kcal", "protein", "carbs", "fat", "fibre": per serving (grams for the last four)}. ' +
+      `Ingredient names are in ${LANGUAGE_NAMES[lang]}. Use typical home amounts for ONE serving; 4*protein + 4*carbs + 9*fat should be close to kcal.` },
+    { role: "user", content: `Dish: ${name}${hint}${type ? ` (category: ${type})` : ""}${known}` }
+  ];
+  for (const model of STEPS_MODELS) {
+    try {
+      const out = await env.AI.run(model, { messages, max_tokens: 900 });
+      const parsed = cleanDetails(out?.response);
+      if (parsed) return json({ details: parsed }, 200, cors);
+    } catch (e) {
+      if (isDailyLimit(e)) return json({ error: "daily_limit" }, 429, cors);
+    }
+  }
+  return json({ error: "model_failed" }, 502, cors);
+}
+
+const UNITS = ["g", "ml", "pc"];
+const AISLES = ["produce", "meat", "dairy", "pantry", "bakery", "other"];
+const finite = (v, max = 5000) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= max ? n : null; };
+
+/** The model's reply as { ingredients, servings, minutes, kcal, protein, carbs, fat, fibre }, or null when unusable.
+ *  Units and aisles outside the lists are mapped or dropped; whether the numbers are plausible is the app's call. */
+export function cleanDetails(reply) {
+  const text = typeof reply === "string" ? reply : JSON.stringify(reply ?? "");
+  const found = text.match(/\{[\s\S]*\}/);
+  if (!found) return null;
+  let d;
+  try { d = JSON.parse(found[0]); } catch { return null; }
+  const unitOf = u => { const v = String(u || "").toLowerCase(); return UNITS.includes(v) ? v : /^(gram|grams)$/.test(v) ? "g" : /^(piece|pieces|pcs)$/.test(v) ? "pc" : null; };
+  const ingredients = (Array.isArray(d.ingredients) ? d.ingredients : [])
+    .map(i => ({
+      id: String(i?.id || "").trim().slice(0, 60),
+      name: String(i?.name || "").trim().slice(0, 80),
+      quantity: finite(i?.quantity),
+      unit: unitOf(i?.unit),
+      aisle: AISLES.includes(String(i?.aisle || "").toLowerCase()) ? String(i.aisle).toLowerCase() : "other"
+    }))
+    .filter(i => i.name && i.quantity > 0 && i.unit)
+    .slice(0, 25);
+  const kcal = finite(d.kcal), protein = finite(d.protein, 500), carbs = finite(d.carbs, 1000), fat = finite(d.fat, 500), fibre = finite(d.fibre, 200);
+  if (kcal === null || protein === null || carbs === null || fat === null) return null;
+  const servings = Number.isInteger(d.servings) && d.servings > 0 && d.servings <= 20 ? d.servings : 1;
+  const minutes = Number.isInteger(d.minutes) && d.minutes > 0 && d.minutes <= 600 ? d.minutes : 0;
+  return { ingredients, servings, minutes, kcal, protein, carbs, fat, fibre: fibre ?? 0 };
+}
+
+/** POST /store { user, name } → { domain, emoji }: the store chain's website and an emoji, for its logo; empty strings
+ *  when the model does not know it. The app cleans both again (StoreLogo.Clean). */
+async function store(request, env, origin, cors) {
+  const { body, error } = await textRequest(request, env, origin, cors);
+  if (error) return error;
+  const name = String(body.name || "").trim();
+  if (!name || name.length > 60) return json({ error: "bad_request" }, 400, cors);
+  try {
+    const out = await env.AI.run(TEXT_MODEL, {
+      messages: [
+        { role: "system", content: 'You name shops. Reply with JSON only: {"domain": the chain\'s main website domain like "lidl.de", or "" if it is not a known chain, "emoji": one emoji for the kind of shop}.' },
+        { role: "user", content: `Shop on a family's shopping list: ${name}` }
+      ],
+      max_tokens: 60
+    });
+    return json(cleanStore(out?.response), 200, cors);
+  } catch (e) {
+    if (isDailyLimit(e)) return json({ error: "daily_limit" }, 429, cors);
+    return json({ error: "model_failed" }, 502, cors);
+  }
+}
+
+/** { domain, emoji } from the model's reply: a plain lowercase domain or "", one short emoji or "". */
+export function cleanStore(reply) {
+  const text = typeof reply === "string" ? reply : JSON.stringify(reply ?? "");
+  const found = text.match(/\{[\s\S]*\}/);
+  let d = {};
+  try { d = found ? JSON.parse(found[0]) : {}; } catch { d = {}; }
+  let domain = String(d.domain || "").trim().toLowerCase().replace(/^[a-z]+:\/\//, "").split(/[/?#]/)[0].replace(/^www\./, "");
+  if (!/^(?=.{4,63}$)([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}$/.test(domain)) domain = "";
+  const emoji = String(d.emoji || "").trim();
+  return { domain, emoji: emoji.length <= 16 && !/[\p{L}\p{N}\s]/u.test(emoji) ? emoji : "" };
 }
 
 /** The model's reply as 2–12 steps of at most 240 characters, with minutes 1–600 or null; null when unusable. */

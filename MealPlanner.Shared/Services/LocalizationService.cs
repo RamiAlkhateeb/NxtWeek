@@ -788,8 +788,8 @@ public class LocalizationService : ILocalizationService
         ["nut_recalc_keep"] = new() { ["ar"] = "أبقِها كما هي", ["en"] = "Keep as is", ["de"] = "So lassen" },
         ["nut_recalc_manual_note"] = new() { ["ar"] = "القيم الغذائية التي أدخلتها بنفسك تبقى كما هي.", ["en"] = "Your own nutrition numbers stay.", ["de"] = "Deine eigenen Nährwerte bleiben." },
         ["nut_recalc_done"] = new() { ["ar"] = "أُعيد حساب القيم الغذائية", ["en"] = "Nutrition recalculated", ["de"] = "Nährwerte neu berechnet" },
-        ["nut_recalc_no_key"] = new() { ["ar"] = "أضف مفتاح Gemini في الإعدادات لإعادة حساب القيم الغذائية.", ["en"] = "Add a Gemini key in Settings to recalculate nutrition.", ["de"] = "Füge in den Einstellungen einen Gemini-Schlüssel hinzu, um Nährwerte neu zu berechnen." },
         ["nut_recalc_failed"] = new() { ["ar"] = "تعذّرت إعادة الحساب. تبقى المكونات والقيم الغذائية السابقة.", ["en"] = "Couldn’t recalculate. The meal keeps its earlier ingredients and nutrition.", ["de"] = "Neuberechnung nicht möglich. Das Gericht behält seine bisherigen Zutaten und Nährwerte." },
+        ["nut_ai_key_optional"] = new() { ["ar"] = "اختياري. بدون مفتاح يستخدم مكدوس ذكاءه الاصطناعي المجاني، والمفتاح يعطي تقديرات غذائية أدق.", ["en"] = "Optional. Without a key, Makdous uses its free AI. A key gives better nutrition estimates.", ["de"] = "Optional. Ohne Schlüssel nutzt Makdous seine kostenlose KI. Mit Schlüssel werden die Nährwerte genauer geschätzt." },
         ["nut_always_on"] = new() { ["ar"] = "مفعّلة دائمًا", ["en"] = "Always on", ["de"] = "Immer an" },
         ["nut_daily_targets"] = new() { ["ar"] = "الأهداف اليومية", ["en"] = "Daily targets", ["de"] = "Tagesziele" },
         // {0} = age, {1} = height in cm, {2} = weight in kg
@@ -945,7 +945,6 @@ public class LocalizationService : ILocalizationService
         // Gemini fills ingredients and nutrition for new meals (3.0.3)
         ["nut_filling_details"] = new() { ["ar"] = "جارٍ إضافة المكوّنات والقيم الغذائية…", ["en"] = "Adding ingredients and nutrition…", ["de"] = "Zutaten und Nährwerte werden ergänzt …" },
         ["nut_details_hint"] = new() { ["ar"] = "يضيف Gemini المكوّنات والقيم الغذائية تلقائياً، ويمكنك تعديلها لاحقاً.", ["en"] = "Gemini adds the ingredients and nutrition automatically; you can edit them later.", ["de"] = "Gemini ergänzt Zutaten und Nährwerte automatisch; du kannst sie später ändern." },
-        ["nut_details_no_key"] = new() { ["ar"] = "أُضيفت الوجبة. أضف مفتاح Gemini في الإعدادات لتُملأ المكوّنات والقيم الغذائية تلقائياً.", ["en"] = "Meal added. Add your Gemini key in Settings to fill in ingredients and nutrition automatically.", ["de"] = "Gericht hinzugefügt. Hinterlege deinen Gemini-Schlüssel in den Einstellungen, damit Zutaten und Nährwerte automatisch ergänzt werden." },
         ["nut_details_failed"] = new() { ["ar"] = "أُضيفت الوجبة، لكن تعذّر ملء المكوّنات والقيم الغذائية.", ["en"] = "Meal added, but its ingredients and nutrition couldn't be filled in.", ["de"] = "Gericht hinzugefügt, aber Zutaten und Nährwerte konnten nicht ergänzt werden." },
         // {0} = meal names
     };

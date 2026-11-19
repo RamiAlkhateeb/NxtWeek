@@ -1317,3 +1317,4 @@ html, body { background: var(--nxt-page); }
 .mk-pill-btn.mk-edit-meal { background: var(--nxt-inset); color: var(--nxt-text); min-height: 40px; }
 .mk-pill-btn.mk-edit-meal svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .mk-recalc-q { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.4; }
+.mk-set-advanced .mk-set-hint.is-ai-key { padding: 0 6px; margin-top: -4px; }

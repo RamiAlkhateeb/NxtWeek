@@ -4,24 +4,26 @@ using Nxt.UI.Ai;
 
 namespace MealPlanner.Shared.Services;
 
-public enum MealDetailsResult { Filled, AlreadyComplete, NoKey, Failed }
+public enum MealDetailsResult { Filled, AlreadyComplete, Failed }
 
-/// <summary>Ingredients and nutrition for a meal from Gemini, with the user's own key.</summary>
+/// <summary>Ingredients and nutrition for a meal: Gemini with the user's own key, otherwise (or when Gemini fails) the
+/// free AI on the photo worker (<see cref="IWorkerAi"/>). Every answer is checked by <see cref="MealDetailsMapper.Validate"/>.</summary>
 public interface IMealDetailsService
 {
-    Task<bool> IsAvailableAsync();
     Task<SuggestedMealDetails> SuggestAsync(MealCatalogItem meal);
     /// <summary>Fills a meal's missing ingredients and nutrition and saves it. Never throws.</summary>
     Task<MealDetailsResult> FillMissingAsync(MealCatalogItem meal);
 }
 
-public sealed class GeminiMealDetailsService(GeminiClient gemini, IMealCatalogService catalog) : IMealDetailsService
+public sealed class MealDetailsService(GeminiClient gemini, IWorkerAi worker, IMealCatalogService catalog) : IMealDetailsService
 {
     private static readonly Dictionary<string, string> LanguageNames = new() { ["ar"] = "Arabic", ["en"] = "English", ["de"] = "German" };
 
-    public Task<bool> IsAvailableAsync() => gemini.HasKeyAsync();
+    public Task<SuggestedMealDetails> SuggestAsync(MealCatalogItem meal) =>
+        AiFallback.RunAsync(gemini.HasKeyAsync, () => AskGeminiAsync(meal),
+            async () => MealDetailsMapper.Validate(await worker.SuggestDetailsAsync(meal)));
 
-    public Task<SuggestedMealDetails> SuggestAsync(MealCatalogItem meal)
+    private Task<SuggestedMealDetails> AskGeminiAsync(MealCatalogItem meal)
     {
         var language = LanguageNames.GetValueOrDefault(string.IsNullOrWhiteSpace(meal.Language) ? "ar" : meal.Language, "Arabic");
         var known = meal.Ingredients.Count > 0 ? $"The cook listed these ingredients, keep them and add amounts: {string.Join(", ", meal.Ingredients)}." : "";
@@ -77,7 +79,6 @@ public sealed class GeminiMealDetailsService(GeminiClient gemini, IMealCatalogSe
         if (!MealDetailsMapper.NeedsDetails(meal)) return MealDetailsResult.AlreadyComplete;
         try
         {
-            if (!await gemini.HasKeyAsync()) return MealDetailsResult.NoKey;
             var details = await SuggestAsync(meal);
             if (MealDetailsMapper.Apply(meal, details)) await catalog.UpdateMealAsync(meal);
             return MealDetailsResult.Filled;

@@ -35,6 +35,17 @@ to 480 px and stores it at `MealPhotos/{mealId}`.
 them at `MealCatalog/{id}/steps`. A meal that already has steps answers 409 `exists` unless `replace` is set. Same
 origin, account and per-visitor checks as `/photo`; steps do not count towards the weekly photo limit.
 
+`POST /details` with `{ "user": "…", "name": "…", "type": "Chicken", "language": "ar", "ingredients": ["…"], "mealId": "…" }`
+returns `{ "details": { "ingredients": [{ "id", "name", "quantity", "unit", "aisle" }], "servings", "minutes", "kcal",
+"protein", "carbs", "fat", "fibre" } }`: amounts and nutrition per serving, for users without their own Gemini key.
+The meal travels in the body (Recalculate sends a cleared copy) and nothing is saved; the app checks the numbers.
+
+`POST /store` with `{ "user": "…", "name": "Lidl" }` returns `{ "domain": "lidl.de", "emoji": "🛒" }` (empty strings
+when unknown), for the store's logo.
+
+Both use the same checks as `/steps`, answer 429 `daily_limit` when Cloudflare's free daily allowance is used up and
+502 `model_failed` otherwise, and do not count towards the weekly photo limit.
+
 ## Deploy
 
 `.github/workflows/photo-worker.yml` tests and deploys it on every push to `main` that touches this folder, and can be

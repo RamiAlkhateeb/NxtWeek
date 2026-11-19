@@ -10,17 +10,19 @@ public interface INutritionEstimator
 }
 
 /// <summary>
-/// "Estimate from ingredients": asks Gemini when the user has a key (and fills missing ingredient lines on the
-/// meal while at it); without a key, sums a small ingredient table. Either way the result is an estimate.
+/// "Estimate from ingredients": asks the AI (Gemini with the user's key, otherwise the photo worker) and fills missing
+/// ingredient lines on the meal while at it; when that fails, sums a small ingredient table. Either way the result is an estimate.
 /// </summary>
-public sealed class GeminiNutritionEstimator(IMealDetailsService details) : INutritionEstimator
+public sealed class AiNutritionEstimator(IMealDetailsService details) : INutritionEstimator
 {
     public async Task<NutritionInfo> EstimateAsync(MealCatalogItem meal, CancellationToken cancellationToken = default)
     {
-        if (await details.IsAvailableAsync())
+        SuggestedMealDetails? suggestion = null;
+        try { suggestion = await details.SuggestAsync(meal); }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested) { /* the table below */ }
+        cancellationToken.ThrowIfCancellationRequested();
+        if (suggestion is not null)
         {
-            var suggestion = await details.SuggestAsync(meal);
-            cancellationToken.ThrowIfCancellationRequested();
             // Work on a copy so the nutrition comes back fresh even when the meal already has some.
             var copy = new MealCatalogItem { Ingredients = meal.Ingredients.ToList(), IngredientLines = meal.IngredientLines.ToList(), ServingsYield = meal.ServingsYield };
             MealDetailsMapper.Apply(copy, suggestion);
@@ -32,7 +34,6 @@ public sealed class GeminiNutritionEstimator(IMealDetailsService details) : INut
             }
             return copy.Nutrition!;
         }
-        await Task.Delay(300, cancellationToken);
         return IngredientEstimate.For(meal);
     }
 }
