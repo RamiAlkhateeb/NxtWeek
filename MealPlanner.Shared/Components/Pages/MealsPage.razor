@@ -416,15 +416,14 @@
                 Language = Loc.CurrentLanguage,
                 CreatedBy = uid
             });
-            // The meal exists from here on; ingredients and nutrition from Gemini are a bonus on top.
+            // The meal exists from here on; ingredients and nutrition from the AI are a bonus on top.
             if (MealDetailsMapper.NeedsDetails(created))
             {
                 isFillingDetails = true;
                 StateHasChanged();
                 var result = await MealDetails.FillMissingAsync(created);
                 isFillingDetails = false;
-                if (result == MealDetailsResult.NoKey) Toasts.Show(Loc["nut_details_no_key"]);
-                else if (result == MealDetailsResult.Failed) Toasts.Show(Loc["nut_details_failed"], isError: true);
+                if (result == MealDetailsResult.Failed) Toasts.Show(Loc["nut_details_failed"], isError: true);
             }
             allMeals = await CatalogService.GetAllMealsAsync();
             CloseNewMeal();

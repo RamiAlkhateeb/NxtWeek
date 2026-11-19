@@ -1,7 +1,7 @@
 @using MealPlanner.Shared.Models
 @using MealPlanner.Shared.Nutrition
 
-@* A store's picture: its logo (from the domain Gemini found), else its emoji, else its first letter.
+@* A store's picture: its logo (from the domain the AI found), else its emoji, else its first letter.
    A logo that fails to load falls back to the emoji or letter. *@
 <span class="mk-store-thumb @(Small ? "is-sm" : "")" aria-hidden="true">
     @if (Shop.LogoDomain is { Length: > 0 } domain && !failed)

@@ -1,7 +1,7 @@
 // Run with: node --test photo-worker/test/*.test.js   (Node 20+, no packages)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import worker, { cleanSteps, isOwner, englishDish, englishTwinId, ingredientWords, prompt, isAllowedOrigin, isUserKey, mondayOf, addDays } from "../src/index.js";
+import worker, { cleanSteps, cleanDetails, cleanStore, isOwner, englishDish, englishTwinId, ingredientWords, prompt, isAllowedOrigin, isUserKey, mondayOf, addDays } from "../src/index.js";
 
 const DB = "https://db.test";
 const catalog = {
@@ -212,4 +212,76 @@ test("cleanSteps keeps only usable steps", () => {
   assert.equal(cleanSteps("no json"), null);
   assert.equal(cleanSteps('{"steps":["only one"]}'), null);
   assert.deepEqual(cleanSteps('{"steps":[{"text":" a ","minutes":5000},{"text":"b","minutes":3},{"text":""}]}'), [{ text: "a", minutes: null }, { text: "b", minutes: 3 }]);
+});
+
+const postAi = (path, body, origin = "https://meal-planner-af799.web.app") =>
+  new Request(`https://w.test${path}`, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: JSON.stringify({ user: "rami", ...body }) });
+const DETAILS = '{"ingredients":[{"id":"chickenBreast","name":"صدر دجاج","quantity":150,"unit":"g","aisle":"meat"},{"id":"rice","name":"رز","quantity":80,"unit":"grams","aisle":"Pantry"}],"servings":4,"minutes":45,"kcal":520,"protein":42,"carbs":55,"fat":12,"fibre":3}';
+
+test("/details answers with ingredients and nutrition in the meal's language", async () => {
+  const { env, calls } = setup();
+  env.AI.run = async (model, input) => { calls.push({ model, input }); return { response: "Here: " + DETAILS }; };
+  const res = await worker.fetch(postAi("/details", { name: "كبسة دجاج", type: "Chicken", language: "ar", ingredients: ["دجاج"] }), env);
+  assert.equal(res.status, 200);
+  const { details } = await res.json();
+  assert.equal(details.ingredients.length, 2);
+  assert.deepEqual(details.ingredients[1], { id: "rice", name: "رز", quantity: 80, unit: "g", aisle: "pantry" });
+  assert.equal(details.kcal, 520);
+  assert.equal(details.servings, 4);
+  assert.match(calls[0].input.messages[0].content, /Arabic/);
+  assert.match(calls[0].input.messages[1].content, /كبسة دجاج[\s\S]*دجاج/);
+});
+
+test("/details falls back to the small model, then reports model_failed or daily_limit", async () => {
+  const { env } = setup();
+  const seen = [];
+  env.AI.run = async model => { seen.push(model); if (model.includes("70b")) throw new Error("busy"); return { response: DETAILS }; };
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup" }), env)).status, 200);
+  assert.equal(seen.length, 2);
+  env.AI.run = async () => ({ response: "I cannot help" });
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup" }), env)).status, 502);
+  env.AI.run = async () => { throw new Error("4006: daily free allocation used"); };
+  const limited = await worker.fetch(postAi("/details", { name: "Soup" }), env);
+  assert.equal(limited.status, 429);
+  assert.equal((await limited.json()).error, "daily_limit");
+});
+
+test("/details checks the request", async () => {
+  const { env } = setup();
+  env.AI.run = async () => ({ response: DETAILS });
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup" }, "https://evil.example"), env)).status, 403);
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup", user: "nobody" }), env)).status, 403);
+  assert.equal((await worker.fetch(postAi("/details", { name: "" }), env)).status, 400);
+  assert.equal((await worker.fetch(postAi("/details", { name: "x".repeat(121) }), env)).status, 400);
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup", ingredients: Array(31).fill("a") }), env)).status, 400);
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup", ingredients: ["a".repeat(81)] }), env)).status, 400);
+  env.PER_VISITOR = { limit: async () => ({ success: false }) };
+  assert.equal((await worker.fetch(postAi("/details", { name: "Soup" }), env)).status, 429);
+});
+
+test("cleanDetails drops junk", () => {
+  assert.equal(cleanDetails("no json"), null);
+  assert.equal(cleanDetails('{"kcal":"lots"}'), null);
+  const d = cleanDetails('{"ingredients":[{"name":"a","quantity":0,"unit":"g"},{"name":"b","quantity":5,"unit":"cups"},{"name":"c","quantity":2,"unit":"pc","aisle":"space"}],"servings":0,"minutes":-3,"kcal":300,"protein":20,"carbs":30,"fat":10}');
+  assert.deepEqual(d.ingredients, [{ id: "", name: "c", quantity: 2, unit: "pc", aisle: "other" }]);
+  assert.equal(d.servings, 1);
+  assert.equal(d.minutes, 0);
+  assert.equal(d.fibre, 0);
+  assert.equal(cleanDetails('{"kcal":99999,"protein":1,"carbs":1,"fat":1}'), null);
+});
+
+test("/store names the chain's domain and an emoji", async () => {
+  const { env } = setup();
+  env.AI.run = async () => ({ response: '{"domain":"https://www.Lidl.de/","emoji":"🛒"}' });
+  const res = await worker.fetch(postAi("/store", { name: "Lidl" }), env);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { domain: "lidl.de", emoji: "🛒" });
+  assert.equal((await worker.fetch(postAi("/store", { name: "" }), env)).status, 400);
+  assert.equal((await worker.fetch(postAi("/store", { name: "Lidl", user: "nobody" }), env)).status, 403);
+});
+
+test("cleanStore keeps only a plain domain and a short emoji", () => {
+  assert.deepEqual(cleanStore('{"domain":"not a domain","emoji":"shop"}'), { domain: "", emoji: "" });
+  assert.deepEqual(cleanStore("nothing"), { domain: "", emoji: "" });
+  assert.deepEqual(cleanStore('{"domain":"rewe.de/path?x","emoji":"🥦"}'), { domain: "rewe.de", emoji: "🥦" });
 });

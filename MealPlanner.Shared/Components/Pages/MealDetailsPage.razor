@@ -193,7 +193,7 @@
 <NxtBottomSheet IsOpen="showEdit" Title="@Loc["meals_edit_meal"]" Eyebrow="@Loc["meals_edit_eyebrow"]" OnDismiss="() => showEdit = false">
     @if (askRecalc && meal is not null)
     {
-        @* After a new name: offer to ask Gemini again, so ingredients and nutrition fit the new dish. *@
+        @* After a new name: offer to ask the AI again, so ingredients and nutrition fit the new dish. *@
         <div class="mk-sheet-body" dir="@Loc.Direction">
             <p class="mk-recalc-q">@Loc.T("nut_recalc_q", meal.Name)</p>
             @if (meal.Nutrition is { IsEstimate: false }) { <p class="mk-subtitle">@Loc["nut_recalc_manual_note"]</p> }
@@ -454,10 +454,10 @@
         }
         catch { editError = Loc["nut_save_error"]; return; }
 
-        // A new name usually means a different dish: offer to recalculate with Gemini (the user's key).
-        if (renamed && await MealDetails.IsAvailableAsync()) { askRecalc = true; return; }
+        // A new name usually means a different dish: offer to recalculate (Gemini with the user's key, else the worker).
+        if (renamed) { askRecalc = true; return; }
         showEdit = false;
-        Toasts.Show(renamed ? $"{Loc["meals_meal_updated"]} {Loc["nut_recalc_no_key"]}" : Loc["meals_meal_updated"]);
+        Toasts.Show(Loc["meals_meal_updated"]);
     }
 
     private void KeepAsIs()

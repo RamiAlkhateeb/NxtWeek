@@ -71,7 +71,7 @@ nxtweek.theme
 | Meal catalog (shared by all users) | `MealCatalog/{id}` |
 | Weekly plan | `users/{key}/weeklyPlan/{yyyy-MM-dd}` |
 | Favorites | `users/{key}/favoriteMealIds` |
-| Shopping list (stores with items; a store's `logoDomain` and `emoji` come from Gemini) | `users/{key}/shopping` |
+| Shopping list (stores with items; a store's `logoDomain` and `emoji` come from the AI) | `users/{key}/shopping` |
 | Which store an item goes to, by ingredient key or name | `users/{key}/shoppingRoutes/{key}` |
 | Plan items the user removed from the list, with the amount the plan needed then | `users/{key}/shoppingDismissed/{ingredientKey}` |
 | Day slots (Meal 1, afternoon snack, dinner, evening snack) and glasses of water (`water`, personal, never mirrored) | `users/{key}/days/{yyyy-MM-dd}` (old `weeklyPlan` entries read as Meal 1) |
@@ -146,7 +146,7 @@ to a store remembers it for next time (`users/{owner}/shoppingRoutes/{StoreRoute
 remembered store go to the first store made (`ShoppingStores`, pure and tested). Moving an item and deleting a store
 (its items go to the default store) are single multi-path writes, so no reader ever sees an item in two stores. Items are
 read and written through `IShoppingListService`, stores through `IShoppingStoreService`, and whose list it is through
-`IShoppingListOwner`. Each store shows a picture (`StoreThumb`): Gemini, with the user's key, names the chain's web
+`IShoppingListOwner`. Each store shows a picture (`StoreThumb`): Gemini with the user's key (else the worker's `/store`) names the chain's web
 domain and an emoji (`IStoreLogoService`, cleaned by `StoreLogo.Clean`), the logo is the site's icon from Google's
 favicon service, else the emoji, else the first letter; asked once per store (`logoChecked`), again after a rename.
 Any item can be deleted. A plan item that is deleted is remembered in `shoppingDismissed` and stays away until the plan
@@ -184,13 +184,14 @@ exists; otherwise the guest's key is kept.
 > Running the app locally talks to the **production** database. Seeding in
 > particular writes new catalog rows to it. Keep that in mind before `dotnet run`.
 
-## Meal details from Gemini
+## Meal details
 
-When a meal is added (Meals "New meal"), `IMealDetailsService` asks Gemini with the
-user's own key for ingredient lines (amount per serving, unit, aisle, English camelCase `id` so shopping merges)
-and nutrition per serving. `MealDetailsMapper` (pure, tested) rejects implausible replies and only fills what the
-meal lacks, always as an estimate. Without a key the meal is added as before with a hint; a Gemini failure never
-loses the meal. "Estimate from ingredients" uses the same call (`GeminiNutritionEstimator`).
+When a meal is added (Meals "New meal"), `IMealDetailsService` asks for ingredient lines (amount per serving, unit,
+aisle, English camelCase `id` so shopping merges) and nutrition per serving: Gemini with the user's own key, otherwise,
+or when Gemini fails, the photo worker's free `/details` (`IWorkerAi`; the choice is `AiFallback.RunAsync`, pure and
+tested). The key is optional (Settings says so under it). `MealDetailsMapper` (pure, tested) rejects implausible replies
+from either and only fills what the meal lacks, always as an estimate. A failure never loses the meal. "Estimate from
+ingredients" uses the same call (`AiNutritionEstimator`) and falls back to the small `IngredientEstimate` table.
 
 All Gemini calls go through Nxt.UI's `GeminiClient`: it tries the model chosen in Settings (saved as soon as it is
 picked), then up to three chat models the key can reach, and reports a switch in `LastFallback`. Failures are
@@ -208,7 +209,8 @@ item and swiping one away give a short vibration (`nxtweek.buzz`) where the phon
 A meal's page shows its steps (`MealCatalogItem.Steps`) with "Start cooking" (`/meal/{id}/cook`: one big step at a time,
 the screen kept on with `nxtweek.keepAwake`, and a timer for steps with minutes that beeps and vibrates). Steps are
 typed one per line (`RecipeSteps.Parse`, pure and tested: numbering dropped, "10 min" / "١٠ دقائق" / "10 Minuten"
-becomes the timer) or fetched for free from the photo worker's `/steps` (`IRecipeService`).
+becomes the timer) or fetched for free from the photo worker's `/steps` (`IRecipeService`). The worker's `/details` and
+`/store` are text-only and save nothing; all three share Cloudflare's daily allowance, not the weekly photo limit.
 
 ## Sharing the shopping list
 
